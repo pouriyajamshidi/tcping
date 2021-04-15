@@ -207,7 +207,7 @@ func printResults(host string) {
 /* Ping host, TCP style */
 func tcping(host string, port string, IP string) {
 
-	hostAndPort := IP + ":" + port
+	hostAndPort := net.JoinHostPort(IP, port)
 
 	startTime := time.Now()
 
