@@ -1,14 +1,3 @@
-/*
-					TODO
-=====================================================
-*) calc and print up/down time in a proper way
-*) Print TTL?
-*) Print src and dst port?
-*) is it not better to not use global variables?
-*) if already an IP, dont show it in print twice
-
-*/
-
 package main
 
 import (
@@ -146,7 +135,7 @@ func formatTime(time uint) string {
 			timestr = strconv.FormatFloat(timeFloat, 'f', 2, 32) + " seconds"
 			return timestr
 		}
-		timestr = strconv.FormatFloat(timeFloat, 'f', 2, 32) + " minutes"
+		timestr = strconv.FormatFloat(timeFloat, 'f', 2, 32) + " minutes.seconds"
 		return timestr
 	}
 }
