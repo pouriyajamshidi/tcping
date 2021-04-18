@@ -1,8 +1,8 @@
 # TCPING
 
-A cross-platform ping program for ```TCP``` ports similar to Linux's ping utility. This program will send ```TCP``` probes to an ```IP address``` or a ```hostname``` specified by you and prints the results.
+A cross-platform ping program for ```TCP``` ports similar to Linux's ping utility. This program will send ```TCP``` probes to an ```IP address``` or a ```hostname``` specified by you and prints the result. It works with both `IPv4` and `IPv6`.
 
-It uses different sequence numbering for successful and unsuccessful probes, so that when you look at the results after a while, and seeing for instance, a failed probe, understanding the total packet drops so far would be illustrative enough.
+It uses different `TCP sequence numbering` for successful and unsuccessful probes, so that when you look at the results after a while, and seeing for instance, a failed probe, understanding the total packet drops so far would be illustrative enough.
 
 ## Application
 
@@ -10,9 +10,8 @@ It uses different sequence numbering for successful and unsuccessful probes, so 
 * Assess latency of your network.
 * Show min/avg/max probes latency.
 * Monitor and audit your peers network.
-* Calculate total up or downtime.
-* Make sure a host is up in environments that ping is blocked.
-* etc.
+* Calculate total up or downtime when conducting a maintenance.
+* An alternative to `ping` in environments that `ICMP` is blocked.
 
 ## Images
 
@@ -46,7 +45,7 @@ For easier use, you can copy it to your system ```PATH``` like /bin/ or /usr/bin
 sudo cp tcping /bin/
 ```
 
-Then run it like:
+Then run it like, `tcping <hostname/IP address> <port>`. For instance:
 
 ```bash
 tcping www.example.com 443
@@ -85,10 +84,13 @@ tcping 10.10.10.1 22
 ## Notes
 
 This program is still in a ```beta``` stage. There are several shortcomings that I will rectify in the near future.
+There are also some parts that might not make sense, like the choice of sorting algorithm.
+
+This program was mainly designed to help me experiment with `Go`.
 
 ## Tested on
 
-Windows, Linux and macOS
+Windows, Linux and macOS.
 
 ## Contributing
 
