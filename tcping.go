@@ -161,7 +161,7 @@ func printResults(host string) {
 
 	if packetLoss == 0 {
 		color.Green.Printf("%.2f%%", packetLoss)
-	} else if packetLoss > 1 && packetLoss <= 30 {
+	} else if packetLoss > 0 && packetLoss <= 30 {
 		color.LightYellow.Printf("%.2f%%", packetLoss)
 	} else {
 		color.Red.Printf("%.2f%%", packetLoss)
