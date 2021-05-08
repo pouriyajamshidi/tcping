@@ -21,13 +21,21 @@ It uses different `TCP sequence numbering` for successful and unsuccessful probe
 
 [![asciicast](https://asciinema.org/a/bNMtJKmujGEpfEhvDiTeSvtO4.svg)](https://asciinema.org/a/bNMtJKmujGEpfEhvDiTeSvtO4)
 
-## Download for
+## Download the executables for
 
-* ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/download/Windows-v1.0.0/tcping.exe)
+* ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.0/tcping_Windows.rar)
 
-* ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/download/Linux-v1.0.0/tcping)
+* ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.0/tcping_Linux.rar)
 
-* ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/macOS-v1.0.0/tcping)
+* ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.0/tcping_MacOS.rar)
+
+In addition to downloading the executables, you can also compile the code yourself by following below instructions:
+
+```bash
+go get github.com/gookit/color
+go env -w GO111MODULE=auto # for Go versions above 1.15
+go build tcping
+```
 
 ## Usage
 
@@ -79,14 +87,12 @@ tcping 10.10.10.1 22
 
 ## Tips
 
-* While the program is running, upon pressing the ```enter``` key, the summary of all probes will be shown.
+* While the program is running, upon pressing the ```enter``` key, the summary of all probes will be shown as depicted in the [demo](#Demo).
 
 ## Notes
 
 This program is still in a ```beta``` stage. There are several shortcomings that I will rectify in the near future.
-There are also some parts that might not make sense, like the choice of sorting algorithm.
-
-This program was mainly designed to help me experiment with `Go`.
+There are also some parts that might not make sense because this program was mainly designed to help me experiment with `Go`.
 
 ## Tested on
 

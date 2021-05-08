@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"syscall"
 	"time"
@@ -85,7 +86,6 @@ func resolveHostname(host string) []net.IP {
 func findMinAvgMaxTime(x []uint) (uint, float32, uint, int) {
 
 	var avgTime float32 = 0
-	var placeHolder uint
 
 	arrLen := len(x)
 
@@ -100,17 +100,7 @@ func findMinAvgMaxTime(x []uint) (uint, float32, uint, int) {
 		return 0, 0, 0, -1
 	}
 
-	for i := 0; i < arrLen-1; i++ {
-
-		for j := 0; j < arrLen-i-1; j++ {
-
-			if x[j] > x[j+1] {
-				placeHolder = x[j+1]
-				x[j+1] = x[j]
-				x[j] = placeHolder
-			}
-		}
-	}
+	sort.Slice(x, func(i, j int) bool { return x[i] < x[j] })
 
 	return x[0], avgTime / float32(arrLen), x[arrLen-1], 0
 }
