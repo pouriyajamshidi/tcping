@@ -138,7 +138,7 @@ func formatTime(time uint) string {
 
 		timeMin := int(timeFloat)
 		timeSec := calcSeconds(timeFloat)
-		timeStr := strconv.Itoa(timeMin) + "." + timeSec + " minute.seconds"
+		timeStr := strconv.Itoa(timeMin) + "." + timeSec + " minutes.seconds"
 
 		return timeStr
 	}
@@ -216,9 +216,6 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 			tcpStats.wasDown = true
 		}
 
-		downtime := uint(time.Since(startTime) / time.Second)
-		tcpStats.totalDowntime += downtime
-
 		tcpStats.failureCounter++
 		tcpStats.totalUnsucPackets++
 
@@ -232,13 +229,8 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 			downtime := uint(time.Since(tcpStats.downTime) / time.Second)
 			tcpStats.totalDowntime += downtime
 
-			if downtime == 1 {
-				color.Yellow.Printf("No response received for %d second\n", downtime)
-			} else if downtime < 60 {
-				color.Yellow.Printf("No response received for %d seconds\n", downtime)
-			} else {
-				color.Yellow.Printf("No response received for %d minutes\n", downtime/60)
-			}
+			strDowntime := formatTime(downtime)
+			color.Yellow.Printf("No response received for %s\n", strDowntime)
 
 			tcpStats.wasDown = false
 		}
@@ -249,7 +241,7 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 		tcpStats.totalSucPackets++
 
 		color.LightGreen.Printf("Reply from %s (%s) on port %s TCP_seq=%d time=%d ms\n",
-			host, IP, port, tcpStats.successCounter, timeDiff.Milliseconds())
+			host, IP, port, tcpStats.successCounter, timeDiffInMilSec)
 
 		conn.Close()
 	}
