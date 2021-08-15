@@ -34,7 +34,7 @@ func usage() {
 	os.Exit(1)
 }
 
-/* Catch SIGINT and print a summary of stats */
+/* Catch SIGINT and print tcping stats */
 func signalHandler(host string, tcpStats *stats) {
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -46,8 +46,8 @@ func signalHandler(host string, tcpStats *stats) {
 	}()
 }
 
-/* Validate user input */
-func validateInput() (string, string, string) {
+/* Get and validate user input */
+func getInput() (string, string, string) {
 	args := os.Args[1:]
 
 	if len(args) != 2 {
@@ -219,7 +219,7 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 		tcpStats.failureCounter++
 		tcpStats.totalUnsucPackets++
 
-		color.Red.Printf("No reply from %s (%s) on port %s TCP_seq=%d\n",
+		color.Red.Printf("No reply from %s (%s) on port %s TCP_conn=%d\n",
 			host, IP, port, tcpStats.failureCounter)
 
 	} else {
@@ -240,7 +240,7 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 		tcpStats.successCounter++
 		tcpStats.totalSucPackets++
 
-		color.LightGreen.Printf("Reply from %s (%s) on port %s TCP_seq=%d time=%d ms\n",
+		color.LightGreen.Printf("Reply from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
 			host, IP, port, tcpStats.successCounter, timeDiffInMilSec)
 
 		conn.Close()
@@ -250,7 +250,7 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 
 func main() {
 
-	host, port, IP := validateInput()
+	host, port, IP := getInput()
 
 	var tcpStats stats
 	tcpStatsAdrr := &tcpStats
@@ -261,6 +261,7 @@ func main() {
 
 	channel := make(chan string)
 
+	/* Monitor keystrokes */
 	go func(channel chan string) {
 		reader := bufio.NewReader(os.Stdin)
 		for {
