@@ -248,6 +248,15 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 	time.Sleep(1 * time.Second)
 }
 
+/* Capture keystrokes from stdin */
+func monitorStdin(channel chan string) {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		key, _ := reader.ReadString('\n')
+		channel <- key
+	}
+}
+
 func main() {
 
 	host, port, IP := getInput()
@@ -261,18 +270,12 @@ func main() {
 
 	channel := make(chan string)
 
-	/* Monitor keystrokes */
-	go func(channel chan string) {
-		reader := bufio.NewReader(os.Stdin)
-		for {
-			key, _ := reader.ReadString('\n')
-			channel <- key
-		}
-	}(channel)
+	go monitorStdin(channel)
 
 	for {
 		tcping(host, port, IP, tcpStatsAdrr)
 
+		/* print stats when the `enter` key is pressed */
 		select {
 		case stdin, _ := <-channel:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
