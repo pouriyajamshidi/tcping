@@ -21,7 +21,7 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 ## Demo
 
-[![asciicast](https://asciinema.org/a/bNMtJKmujGEpfEhvDiTeSvtO4.svg)](https://asciinema.org/a/bNMtJKmujGEpfEhvDiTeSvtO4)
+[![asciicast](https://asciinema.org/a/AcdJc4EYY1b8Wtfi29YqcZlfg.svg)](https://asciinema.org/a/AcdJc4EYY1b8Wtfi29YqcZlfg)
 
 ## Download the executables for
 
