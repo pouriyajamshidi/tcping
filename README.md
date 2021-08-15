@@ -1,11 +1,13 @@
 # TCPING
 
-A cross-platform ping program for ```TCP``` ports similar to Linux's ping utility. This program will send ```TCP``` probes to an ```IP address``` or a ```hostname``` specified by you and prints the result. It works with both `IPv4` and `IPv6`.
+A cross-platform ping program for ```TCP``` ports inspired by the Linux's ping utility. This program will send ```TCP``` probes to an ```IP address``` or a ```hostname``` specified by you and prints the result. It works with both `IPv4` and `IPv6`.
 
-It uses different `TCP sequence numbering` for successful and unsuccessful probes, so that when you look at the results after a while, and seeing for instance, a failed probe, understanding the total packet drops so far would be illustrative enough.
+It uses a different `TCP sequence numbering` for successful and unsuccessful probes, so that when you look at the results and spot a failed probe, understanding the total packet drops to that point would be illustrative enough.
 
-## Application
+## Features And Application
 
+* Monitor your network connection.
+* Print statistics on pressing the `Enter` key.
 * Calculate packet loss.
 * Assess latency of your network.
 * Show min/avg/max probes latency.
@@ -41,7 +43,7 @@ go build tcping
 
 Go to the directory/folder in which you have downloaded the application.
 
-### On ```Linux``` and ```macOS```:
+### On ```Linux``` and ```macOS```
 
 ```bash
 sudo chmod +x tcping
@@ -87,20 +89,28 @@ tcping 10.10.10.1 22
 
 ## Tips
 
-* While the program is running, upon pressing the ```enter``` key, the summary of all probes will be shown as depicted in the [demo](#Demo).
+* While the program is running, upon pressing the `Enter` key, the summary of all probes will be shown as depicted in the [demo](#Demo).
 
 ## Notes
 
 This program is still in a ```beta``` stage. There are several shortcomings that I will rectify in the near future.
 There are also some parts that might not make sense because this program was mainly designed to help me experiment with `Go`.
 
+## TODO
+
+* [ ] Convert to a proper Go project
+* [ ] If IP is given, skip the DNS lookup.
+* [ ] Implement a better timing calculation instead of a synthetic one.
+* [ ] Ability to recheck DNS after a certain number of failed requests (for geographically sparse sites).
+* [ ] Minutes to hour(s) conversion
+
 ## Tested on
 
-Windows, Linux and macOS.
+Windows, Linux and mac OS.
 
 ## Contributing
 
-Pull requests are welcome.
+Pull requests are welcome to solve bugs, add new features and also to help me with the [TODOs](#todo).
 
 ## License
 
