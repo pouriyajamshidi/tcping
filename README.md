@@ -97,7 +97,7 @@ There are also some parts that might not make sense because this program was mai
 ## TODO
 
 * [x] Convert to a proper Go project
-* [ ] If IP is given, skip the DNS lookup.
+* [x] If IP is given, skip the DNS lookup.
 * [ ] Implement a better timing calculation instead of a synthetic one.
 * [ ] Ability to recheck DNS after a certain number of failed requests (for geographically sparse sites).
 * [ ] Minutes to hour(s) conversion
