@@ -1,10 +1,10 @@
 EXEC_DIR = execuatables/
 
-.PHONY: all
+.PHONY: all build clean format
 all: build
 
-.PHONY: build
-build:
+build: clean
+
 	@mkdir -p $(EXEC_DIR)
 	
 	@echo "[+] Building the Linux version"
@@ -38,11 +38,11 @@ build:
 
 	@echo "[+] Done"
 
-.PHONY: clean
 clean:
+	@echo "[+] Cleaning files"
 	@rm -rf $(EXEC_DIR)
 	@echo "[+] Done"
+	@echo
 
-.PHONY: format
 format:
 	gofmt -w main.go
