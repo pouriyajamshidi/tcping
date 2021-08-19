@@ -63,21 +63,38 @@ func getInput() (string, string, string) {
 		os.Exit(1)
 	}
 
-	IPaddr := resolveHostname(host)
-	IP := IPaddr[0].String()
+	IP := resolveHostname(host)
 
 	return host, port, IP
 }
 
 /* Hostname resolution */
-func resolveHostname(host string) []net.IP {
+func resolveHostname(host string) string {
+	var IP string
+
+	IPRaw := parseIP(host)
+
+	if IPRaw != nil {
+		IP = IPRaw.String()
+		return IP
+	}
+
 	IPaddr, err := net.LookupIP(host)
 
 	if err != nil {
 		color.Red.Printf("Failed to resolve %s\n", host)
 		os.Exit(1)
 	}
-	return IPaddr
+
+	IP = IPaddr[0].String()
+
+	return IP
+}
+
+/* Check whether an IP or hostname was given */
+func parseIP(host string) net.IP {
+	IPRaw := net.ParseIP(host)
+	return IPRaw
 }
 
 /* find min/avg/max RTT values */
