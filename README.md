@@ -9,10 +9,10 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 * Monitor your network connection.
 * Print statistics on pressing the `Enter` key.
 * Calculate packet loss.
-* Assess latency of your network.
+* Assess the latency of your network.
 * Show min/avg/max probes latency.
 * Monitor and audit your peers network.
-* Calculate total up or downtime when conducting a maintenance.
+* Calculate the total uptime/downtime when conducting a maintenance.
 * An alternative to `ping` in environments that `ICMP` is blocked.
 
 ## Images
@@ -25,18 +25,16 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 ## Download the executables for
 
-* ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.0/tcping_Windows.rar)
+* ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.9/tcping_Windows.zip)
 
-* ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.0/tcping_Linux.rar)
+* ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.9/tcping_Linux.zip)
 
-* ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.0/tcping_MacOS.rar)
+* ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.9/tcping_MacOS.zip)
 
-In addition to downloading the executables, you can also compile the code yourself by following below instructions:
+In addition to downloading the executables, you can also compile the code yourself by running the `make` command:
 
 ```bash
-go get github.com/gookit/color
-go env -w GO111MODULE=auto # for Go versions above 1.15
-go build tcping
+make build
 ```
 
 ## Usage
@@ -98,7 +96,7 @@ There are also some parts that might not make sense because this program was mai
 
 ## TODO
 
-* [ ] Convert to a proper Go project
+* [x] Convert to a proper Go project
 * [ ] If IP is given, skip the DNS lookup.
 * [ ] Implement a better timing calculation instead of a synthetic one.
 * [ ] Ability to recheck DNS after a certain number of failed requests (for geographically sparse sites).
