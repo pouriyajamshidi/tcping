@@ -16,13 +16,16 @@ import (
 
 type stats struct {
 	hostname        string
+	IP              string
+	port            string
 	totalSucPkts    uint
 	totalUnsucPkts  uint
-	totalUptime     uint // unused for now since calcTime is assuming time is uint and not of type Time
+	totalUptime     uint // unused for now since calcTime() is assuming time is uint and not of type Time
 	totalDowntime   uint
 	onGoingDowntime time.Time
 	rtt             []uint
 	wasDown         bool
+	isIP            bool // used to not duplicate IP info on reply results
 }
 
 /* Print how program should be run */
@@ -40,7 +43,7 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
-		printResults(tcpStats)
+		printStatistics(tcpStats)
 		os.Exit(0)
 	}()
 }
@@ -104,7 +107,7 @@ func findMinAvgMaxTime(timeArr []uint) (uint, float32, uint, bool) {
 	}
 
 	if avgTime == 0 {
-		/* prevents panics inside printResults func */
+		/* prevents panics inside printStatistics func */
 		return 0, 0, 0, true
 	}
 
@@ -162,7 +165,7 @@ func calcTime(time uint) string {
 }
 
 /* Print stattistics when program exits */
-func printResults(tcpStats *stats) {
+func printStatistics(tcpStats *stats) {
 
 	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
 	totalUptime := calcTime(tcpStats.totalSucPkts)
@@ -221,14 +224,39 @@ func printResults(tcpStats *stats) {
 	color.Yellow.Printf(" ms\n")
 }
 
-/* Ping host, TCP style */
-func tcping(host string, port string, IP string, tcpStats *stats) {
+/* Print TCP probe replies according to our policies */
+func printReply(tcpStats *stats, senderMsg string) {
+	// TODO: Refactor me
 
-	hostAndPort := net.JoinHostPort(IP, port)
+	if tcpStats.isIP {
+		if senderMsg == "No reply" {
+			color.Red.Printf("%s from %s on port %s TCP_conn=%d\n",
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
+		} else {
+			color.LightGreen.Printf("%s from %s on port %s TCP_conn=%d\n",
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts)
+		}
+	} else {
+		if senderMsg == "No reply" {
+			color.Red.Printf("%s from %s (%s) on port %s TCP_conn=%d\n",
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
+		} else {
+			color.LightGreen.Printf("%s from %s (%s) on port %s TCP_conn=%d\n",
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts)
+		}
+	}
+}
+
+/* Ping host, TCP style */
+func tcping(tcpStats *stats) {
+
+	var senderMsg string
+
+	IPAndPort := net.JoinHostPort(tcpStats.IP, tcpStats.port)
 
 	startTime := time.Now()
 
-	conn, err := net.DialTimeout("tcp", hostAndPort, 1*time.Second)
+	conn, err := net.DialTimeout("tcp", IPAndPort, 1*time.Second)
 
 	endTime := time.Since(startTime)
 	rtt := endTime.Milliseconds()
@@ -244,9 +272,8 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 
 		tcpStats.totalUnsucPkts++
 
-		// TODO: if IP was given, don't duplicate
-		color.Red.Printf("No reply from %s (%s) on port %s TCP_conn=%d\n",
-			host, IP, port, tcpStats.totalUnsucPkts)
+		senderMsg = "No reply"
+		printReply(tcpStats, senderMsg)
 
 	} else {
 
@@ -271,9 +298,8 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 
 		tcpStats.totalSucPkts++
 
-		// TODO: if IP was given, don't duplicate
-		color.LightGreen.Printf("Reply from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-			host, IP, port, tcpStats.totalSucPkts, rtt)
+		senderMsg = "Reply"
+		printReply(tcpStats, senderMsg)
 
 		conn.Close()
 	}
@@ -294,12 +320,16 @@ func main() {
 
 	host, port, IP := getInput()
 
-	/* TODO: make this cleaner */
 	var tcpStats stats
 	tcpStats.hostname = host
-	tcpStatsAdrr := &tcpStats
+	tcpStats.IP = IP
+	tcpStats.port = port
 
-	signalHandler(tcpStatsAdrr)
+	if host == IP {
+		tcpStats.isIP = true
+	}
+
+	signalHandler(&tcpStats)
 
 	color.LightCyan.Printf("TCPinging %s on port %s\n", host, port)
 
@@ -307,13 +337,13 @@ func main() {
 	go monitorStdin(stdinChan)
 
 	for {
-		tcping(host, port, IP, tcpStatsAdrr)
+		tcping(&tcpStats)
 
 		/* print stats when the `enter` key is pressed */
 		select {
 		case stdin, _ := <-stdinChan:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
-				printResults(tcpStatsAdrr)
+				printStatistics(&tcpStats)
 			}
 		default:
 			continue
