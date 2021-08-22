@@ -17,7 +17,7 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 ## Images
 
-![WindowsVersion](/Images/windowsVersion.png = 200x200)
+![WindowsVersion](/Images/windowsVersion.png =200x200)
 
 ## Demo
 
