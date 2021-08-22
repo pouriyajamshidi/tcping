@@ -21,7 +21,7 @@ type stats struct {
 	totalSucPkts    uint
 	totalUnsucPkts  uint
 	totalUptime     uint // unused for now since calcTime() is assuming time is uint and not of type Time
-	totalDowntime   uint
+	totalDowntime   uint // unused for now since calcTime() is assuming time is uint and not of type Time
 	onGoingDowntime time.Time
 	rtt             []uint
 	wasDown         bool
@@ -168,8 +168,10 @@ func calcTime(time uint) string {
 func printStatistics(tcpStats *stats) {
 
 	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
+	/* TODO: convert from hardcoded to Time values */
 	totalUptime := calcTime(tcpStats.totalSucPkts)
-	totalDowntime := calcTime(tcpStats.totalDowntime)
+	totalDowntime := calcTime(tcpStats.totalUnsucPkts)
+
 	min, avg, max, empty := findMinAvgMaxTime(tcpStats.rtt)
 
 	if empty {
@@ -285,7 +287,8 @@ func tcping(tcpStats *stats) {
 			the previous successful probe */
 			onGoingDowntime := uint(time.Since(tcpStats.onGoingDowntime) / time.Second)
 
-			/* also keep track of total downtime */
+			/* also keep track of total downtime
+			TODO: This is not used */
 			tcpStats.totalDowntime += onGoingDowntime
 
 			currentDowntime := calcTime(onGoingDowntime)
