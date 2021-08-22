@@ -17,7 +17,7 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 ## Images
 
-![WindowsVersion](/Images/windowsVersion.png)
+![WindowsVersion](/Images/windowsVersion.png = 200x200)
 
 ## Demo
 
@@ -99,7 +99,7 @@ There are also some parts that might not make sense because this program was mai
 * [x] Convert to a proper Go project
 * [x] If IP is given, skip the DNS lookup.
 * [ ] Display the longest downtime
-* [ ] Implement a better timing calculation instead of a synthetic one.
+* [ ] Implement a better uptime timing calculation instead of a hardcoded one (default TCP connection timeout is 1 second).
 * [ ] Ability to recheck DNS after a certain number of failed requests (for geographically sparse sites).
 * [ ] Minutes to hour(s) conversion
 
