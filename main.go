@@ -15,15 +15,14 @@ import (
 )
 
 type stats struct {
-	totalSucPackets   uint
-	totalUnsucPackets uint
-	successCounter    uint
-	failureCounter    uint
-	totalUptime       uint // unused
-	totalDowntime     uint
-	timeArray         []uint
-	wasDown           bool
-	downTime          time.Time
+	hostname        string
+	totalSucPkts    uint
+	totalUnsucPkts  uint
+	totalUptime     uint // unused for now since calcTime is assuming time is uint and not of type Time
+	totalDowntime   uint
+	onGoingDowntime time.Time
+	rtt             []uint
+	wasDown         bool
 }
 
 /* Print how program should be run */
@@ -35,13 +34,13 @@ func usage() {
 }
 
 /* Catch SIGINT and print tcping stats */
-func signalHandler(host string, tcpStats *stats) {
-	sig := make(chan os.Signal)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+func signalHandler(tcpStats *stats) {
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		<-sig
-		printResults(host, tcpStats)
+		<-sigChan
+		printResults(tcpStats)
 		os.Exit(0)
 	}()
 }
@@ -72,7 +71,7 @@ func getInput() (string, string, string) {
 func resolveHostname(host string) string {
 	var IP string
 
-	IPRaw := parseIP(host)
+	IPRaw := net.ParseIP(host)
 
 	if IPRaw != nil {
 		IP = IPRaw.String()
@@ -91,47 +90,49 @@ func resolveHostname(host string) string {
 	return IP
 }
 
-/* Check whether an IP or hostname was given */
-func parseIP(host string) net.IP {
-	IPRaw := net.ParseIP(host)
-	return IPRaw
-}
+/* Find min/avg/max RTT values. The last int acts as err code */
+func findMinAvgMaxTime(timeArr []uint) (uint, float32, uint, bool) {
 
-/* find min/avg/max RTT values */
-func findMinAvgMaxTime(x []uint) (uint, float32, uint, int) {
-
-	var avgTime float32 = 0
-	// var placeHolder uint
-
-	arrLen := len(x)
+	var avgTime float32
+	arrLen := len(timeArr)
 
 	for i := 0; i < arrLen; i++ {
-		if x[i] == 0 {
+		if timeArr[i] == 0 {
 			continue
 		}
-		avgTime += float32(x[i])
+		avgTime += float32(timeArr[i])
 	}
 
 	if avgTime == 0 {
-		return 0, 0, 0, -1
+		/* prevents panics inside printResults func */
+		return 0, 0, 0, true
 	}
 
-	sort.Slice(x, func(i, j int) bool { return x[i] < x[j] })
+	sort.Slice(timeArr, func(i, j int) bool { return timeArr[i] < timeArr[j] })
 
-	return x[0], avgTime / float32(arrLen), x[arrLen-1], 0
+	return timeArr[0], avgTime / float32(arrLen), timeArr[arrLen-1], false
 }
 
-/* Calculate the correct number of seconds in formatTime func */
+/* Calculate the correct number of seconds in calcTime func */
 func calcSeconds(time float64) string {
 	_, float := math.Modf(time)
-	seconds := float * 60
-	timeSec := strconv.FormatFloat(seconds, 'f', 0, 32)
+	secondStr := strconv.FormatFloat(float*60, 'f', 0, 32)
 
-	return timeSec
+	return secondStr
+}
+
+/* Calculate the correct number of minutes in calcTime func */
+func calcMinutes(time float64) string {
+	return "TODO"
+}
+
+/* Calculate the correct number of hours in calcTime func */
+func calcHours(time float64) string {
+	return "TODO"
 }
 
 /* Calculate cumulative time */
-func formatTime(time uint) string {
+func calcTime(time uint) string {
 	var timeStr string
 
 	if time == 1 {
@@ -144,42 +145,43 @@ func formatTime(time uint) string {
 		timeFloat := float64(time) / 60
 
 		if timeFloat == 1.00 {
-			timeStr = strconv.FormatFloat(timeFloat, 'f', 0, 32) + " minute"
-			return timeStr
+			return "1 minute"
 		} else if timeFloat < 2.00 {
-			timeMin := int(timeFloat)
+			timeMnt := int(timeFloat)
 			timeSec := calcSeconds(timeFloat)
-			timeStr := strconv.Itoa(timeMin) + "." + timeSec + " minute.seconds"
+			timeStr := strconv.Itoa(timeMnt) + "." + timeSec + " minute.seconds"
 			return timeStr
 		}
 
-		timeMin := int(timeFloat)
+		timeMnt := int(timeFloat)
 		timeSec := calcSeconds(timeFloat)
-		timeStr := strconv.Itoa(timeMin) + "." + timeSec + " minutes.seconds"
+		timeStr := strconv.Itoa(timeMnt) + "." + timeSec + " minutes.seconds"
 
 		return timeStr
 	}
 }
 
 /* Print stattistics when program exits */
-func printResults(host string, tcpStats *stats) {
+func printResults(tcpStats *stats) {
 
-	totalPackets := tcpStats.totalSucPackets + tcpStats.totalUnsucPackets
-	totaluptime := formatTime(tcpStats.totalSucPackets)
-	totaldowntime := formatTime(tcpStats.totalUnsucPackets)
-	min, avg, max, err := findMinAvgMaxTime(tcpStats.timeArray)
+	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
+	totalUptime := calcTime(tcpStats.totalSucPkts)
+	totalDowntime := calcTime(tcpStats.totalDowntime)
+	min, avg, max, empty := findMinAvgMaxTime(tcpStats.rtt)
 
-	if err == -1 {
+	if empty {
+		/* There are no results to show */
 		return
 	}
 
-	packetLoss := (float32(tcpStats.totalUnsucPackets) / float32(totalPackets)) * 100
+	packetLoss := (float32(tcpStats.totalUnsucPkts) / float32(totalPackets)) * 100
 
-	color.Yellow.Printf("\n--- %s TCPing statistics ---\n", host)
-
+	/* general stats */
+	color.Yellow.Printf("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
 	color.Yellow.Printf("%d probes transmitted, ", totalPackets)
-	color.Yellow.Printf("%d received, ", tcpStats.totalSucPackets)
+	color.Yellow.Printf("%d received, ", tcpStats.totalSucPkts)
 
+	/* packet loss stats */
 	if packetLoss == 0 {
 		color.Green.Printf("%.2f%%", packetLoss)
 	} else if packetLoss > 0 && packetLoss <= 30 {
@@ -189,17 +191,22 @@ func printResults(host string, tcpStats *stats) {
 	}
 	color.Yellow.Printf(" packet loss\n")
 
+	/* successful packet stats */
 	color.Yellow.Printf("successful probes:   ")
-	color.Green.Printf("%d\n", tcpStats.totalSucPackets)
+	color.Green.Printf("%d\n", tcpStats.totalSucPkts)
+
+	/* unsuccessful packet stats */
 	color.Yellow.Printf("unsuccessful probes: ")
-	color.Red.Printf("%d\n", tcpStats.totalUnsucPackets)
+	color.Red.Printf("%d\n", tcpStats.totalUnsucPkts)
 
+	/* uptime and downtime stats */
 	color.Yellow.Printf("total uptime: ")
-	color.Green.Printf("  %s\n", totaluptime)
+	color.Green.Printf("  %s\n", totalUptime)
 	color.Yellow.Printf("total downtime: ")
-	color.Red.Printf("%s\n", totaldowntime)
+	color.Red.Printf("%s\n", totalDowntime)
 
-	/* otherwise will be buggy on Windows */
+	/* latency stats.
+	TODO: see if formatted string would suit better */
 	color.Yellow.Printf("rtt ")
 	color.Green.Printf("min")
 	color.Yellow.Printf("/")
@@ -223,54 +230,63 @@ func tcping(host string, port string, IP string, tcpStats *stats) {
 
 	conn, err := net.DialTimeout("tcp", hostAndPort, 1*time.Second)
 
-	timeDiff := time.Since(startTime)
-	timeDiffInMilSec := timeDiff.Milliseconds()
+	endTime := time.Since(startTime)
+	rtt := endTime.Milliseconds()
 
 	if err != nil {
 
+		/* if the previous probe was successful
+		and the current one failed: */
 		if !tcpStats.wasDown {
-			tcpStats.downTime = time.Now()
+			tcpStats.onGoingDowntime = time.Now()
 			tcpStats.wasDown = true
 		}
 
-		tcpStats.failureCounter++
-		tcpStats.totalUnsucPackets++
+		tcpStats.totalUnsucPkts++
 
+		// TODO: if IP was given, don't duplicate
 		color.Red.Printf("No reply from %s (%s) on port %s TCP_conn=%d\n",
-			host, IP, port, tcpStats.failureCounter)
+			host, IP, port, tcpStats.totalUnsucPkts)
 
 	} else {
 
+		/* if the previous probe failed
+		and the current one succeeded: */
 		if tcpStats.wasDown {
 
-			downtime := uint(time.Since(tcpStats.downTime) / time.Second)
-			tcpStats.totalDowntime += downtime
+			/* calculate the total downtime since
+			the previous successful probe */
+			onGoingDowntime := uint(time.Since(tcpStats.onGoingDowntime) / time.Second)
 
-			strDowntime := formatTime(downtime)
-			color.Yellow.Printf("No response received for %s\n", strDowntime)
+			/* also keep track of total downtime */
+			tcpStats.totalDowntime += onGoingDowntime
+
+			currentDowntime := calcTime(onGoingDowntime)
+			color.Yellow.Printf("No response received for %s\n", currentDowntime)
 
 			tcpStats.wasDown = false
 		}
 
-		tcpStats.timeArray = append(tcpStats.timeArray, uint(timeDiffInMilSec))
+		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
 
-		tcpStats.successCounter++
-		tcpStats.totalSucPackets++
+		tcpStats.totalSucPkts++
 
+		// TODO: if IP was given, don't duplicate
 		color.LightGreen.Printf("Reply from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-			host, IP, port, tcpStats.successCounter, timeDiffInMilSec)
+			host, IP, port, tcpStats.totalSucPkts, rtt)
 
 		conn.Close()
 	}
-	time.Sleep(1 * time.Second)
+
+	time.Sleep((1 * time.Second) - endTime)
 }
 
 /* Capture keystrokes from stdin */
-func monitorStdin(channel chan string) {
+func monitorStdin(stdinChan chan string) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		key, _ := reader.ReadString('\n')
-		channel <- key
+		stdinChan <- key
 	}
 }
 
@@ -278,25 +294,26 @@ func main() {
 
 	host, port, IP := getInput()
 
+	/* TODO: make this cleaner */
 	var tcpStats stats
+	tcpStats.hostname = host
 	tcpStatsAdrr := &tcpStats
 
-	signalHandler(host, tcpStatsAdrr)
+	signalHandler(tcpStatsAdrr)
 
 	color.LightCyan.Printf("TCPinging %s on port %s\n", host, port)
 
-	channel := make(chan string)
-
-	go monitorStdin(channel)
+	stdinChan := make(chan string)
+	go monitorStdin(stdinChan)
 
 	for {
 		tcping(host, port, IP, tcpStatsAdrr)
 
 		/* print stats when the `enter` key is pressed */
 		select {
-		case stdin, _ := <-channel:
+		case stdin, _ := <-stdinChan:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
-				printResults(host, tcpStatsAdrr)
+				printResults(tcpStatsAdrr)
 			}
 		default:
 			continue
