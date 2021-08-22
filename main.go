@@ -225,24 +225,24 @@ func printStatistics(tcpStats *stats) {
 }
 
 /* Print TCP probe replies according to our policies */
-func printReply(tcpStats *stats, senderMsg string) {
+func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 	// TODO: Refactor me
 
 	if tcpStats.isIP {
 		if senderMsg == "No reply" {
-			color.Red.Printf("%s from %s on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
+			color.Red.Printf("%s from %s on port %s TCP_conn=%d time=%d ms\n",
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts, rtt)
 		} else {
-			color.LightGreen.Printf("%s from %s on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts)
+			color.LightGreen.Printf("%s from %s on port %s TCP_conn=%d time=%d ms\n",
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
 		}
 	} else {
 		if senderMsg == "No reply" {
-			color.Red.Printf("%s from %s (%s) on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
+			color.Red.Printf("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts, rtt)
 		} else {
-			color.LightGreen.Printf("%s from %s (%s) on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts)
+			color.LightGreen.Printf("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
 		}
 	}
 }
@@ -273,7 +273,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.totalUnsucPkts++
 
 		senderMsg = "No reply"
-		printReply(tcpStats, senderMsg)
+		printReply(tcpStats, senderMsg, rtt)
 
 	} else {
 
@@ -299,7 +299,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.totalSucPkts++
 
 		senderMsg = "Reply"
-		printReply(tcpStats, senderMsg)
+		printReply(tcpStats, senderMsg, rtt)
 
 		conn.Close()
 	}
