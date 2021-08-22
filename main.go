@@ -19,7 +19,7 @@ type stats struct {
 	totalUnsucPackets uint
 	successCounter    uint
 	failureCounter    uint
-	totalUptime       uint
+	totalUptime       uint // unused
 	totalDowntime     uint
 	timeArray         []uint
 	wasDown           bool
@@ -29,7 +29,7 @@ type stats struct {
 /* Print how program should be run */
 func usage() {
 	color.Red.Printf("Try running %s like:\n", os.Args[0])
-	color.Red.Printf("%s HOSTNAME/IP PORT-NUMBER... example:\n", os.Args[0])
+	color.Red.Printf("%s <hostname/ip> <port number> | for example:\n", os.Args[0])
 	color.Red.Printf("%s www.example.com 443\n", os.Args[0])
 	os.Exit(1)
 }
