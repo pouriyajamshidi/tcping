@@ -25,7 +25,7 @@ type stats struct {
 	onGoingDowntime time.Time
 	rtt             []uint
 	wasDown         bool
-	isIP            bool // used to not duplicate IP info on reply results
+	isIP            bool // used to not duplicate IP info on printing reply results
 }
 
 /* Print how program should be run */
@@ -307,7 +307,7 @@ func tcping(tcpStats *stats) {
 		conn.Close()
 	}
 
-	time.Sleep((1 * time.Second) - endTime)
+	time.Sleep((1000 * time.Millisecond) - endTime)
 }
 
 /* Capture keystrokes from stdin */
