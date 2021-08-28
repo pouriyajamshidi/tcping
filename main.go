@@ -20,9 +20,10 @@ type stats struct {
 	port            string
 	totalSucPkts    uint
 	totalUnsucPkts  uint
-	totalUptime     uint // unused for now since calcTime() is assuming time is uint and not of type Time
-	totalDowntime   uint // unused for now since calcTime() is assuming time is uint and not of type Time
+	totalUptime     time.Duration // unused for now since calcTime() is assuming time is uint and not of type Time
+	totalDowntime   time.Duration // unused for now since calcTime() is assuming time is uint and not of type Time
 	onGoingDowntime time.Time
+	lastSucProbe    time.Time
 	rtt             []uint
 	wasDown         bool
 	isIP            bool // used to not duplicate IP info on printing reply results
@@ -168,9 +169,8 @@ func calcTime(time uint) string {
 func printStatistics(tcpStats *stats) {
 
 	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
-	/* TODO: convert from hardcoded to Time values */
-	totalUptime := calcTime(tcpStats.totalSucPkts)
-	totalDowntime := calcTime(tcpStats.totalUnsucPkts)
+	totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
+	totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
 
 	min, avg, max, empty := findMinAvgMaxTime(tcpStats.rtt)
 
@@ -228,20 +228,20 @@ func printStatistics(tcpStats *stats) {
 
 /* Print TCP probe replies according to our policies */
 func printReply(tcpStats *stats, senderMsg string, rtt int64) {
-	// TODO: Refactor me
+	// TODO: Refactor
 
 	if tcpStats.isIP {
 		if senderMsg == "No reply" {
-			color.Red.Printf("%s from %s on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts, rtt)
+			color.Red.Printf("%s from %s on port %s TCP_conn=%d\n",
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
 		} else {
 			color.LightGreen.Printf("%s from %s on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
 		}
 	} else {
 		if senderMsg == "No reply" {
-			color.Red.Printf("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts, rtt)
+			color.Red.Printf("%s from %s (%s) on port %s TCP_conn=%d\n",
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
 		} else {
 			color.LightGreen.Printf("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
@@ -251,8 +251,6 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
-
-	var senderMsg string
 
 	IPAndPort := net.JoinHostPort(tcpStats.IP, tcpStats.port)
 
@@ -272,10 +270,11 @@ func tcping(tcpStats *stats) {
 			tcpStats.wasDown = true
 		}
 
+		/* also keep track of total downtime */
+		tcpStats.totalDowntime += endTime
 		tcpStats.totalUnsucPkts++
 
-		senderMsg = "No reply"
-		printReply(tcpStats, senderMsg, rtt)
+		printReply(tcpStats, "No reply", rtt)
 
 	} else {
 
@@ -285,24 +284,21 @@ func tcping(tcpStats *stats) {
 
 			/* calculate the total downtime since
 			the previous successful probe */
-			onGoingDowntime := uint(time.Since(tcpStats.onGoingDowntime) / time.Second)
-
-			/* also keep track of total downtime
-			TODO: This is not used */
-			tcpStats.totalDowntime += onGoingDowntime
-
-			currentDowntime := calcTime(onGoingDowntime)
-			color.Yellow.Printf("No response received for %s\n", currentDowntime)
+			currentDowntime := time.Since(tcpStats.onGoingDowntime).Seconds()
+			calculatedDowntime := calcTime(uint(math.Ceil(currentDowntime)))
+			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
 
 			tcpStats.wasDown = false
 		}
 
+		tcpStats.lastSucProbe = time.Now()
+
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
 
+		tcpStats.totalUptime += time.Second
 		tcpStats.totalSucPkts++
 
-		senderMsg = "Reply"
-		printReply(tcpStats, senderMsg, rtt)
+		printReply(tcpStats, "Reply", rtt)
 
 		conn.Close()
 	}
