@@ -20,13 +20,13 @@ type stats struct {
 	port            string
 	totalSucPkts    uint
 	totalUnsucPkts  uint
-	totalUptime     time.Duration // unused for now since calcTime() is assuming time is uint and not of type Time
-	totalDowntime   time.Duration // unused for now since calcTime() is assuming time is uint and not of type Time
+	totalUptime     time.Duration
+	totalDowntime   time.Duration
 	onGoingDowntime time.Time
 	lastSucProbe    time.Time
 	rtt             []uint
 	wasDown         bool
-	isIP            bool // used to not duplicate IP info on printing reply results
+	isIP            bool // used to not duplicate IP info when printing reply results
 }
 
 /* Print how program should be run */
