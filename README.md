@@ -101,6 +101,7 @@ There are also some parts that might not make sense because this program was mai
 * [ ] Display the longest downtime
 * [x] Implement a better uptime timing calculation instead of a hardcoded one (default TCP connection timeout is 1 second).
 * [ ] Ability to recheck target IP after a certain number of failed requests (for geographically sparse sites).
+* [ ] Output in `JSON` format.
 * [ ] Minutes to hour(s) conversion
 
 ## Tested on
