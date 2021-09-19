@@ -22,7 +22,7 @@ type stats struct {
 	totalUnsucPkts  uint
 	totalUptime     time.Duration
 	totalDowntime   time.Duration
-	onGoingDowntime time.Time
+	ongoingDowntime time.Time
 	lastSucProbe    time.Time
 	rtt             []uint
 	wasDown         bool
@@ -266,7 +266,7 @@ func tcping(tcpStats *stats) {
 		/* if the previous probe was successful
 		and the current one failed: */
 		if !tcpStats.wasDown {
-			tcpStats.onGoingDowntime = time.Now()
+			tcpStats.ongoingDowntime = time.Now()
 			tcpStats.wasDown = true
 		}
 
@@ -284,7 +284,7 @@ func tcping(tcpStats *stats) {
 
 			/* calculate the total downtime since
 			the previous successful probe */
-			currentDowntime := time.Since(tcpStats.onGoingDowntime).Seconds()
+			currentDowntime := time.Since(tcpStats.ongoingDowntime).Seconds()
 			calculatedDowntime := calcTime(uint(math.Ceil(currentDowntime)))
 			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
 
