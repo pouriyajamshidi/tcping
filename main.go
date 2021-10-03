@@ -270,8 +270,7 @@ func tcping(tcpStats *stats) {
 			tcpStats.wasDown = true
 		}
 
-		/* also keep track of total downtime */
-		tcpStats.totalDowntime += endTime
+		tcpStats.totalDowntime += time.Second
 		tcpStats.totalUnsucPkts++
 
 		printReply(tcpStats, "No reply", rtt)
