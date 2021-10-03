@@ -181,69 +181,78 @@ func printStatistics(tcpStats *stats) {
 
 	packetLoss := (float32(tcpStats.totalUnsucPkts) / float32(totalPackets)) * 100
 
+	cy := color.Yellow.Printf
+	cg := color.Green.Printf
+	cr := color.Red.Printf
+	cc := color.Cyan.Printf
+	cly := color.LightYellow.Printf
+
 	/* general stats */
-	color.Yellow.Printf("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
-	color.Yellow.Printf("%d probes transmitted, ", totalPackets)
-	color.Yellow.Printf("%d received, ", tcpStats.totalSucPkts)
+	cy("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
+	cy("%d probes transmitted, ", totalPackets)
+	cy("%d received, ", tcpStats.totalSucPkts)
 
 	/* packet loss stats */
 	if packetLoss == 0 {
-		color.Green.Printf("%.2f%%", packetLoss)
+		cg("%.2f%%", packetLoss)
 	} else if packetLoss > 0 && packetLoss <= 30 {
-		color.LightYellow.Printf("%.2f%%", packetLoss)
+		cly("%.2f%%", packetLoss)
 	} else {
-		color.Red.Printf("%.2f%%", packetLoss)
+		cr("%.2f%%", packetLoss)
 	}
-	color.Yellow.Printf(" packet loss\n")
+	cy(" packet loss\n")
 
 	/* successful packet stats */
-	color.Yellow.Printf("successful probes:   ")
-	color.Green.Printf("%d\n", tcpStats.totalSucPkts)
+	cy("successful probes:   ")
+	cg("%d\n", tcpStats.totalSucPkts)
 
 	/* unsuccessful packet stats */
-	color.Yellow.Printf("unsuccessful probes: ")
-	color.Red.Printf("%d\n", tcpStats.totalUnsucPkts)
+	cy("unsuccessful probes: ")
+	cr("%d\n", tcpStats.totalUnsucPkts)
 
 	/* uptime and downtime stats */
-	color.Yellow.Printf("total uptime: ")
-	color.Green.Printf("  %s\n", totalUptime)
-	color.Yellow.Printf("total downtime: ")
-	color.Red.Printf("%s\n", totalDowntime)
+	cy("total uptime: ")
+	cg("  %s\n", totalUptime)
+	cy("total downtime: ")
+	cr("%s\n", totalDowntime)
 
 	/* latency stats.
 	TODO: see if formatted string would suit better */
-	color.Yellow.Printf("rtt ")
-	color.Green.Printf("min")
-	color.Yellow.Printf("/")
-	color.Cyan.Printf("avg")
-	color.Yellow.Printf("/")
-	color.Red.Printf("max: ")
-	color.Green.Printf("%d", min)
-	color.Yellow.Printf("/")
-	color.Cyan.Printf("%.2f", avg)
-	color.Yellow.Printf("/")
-	color.Red.Printf("%d", max)
-	color.Yellow.Printf(" ms\n")
+	cy("rtt ")
+	cg("min")
+	cy("/")
+	cc("avg")
+	cy("/")
+	cr("max: ")
+	cg("%d", min)
+	cy("/")
+	cc("%.2f", avg)
+	cy("/")
+	cr("%d", max)
+	cy(" ms\n")
 }
 
 /* Print TCP probe replies according to our policies */
 func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 	// TODO: Refactor
 
+	cr := color.Red.Printf
+	cg := color.LightGreen.Printf
+
 	if tcpStats.isIP {
 		if senderMsg == "No reply" {
-			color.Red.Printf("%s from %s on port %s TCP_conn=%d\n",
+			cr("%s from %s on port %s TCP_conn=%d\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
 		} else {
-			color.LightGreen.Printf("%s from %s on port %s TCP_conn=%d time=%d ms\n",
+			cg("%s from %s on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
 		}
 	} else {
 		if senderMsg == "No reply" {
-			color.Red.Printf("%s from %s (%s) on port %s TCP_conn=%d\n",
+			cr("%s from %s (%s) on port %s TCP_conn=%d\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
 		} else {
-			color.LightGreen.Printf("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
+			cg("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
 		}
 	}
