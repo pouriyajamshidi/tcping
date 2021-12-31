@@ -26,7 +26,9 @@ type stats struct {
 	lastSucProbe    time.Time
 	rtt             []uint
 	wasDown         bool
-	isIP            bool // used to not duplicate IP info when printing reply results
+	isIP            bool      // used to not duplicate IP info on printing reply results when IP is provided instead of a hostname
+	startTime       time.Time // Start of the program
+	endTime         time.Time // End of the program
 }
 
 /* Print how program should be run */
@@ -44,6 +46,7 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
+		tcpStats.endTime = time.Now()
 		printStatistics(tcpStats)
 		os.Exit(0)
 	}()
@@ -95,16 +98,16 @@ func resolveHostname(host string) string {
 }
 
 /* Find min/avg/max RTT values. The last int acts as err code */
-func findMinAvgMaxTime(timeArr []uint) (uint, float32, uint, bool) {
+func findMinAvgMaxRttTime(timeArr []uint) (uint, float32, uint, bool) {
 
-	var avgTime float32
+	var avgTime uint
 	arrLen := len(timeArr)
 
 	for i := 0; i < arrLen; i++ {
 		if timeArr[i] == 0 {
 			continue
 		}
-		avgTime += float32(timeArr[i])
+		avgTime += timeArr[i]
 	}
 
 	if avgTime == 0 {
@@ -114,7 +117,7 @@ func findMinAvgMaxTime(timeArr []uint) (uint, float32, uint, bool) {
 
 	sort.Slice(timeArr, func(i, j int) bool { return timeArr[i] < timeArr[j] })
 
-	return timeArr[0], avgTime / float32(arrLen), timeArr[arrLen-1], false
+	return timeArr[0], float32(avgTime) / float32(arrLen), timeArr[arrLen-1], false
 }
 
 /* Calculate the correct number of seconds in calcTime func */
@@ -167,20 +170,19 @@ func calcTime(time uint) string {
 
 /* Print stattistics when program exits */
 func printStatistics(tcpStats *stats) {
+	min, avg, max, IsEmpty := findMinAvgMaxRttTime(tcpStats.rtt)
 
-	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
-	totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
-	totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
-
-	min, avg, max, empty := findMinAvgMaxTime(tcpStats.rtt)
-
-	if empty {
+	if IsEmpty {
 		/* There are no results to show */
 		return
 	}
 
+	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
+	totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
+	totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
 	packetLoss := (float32(tcpStats.totalUnsucPkts) / float32(totalPackets)) * 100
 
+	/* shortened color functions */
 	cy := color.Yellow.Printf
 	cg := color.Green.Printf
 	cr := color.Red.Printf
@@ -230,6 +232,21 @@ func printStatistics(tcpStats *stats) {
 	cy("/")
 	cr("%d", max)
 	cy(" ms\n")
+
+	/* duration stats */
+	cy("TCPing started at: %v\n", tcpStats.startTime.Format("2006-01-02 15:04:05"))
+
+	/* If the program was not terminated, no need to show the end time */
+	if tcpStats.endTime.Format("2006-01-02 15:04:05") == "0001-01-01 00:00:00" {
+		durationDiff := time.Now().Sub(tcpStats.startTime)
+		duration := time.Time{}.Add(durationDiff)
+		cy("Duration Hours:Minutes:Seconds: %v\n", duration.Format("15:04:05"))
+	} else {
+		cy("TCPing ended at:   %v\n", tcpStats.endTime.Format("2006-01-02 15:04:05"))
+		durationDiff := tcpStats.endTime.Sub(tcpStats.startTime)
+		duration := time.Time{}.Add(durationDiff)
+		cy("Duration Hours:Minutes:Seconds: %v\n", duration.Format("15:04:05"))
+	}
 }
 
 /* Print TCP probe replies according to our policies */
@@ -271,7 +288,6 @@ func tcping(tcpStats *stats) {
 	rtt := endTime.Milliseconds()
 
 	if err != nil {
-
 		/* if the previous probe was successful
 		and the current one failed: */
 		if !tcpStats.wasDown {
@@ -331,6 +347,7 @@ func main() {
 	tcpStats.hostname = host
 	tcpStats.IP = IP
 	tcpStats.port = port
+	tcpStats.startTime = time.Now()
 
 	if host == IP {
 		tcpStats.isIP = true
