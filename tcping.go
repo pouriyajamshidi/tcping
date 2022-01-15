@@ -15,20 +15,20 @@ import (
 )
 
 type stats struct {
-	hostname        string
-	IP              string
-	port            string
-	totalSucPkts    uint
-	totalUnsucPkts  uint
-	totalUptime     time.Duration
-	totalDowntime   time.Duration
-	ongoingDowntime time.Time
-	lastSucProbe    time.Time
-	rtt             []uint
-	wasDown         bool
-	isIP            bool      // used to not duplicate IP info on printing reply results when IP is provided instead of a hostname
-	startTime       time.Time // Start of the program
-	endTime         time.Time // End of the program
+	startTime             time.Time
+	endTime               time.Time
+	ongoingDowntime       time.Time
+	lastSuccessfulProbe   time.Time
+	hostname              string
+	IP                    string
+	port                  string
+	rtt                   []uint
+	totalSuccessfulPkts   uint
+	totalUptime           time.Duration
+	totalDowntime         time.Duration
+	totalUnsuccessfulPkts uint
+	wasDown               bool // Used to determine the duration of a downtime
+	isIP                  bool // When IP is provided instead of a hostname, suppresses printing the IP information twice
 }
 
 /* Print how program should be run */
@@ -177,10 +177,10 @@ func printStatistics(tcpStats *stats) {
 		return
 	}
 
-	totalPackets := tcpStats.totalSucPkts + tcpStats.totalUnsucPkts
+	totalPackets := tcpStats.totalSuccessfulPkts + tcpStats.totalUnsuccessfulPkts
 	totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
 	totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
-	packetLoss := (float32(tcpStats.totalUnsucPkts) / float32(totalPackets)) * 100
+	packetLoss := (float32(tcpStats.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
 
 	/* shortened color functions */
 	cy := color.Yellow.Printf
@@ -192,7 +192,7 @@ func printStatistics(tcpStats *stats) {
 	/* general stats */
 	cy("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
 	cy("%d probes transmitted, ", totalPackets)
-	cy("%d received, ", tcpStats.totalSucPkts)
+	cy("%d received, ", tcpStats.totalSuccessfulPkts)
 
 	/* packet loss stats */
 	if packetLoss == 0 {
@@ -206,11 +206,11 @@ func printStatistics(tcpStats *stats) {
 
 	/* successful packet stats */
 	cy("successful probes:   ")
-	cg("%d\n", tcpStats.totalSucPkts)
+	cg("%d\n", tcpStats.totalSuccessfulPkts)
 
 	/* unsuccessful packet stats */
 	cy("unsuccessful probes: ")
-	cr("%d\n", tcpStats.totalUnsucPkts)
+	cr("%d\n", tcpStats.totalUnsuccessfulPkts)
 
 	/* uptime and downtime stats */
 	cy("total uptime: ")
@@ -259,18 +259,18 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 	if tcpStats.isIP {
 		if senderMsg == "No reply" {
 			cr("%s from %s on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
 			cg("%s from %s on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
+				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
 		}
 	} else {
 		if senderMsg == "No reply" {
 			cr("%s from %s (%s) on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsucPkts)
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
 			cg("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSucPkts, rtt)
+				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
 		}
 	}
 }
@@ -283,6 +283,7 @@ func tcping(tcpStats *stats) {
 	startTime := time.Now()
 
 	conn, err := net.DialTimeout("tcp", IPAndPort, 1*time.Second)
+	defer conn.Close()
 
 	endTime := time.Since(startTime)
 	rtt := endTime.Milliseconds()
@@ -296,16 +297,13 @@ func tcping(tcpStats *stats) {
 		}
 
 		tcpStats.totalDowntime += time.Second
-		tcpStats.totalUnsucPkts++
+		tcpStats.totalUnsuccessfulPkts++
 
-		printReply(tcpStats, "No reply", rtt)
-
+		printReply(tcpStats, "No reply", 0)
 	} else {
-
 		/* if the previous probe failed
 		and the current one succeeded: */
 		if tcpStats.wasDown {
-
 			/* calculate the total downtime since
 			the previous successful probe */
 			currentDowntime := time.Since(tcpStats.ongoingDowntime).Seconds()
@@ -315,16 +313,12 @@ func tcping(tcpStats *stats) {
 			tcpStats.wasDown = false
 		}
 
-		tcpStats.lastSucProbe = time.Now()
+		tcpStats.lastSuccessfulProbe = time.Now()
+		tcpStats.totalUptime += time.Second
+		tcpStats.totalSuccessfulPkts++
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
-
-		tcpStats.totalUptime += time.Second
-		tcpStats.totalSucPkts++
-
 		printReply(tcpStats, "Reply", rtt)
-
-		conn.Close()
 	}
 
 	time.Sleep((1000 * time.Millisecond) - endTime)
