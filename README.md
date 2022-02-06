@@ -17,7 +17,7 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 ## Demo
 
-![tcping](images/tcping.gif)
+![tcping](Images/tcping.gif)
 
 ## Download the executables for
 
