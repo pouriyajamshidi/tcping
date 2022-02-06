@@ -17,18 +17,21 @@ import (
 type stats struct {
 	startTime             time.Time
 	endTime               time.Time
-	ongoingDowntime       time.Time
+	startOfDowntime       time.Time
+	endOfDowntime         time.Time
 	lastSuccessfulProbe   time.Time
+	lastUnsuccessfulProbe time.Time
 	hostname              string
 	IP                    string
 	port                  string
 	rtt                   []uint
-	totalSuccessfulPkts   uint
+	longestDowntime       float64
 	totalUptime           time.Duration
 	totalDowntime         time.Duration
+	totalSuccessfulPkts   uint
 	totalUnsuccessfulPkts uint
 	wasDown               bool // Used to determine the duration of a downtime
-	isIP                  bool // When IP is provided instead of a hostname, suppresses printing the IP information twice
+	isIP                  bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 }
 
 /* Print how program should be run */
@@ -99,7 +102,7 @@ func resolveHostname(host string) string {
 
 /* Find min/avg/max RTT values. The last int acts as err code */
 func findMinAvgMaxRttTime(timeArr []uint) (uint, float32, uint, bool) {
-
+	isEmpty := true
 	var avgTime uint
 	arrLen := len(timeArr)
 
@@ -112,12 +115,12 @@ func findMinAvgMaxRttTime(timeArr []uint) (uint, float32, uint, bool) {
 
 	if avgTime == 0 {
 		/* prevents panics inside printStatistics func */
-		return 0, 0, 0, true
+		return 0, 0, 0, isEmpty
 	}
 
 	sort.Slice(timeArr, func(i, j int) bool { return timeArr[i] < timeArr[j] })
 
-	return timeArr[0], float32(avgTime) / float32(arrLen), timeArr[arrLen-1], false
+	return timeArr[0], float32(avgTime) / float32(arrLen), timeArr[arrLen-1], !isEmpty
 }
 
 /* Calculate the correct number of seconds in calcTime func */
@@ -168,11 +171,77 @@ func calcTime(time uint) string {
 	}
 }
 
+/* Print the last successful and unsuccessful probes */
+func printLastSucUnsucProbes(successfulProbe, unsuccessfulProbe time.Time) {
+	cy := color.Yellow.Printf
+	cg := color.Green.Printf
+	cr := color.Red.Printf
+
+	lastSuccessfulProbe := successfulProbe.Format("2006-01-02 15:04:05")
+	lastUnsuccessfulProbe := unsuccessfulProbe.Format("2006-01-02 15:04:05")
+
+	cy("last successful probe:   ")
+	if lastSuccessfulProbe == "0001-01-01 00:00:00" {
+		cr("Never succeeded\n")
+	} else {
+		cg("%v\n", lastSuccessfulProbe)
+	}
+
+	cy("last unsuccessful probe: ")
+	if lastUnsuccessfulProbe == "0001-01-01 00:00:00" {
+		cg("Never failed\n")
+	} else {
+		cr("%v\n", lastUnsuccessfulProbe)
+	}
+}
+
+/* Print the start and end time of the program */
+func printDurationStats(startTime, endTime time.Time) {
+	var duration time.Time
+	var durationDiff time.Duration
+
+	cy := color.Yellow.Printf
+	clb := color.FgLightBlue.Printf
+
+	clb("--------------------------------------\n")
+	cy("TCPing started at: %v\n", startTime.Format("2006-01-02 15:04:05"))
+
+	/* If the program was not terminated, no need to show the end time */
+	if endTime.Format("2006-01-02 15:04:05") == "0001-01-01 00:00:00" {
+		durationDiff = time.Since(startTime)
+	} else {
+		cy("TCPing ended at:   %v\n", endTime.Format("2006-01-02 15:04:05"))
+		durationDiff = endTime.Sub(startTime)
+	}
+
+	duration = time.Time{}.Add(durationDiff)
+	cy("Duration (HH:MM:SS): %v\n", duration.Format("15:04:05"))
+}
+
+func printLongestDowntime(longestDowntime float64, startTime, endTime time.Time) {
+	cy := color.Yellow.Printf
+	clb := color.FgLightBlue.Printf
+	cr := color.Red.Printf
+
+	if longestDowntime == 0 {
+		return
+	}
+
+	downtime := calcTime(uint(math.Ceil(longestDowntime)))
+
+	cy("longest downtime: ")
+	cr("%v ", downtime)
+	cy("from ")
+	clb("%v ", startTime.Format("2006-01-02 15:04:05"))
+	cy("to ")
+	clb("%v\n", endTime.Format("2006-01-02 15:04:05"))
+}
+
 /* Print stattistics when program exits */
 func printStatistics(tcpStats *stats) {
-	min, avg, max, IsEmpty := findMinAvgMaxRttTime(tcpStats.rtt)
+	min, avg, max, isEmpty := findMinAvgMaxRttTime(tcpStats.rtt)
 
-	if IsEmpty {
+	if isEmpty {
 		/* There are no results to show */
 		return
 	}
@@ -212,14 +281,19 @@ func printStatistics(tcpStats *stats) {
 	cy("unsuccessful probes: ")
 	cr("%d\n", tcpStats.totalUnsuccessfulPkts)
 
+	printLastSucUnsucProbes(tcpStats.lastSuccessfulProbe, tcpStats.lastUnsuccessfulProbe)
+
 	/* uptime and downtime stats */
 	cy("total uptime: ")
 	cg("  %s\n", totalUptime)
 	cy("total downtime: ")
 	cr("%s\n", totalDowntime)
 
-	/* latency stats.
-	TODO: see if formatted string would suit better */
+	/* longest downtime stats */
+	printLongestDowntime(tcpStats.longestDowntime, tcpStats.startOfDowntime, tcpStats.endOfDowntime)
+
+	/*TODO: see if formatted string would suit better */
+	/* latency stats.*/
 	cy("rtt ")
 	cg("min")
 	cy("/")
@@ -234,19 +308,7 @@ func printStatistics(tcpStats *stats) {
 	cy(" ms\n")
 
 	/* duration stats */
-	cy("TCPing started at: %v\n", tcpStats.startTime.Format("2006-01-02 15:04:05"))
-
-	/* If the program was not terminated, no need to show the end time */
-	if tcpStats.endTime.Format("2006-01-02 15:04:05") == "0001-01-01 00:00:00" {
-		durationDiff := time.Now().Sub(tcpStats.startTime)
-		duration := time.Time{}.Add(durationDiff)
-		cy("Duration Hours:Minutes:Seconds: %v\n", duration.Format("15:04:05"))
-	} else {
-		cy("TCPing ended at:   %v\n", tcpStats.endTime.Format("2006-01-02 15:04:05"))
-		durationDiff := tcpStats.endTime.Sub(tcpStats.startTime)
-		duration := time.Time{}.Add(durationDiff)
-		cy("Duration Hours:Minutes:Seconds: %v\n", duration.Format("15:04:05"))
-	}
+	printDurationStats(tcpStats.startTime, tcpStats.endTime)
 }
 
 /* Print TCP probe replies according to our policies */
@@ -275,29 +337,46 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 	}
 }
 
+/* Calculate the longest downtime */
+func calcLongestDowntime(tcpStats *stats, start, end time.Time) {
+
+	if tcpStats.endOfDowntime.Format("2006-01-02 15:04:05") == "0001-01-01 00:00:00" {
+		/* It means it is the first time we're calling this function */
+		tcpStats.startOfDowntime = start
+		tcpStats.endOfDowntime = end
+		tcpStats.longestDowntime = end.Sub(start).Seconds()
+	} else {
+		downtimeDuration := end.Sub(start).Seconds()
+
+		if downtimeDuration > tcpStats.longestDowntime {
+			tcpStats.startOfDowntime = start
+			tcpStats.endOfDowntime = end
+			tcpStats.longestDowntime = downtimeDuration
+		}
+	}
+}
+
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
 
 	IPAndPort := net.JoinHostPort(tcpStats.IP, tcpStats.port)
 
-	startTime := time.Now()
-
+	connAttempt := time.Now()
 	conn, err := net.DialTimeout("tcp", IPAndPort, 1*time.Second)
-	defer conn.Close()
-
-	endTime := time.Since(startTime)
-	rtt := endTime.Milliseconds()
+	connEnd := time.Since(connAttempt)
+	rtt := connEnd.Milliseconds()
 
 	if err != nil {
 		/* if the previous probe was successful
 		and the current one failed: */
 		if !tcpStats.wasDown {
-			tcpStats.ongoingDowntime = time.Now()
+			tcpStats.startOfDowntime = time.Now()
 			tcpStats.wasDown = true
 		}
 
 		tcpStats.totalDowntime += time.Second
 		tcpStats.totalUnsuccessfulPkts++
+		tcpStats.lastUnsuccessfulProbe = time.Now()
 
 		printReply(tcpStats, "No reply", 0)
 	} else {
@@ -306,22 +385,27 @@ func tcping(tcpStats *stats) {
 		if tcpStats.wasDown {
 			/* calculate the total downtime since
 			the previous successful probe */
-			currentDowntime := time.Since(tcpStats.ongoingDowntime).Seconds()
-			calculatedDowntime := calcTime(uint(math.Ceil(currentDowntime)))
+			latestDowntimeDuration := time.Since(tcpStats.startOfDowntime).Seconds()
+			calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
+
+			endOfDowntime := time.Now()
+			calcLongestDowntime(tcpStats, tcpStats.startOfDowntime, endOfDowntime)
 
 			tcpStats.wasDown = false
 		}
 
-		tcpStats.lastSuccessfulProbe = time.Now()
 		tcpStats.totalUptime += time.Second
 		tcpStats.totalSuccessfulPkts++
+		tcpStats.lastSuccessfulProbe = time.Now()
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
 		printReply(tcpStats, "Reply", rtt)
+
+		defer conn.Close()
 	}
 
-	time.Sleep((1000 * time.Millisecond) - endTime)
+	time.Sleep((1000 * time.Millisecond) - connEnd)
 }
 
 /* Capture keystrokes from stdin */
@@ -359,7 +443,7 @@ func main() {
 
 		/* print stats when the `enter` key is pressed */
 		select {
-		case stdin, _ := <-stdinChan:
+		case stdin := <-stdinChan:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
 				printStatistics(&tcpStats)
 			}
