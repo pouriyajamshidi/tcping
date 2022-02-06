@@ -7,10 +7,11 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 ## Features And Application
 
 * Monitor your network connection.
-* Print statistics on pressing the `Enter` key.
+* Print connection statistics on `Enter` key press.
 * Calculate packet loss.
 * Assess the latency of your network.
-* Show min/avg/max probes latency.
+* Show `min`/`avg`/`max` probes latency.
+* Display the longest encountered downtime's duration and time.
 * Monitor and audit your peers network.
 * Calculate the total uptime/downtime when conducting a maintenance.
 * An alternative to `ping` in environments that `ICMP` is blocked.
@@ -35,7 +36,7 @@ make build
 
 ## Usage
 
-Go to the directory/folder in which you have downloaded the application.
+Go to the directory/folder in which you have downloaded the application and extract the compressed file.
 
 ### On ```Linux``` and ```macOS```
 
@@ -46,7 +47,7 @@ sudo chmod +x tcping
 For easier use, you can copy it to your system ```PATH``` like /bin/ or /usr/bin/
 
 ```bash
-sudo cp tcping /bin/
+sudo cp tcping /usr/bin/
 ```
 
 Then run it like, `tcping <hostname/IP address> <port>`. For instance:
@@ -70,25 +71,24 @@ For easier use, copy ```tcping.exe``` to your system ```PATH``` like C:\Windows\
 Run it like:
 
 ```powershell
-.\tcping www.example.com 443
+tcping www.example.com 443
 ```
 
 OR
 
 ```powershell
-tcping 10.10.10.1 22
+.\tcping.exe 10.10.10.1 22
 ```
 
-**Please note, if you copy the program to your system ```PATH```, you don't need to specify ```.\``` to run the program anymore.**
+**Please note, if you copy the program to your system ```PATH```, you don't need to specify ```.\``` and the `.exe` extension to run the program anymore.**
 
 ## Tips
 
-* While the program is running, upon pressing the `Enter` key, the summary of all probes will be shown as depicted in the [demo](#Demo).
+* While the program is running, press the `Enter` key to view the summary of all probes without exiting the program as depicted in the [demo](#Demo).
 
 ## Notes
 
-This program is still in a ```beta``` stage. There are several shortcomings that I will rectify in the near future.
-There are also some parts that might not make sense because this program was mainly designed to help me experiment with `Go`.
+There are several shortcomings that I will rectify in the near future and some parts might not make much sense because this program was mainly designed to help me learn and experiment with `Go`.
 
 ## TODO
 
@@ -97,9 +97,9 @@ There are also some parts that might not make sense because this program was mai
 * [x] Display the longest downtime
 * [x] Implement a better uptime timing calculation instead of a hardcoded one (default TCP connection timeout is 1 second).
 * [x] Display last successful and unsuccessful probes.
-* [ ] Resolve target's hostname after a certain number of failed requests (for geographically sparse sites).
+* [ ] Retry resolving target's hostname after a certain number of failed requests (for geographically sparse sites).
 * [ ] Output in `JSON` format.
-* [ ] Minutes to hour(s) conversion
+* [ ] ~~Minutes to hour(s) conversion~~
 
 ## Tested on
 
