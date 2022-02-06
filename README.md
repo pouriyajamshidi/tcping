@@ -25,11 +25,11 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 ## Download the executables for
 
-* ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.14/tcping_Windows.zip)
+* ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/download/v1.2.0/tcping_Windows.zip)
 
-* ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.14/tcping_Linux.zip)
+* ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/download/v1.2.0/tcping_Linux.zip)
 
-* ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/1.1.14/tcping_MacOS.zip)
+* ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/v1.2.0/tcping_MacOS.zip)
 
 In addition to downloading the executables, you can also compile the code yourself by running the `make` command:
 
