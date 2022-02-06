@@ -389,8 +389,8 @@ func tcping(tcpStats *stats) {
 			calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
 
-			endOfDowntime := time.Now()
-			calcLongestDowntime(tcpStats, tcpStats.startOfDowntime, endOfDowntime)
+			tcpStats.endOfDowntime = time.Now()
+			calcLongestDowntime(tcpStats, tcpStats.startOfDowntime, tcpStats.endOfDowntime)
 
 			tcpStats.wasDown = false
 		}
