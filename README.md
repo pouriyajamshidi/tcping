@@ -15,13 +15,9 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 * Calculate the total uptime/downtime when conducting a maintenance.
 * An alternative to `ping` in environments that `ICMP` is blocked.
 
-## Images
-
-![WindowsVersion](/Images/windowsVersion.png)
-
 ## Demo
 
-[![asciicast](https://asciinema.org/a/459353.svg)](https://asciinema.org/a/459353)
+![tcping](images/tcping.gif)
 
 ## Download the executables for
 
