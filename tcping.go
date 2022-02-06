@@ -201,9 +201,8 @@ func printDurationStats(startTime, endTime time.Time) {
 	var durationDiff time.Duration
 
 	cy := color.Yellow.Printf
-	clb := color.FgLightBlue.Printf
 
-	clb("--------------------------------------\n")
+	cy("--------------------------------------\n")
 	cy("TCPing started at: %v\n", startTime.Format("2006-01-02 15:04:05"))
 
 	/* If the program was not terminated, no need to show the end time */
@@ -215,7 +214,7 @@ func printDurationStats(startTime, endTime time.Time) {
 	}
 
 	duration = time.Time{}.Add(durationDiff)
-	cy("Duration (HH:MM:SS): %v\n", duration.Format("15:04:05"))
+	cy("duration (HH:MM:SS): %v\n\n", duration.Format("15:04:05"))
 }
 
 /* Print the longest downtime */
