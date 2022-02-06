@@ -98,15 +98,16 @@ There are also some parts that might not make sense because this program was mai
 
 * [x] Convert to a proper Go project
 * [x] If IP is given, skip the DNS lookup.
-* [ ] Display the longest downtime
+* [x] Display the longest downtime
 * [x] Implement a better uptime timing calculation instead of a hardcoded one (default TCP connection timeout is 1 second).
-* [ ] Ability to recheck target IP after a certain number of failed requests (for geographically sparse sites).
+* [x] Display last successful and unsuccessful probes.
+* [ ] Resolve target's hostname after a certain number of failed requests (for geographically sparse sites).
 * [ ] Output in `JSON` format.
 * [ ] Minutes to hour(s) conversion
 
 ## Tested on
 
-Windows, Linux and mac OS.
+Windows, Linux and Mac OS.
 
 ## Contributing
 
