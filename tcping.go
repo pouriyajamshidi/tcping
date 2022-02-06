@@ -218,6 +218,7 @@ func printDurationStats(startTime, endTime time.Time) {
 	cy("Duration (HH:MM:SS): %v\n", duration.Format("15:04:05"))
 }
 
+/* Print the longest downtime */
 func printLongestDowntime(longestDowntime float64, startTime, endTime time.Time) {
 	cy := color.Yellow.Printf
 	clb := color.FgLightBlue.Printf
