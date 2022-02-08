@@ -28,11 +28,14 @@ It uses a different `TCP sequence numbering` for successful and unsuccessful pro
 
 * ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/download/v1.2.0/tcping_MacOS.zip)
 
-In addition to downloading the executables, you can also compile the code yourself by running the `make` command:
+In addition to downloading the executables, you can:
 
-```bash
-make build
-```
+* Install it using `go get github.com/pouriyajamshidi/tcping`
+* Or compile the code yourself by running the `make` command inside the cloned directory:
+
+    ```bash
+    make build
+    ```
 
 ## Usage
 
