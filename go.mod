@@ -1,4 +1,4 @@
-module tcping
+module github.com/pouriyajamshidi/tcping
 
 go 1.16
 
