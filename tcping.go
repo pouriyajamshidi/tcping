@@ -35,9 +35,9 @@ type stats struct {
 }
 
 type longestDowntime struct {
-	start time.Time
-	end   time.Time
-	time  float64
+	start    time.Time
+	end      time.Time
+	duration float64
 }
 
 /* Print how program should be run */
@@ -266,7 +266,7 @@ func printStatistics(tcpStats *stats) {
 	cr("%s\n", totalDowntime)
 
 	/* longest downtime stats */
-	printLongestDowntime(tcpStats.longestDowntime.time, tcpStats.longestDowntime.start, tcpStats.longestDowntime.end)
+	printLongestDowntime(tcpStats.longestDowntime.duration, tcpStats.longestDowntime.start, tcpStats.longestDowntime.end)
 
 	/*TODO: see if formatted string would suit better */
 	/* latency stats.*/
@@ -343,14 +343,14 @@ func calcLongestDowntime(tcpStats *stats) {
 		/* It means it is the first time we're calling this function */
 		tcpStats.longestDowntime.start = latestStartOfDowntime
 		tcpStats.longestDowntime.end = latestEndOfDowntime
-		tcpStats.longestDowntime.time = latestEndOfDowntime.Sub(latestStartOfDowntime).Seconds()
+		tcpStats.longestDowntime.duration = latestEndOfDowntime.Sub(latestStartOfDowntime).Seconds()
 	} else {
 		downtimeDuration := latestEndOfDowntime.Sub(latestStartOfDowntime).Seconds()
 
-		if downtimeDuration >= tcpStats.longestDowntime.time {
+		if downtimeDuration >= tcpStats.longestDowntime.duration {
 			tcpStats.longestDowntime.start = latestStartOfDowntime
 			tcpStats.longestDowntime.end = latestEndOfDowntime
-			tcpStats.longestDowntime.time = downtimeDuration
+			tcpStats.longestDowntime.duration = downtimeDuration
 		}
 	}
 }
