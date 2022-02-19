@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"sort"
 	"strconv"
 	"syscall"
 	"time"
@@ -40,6 +39,29 @@ type longestDowntime struct {
 	duration float64
 }
 
+type rttResults struct {
+	hasResults bool
+	slowest    uint
+	fastest    uint
+	average    float32
+}
+
+const (
+	ThousandMilliSeconds = 1000
+	probeInterval        = 1
+	timeFormat           = "2006-01-02 15:04:05"
+	nullTimeFormat       = "0001-01-01 00:00:00"
+)
+
+var (
+	colorYellow      = color.Yellow.Printf
+	colorGreen       = color.Green.Printf
+	colorRed         = color.Red.Printf
+	colorCyan        = color.Cyan.Printf
+	colorLightYellow = color.LightYellow.Printf
+	colorLightBlue   = color.FgLightBlue.Printf
+)
+
 /* Print how program should be run */
 func usage() {
 	color.Red.Printf("Try running %s like:\n", os.Args[0])
@@ -55,7 +77,7 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
-		tcpStats.endTime = time.Now()
+		tcpStats.endTime = getSystemTime()
 		printStatistics(tcpStats)
 		os.Exit(0)
 	}()
@@ -107,26 +129,31 @@ func resolveHostname(host string) string {
 }
 
 /* Find min/avg/max RTT values. The last int acts as err code */
-func findMinAvgMaxRttTime(timeArr []uint) (uint, float32, uint, bool) {
-	isEmpty := true
-	var avgTime uint
+func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 	arrLen := len(timeArr)
+	var accum uint
+
+	var rttResults rttResults
+	rttResults.fastest = ^uint(0)
 
 	for i := 0; i < arrLen; i++ {
-		if timeArr[i] == 0 {
-			continue
+		accum += timeArr[i]
+
+		if timeArr[i] > rttResults.slowest {
+			rttResults.slowest = timeArr[i]
 		}
-		avgTime += timeArr[i]
+
+		if timeArr[i] < rttResults.fastest {
+			rttResults.fastest = timeArr[i]
+		}
 	}
 
-	if avgTime == 0 {
-		/* prevents panics inside printStatistics func */
-		return 0, 0, 0, isEmpty
+	if accum != 0 {
+		rttResults.hasResults = true
+		rttResults.average = float32(accum) / float32(arrLen)
 	}
 
-	sort.Slice(timeArr, func(i, j int) bool { return timeArr[i] < timeArr[j] })
-
-	return timeArr[0], float32(avgTime) / float32(arrLen), timeArr[arrLen-1], !isEmpty
+	return rttResults
 }
 
 /* Calculate the correct number of seconds in calcTime func */
@@ -168,26 +195,22 @@ func calcTime(time uint) string {
 }
 
 /* Print the last successful and unsuccessful probes */
-func printLastSucUnsucProbes(successfulProbe, unsuccessfulProbe time.Time) {
-	cy := color.Yellow.Printf
-	cg := color.Green.Printf
-	cr := color.Red.Printf
+func printLastSucUnsucProbes(lastSuccessfulProbe, lastUnsuccessfulProbe time.Time) {
+	formattedLastSuccessfulProbe := lastSuccessfulProbe.Format(timeFormat)
+	formattedLastUnsuccessfulProbe := lastUnsuccessfulProbe.Format(timeFormat)
 
-	lastSuccessfulProbe := successfulProbe.Format("2006-01-02 15:04:05")
-	lastUnsuccessfulProbe := unsuccessfulProbe.Format("2006-01-02 15:04:05")
-
-	cy("last successful probe:   ")
-	if lastSuccessfulProbe == "0001-01-01 00:00:00" {
-		cr("Never succeeded\n")
+	colorYellow("last successful probe:   ")
+	if formattedLastSuccessfulProbe == nullTimeFormat {
+		colorRed("Never succeeded\n")
 	} else {
-		cg("%v\n", lastSuccessfulProbe)
+		colorGreen("%v\n", formattedLastSuccessfulProbe)
 	}
 
-	cy("last unsuccessful probe: ")
-	if lastUnsuccessfulProbe == "0001-01-01 00:00:00" {
-		cg("Never failed\n")
+	colorYellow("last unsuccessful probe: ")
+	if formattedLastUnsuccessfulProbe == nullTimeFormat {
+		colorGreen("Never failed\n")
 	} else {
-		cr("%v\n", lastUnsuccessfulProbe)
+		colorRed("%v\n", formattedLastUnsuccessfulProbe)
 	}
 }
 
@@ -196,118 +219,103 @@ func printDurationStats(startTime, endTime time.Time) {
 	var duration time.Time
 	var durationDiff time.Duration
 
-	cy := color.Yellow.Printf
-
-	cy("--------------------------------------\n")
-	cy("TCPing started at: %v\n", startTime.Format("2006-01-02 15:04:05"))
+	colorYellow("--------------------------------------\n")
+	colorYellow("TCPing started at: %v\n", startTime.Format(timeFormat))
 
 	/* If the program was not terminated, no need to show the end time */
-	if endTime.Format("2006-01-02 15:04:05") == "0001-01-01 00:00:00" {
+	if endTime.Format(timeFormat) == nullTimeFormat {
 		durationDiff = time.Since(startTime)
 	} else {
-		cy("TCPing ended at:   %v\n", endTime.Format("2006-01-02 15:04:05"))
+		colorYellow("TCPing ended at:   %v\n", endTime.Format(timeFormat))
 		durationDiff = endTime.Sub(startTime)
 	}
 
 	duration = time.Time{}.Add(durationDiff)
-	cy("duration (HH:MM:SS): %v\n\n", duration.Format("15:04:05"))
+	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format("15:04:05"))
 }
 
 /* Print stattistics when program exits */
 func printStatistics(tcpStats *stats) {
-	min, avg, max, isEmpty := findMinAvgMaxRttTime(tcpStats.rtt)
+	rttResults := findMinAvgMaxRttTime(tcpStats.rtt)
 
-	if isEmpty {
-		/* There are no results to show */
-		return
+	if rttResults.hasResults {
+
+		totalPackets := tcpStats.totalSuccessfulPkts + tcpStats.totalUnsuccessfulPkts
+		totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
+		totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
+		packetLoss := (float32(tcpStats.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
+
+		/* general stats */
+		colorYellow("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
+		colorYellow("%d probes transmitted, ", totalPackets)
+		colorYellow("%d received, ", tcpStats.totalSuccessfulPkts)
+
+		/* packet loss stats */
+		if packetLoss == 0 {
+			colorGreen("%.2f%%", packetLoss)
+		} else if packetLoss > 0 && packetLoss <= 30 {
+			colorLightYellow("%.2f%%", packetLoss)
+		} else {
+			colorRed("%.2f%%", packetLoss)
+		}
+
+		colorYellow(" packet loss\n")
+
+		/* successful packet stats */
+		colorYellow("successful probes:   ")
+		colorGreen("%d\n", tcpStats.totalSuccessfulPkts)
+
+		/* unsuccessful packet stats */
+		colorYellow("unsuccessful probes: ")
+		colorRed("%d\n", tcpStats.totalUnsuccessfulPkts)
+
+		printLastSucUnsucProbes(tcpStats.lastSuccessfulProbe, tcpStats.lastUnsuccessfulProbe)
+
+		/* uptime and downtime stats */
+		colorYellow("total uptime: ")
+		colorGreen("  %s\n", totalUptime)
+		colorYellow("total downtime: ")
+		colorRed("%s\n", totalDowntime)
+
+		/* longest downtime stats */
+		printLongestDowntime(tcpStats.longestDowntime.duration, tcpStats.longestDowntime.start, tcpStats.longestDowntime.end)
+
+		/*TODO: see if formatted string would suit better */
+		/* latency stats.*/
+		colorYellow("rtt ")
+		colorGreen("min")
+		colorYellow("/")
+		colorCyan("avg")
+		colorYellow("/")
+		colorRed("max: ")
+		colorGreen("%d", rttResults.fastest)
+		colorYellow("/")
+		colorCyan("%.2f", rttResults.average)
+		colorYellow("/")
+		colorRed("%d", rttResults.slowest)
+		colorYellow(" ms\n")
+
+		/* duration stats */
+		printDurationStats(tcpStats.startTime, tcpStats.endTime)
 	}
-
-	totalPackets := tcpStats.totalSuccessfulPkts + tcpStats.totalUnsuccessfulPkts
-	totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
-	totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
-	packetLoss := (float32(tcpStats.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
-
-	/* shortened color functions */
-	cy := color.Yellow.Printf
-	cg := color.Green.Printf
-	cr := color.Red.Printf
-	cc := color.Cyan.Printf
-	cly := color.LightYellow.Printf
-
-	/* general stats */
-	cy("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
-	cy("%d probes transmitted, ", totalPackets)
-	cy("%d received, ", tcpStats.totalSuccessfulPkts)
-
-	/* packet loss stats */
-	if packetLoss == 0 {
-		cg("%.2f%%", packetLoss)
-	} else if packetLoss > 0 && packetLoss <= 30 {
-		cly("%.2f%%", packetLoss)
-	} else {
-		cr("%.2f%%", packetLoss)
-	}
-	cy(" packet loss\n")
-
-	/* successful packet stats */
-	cy("successful probes:   ")
-	cg("%d\n", tcpStats.totalSuccessfulPkts)
-
-	/* unsuccessful packet stats */
-	cy("unsuccessful probes: ")
-	cr("%d\n", tcpStats.totalUnsuccessfulPkts)
-
-	printLastSucUnsucProbes(tcpStats.lastSuccessfulProbe, tcpStats.lastUnsuccessfulProbe)
-
-	/* uptime and downtime stats */
-	cy("total uptime: ")
-	cg("  %s\n", totalUptime)
-	cy("total downtime: ")
-	cr("%s\n", totalDowntime)
-
-	/* longest downtime stats */
-	printLongestDowntime(tcpStats.longestDowntime.duration, tcpStats.longestDowntime.start, tcpStats.longestDowntime.end)
-
-	/*TODO: see if formatted string would suit better */
-	/* latency stats.*/
-	cy("rtt ")
-	cg("min")
-	cy("/")
-	cc("avg")
-	cy("/")
-	cr("max: ")
-	cg("%d", min)
-	cy("/")
-	cc("%.2f", avg)
-	cy("/")
-	cr("%d", max)
-	cy(" ms\n")
-
-	/* duration stats */
-	printDurationStats(tcpStats.startTime, tcpStats.endTime)
 }
 
 /* Print TCP probe replies according to our policies */
 func printReply(tcpStats *stats, senderMsg string, rtt int64) {
-	// TODO: Refactor
-
-	cr := color.Red.Printf
-	cg := color.LightGreen.Printf
-
 	if tcpStats.isIP {
 		if senderMsg == "No reply" {
-			cr("%s from %s on port %s TCP_conn=%d\n",
+			colorRed("%s from %s on port %s TCP_conn=%d\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
-			cg("%s from %s on port %s TCP_conn=%d time=%d ms\n",
+			colorGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
 		}
 	} else {
 		if senderMsg == "No reply" {
-			cr("%s from %s (%s) on port %s TCP_conn=%d\n",
+			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
-			cg("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
+			colorGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
 		}
 	}
@@ -315,22 +323,18 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 
 /* Print the longest downtime */
 func printLongestDowntime(longestDowntime float64, startTime, endTime time.Time) {
-	cy := color.Yellow.Printf
-	clb := color.FgLightBlue.Printf
-	cr := color.Red.Printf
-
 	if longestDowntime == 0 {
 		return
 	}
 
 	downtime := calcTime(uint(math.Ceil(longestDowntime)))
 
-	cy("longest downtime: ")
-	cr("%v ", downtime)
-	cy("from ")
-	clb("%v ", startTime.Format("2006-01-02 15:04:05"))
-	cy("to ")
-	clb("%v\n", endTime.Format("2006-01-02 15:04:05"))
+	colorYellow("longest downtime: ")
+	colorRed("%v ", downtime)
+	colorYellow("from ")
+	colorLightBlue("%v ", startTime.Format(timeFormat))
+	colorYellow("to ")
+	colorLightBlue("%v\n", endTime.Format(timeFormat))
 }
 
 /* Calculate the longest downtime */
@@ -339,7 +343,7 @@ func calcLongestDowntime(tcpStats *stats) {
 	latestStartOfDowntime := tcpStats.startOfDowntime
 	latestEndOfDowntime := tcpStats.endOfDowntime
 
-	if tcpStats.longestDowntime.end.Format("2006-01-02 15:04:05") == "0001-01-01 00:00:00" {
+	if tcpStats.longestDowntime.end.Format(timeFormat) == nullTimeFormat {
 		/* It means it is the first time we're calling this function */
 		tcpStats.longestDowntime.start = latestStartOfDowntime
 		tcpStats.longestDowntime.end = latestEndOfDowntime
@@ -355,27 +359,33 @@ func calcLongestDowntime(tcpStats *stats) {
 	}
 }
 
+/* get current system time */
+func getSystemTime() time.Time {
+	return time.Now()
+}
+
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
 
 	IPAndPort := net.JoinHostPort(tcpStats.IP, tcpStats.port)
 
-	connAttempt := time.Now()
-	conn, err := net.DialTimeout("tcp", IPAndPort, 1*time.Second)
-	connEnd := time.Since(connAttempt)
+	connStart := getSystemTime()
+	conn, err := net.DialTimeout("tcp", IPAndPort, probeInterval*time.Second)
+	connEnd := time.Since(connStart)
+
 	rtt := connEnd.Milliseconds()
 
 	if err != nil {
 		/* if the previous probe was successful
 		and the current one failed: */
 		if !tcpStats.wasDown {
-			tcpStats.startOfDowntime = time.Now()
+			tcpStats.startOfDowntime = getSystemTime()
 			tcpStats.wasDown = true
 		}
 
 		tcpStats.totalDowntime += time.Second
-		tcpStats.totalUnsuccessfulPkts++
-		tcpStats.lastUnsuccessfulProbe = time.Now()
+		tcpStats.totalUnsuccessfulPkts += 1
+		tcpStats.lastUnsuccessfulProbe = getSystemTime()
 
 		printReply(tcpStats, "No reply", 0)
 	} else {
@@ -388,15 +398,15 @@ func tcping(tcpStats *stats) {
 			calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
 
-			tcpStats.endOfDowntime = time.Now()
+			tcpStats.endOfDowntime = getSystemTime()
 			calcLongestDowntime(tcpStats)
 
 			tcpStats.wasDown = false
 		}
 
 		tcpStats.totalUptime += time.Second
-		tcpStats.totalSuccessfulPkts++
-		tcpStats.lastSuccessfulProbe = time.Now()
+		tcpStats.totalSuccessfulPkts += 1
+		tcpStats.lastSuccessfulProbe = getSystemTime()
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
 		printReply(tcpStats, "Reply", rtt)
@@ -404,7 +414,7 @@ func tcping(tcpStats *stats) {
 		defer conn.Close()
 	}
 
-	time.Sleep((1000 * time.Millisecond) - connEnd)
+	time.Sleep((ThousandMilliSeconds * time.Millisecond) - connEnd)
 }
 
 /* Capture keystrokes from stdin */
@@ -424,7 +434,7 @@ func main() {
 	tcpStats.hostname = host
 	tcpStats.IP = IP
 	tcpStats.port = port
-	tcpStats.startTime = time.Now()
+	tcpStats.startTime = getSystemTime()
 
 	if host == IP {
 		tcpStats.isIP = true
