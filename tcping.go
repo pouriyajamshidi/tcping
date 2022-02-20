@@ -51,6 +51,7 @@ const (
 	probeInterval        = 1
 	timeFormat           = "2006-01-02 15:04:05"
 	nullTimeFormat       = "0001-01-01 00:00:00"
+	hourFormat           = "15:04:05"
 )
 
 var (
@@ -231,7 +232,7 @@ func printDurationStats(startTime, endTime time.Time) {
 	}
 
 	duration = time.Time{}.Add(durationDiff)
-	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format("15:04:05"))
+	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
 }
 
 /* Print stattistics when program exits */
