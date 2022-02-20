@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.1 - 2022-2-20
+
+- Make hour format a constant
+
 ## v1.4.0 - 2022-2-19
 
 - Remove sort function to increase performance
