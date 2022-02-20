@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.2 - 2022-2-20
+
+- Memory alignment for rttResults struct
+
 ## v1.4.1 - 2022-2-20
 
 - Make hour format a constant
