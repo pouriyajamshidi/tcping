@@ -40,10 +40,10 @@ type longestDowntime struct {
 }
 
 type rttResults struct {
-	hasResults bool
 	slowest    uint
 	fastest    uint
 	average    float32
+	hasResults bool
 }
 
 const (
