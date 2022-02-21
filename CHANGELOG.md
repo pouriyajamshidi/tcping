@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.3 - 2022-2-21
+
+- Revert successful reply text color
+
 ## v1.4.2 - 2022-2-20
 
 - Memory alignment for rttResults struct

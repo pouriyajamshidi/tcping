@@ -61,6 +61,7 @@ var (
 	colorCyan        = color.Cyan.Printf
 	colorLightYellow = color.LightYellow.Printf
 	colorLightBlue   = color.FgLightBlue.Printf
+	colorLightGreen  = color.LightGreen.Printf
 )
 
 /* Print how program should be run */
@@ -308,7 +309,7 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 			colorRed("%s from %s on port %s TCP_conn=%d\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
-			colorGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.IP, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
 		}
 	} else {
@@ -316,7 +317,7 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
-			colorGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
 				senderMsg, tcpStats.hostname, tcpStats.IP, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
 		}
 	}
