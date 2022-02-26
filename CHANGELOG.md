@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.4 - 2022-2-26
+
+- Improve time constants for better readability
+
 ## v1.4.3 - 2022-2-21
 
 - Revert successful reply text color
