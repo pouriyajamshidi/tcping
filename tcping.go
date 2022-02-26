@@ -47,11 +47,11 @@ type rttResults struct {
 }
 
 const (
-	ThousandMilliSeconds = 1000
-	probeInterval        = 1
-	timeFormat           = "2006-01-02 15:04:05"
-	nullTimeFormat       = "0001-01-01 00:00:00"
-	hourFormat           = "15:04:05"
+	ThousandMilliSecond = 1000 * time.Millisecond
+	oneSecond           = 1 * time.Second
+	timeFormat          = "2006-01-02 15:04:05"
+	nullTimeFormat      = "0001-01-01 00:00:00"
+	hourFormat          = "15:04:05"
 )
 
 var (
@@ -372,7 +372,7 @@ func tcping(tcpStats *stats) {
 	IPAndPort := net.JoinHostPort(tcpStats.IP, tcpStats.port)
 
 	connStart := getSystemTime()
-	conn, err := net.DialTimeout("tcp", IPAndPort, probeInterval*time.Second)
+	conn, err := net.DialTimeout("tcp", IPAndPort, oneSecond)
 	connEnd := time.Since(connStart)
 
 	rtt := connEnd.Milliseconds()
@@ -416,7 +416,7 @@ func tcping(tcpStats *stats) {
 		defer conn.Close()
 	}
 
-	time.Sleep((ThousandMilliSeconds * time.Millisecond) - connEnd)
+	time.Sleep(ThousandMilliSecond - connEnd)
 }
 
 /* Capture keystrokes from stdin */
