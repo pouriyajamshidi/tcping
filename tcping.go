@@ -74,8 +74,8 @@ func usage() {
 
 /* Catch SIGINT and print tcping stats */
 func signalHandler(tcpStats *stats) {
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-sigChan
