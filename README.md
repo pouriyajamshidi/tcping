@@ -93,24 +93,20 @@ OR
 
 There are several shortcomings that I will rectify in the near future and some parts might not make much sense because this program was mainly designed to help me learn and experiment with `Go`.
 
-## TODO
+## Contributing
 
-* [x] Convert to a proper Go project
-* [x] If IP is given, skip the DNS lookup.
-* [x] Display the longest downtime
-* [x] Implement a better uptime timing calculation instead of a hardcoded one (default TCP connection timeout is 1 second).
-* [x] Display last successful and unsuccessful probes.
-* [ ] Retry resolving target's hostname after a certain number of failed requests (for geographically sparse sites).
-* [ ] Output in `JSON` format.
-* [ ] ~~Minutes to hour(s) conversion~~
+Pull requests are welcome to solve bugs, add new features and also to help me with the open issues that can be found here ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
+
+1. Pick any issue that you feel comfortable with.
+2. Create a branch.
+3. Commit your work.
+4. Create a pull request
+
+Please make sure to only work on a specific issue on your pull request and not address two or more tickets in one. This will help me to easier review your pull request and also contributes to a cleaner git history.
 
 ## Tested on
 
 Windows, Linux and Mac OS.
-
-## Contributing
-
-Pull requests are welcome to solve bugs, add new features and also to help me with the [TODOs](#todo).
 
 ## License
 
