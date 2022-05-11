@@ -1,2 +1,4 @@
 *.sh
 execuatables/
+# goland project files
+.idea/
