@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"math"
 	"net"
 	"os"
@@ -158,40 +159,45 @@ func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 	return rttResults
 }
 
-/* Calculate the correct number of seconds in calcTime func */
-func calcSeconds(time float64) string {
-	_, float := math.Modf(time)
-	secondStr := strconv.FormatFloat(float*60, 'f', 0, 32)
-
-	return secondStr
-}
-
 /* Calculate cumulative time */
 func calcTime(time uint) string {
 	var timeStr string
 
-	if time == 1 {
-		timeStr = strconv.FormatUint(uint64(time), 10) + " second"
+	hours := time / (60 * 60)
+	timeMod := time % (60 * 60)
+	minutes := timeMod / (60)
+	seconds := timeMod % (60)
+
+	/* Calculate hours */
+	if hours >= 2 {
+		timeStr = fmt.Sprintf("%d.%d.%d hours.minutes.seconds", hours, minutes, seconds)
 		return timeStr
-	} else if time < 60 {
-		timeStr = strconv.FormatUint(uint64(time), 10) + " seconds"
+	} else if hours == 1 && minutes == 0 && seconds == 0 {
+		timeStr = fmt.Sprintf("%d hour", hours)
+		return timeStr
+	} else if hours == 1 {
+		timeStr = fmt.Sprintf("%d.%d.%d hour.minutes.seconds", hours, minutes, seconds)
+		return timeStr
+	}
+
+	/* Calculate minutes */
+	if minutes >= 2 {
+		timeStr = fmt.Sprintf("%d.%d minutes.seconds", minutes, seconds)
+		return timeStr
+	} else if minutes == 1 && seconds == 0 {
+		timeStr = fmt.Sprintf("%d minute", minutes)
+		return timeStr
+	} else if minutes == 1 {
+		timeStr = fmt.Sprintf("%d.%d minute.seconds", minutes, seconds)
+		return timeStr
+	}
+
+	/* Calculate seconds */
+	if seconds >= 2 {
+		timeStr = fmt.Sprintf("%d seconds", seconds)
 		return timeStr
 	} else {
-		timeFloat := float64(time) / 60
-
-		if timeFloat == 1.00 {
-			return "1 minute"
-		} else if timeFloat < 2.00 {
-			timeMnt := int(timeFloat)
-			timeSec := calcSeconds(timeFloat)
-			timeStr := strconv.Itoa(timeMnt) + "." + timeSec + " minute.seconds"
-			return timeStr
-		}
-
-		timeMnt := int(timeFloat)
-		timeSec := calcSeconds(timeFloat)
-		timeStr := strconv.Itoa(timeMnt) + "." + timeSec + " minutes.seconds"
-
+		timeStr = fmt.Sprintf("%d second", seconds)
 		return timeStr
 	}
 }
