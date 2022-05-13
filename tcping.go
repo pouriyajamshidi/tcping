@@ -17,6 +17,8 @@ import (
 type stats struct {
 	startTime             time.Time
 	endTime               time.Time
+	startOfUptime         time.Time
+	endOfUptime           time.Time
 	startOfDowntime       time.Time
 	endOfDowntime         time.Time
 	lastSuccessfulProbe   time.Time
@@ -25,6 +27,7 @@ type stats struct {
 	IP                    string
 	port                  string
 	rtt                   []uint
+	longestUptime         longestTime
 	longestDowntime       longestTime
 	totalUptime           time.Duration
 	totalDowntime         time.Duration
@@ -294,6 +297,9 @@ func printStatistics(tcpStats *stats) {
 		colorYellow("total downtime: ")
 		colorRed("%s\n", totalDowntime)
 
+		/* longest uptime stats */
+		printLongestUptime(tcpStats.longestUptime)
+
 		/* longest downtime stats */
 		printLongestDowntime(tcpStats.longestDowntime)
 
@@ -338,6 +344,22 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 	}
 }
 
+/* Print the longest uptime */
+func printLongestUptime(longestUptime longestTime) {
+	if longestUptime.duration == 0 {
+		return
+	}
+
+	uptime := calcTime(uint(math.Ceil(longestUptime.duration)))
+
+	colorYellow("longest uptime:   ")
+	colorGreen("%v ", uptime)
+	colorYellow("from ")
+	colorLightBlue("%v ", longestUptime.start.Format(timeFormat))
+	colorYellow("to ")
+	colorLightBlue("%v\n", longestUptime.end.Format(timeFormat))
+}
+
 /* Print the longest downtime */
 func printLongestDowntime(longestDowntime longestTime) {
 	if longestDowntime.duration == 0 {
@@ -354,15 +376,35 @@ func printLongestDowntime(longestDowntime longestTime) {
 	colorLightBlue("%v\n", longestDowntime.end.Format(timeFormat))
 }
 
+/* Calculate the longest uptime */
+func calcLongestUptime(tcpStats *stats) {
+	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat || tcpStats.endOfUptime.Format(timeFormat) == nullTimeFormat {
+		return
+	}
+
+	longestUptime := newLongestTime(tcpStats.startOfUptime, tcpStats.endOfUptime)
+
+	if tcpStats.longestUptime.end.Format(timeFormat) == nullTimeFormat {
+		/* It means it is the first time we're calling this function */
+		tcpStats.longestUptime = longestUptime
+	} else if longestUptime.duration >= tcpStats.longestUptime.duration {
+		tcpStats.longestUptime = longestUptime
+	}
+}
+
 /* Calculate the longest downtime */
 func calcLongestDowntime(tcpStats *stats) {
-	longestDownTime := newLongestTime(tcpStats.startOfDowntime, tcpStats.endOfDowntime)
+	if tcpStats.startOfDowntime.Format(timeFormat) == nullTimeFormat || tcpStats.endOfDowntime.Format(timeFormat) == nullTimeFormat {
+		return
+	}
+
+	longestDowntime := newLongestTime(tcpStats.startOfDowntime, tcpStats.endOfDowntime)
 
 	if tcpStats.longestDowntime.end.Format(timeFormat) == nullTimeFormat {
 		/* It means it is the first time we're calling this function */
-		tcpStats.longestDowntime = longestDownTime
-	} else if longestDownTime.duration >= tcpStats.longestDowntime.duration {
-		tcpStats.longestDowntime = longestDownTime
+		tcpStats.longestDowntime = longestDowntime
+	} else if longestDowntime.duration >= tcpStats.longestDowntime.duration {
+		tcpStats.longestDowntime = longestDowntime
 	}
 }
 
@@ -386,9 +428,18 @@ func tcping(tcpStats *stats) {
 		/* if the previous probe was successful
 		and the current one failed: */
 		if !tcpStats.wasDown {
+			/* Update startOfDowntime */
 			tcpStats.startOfDowntime = getSystemTime()
+
+			/* Calculate the longest uptime */
+			tcpStats.endOfUptime = getSystemTime()
+			calcLongestUptime(tcpStats)
+
 			tcpStats.wasDown = true
 		}
+
+		tcpStats.endOfDowntime = getSystemTime()
+		calcLongestDowntime(tcpStats)
 
 		tcpStats.totalDowntime += time.Second
 		tcpStats.totalUnsuccessfulPkts += 1
@@ -405,11 +456,23 @@ func tcping(tcpStats *stats) {
 			calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
 
+			/* Update startOfUptime */
+			tcpStats.startOfUptime = getSystemTime()
+
+			/* Calculate the longest downtime */
 			tcpStats.endOfDowntime = getSystemTime()
 			calcLongestDowntime(tcpStats)
 
 			tcpStats.wasDown = false
 		}
+
+		/* It means it is the first time to up */
+		if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
+			tcpStats.startOfUptime = getSystemTime()
+		}
+
+		tcpStats.endOfUptime = getSystemTime()
+		calcLongestUptime(tcpStats)
 
 		tcpStats.totalUptime += time.Second
 		tcpStats.totalSuccessfulPkts += 1
