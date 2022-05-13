@@ -25,7 +25,7 @@ type stats struct {
 	IP                    string
 	port                  string
 	rtt                   []uint
-	longestDowntime       longestDowntime
+	longestDowntime       longestTime
 	totalUptime           time.Duration
 	totalDowntime         time.Duration
 	totalSuccessfulPkts   uint
@@ -34,7 +34,7 @@ type stats struct {
 	isIP                  bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 }
 
-type longestDowntime struct {
+type longestTime struct {
 	start    time.Time
 	end      time.Time
 	duration float64
@@ -129,6 +129,15 @@ func resolveHostname(host string) string {
 	IP = IPaddr[0].String()
 
 	return IP
+}
+
+/* Create LongestTime structure */
+func newLongestTime(startTime, endTime time.Time) longestTime {
+	return longestTime{
+		start:    startTime,
+		end:      endTime,
+		duration: endTime.Sub(startTime).Seconds(),
+	}
 }
 
 /* Find min/avg/max RTT values. The last int acts as err code */
@@ -286,7 +295,7 @@ func printStatistics(tcpStats *stats) {
 		colorRed("%s\n", totalDowntime)
 
 		/* longest downtime stats */
-		printLongestDowntime(tcpStats.longestDowntime.duration, tcpStats.longestDowntime.start, tcpStats.longestDowntime.end)
+		printLongestDowntime(tcpStats.longestDowntime)
 
 		/*TODO: see if formatted string would suit better */
 		/* latency stats.*/
@@ -330,40 +339,30 @@ func printReply(tcpStats *stats, senderMsg string, rtt int64) {
 }
 
 /* Print the longest downtime */
-func printLongestDowntime(longestDowntime float64, startTime, endTime time.Time) {
-	if longestDowntime == 0 {
+func printLongestDowntime(longestDowntime longestTime) {
+	if longestDowntime.duration == 0 {
 		return
 	}
 
-	downtime := calcTime(uint(math.Ceil(longestDowntime)))
+	downtime := calcTime(uint(math.Ceil(longestDowntime.duration)))
 
 	colorYellow("longest downtime: ")
 	colorRed("%v ", downtime)
 	colorYellow("from ")
-	colorLightBlue("%v ", startTime.Format(timeFormat))
+	colorLightBlue("%v ", longestDowntime.start.Format(timeFormat))
 	colorYellow("to ")
-	colorLightBlue("%v\n", endTime.Format(timeFormat))
+	colorLightBlue("%v\n", longestDowntime.end.Format(timeFormat))
 }
 
 /* Calculate the longest downtime */
 func calcLongestDowntime(tcpStats *stats) {
-
-	latestStartOfDowntime := tcpStats.startOfDowntime
-	latestEndOfDowntime := tcpStats.endOfDowntime
+	longestDownTime := newLongestTime(tcpStats.startOfDowntime, tcpStats.endOfDowntime)
 
 	if tcpStats.longestDowntime.end.Format(timeFormat) == nullTimeFormat {
 		/* It means it is the first time we're calling this function */
-		tcpStats.longestDowntime.start = latestStartOfDowntime
-		tcpStats.longestDowntime.end = latestEndOfDowntime
-		tcpStats.longestDowntime.duration = latestEndOfDowntime.Sub(latestStartOfDowntime).Seconds()
-	} else {
-		downtimeDuration := latestEndOfDowntime.Sub(latestStartOfDowntime).Seconds()
-
-		if downtimeDuration >= tcpStats.longestDowntime.duration {
-			tcpStats.longestDowntime.start = latestStartOfDowntime
-			tcpStats.longestDowntime.end = latestEndOfDowntime
-			tcpStats.longestDowntime.duration = downtimeDuration
-		}
+		tcpStats.longestDowntime = longestDownTime
+	} else if longestDownTime.duration >= tcpStats.longestDowntime.duration {
+		tcpStats.longestDowntime = longestDownTime
 	}
 }
 
