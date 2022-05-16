@@ -466,7 +466,7 @@ func tcping(tcpStats *stats) {
 			tcpStats.wasDown = false
 		}
 
-		/* It means it is the first time to up */
+		/* It means it is the first time to get a response*/
 		if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
 			tcpStats.startOfUptime = getSystemTime()
 		}
