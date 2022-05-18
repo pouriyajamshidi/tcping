@@ -18,9 +18,7 @@ type stats struct {
 	startTime             time.Time
 	endTime               time.Time
 	startOfUptime         time.Time
-	endOfUptime           time.Time
 	startOfDowntime       time.Time
-	endOfDowntime         time.Time
 	lastSuccessfulProbe   time.Time
 	lastUnsuccessfulProbe time.Time
 	hostname              string
@@ -297,6 +295,13 @@ func printStatistics(tcpStats *stats) {
 		colorYellow("total downtime: ")
 		colorRed("%s\n", totalDowntime)
 
+		/* calculate the last longest time */
+		if !tcpStats.wasDown {
+			calcLongestUptime(tcpStats, tcpStats.lastSuccessfulProbe)
+		} else {
+			calcLongestDowntime(tcpStats, tcpStats.lastUnsuccessfulProbe)
+		}
+
 		/* longest uptime stats */
 		printLongestUptime(tcpStats.longestUptime)
 
@@ -377,12 +382,12 @@ func printLongestDowntime(longestDowntime longestTime) {
 }
 
 /* Calculate the longest uptime */
-func calcLongestUptime(tcpStats *stats) {
-	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat || tcpStats.endOfUptime.Format(timeFormat) == nullTimeFormat {
+func calcLongestUptime(tcpStats *stats, endOfUptime time.Time) {
+	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat || endOfUptime.Format(timeFormat) == nullTimeFormat {
 		return
 	}
 
-	longestUptime := newLongestTime(tcpStats.startOfUptime, tcpStats.endOfUptime)
+	longestUptime := newLongestTime(tcpStats.startOfUptime, endOfUptime)
 
 	if tcpStats.longestUptime.end.Format(timeFormat) == nullTimeFormat {
 		/* It means it is the first time we're calling this function */
@@ -393,12 +398,12 @@ func calcLongestUptime(tcpStats *stats) {
 }
 
 /* Calculate the longest downtime */
-func calcLongestDowntime(tcpStats *stats) {
-	if tcpStats.startOfDowntime.Format(timeFormat) == nullTimeFormat || tcpStats.endOfDowntime.Format(timeFormat) == nullTimeFormat {
+func calcLongestDowntime(tcpStats *stats, endOfDowntime time.Time) {
+	if tcpStats.startOfDowntime.Format(timeFormat) == nullTimeFormat || endOfDowntime.Format(timeFormat) == nullTimeFormat {
 		return
 	}
 
-	longestDowntime := newLongestTime(tcpStats.startOfDowntime, tcpStats.endOfDowntime)
+	longestDowntime := newLongestTime(tcpStats.startOfDowntime, endOfDowntime)
 
 	if tcpStats.longestDowntime.end.Format(timeFormat) == nullTimeFormat {
 		/* It means it is the first time we're calling this function */
@@ -432,14 +437,12 @@ func tcping(tcpStats *stats) {
 			tcpStats.startOfDowntime = getSystemTime()
 
 			/* Calculate the longest uptime */
-			tcpStats.endOfUptime = getSystemTime()
-			calcLongestUptime(tcpStats)
+			endOfUptime := getSystemTime()
+			calcLongestUptime(tcpStats, endOfUptime)
+			tcpStats.startOfUptime = time.Time{}
 
 			tcpStats.wasDown = true
 		}
-
-		tcpStats.endOfDowntime = getSystemTime()
-		calcLongestDowntime(tcpStats)
 
 		tcpStats.totalDowntime += time.Second
 		tcpStats.totalUnsuccessfulPkts += 1
@@ -460,8 +463,9 @@ func tcping(tcpStats *stats) {
 			tcpStats.startOfUptime = getSystemTime()
 
 			/* Calculate the longest downtime */
-			tcpStats.endOfDowntime = getSystemTime()
-			calcLongestDowntime(tcpStats)
+			endOfDowntime := getSystemTime()
+			calcLongestDowntime(tcpStats, endOfDowntime)
+			tcpStats.startOfDowntime = time.Time{}
 
 			tcpStats.wasDown = false
 		}
@@ -470,9 +474,6 @@ func tcping(tcpStats *stats) {
 		if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
 			tcpStats.startOfUptime = getSystemTime()
 		}
-
-		tcpStats.endOfUptime = getSystemTime()
-		calcLongestUptime(tcpStats)
 
 		tcpStats.totalUptime += time.Second
 		tcpStats.totalSuccessfulPkts += 1
