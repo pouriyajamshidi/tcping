@@ -161,7 +161,7 @@ func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 		}
 	}
 
-	if accum != 0 {
+	if arrLen > 0 {
 		rttResults.hasResults = true
 		rttResults.average = float32(accum) / float32(arrLen)
 	}
