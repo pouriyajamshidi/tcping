@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func TestCalcTime(t *testing.T) {
 	type args struct {
@@ -67,6 +70,34 @@ func TestCalcTime(t *testing.T) {
 			if got := calcTime(tt.args.time); got != tt.want {
 				t.Errorf("calcTime() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestPermuteArgs(t *testing.T) {
+	type args struct {
+		args []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			"host/ip before option",
+			args{args: []string{"127.0.0.1", "-p", "8080"}},
+			[]string{"-p", "8080", "127.0.0.1"},
+		},
+		{
+			"host/ip after option",
+			args{args: []string{"-p", "8080", "127.0.0.1"}},
+			[]string{"-p", "8080", "127.0.0.1"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			permuteArgs(tt.args.args)
+			assert.Equal(t, tt.want, tt.args.args)
 		})
 	}
 }
