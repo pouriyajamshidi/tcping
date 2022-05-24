@@ -32,8 +32,10 @@ type stats struct {
 	totalDowntime         time.Duration
 	totalSuccessfulPkts   uint
 	totalUnsuccessfulPkts uint
+	lastUnsuccessfulPkts  uint
 	wasDown               bool // Used to determine the duration of a downtime
 	isIP                  bool // If IP is provided instead of hostname, suppresses printing the IP information twice
+	shouldRetryResolve    bool // Retry resolving target's hostname after a certain number of failed requests
 }
 
 type longestTime struct {
@@ -50,11 +52,12 @@ type rttResults struct {
 }
 
 const (
-	ThousandMilliSecond = 1000 * time.Millisecond
-	oneSecond           = 1 * time.Second
-	timeFormat          = "2006-01-02 15:04:05"
-	nullTimeFormat      = "0001-01-01 00:00:00"
-	hourFormat          = "15:04:05"
+	ThousandMilliSecond   = 1000 * time.Millisecond
+	oneSecond             = 1 * time.Second
+	timeFormat            = "2006-01-02 15:04:05"
+	nullTimeFormat        = "0001-01-01 00:00:00"
+	hourFormat            = "15:04:05"
+	retryResolveThreshold = 10
 )
 
 var (
@@ -72,6 +75,10 @@ func usage() {
 	color.Red.Printf("Try running %s like:\n", flag.CommandLine.Name())
 	color.Red.Printf("%s <hostname/ip> <port number> | for example:\n", flag.CommandLine.Name())
 	color.Red.Printf("%s www.example.com 443\n", flag.CommandLine.Name())
+	color.Red.Print("[option]\n")
+	flag.VisitAll(func(f *flag.Flag) {
+		color.Red.Printf("  %s : %s\n", f.Name, f.Usage)
+	})
 	os.Exit(1)
 }
 
@@ -89,9 +96,10 @@ func signalHandler(tcpStats *stats) {
 }
 
 /* Get and validate user input */
-func getInput() (string, string, string) {
-	flag.CommandLine.Usage = usage
+func getInput() (string, string, string, bool) {
 	permuteArgs(os.Args[1:])
+	shouldRetryResolve := flag.Bool("r", false, "retry resolving target's hostname after a certain number of failed requests.")
+	flag.CommandLine.Usage = usage
 	flag.Parse()
 
 	/* the non-flag command-line arguments */
@@ -112,7 +120,7 @@ func getInput() (string, string, string) {
 
 	IP := resolveHostname(host)
 
-	return host, port, IP
+	return host, port, IP, *shouldRetryResolve
 }
 
 /* Permute args for flag parsing stops just before the first non-flag argument. */
@@ -162,6 +170,20 @@ func resolveHostname(host string) string {
 	IP = IPaddr[0].String()
 
 	return IP
+}
+
+/* Retry resolve hostname */
+func retryResolve(tcpStats *stats) {
+	if tcpStats.isIP {
+		return
+	}
+	if tcpStats.lastUnsuccessfulPkts < retryResolveThreshold {
+		return
+	}
+
+	colorYellow("Retry resolve %s\n", tcpStats.hostname)
+	tcpStats.IP = resolveHostname(tcpStats.hostname)
+	tcpStats.lastUnsuccessfulPkts = 0
 }
 
 /* Create LongestTime structure */
@@ -479,6 +501,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.totalDowntime += time.Second
 		tcpStats.totalUnsuccessfulPkts += 1
 		tcpStats.lastUnsuccessfulProbe = getSystemTime()
+		tcpStats.lastUnsuccessfulPkts += 1
 
 		printReply(tcpStats, "No reply", 0)
 	} else {
@@ -500,6 +523,7 @@ func tcping(tcpStats *stats) {
 			tcpStats.startOfDowntime = time.Time{}
 
 			tcpStats.wasDown = false
+			tcpStats.lastUnsuccessfulPkts = 0
 		}
 
 		/* It means it is the first time to get a response*/
@@ -531,12 +555,13 @@ func monitorStdin(stdinChan chan string) {
 
 func main() {
 
-	host, port, IP := getInput()
+	host, port, IP, shouldRetryResolve := getInput()
 
 	var tcpStats stats
 	tcpStats.hostname = host
 	tcpStats.IP = IP
 	tcpStats.port = port
+	tcpStats.shouldRetryResolve = shouldRetryResolve
 	tcpStats.startTime = getSystemTime()
 
 	if host == IP {
@@ -551,6 +576,9 @@ func main() {
 	go monitorStdin(stdinChan)
 
 	for {
+		if tcpStats.shouldRetryResolve {
+			retryResolve(&tcpStats)
+		}
 		tcping(&tcpStats)
 
 		/* print stats when the `enter` key is pressed */
