@@ -56,13 +56,13 @@ sudo cp tcping /usr/bin/
 Then run it like, `tcping <hostname/IP address> <port>`. For instance:
 
 ```bash
-tcping www.example.com -p 443
+tcping www.example.com 443
 ```
 
 OR
 
 ```bash
-tcping 10.10.10.1 -p 22
+tcping 10.10.10.1 22
 ```
 
 ### On ```Windows```
@@ -74,13 +74,13 @@ For easier use, copy ```tcping.exe``` to your system ```PATH``` like C:\Windows\
 Run it like:
 
 ```powershell
-tcping www.example.com -p 443
+tcping www.example.com 443
 ```
 
 OR
 
 ```powershell
-.\tcping.exe 10.10.10.1 -p 22
+.\tcping.exe 10.10.10.1 22
 ```
 
 **Please note, if you copy the program to your system ```PATH```, you don't need to specify ```.\``` and the `.exe` extension to run the program anymore.**

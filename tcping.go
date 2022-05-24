@@ -70,8 +70,8 @@ var (
 /* Print how program should be run */
 func usage() {
 	color.Red.Printf("Try running %s like:\n", flag.CommandLine.Name())
-	color.Red.Printf("%s <hostname/ip> -p <port number> | for example:\n", flag.CommandLine.Name())
-	color.Red.Printf("%s www.example.com -p 443\n", flag.CommandLine.Name())
+	color.Red.Printf("%s <hostname/ip> <port number> | for example:\n", flag.CommandLine.Name())
+	color.Red.Printf("%s www.example.com 443\n", flag.CommandLine.Name())
 	os.Exit(1)
 }
 
@@ -91,29 +91,28 @@ func signalHandler(tcpStats *stats) {
 /* Get and validate user input */
 func getInput() (string, string, string) {
 	flag.CommandLine.Usage = usage
-	pPtr := flag.Int("p", 80, "port")
 	permuteArgs(os.Args[1:])
 	flag.Parse()
 
 	/* the non-flag command-line arguments */
 	args := flag.Args()
 
-	if len(args) != 1 {
+	if len(args) != 2 {
 		usage()
 	}
 
 	host := args[0]
-	port := *pPtr
+	port := args[1]
+	portInt, _ := strconv.Atoi(port)
 
-	if port < 1 || port > 65535 {
+	if portInt < 1 || portInt > 65535 {
 		print("Port should be in 1..65535 range\n")
 		os.Exit(1)
 	}
 
-	portStr := strconv.Itoa(port)
 	IP := resolveHostname(host)
 
-	return host, portStr, IP
+	return host, port, IP
 }
 
 /* Permute args for flag parsing stops just before the first non-flag argument. */
@@ -127,9 +126,6 @@ func permuteArgs(args []string) {
 		if v[0] == '-' {
 			optionName := v[1:]
 			switch optionName {
-			case "p":
-				flagArgs = append(flagArgs, args[i:i+2]...)
-				i++
 			default:
 				flagArgs = append(flagArgs, args[i])
 			}

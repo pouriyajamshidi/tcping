@@ -85,13 +85,13 @@ func TestPermuteArgs(t *testing.T) {
 	}{
 		{
 			"host/ip before option",
-			args{args: []string{"127.0.0.1", "-p", "8080"}},
-			[]string{"-p", "8080", "127.0.0.1"},
+			args{args: []string{"127.0.0.1", "8080", "-r"}},
+			[]string{"-r", "127.0.0.1", "8080"},
 		},
 		{
 			"host/ip after option",
-			args{args: []string{"-p", "8080", "127.0.0.1"}},
-			[]string{"-p", "8080", "127.0.0.1"},
+			args{args: []string{"-r", "127.0.0.1", "8080"}},
+			[]string{"-r", "127.0.0.1", "8080"},
 		},
 	}
 	for _, tt := range tests {
