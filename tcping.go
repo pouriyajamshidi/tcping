@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -72,9 +73,11 @@ var (
 
 /* Print how program should be run */
 func usage() {
-	color.Red.Printf("Try running %s like:\n", flag.CommandLine.Name())
-	color.Red.Printf("%s <hostname/ip> <port number> | for example:\n", flag.CommandLine.Name())
-	color.Red.Printf("%s www.example.com 443\n", flag.CommandLine.Name())
+	/* flag.CommandLine.Name() is also included in the directory path in some cases, such as 'go run tcping.go' */
+	var commandName = filepath.Base(flag.CommandLine.Name())
+	color.Red.Printf("Try running %s like:\n", commandName)
+	color.Red.Printf("%s <hostname/ip> <port number> | for example:\n", commandName)
+	color.Red.Printf("%s www.example.com 443\n", commandName)
 	color.Red.Print("[optional]\n")
 	flag.VisitAll(func(f *flag.Flag) {
 		color.Red.Printf("  -%s : %s\n", f.Name, f.Usage)
