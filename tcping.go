@@ -75,9 +75,9 @@ func usage() {
 	color.Red.Printf("Try running %s like:\n", flag.CommandLine.Name())
 	color.Red.Printf("%s <hostname/ip> <port number> | for example:\n", flag.CommandLine.Name())
 	color.Red.Printf("%s www.example.com 443\n", flag.CommandLine.Name())
-	color.Red.Print("[option]\n")
+	color.Red.Print("[optional]\n")
 	flag.VisitAll(func(f *flag.Flag) {
-		color.Red.Printf("  %s : %s\n", f.Name, f.Usage)
+		color.Red.Printf("  -%s : %s\n", f.Name, f.Usage)
 	})
 	os.Exit(1)
 }
