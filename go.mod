@@ -3,7 +3,8 @@ module github.com/pouriyajamshidi/tcping
 go 1.16
 
 require (
-	github.com/gookit/color v1.4.2
-	github.com/stretchr/testify v1.7.1 // indirect
-	golang.org/x/sys v0.0.0-20210819135213-f52c844e1c1c // indirect
+	github.com/gookit/color v1.5.0
+	github.com/stretchr/testify v1.7.1
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
