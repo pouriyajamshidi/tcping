@@ -3,7 +3,7 @@ EXEC_DIR = execuatables/
 .PHONY: all build clean format
 all: build
 
-build: clean
+build: clean format
 
 	@mkdir -p $(EXEC_DIR)
 	
