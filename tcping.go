@@ -509,16 +509,17 @@ func tcping(tcpStats *stats) {
 	connEnd := time.Since(connStart)
 
 	rtt := connEnd.Milliseconds()
+	now := getSystemTime()
 
 	if err != nil {
 		/* if the previous probe was successful
 		and the current one failed: */
 		if !tcpStats.wasDown {
 			/* Update startOfDowntime */
-			tcpStats.startOfDowntime = connStart
+			tcpStats.startOfDowntime = now
 
 			/* Calculate the longest uptime */
-			endOfUptime := connStart
+			endOfUptime := now
 			calcLongestUptime(tcpStats, endOfUptime)
 			tcpStats.startOfUptime = time.Time{}
 
@@ -527,7 +528,7 @@ func tcping(tcpStats *stats) {
 
 		tcpStats.totalDowntime += time.Second
 		tcpStats.totalUnsuccessfulPkts += 1
-		tcpStats.lastUnsuccessfulProbe = connStart
+		tcpStats.lastUnsuccessfulProbe = now
 		tcpStats.ongoingUnsuccessfulPkts += 1
 
 		printReply(tcpStats, "No reply", 0)
@@ -542,10 +543,10 @@ func tcping(tcpStats *stats) {
 			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
 
 			/* Update startOfUptime */
-			tcpStats.startOfUptime = connStart
+			tcpStats.startOfUptime = now
 
 			/* Calculate the longest downtime */
-			endOfDowntime := connStart
+			endOfDowntime := now
 			calcLongestDowntime(tcpStats, endOfDowntime)
 			tcpStats.startOfDowntime = time.Time{}
 
@@ -555,12 +556,12 @@ func tcping(tcpStats *stats) {
 
 		/* It means it is the first time to get a response*/
 		if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
-			tcpStats.startOfUptime = connStart
+			tcpStats.startOfUptime = now
 		}
 
 		tcpStats.totalUptime += time.Second
 		tcpStats.totalSuccessfulPkts += 1
-		tcpStats.lastSuccessfulProbe = connStart
+		tcpStats.lastSuccessfulProbe = now
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
 		printReply(tcpStats, "Reply", rtt)
