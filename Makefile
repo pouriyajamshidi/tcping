@@ -45,7 +45,10 @@ clean:
 	@echo
 
 format:
-	gofmt -w tcping.go
+	@echo "[+] Formatting files"
+	@gofmt -w tcping.go
+	@gofmt -w tcping_test.go
 
 test:
-	go test
+	@echo "[+] Running tests"
+	@go test
