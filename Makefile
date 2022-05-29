@@ -1,9 +1,9 @@
 EXEC_DIR = execuatables/
 
-.PHONY: all build clean format
+.PHONY: all build clean format test
 all: build
 
-build: clean format
+build: clean format test
 
 	@mkdir -p $(EXEC_DIR)
 	
@@ -46,3 +46,6 @@ clean:
 
 format:
 	gofmt -w tcping.go
+
+test:
+	go test
