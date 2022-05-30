@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -74,7 +75,8 @@ var (
 
 /* Print how program should be run */
 func usage() {
-	commandName := os.Args[0]
+	/* flag.CommandLine.Name() is also included in the directory path in some cases, such as 'go run tcping.go' */
+	var commandName = filepath.Base(flag.CommandLine.Name())
 
 	colorRed("TCPING verion %s\n\n", version)
 	colorRed("Try running %s like:\n", commandName)
