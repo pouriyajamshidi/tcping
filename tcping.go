@@ -189,14 +189,15 @@ func checkLatestVersion() {
 	reg := `^v?(\d+\.\d+\.\d+)$`
 	latestTagName := latestRelease.GetTagName()
 	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
+
 	if len(latestVersion) == 0 {
-		colorRed("Failed to check for updates for the version name does not match the rule %s\n", latestTagName)
+		colorRed("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
 		return
 	}
 
 	if latestVersion[1] != version {
-		colorLightBlue("Find newer version %s\n", latestVersion[1])
-		colorLightBlue("You can update TCPING from the URL below. \n")
+		colorLightBlue("Found newer version %s\n", latestVersion[1])
+		colorLightBlue("Please update TCPING from the URL below: \n")
 		colorLightBlue("https://github.com/%s/%s/releases/tag/%s \n\n", owner, repo, latestTagName)
 	}
 }
@@ -613,8 +614,6 @@ func monitorStdin(stdinChan chan string) {
 }
 
 func main() {
-	checkLatestVersion()
-
 	var tcpStats stats
 	processUserInput(&tcpStats)
 	signalHandler(&tcpStats)
