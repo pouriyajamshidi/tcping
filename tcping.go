@@ -2,16 +2,19 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"math"
 	"net"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/google/go-github/v45/github"
 	"github.com/gookit/color"
 )
 
@@ -55,6 +58,8 @@ type rttResults struct {
 
 const (
 	version             = "1.9.0"
+	owner               = "pouriyajamshidi"
+	repo                = "tcping"
 	thousandMilliSecond = 1000 * time.Millisecond
 	oneSecond           = 1 * time.Second
 	timeFormat          = "2006-01-02 15:04:05"
@@ -167,6 +172,32 @@ func permuteArgs(args []string) {
 	/* replace args */
 	for i := 0; i < len(args); i++ {
 		args[i] = permutedArgs[i]
+	}
+}
+
+/* Check for updates and print messages if there is a newer version */
+func checkLatestVersion() {
+	c := github.NewClient(nil)
+
+	/* unauthenticated requests from the same IP are limited to 60 per hour. */
+	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
+	if err != nil {
+		colorRed("Failed to check for updates %s\n", err.Error())
+		return
+	}
+
+	reg := `^v?(\d+\.\d+\.\d+)$`
+	latestTagName := latestRelease.GetTagName()
+	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
+	if len(latestVersion) == 0 {
+		colorRed("Failed to check for updates for the version name does not match the rule %s\n", latestTagName)
+		return
+	}
+
+	if latestVersion[1] != version {
+		colorLightBlue("Find newer version %s\n", latestVersion[1])
+		colorLightBlue("You can update TCPING from the URL below. \n")
+		colorLightBlue("https://github.com/%s/%s/releases/tag/%s \n\n", owner, repo, latestTagName)
 	}
 }
 
@@ -582,6 +613,7 @@ func monitorStdin(stdinChan chan string) {
 }
 
 func main() {
+	checkLatestVersion()
 
 	var tcpStats stats
 	processUserInput(&tcpStats)
