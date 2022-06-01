@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"math"
@@ -110,17 +111,20 @@ func signalHandler(tcpStats *stats) {
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
+	shouldCheckUpdates := flag.Bool("u", false, "check for updates and display a message if there is a newer version.")
 	flag.CommandLine.Usage = usage
-	permuteArgs(os.Args[1:])
+	err := permuteArgs(os.Args[1:])
+	if err != nil {
+		usage()
+	}
 	flag.Parse()
+
+	if *shouldCheckUpdates {
+		checkLatestVersion()
+	}
 
 	/* the non-flag command-line arguments */
 	args := flag.Args()
-
-	if len(args) != 2 {
-		usage()
-	}
-
 	port, _ := strconv.Atoi(args[1])
 
 	if port < 1 || port > 65535 {
@@ -142,10 +146,13 @@ func processUserInput(tcpStats *stats) {
 	}
 }
 
+var errArgsFlagHasNoValue = errors.New("error: flag has no value")
+var errArgsNotEnough = errors.New("error: not enough args")
+
 /* Permute args for flag parsing stops just before the first non-flag argument.
 see: https://pkg.go.dev/flag
 */
-func permuteArgs(args []string) {
+func permuteArgs(args []string) error {
 	var flagArgs []string
 	var nonFlagArgs []string
 
@@ -155,8 +162,14 @@ func permuteArgs(args []string) {
 			optionName := v[1:]
 			switch optionName {
 			case "r":
-				if len(args) < 4 {
-					usage()
+				/* out of index */
+				if len(args) <= i+1 {
+					return errArgsFlagHasNoValue
+				}
+				/* the next flag has come */
+				optionVal := args[i+1]
+				if optionVal[0] == '-' {
+					return errArgsFlagHasNoValue
 				}
 				flagArgs = append(flagArgs, args[i:i+2]...)
 				i++
@@ -167,12 +180,17 @@ func permuteArgs(args []string) {
 			nonFlagArgs = append(nonFlagArgs, args[i])
 		}
 	}
+	/* host and port must be specified　*/
+	if len(nonFlagArgs) != 2 {
+		return errArgsNotEnough
+	}
 	permutedArgs := append(flagArgs, nonFlagArgs...)
 
 	/* replace args */
 	for i := 0; i < len(args); i++ {
 		args[i] = permutedArgs[i]
 	}
+	return nil
 }
 
 /* Check for updates and print messages if there is a newer version */

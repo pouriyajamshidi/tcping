@@ -80,24 +80,54 @@ func TestPermuteArgs(t *testing.T) {
 		args []string
 	}
 	tests := []struct {
-		name string
-		args args
-		want []string
+		name    string
+		args    args
+		want    []string
+		wantErr error
 	}{
 		{
 			"host/ip before option",
-			args{args: []string{"127.0.0.1", "8080", "-r 3"}},
-			[]string{"-r 3", "127.0.0.1", "8080"},
+			args{args: []string{"127.0.0.1", "8080", "-r", "3", "-u"}},
+			[]string{"-r", "3", "-u", "127.0.0.1", "8080"},
+			nil,
 		},
 		{
 			"host/ip after option",
-			args{args: []string{"-r 3", "127.0.0.1", "8080"}},
-			[]string{"-r 3", "127.0.0.1", "8080"},
+			args{args: []string{"-r", "3", "-u", "127.0.0.1", "8080"}},
+			[]string{"-r", "3", "-u", "127.0.0.1", "8080"},
+			nil,
+		},
+		{
+			"args not enough",
+			args{args: []string{"-r", "3", "-u", "127.0.0.1"}},
+			[]string{"-r", "3", "-u", "127.0.0.1"},
+			errArgsNotEnough,
+		},
+		{
+			"args not enough. it means that the 8080 was interpreted as the value of -r",
+			args{args: []string{"-u", "127.0.0.1", "-r", "8080"}},
+			[]string{"-u", "127.0.0.1", "-r", "8080"},
+			errArgsNotEnough,
+		},
+		{
+			"flag has no value. the next flag has come",
+			args{args: []string{"-r", "-u", "127.0.0.1", "8080"}},
+			[]string{"-r", "-u", "127.0.0.1", "8080"},
+			errArgsFlagHasNoValue,
+		},
+		{
+			"flag has no value. out of index",
+			args{args: []string{"-u", "127.0.0.1", "8080", "-r"}},
+			[]string{"-u", "127.0.0.1", "8080", "-r"},
+			errArgsFlagHasNoValue,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			permuteArgs(tt.args.args)
+			err := permuteArgs(tt.args.args)
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
+			}
 			assert.Equal(t, tt.want, tt.args.args)
 		})
 	}
