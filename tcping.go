@@ -218,7 +218,7 @@ func checkLatestVersion() {
 		colorLightBlue("Please update TCPING from the URL below:\n")
 		colorLightBlue("https://github.com/%s/%s/releases/tag/%s\n", owner, repo, latestTagName)
 	} else {
-		colorLightBlue("Not found newer version. Your version %s is latest.\n", version)
+		colorLightBlue("Newer version not found . Your version %s is the latest.\n", version)
 	}
 	os.Exit(0)
 }
