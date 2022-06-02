@@ -110,19 +110,31 @@ func signalHandler(tcpStats *stats) {
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
+	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	flag.CommandLine.Usage = usage
 	permuteArgs(os.Args[1:])
 	flag.Parse()
 
-	/* the non-flag command-line arguments */
+	/* validation for flag and args */
 	args := flag.Args()
+	nFlag := flag.NFlag()
 
+	/* -u works on its own. */
+	if *shouldCheckUpdates {
+		if len(args) == 0 && nFlag == 1 {
+			checkLatestVersion()
+		} else {
+			usage()
+		}
+	}
+
+	/* host and port must be specified　*/
 	if len(args) != 2 {
 		usage()
 	}
 
+	/* the non-flag command-line arguments */
 	port, _ := strconv.Atoi(args[1])
-
 	if port < 1 || port > 65535 {
 		print("Port should be in 1..65535 range\n")
 		os.Exit(1)
@@ -155,7 +167,13 @@ func permuteArgs(args []string) {
 			optionName := v[1:]
 			switch optionName {
 			case "r":
-				if len(args) < 4 {
+				/* out of index */
+				if len(args) <= i+1 {
+					usage()
+				}
+				/* the next flag has come */
+				optionVal := args[i+1]
+				if optionVal[0] == '-' {
 					usage()
 				}
 				flagArgs = append(flagArgs, args[i:i+2]...)
@@ -183,7 +201,7 @@ func checkLatestVersion() {
 	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
 	if err != nil {
 		colorRed("Failed to check for updates %s\n", err.Error())
-		return
+		os.Exit(1)
 	}
 
 	reg := `^v?(\d+\.\d+\.\d+)$`
@@ -192,14 +210,17 @@ func checkLatestVersion() {
 
 	if len(latestVersion) == 0 {
 		colorRed("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
-		return
+		os.Exit(1)
 	}
 
 	if latestVersion[1] != version {
 		colorLightBlue("Found newer version %s\n", latestVersion[1])
-		colorLightBlue("Please update TCPING from the URL below: \n")
-		colorLightBlue("https://github.com/%s/%s/releases/tag/%s \n\n", owner, repo, latestTagName)
+		colorLightBlue("Please update TCPING from the URL below:\n")
+		colorLightBlue("https://github.com/%s/%s/releases/tag/%s\n", owner, repo, latestTagName)
+	} else {
+		colorLightBlue("Newer version not found . Your version %s is the latest.\n", version)
 	}
+	os.Exit(0)
 }
 
 /* Hostname resolution */

@@ -86,14 +86,23 @@ func TestPermuteArgs(t *testing.T) {
 	}{
 		{
 			"host/ip before option",
-			args{args: []string{"127.0.0.1", "8080", "-r 3"}},
-			[]string{"-r 3", "127.0.0.1", "8080"},
+			args{args: []string{"127.0.0.1", "8080", "-r", "3"}},
+			[]string{"-r", "3", "127.0.0.1", "8080"},
 		},
 		{
 			"host/ip after option",
-			args{args: []string{"-r 3", "127.0.0.1", "8080"}},
-			[]string{"-r 3", "127.0.0.1", "8080"},
+			args{args: []string{"-r", "3", "127.0.0.1", "8080"}},
+			[]string{"-r", "3", "127.0.0.1", "8080"},
 		},
+		{
+			"check for updates",
+			args{args: []string{"-u"}},
+			[]string{"-u"},
+		},
+		/**
+		 * cases in which the value of the option does not exist are not listed.
+		 * they call directly usage() and exit with code 1.
+		 */
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
