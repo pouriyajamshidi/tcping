@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"math"
@@ -111,22 +110,31 @@ func signalHandler(tcpStats *stats) {
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
-	shouldCheckUpdates := flag.Bool("u", false, "check for updates and display a message if there is a newer version.")
+	shouldCheckUpdates := flag.Bool("u", false, "check for updates and display a message if there is a newer version. it works on its own.")
 	flag.CommandLine.Usage = usage
-	err := permuteArgs(os.Args[1:])
-	if err != nil {
-		usage()
-	}
+	permuteArgs(os.Args[1:])
 	flag.Parse()
 
+	/* validation for flag and args */
+	args := flag.Args()
+	nFlag := flag.NFlag()
+
+	/* -u works on its own. */
 	if *shouldCheckUpdates {
-		checkLatestVersion()
+		if len(args) == 0 && nFlag == 1 {
+			checkLatestVersion()
+		} else {
+			usage()
+		}
+	}
+
+	/* host and port must be specified　*/
+	if len(args) != 2 {
+		usage()
 	}
 
 	/* the non-flag command-line arguments */
-	args := flag.Args()
 	port, _ := strconv.Atoi(args[1])
-
 	if port < 1 || port > 65535 {
 		print("Port should be in 1..65535 range\n")
 		os.Exit(1)
@@ -146,13 +154,10 @@ func processUserInput(tcpStats *stats) {
 	}
 }
 
-var errArgsFlagHasNoValue = errors.New("error: flag has no value")
-var errArgsNotEnough = errors.New("error: not enough args")
-
 /* Permute args for flag parsing stops just before the first non-flag argument.
 see: https://pkg.go.dev/flag
 */
-func permuteArgs(args []string) error {
+func permuteArgs(args []string) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
@@ -164,12 +169,12 @@ func permuteArgs(args []string) error {
 			case "r":
 				/* out of index */
 				if len(args) <= i+1 {
-					return errArgsFlagHasNoValue
+					usage()
 				}
 				/* the next flag has come */
 				optionVal := args[i+1]
 				if optionVal[0] == '-' {
-					return errArgsFlagHasNoValue
+					usage()
 				}
 				flagArgs = append(flagArgs, args[i:i+2]...)
 				i++
@@ -180,17 +185,12 @@ func permuteArgs(args []string) error {
 			nonFlagArgs = append(nonFlagArgs, args[i])
 		}
 	}
-	/* host and port must be specified　*/
-	if len(nonFlagArgs) != 2 {
-		return errArgsNotEnough
-	}
 	permutedArgs := append(flagArgs, nonFlagArgs...)
 
 	/* replace args */
 	for i := 0; i < len(args); i++ {
 		args[i] = permutedArgs[i]
 	}
-	return nil
 }
 
 /* Check for updates and print messages if there is a newer version */
@@ -201,7 +201,7 @@ func checkLatestVersion() {
 	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
 	if err != nil {
 		colorRed("Failed to check for updates %s\n", err.Error())
-		return
+		os.Exit(1)
 	}
 
 	reg := `^v?(\d+\.\d+\.\d+)$`
@@ -210,14 +210,17 @@ func checkLatestVersion() {
 
 	if len(latestVersion) == 0 {
 		colorRed("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
-		return
+		os.Exit(1)
 	}
 
 	if latestVersion[1] != version {
 		colorLightBlue("Found newer version %s\n", latestVersion[1])
-		colorLightBlue("Please update TCPING from the URL below: \n")
-		colorLightBlue("https://github.com/%s/%s/releases/tag/%s \n\n", owner, repo, latestTagName)
+		colorLightBlue("Please update TCPING from the URL below:\n")
+		colorLightBlue("https://github.com/%s/%s/releases/tag/%s\n", owner, repo, latestTagName)
+	} else {
+		colorLightBlue("Not found newer version. Your version %s is latest.\n", version)
 	}
+	os.Exit(0)
 }
 
 /* Hostname resolution */
