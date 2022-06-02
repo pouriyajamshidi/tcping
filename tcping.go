@@ -110,7 +110,7 @@ func signalHandler(tcpStats *stats) {
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
-	shouldCheckUpdates := flag.Bool("u", false, "check for updates and display a message if there is a newer version. it works on its own.")
+	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	flag.CommandLine.Usage = usage
 	permuteArgs(os.Args[1:])
 	flag.Parse()
