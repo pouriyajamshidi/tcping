@@ -68,8 +68,8 @@ jobs:
     #   echo "Run, Build Application using script"
     #   ./location_of_script_within_repo/buildscript.sh
 
+    - name: Run make check
     - run: |
-      echo "Run, make checks"
       make check
 
     - name: Perform CodeQL Analysis
