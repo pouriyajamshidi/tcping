@@ -69,7 +69,7 @@ jobs:
     #   ./location_of_script_within_repo/buildscript.sh
 
     - run: |
-      echo "Run, `make` checks"
+      echo "Run, make checks"
       make check
 
     - name: Perform CodeQL Analysis
