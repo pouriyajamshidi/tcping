@@ -56,6 +56,15 @@ type rttResults struct {
 	hasResults bool
 }
 
+type replyMsg struct {
+	msg string
+	rtt int64
+}
+
+type ipAddress = string
+type cliArgs = []string
+type calculatedTimeString = string
+
 const (
 	version             = "1.9.0"
 	owner               = "pouriyajamshidi"
@@ -157,7 +166,7 @@ func processUserInput(tcpStats *stats) {
 /* Permute args for flag parsing stops just before the first non-flag argument.
 see: https://pkg.go.dev/flag
 */
-func permuteArgs(args []string) {
+func permuteArgs(args cliArgs) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
@@ -224,7 +233,7 @@ func checkLatestVersion() {
 }
 
 /* Hostname resolution */
-func resolveHostname(tcpStats *stats) string {
+func resolveHostname(tcpStats *stats) ipAddress {
 	ipRaw := net.ParseIP(tcpStats.hostname)
 
 	if ipRaw != nil {
@@ -292,7 +301,7 @@ func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 }
 
 /* Calculate cumulative time */
-func calcTime(time uint) string {
+func calcTime(time uint) calculatedTimeString {
 	var timeStr string
 
 	hours := time / (60 * 60)
@@ -456,22 +465,22 @@ func printStatistics(tcpStats *stats) {
 }
 
 /* Print TCP probe replies according to our policies */
-func printReply(tcpStats *stats, senderMsg string, rtt int64) {
+func printReply(tcpStats *stats, replyMsg replyMsg) {
 	if tcpStats.isIP {
-		if senderMsg == "No reply" {
+		if replyMsg.msg == "No reply" {
 			colorRed("%s from %s on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.ip, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
+				replyMsg.msg, tcpStats.ip, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
 			colorLightGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, tcpStats.ip, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
+				replyMsg.msg, tcpStats.ip, tcpStats.port, tcpStats.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
-		if senderMsg == "No reply" {
+		if replyMsg.msg == "No reply" {
 			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
-				senderMsg, tcpStats.hostname, tcpStats.ip, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
+				replyMsg.msg, tcpStats.hostname, tcpStats.ip, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
 		} else {
 			colorLightGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, tcpStats.hostname, tcpStats.ip, tcpStats.port, tcpStats.totalSuccessfulPkts, rtt)
+				replyMsg.msg, tcpStats.hostname, tcpStats.ip, tcpStats.port, tcpStats.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
 }
@@ -584,7 +593,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.lastUnsuccessfulProbe = now
 		tcpStats.ongoingUnsuccessfulPkts += 1
 
-		printReply(tcpStats, "No reply", 0)
+		printReply(tcpStats, replyMsg{msg: "No reply", rtt: 0})
 	} else {
 		/* if the previous probe failed
 		and the current one succeeded: */
@@ -617,7 +626,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.lastSuccessfulProbe = now
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
-		printReply(tcpStats, "Reply", rtt)
+		printReply(tcpStats, replyMsg{msg: "Reply", rtt: rtt})
 
 		defer conn.Close()
 	}
