@@ -1,9 +1,10 @@
 EXEC_DIR = execuatables/
 
-.PHONY: all build clean format test
+.PHONY: all build clean format test vet
 all: build
+check: format vet test
 
-build: clean format test
+build: clean format vet test
 
 	@mkdir -p $(EXEC_DIR)
 	
@@ -46,8 +47,11 @@ clean:
 
 format:
 	@echo "[+] Formatting files"
-	@gofmt -w tcping.go
-	@gofmt -w tcping_test.go
+	@gofmt -w *.go
+
+vet:
+	@echo "[+] Running Go vet"
+	@go vet
 
 test:
 	@echo "[+] Running tests"
