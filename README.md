@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/pouriyajamshidi/tcping)](https://goreportcard.com/report/github.com/pouriyajamshidi/tcping)
+
 # TCPING
 
 A cross-platform ping program for `TCP` ports inspired by the Linux's ping utility. This program will send `TCP` probes to an `IP address` or a `hostname` specified by you and prints the result. It works with both `IPv4` and `IPv6`.
@@ -25,7 +27,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ---
 
-### Retry resolve (`-r 3`) in action
+### Retry resolve (`-r`) in action
 
 ![tcping](Images/tcpingrflag.gif)
 
