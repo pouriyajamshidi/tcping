@@ -17,6 +17,32 @@ import (
 	"github.com/gookit/color"
 )
 
+type stats struct {
+	startTime                 time.Time
+	endTime                   time.Time
+	startOfUptime             time.Time
+	startOfDowntime           time.Time
+	lastSuccessfulProbe       time.Time
+	lastUnsuccessfulProbe     time.Time
+	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
+	ip                        string
+	port                      string
+	hostname                  string
+	rtt                       []uint
+	totalDowntime             time.Duration
+	totalUptime               time.Duration
+	longestDowntime           longestTime
+	totalSuccessfulPkts       uint
+	totalUnsuccessfulPkts     uint
+	ongoingUnsuccessfulPkts   uint
+	retriedHostnameResolves   uint
+	longestUptime             longestTime
+	wasDown                   bool // Used to determine the duration of a downtime
+	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
+	shouldRetryResolve        bool
+	StatsPrinter
+}
+
 type longestTime struct {
 	start    time.Time
 	end      time.Time
@@ -29,6 +55,15 @@ type rttResults struct {
 	average    float32
 	hasResults bool
 }
+
+type replyMsg struct {
+	msg string
+	rtt int64
+}
+
+type ipAddress = string
+type cliArgs = []string
+type calculatedTimeString = string
 
 const (
 	version             = "1.9.0"
@@ -129,7 +164,7 @@ func processUserInput(tcpStats *stats) {
 /* Permute args for flag parsing stops just before the first non-flag argument.
 see: https://pkg.go.dev/flag
 */
-func permuteArgs(args []string) {
+func permuteArgs(args cliArgs) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
@@ -196,7 +231,7 @@ func checkLatestVersion() {
 }
 
 /* Hostname resolution */
-func resolveHostname(tcpStats *stats) string {
+func resolveHostname(tcpStats *stats) ipAddress {
 	ipRaw := net.ParseIP(tcpStats.hostname)
 
 	if ipRaw != nil {
@@ -264,7 +299,7 @@ func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 }
 
 /* Calculate cumulative time */
-func calcTime(time uint) string {
+func calcTime(time uint) calculatedTimeString {
 	var timeStr string
 
 	hours := time / (60 * 60)
@@ -345,6 +380,7 @@ func getSystemTime() time.Time {
 
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
+
 	IPAndPort := net.JoinHostPort(tcpStats.ip, tcpStats.port)
 
 	connStart := getSystemTime()
@@ -374,7 +410,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.lastUnsuccessfulProbe = now
 		tcpStats.ongoingUnsuccessfulPkts += 1
 
-		tcpStats.printReply("No reply", 0)
+		tcpStats.printReply(replyMsg{msg: "No reply", rtt: 0})
 	} else {
 		/* if the previous probe failed
 		and the current one succeeded: */
@@ -405,7 +441,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.lastSuccessfulProbe = now
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
-		tcpStats.printReply("Reply", rtt)
+		tcpStats.printReply(replyMsg{msg: "Reply", rtt: rtt})
 
 		defer conn.Close()
 	}

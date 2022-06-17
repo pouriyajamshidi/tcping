@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gookit/color"
 	"math"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 var (
@@ -23,7 +24,7 @@ type StatsPrinter interface {
 	printLastSucUnsucProbes()
 	printDurationStats()
 	printStatistics()
-	printReply(string, int64)
+	printReply(replyMsg replyMsg)
 	printTotalDownTime(time.Time)
 	printLongestUptime()
 	printLongestDowntime()
@@ -166,22 +167,22 @@ func (p *statsPlanePrinter) printStatistics() {
 }
 
 /* Print TCP probe replies according to our policies */
-func (p *statsPlanePrinter) printReply(senderMsg string, rtt int64) {
+func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 	if p.isIP {
-		if senderMsg == "No reply" {
+		if replyMsg.msg == "No reply" {
 			colorRed("%s from %s on port %s TCP_conn=%d\n",
-				senderMsg, p.ip, p.port, p.totalUnsuccessfulPkts)
+				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
 			colorLightGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, p.ip, p.port, p.totalSuccessfulPkts, rtt)
+				replyMsg.msg, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
-		if senderMsg == "No reply" {
+		if replyMsg.msg == "No reply" {
 			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
-				senderMsg, p.hostname, p.ip, p.port, p.totalUnsuccessfulPkts)
+				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
 			colorLightGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-				senderMsg, p.hostname, p.ip, p.port, p.totalSuccessfulPkts, rtt)
+				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
 }
@@ -273,7 +274,7 @@ func (s *statsJsonPrinter) printStatistics() {
 }
 
 /* Print TCP probe replies according to our policies */
-func (s *statsJsonPrinter) printReply(s2 string, i int64) {
+func (s *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	jsonPrintf("printReply")
 }
 
