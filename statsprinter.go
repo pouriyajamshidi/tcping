@@ -236,7 +236,7 @@ func (p *statsPlanePrinter) printRetryingToResolve() {
 }
 
 /* Print message with json format */
-func jsonPrintf(format string, a ...any) {
+func jsonPrintf(format string, a ...interface{}) {
 	data := struct {
 		Message string `json:"message"`
 	}{
