@@ -110,7 +110,7 @@ func signalHandler(tcpStats *stats) {
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
-	jsonFlag := flag.Bool("j", false, "output with json format.")
+	jsonFlag := flag.Bool("j", false, "output with JSON format.")
 	flag.CommandLine.Usage = usage
 	permuteArgs(os.Args[1:])
 	flag.Parse()
