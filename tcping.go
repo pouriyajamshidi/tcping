@@ -40,7 +40,7 @@ type stats struct {
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 	shouldRetryResolve        bool
-	StatsPrinter
+	statsPrinter
 }
 
 type longestTime struct {
@@ -155,9 +155,9 @@ func processUserInput(tcpStats *stats) {
 
 	/* output format determination. */
 	if *jsonFlag {
-		tcpStats.StatsPrinter = NewStatsJsonPrinter(tcpStats)
+		tcpStats.statsPrinter = &statsJsonPrinter{stats: tcpStats}
 	} else {
-		tcpStats.StatsPrinter = NewStatsPlanePrinter(tcpStats)
+		tcpStats.statsPrinter = &statsPlanePrinter{stats: tcpStats}
 	}
 }
 

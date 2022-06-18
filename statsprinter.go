@@ -19,7 +19,7 @@ var (
 	colorLightGreen  = color.LightGreen.Printf
 )
 
-type StatsPrinter interface {
+type statsPrinter interface {
 	printStart()
 	printLastSucUnsucProbes()
 	printDurationStats()
@@ -34,10 +34,6 @@ type StatsPrinter interface {
 
 type statsPlanePrinter struct {
 	*stats
-}
-
-func NewStatsPlanePrinter(stats *stats) StatsPrinter {
-	return &statsPlanePrinter{stats: stats}
 }
 
 func (p *statsPlanePrinter) printStart() {
@@ -248,10 +244,6 @@ func jsonPrintf(message string) {
 
 type statsJsonPrinter struct {
 	*stats
-}
-
-func NewStatsJsonPrinter(stats *stats) StatsPrinter {
-	return &statsJsonPrinter{stats: stats}
 }
 
 func (s *statsJsonPrinter) printStart() {
