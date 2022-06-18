@@ -2,3 +2,4 @@
 execuatables/
 # goland project files
 .idea/
+.vscode/
