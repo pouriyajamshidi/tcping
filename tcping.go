@@ -373,7 +373,7 @@ func calcLongestDowntime(tcpStats *stats, endOfDowntime time.Time) {
 	}
 }
 
-/* get current system time */
+/* Get current system time */
 func getSystemTime() time.Time {
 	return time.Now()
 }

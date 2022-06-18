@@ -36,6 +36,7 @@ type statsPlanePrinter struct {
 	*stats
 }
 
+/* Print host name and port to use on tcping */
 func (p *statsPlanePrinter) printStart() {
 	color.LightCyan.Printf("TCPinging %s on port %s\n", p.hostname, p.port)
 }
@@ -183,6 +184,7 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 	}
 }
 
+/* Print the total downtime */
 func (p *statsPlanePrinter) printTotalDownTime(now time.Time) {
 	latestDowntimeDuration := p.startOfDowntime.Sub(now).Seconds()
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
@@ -228,10 +230,12 @@ func (p *statsPlanePrinter) printRetryResolveStats() {
 	colorYellow("times\n")
 }
 
+/* Print the message retrying to resolve */
 func (p *statsPlanePrinter) printRetryingToResolve() {
 	colorLightYellow("Retrying to resolve %s\n", p.hostname)
 }
 
+/* Print message with json format */
 func jsonPrintf(message string) {
 	data := struct {
 		Message string `json:"message"`
@@ -246,6 +250,7 @@ type statsJsonPrinter struct {
 	*stats
 }
 
+/* Print host name and port to use on tcping */
 func (s *statsJsonPrinter) printStart() {
 	jsonPrintf("printStart")
 }
@@ -270,6 +275,7 @@ func (s *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	jsonPrintf("printReply")
 }
 
+/* Print the total downtime */
 func (s *statsJsonPrinter) printTotalDownTime(t time.Time) {
 	jsonPrintf("printTotalDownTime")
 }
@@ -289,6 +295,7 @@ func (s *statsJsonPrinter) printRetryResolveStats() {
 	jsonPrintf("printRetryResolveStats")
 }
 
+/* Print the message retrying to resolve */
 func (s *statsJsonPrinter) printRetryingToResolve() {
 	jsonPrintf("printRetryingToResolve")
 }
