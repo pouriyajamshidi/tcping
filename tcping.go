@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -41,6 +40,7 @@ type stats struct {
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 	shouldRetryResolve        bool
+	statsPrinter
 }
 
 type longestTime struct {
@@ -76,21 +76,11 @@ const (
 	hourFormat          = "15:04:05"
 )
 
-var (
-	colorYellow      = color.Yellow.Printf
-	colorGreen       = color.Green.Printf
-	colorRed         = color.Red.Printf
-	colorCyan        = color.Cyan.Printf
-	colorLightYellow = color.LightYellow.Printf
-	colorLightBlue   = color.FgLightBlue.Printf
-	colorLightGreen  = color.LightGreen.Printf
-)
-
 /* Print how program should be run */
 func usage() {
 	commandName := os.Args[0]
 
-	colorRed("TCPING verion %s\n\n", version)
+	colorRed("TCPING version %s\n\n", version)
 	colorRed("Try running %s like:\n", commandName)
 	colorRed("%s <hostname/ip> <port number> | for example:\n", commandName)
 	colorRed("%s www.example.com 443\n", commandName)
@@ -111,7 +101,7 @@ func signalHandler(tcpStats *stats) {
 	go func() {
 		<-sigChan
 		tcpStats.endTime = getSystemTime()
-		printStatistics(tcpStats)
+		tcpStats.printStatistics()
 		os.Exit(0)
 	}()
 }
@@ -120,6 +110,7 @@ func signalHandler(tcpStats *stats) {
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
+	jsonFlag := flag.Bool("j", false, "output with JSON format.")
 	flag.CommandLine.Usage = usage
 	permuteArgs(os.Args[1:])
 	flag.Parse()
@@ -160,6 +151,13 @@ func processUserInput(tcpStats *stats) {
 
 	if *tcpStats.retryHostnameResolveAfter > 0 && !tcpStats.isIP {
 		tcpStats.shouldRetryResolve = true
+	}
+
+	/* output format determination. */
+	if *jsonFlag {
+		tcpStats.statsPrinter = &statsJsonPrinter{stats: tcpStats}
+	} else {
+		tcpStats.statsPrinter = &statsPlanePrinter{stats: tcpStats}
 	}
 }
 
@@ -256,7 +254,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
 	if tcpStats.ongoingUnsuccessfulPkts > *tcpStats.retryHostnameResolveAfter {
-		colorLightYellow("Retrying to resolve %s\n", tcpStats.hostname)
+		tcpStats.printRetryingToResolve()
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulPkts = 0
 		tcpStats.retriedHostnameResolves += 1
@@ -343,187 +341,6 @@ func calcTime(time uint) calculatedTimeString {
 	}
 }
 
-/* Print the last successful and unsuccessful probes */
-func printLastSucUnsucProbes(lastSuccessfulProbe, lastUnsuccessfulProbe time.Time) {
-	formattedLastSuccessfulProbe := lastSuccessfulProbe.Format(timeFormat)
-	formattedLastUnsuccessfulProbe := lastUnsuccessfulProbe.Format(timeFormat)
-
-	colorYellow("last successful probe:   ")
-	if formattedLastSuccessfulProbe == nullTimeFormat {
-		colorRed("Never succeeded\n")
-	} else {
-		colorGreen("%v\n", formattedLastSuccessfulProbe)
-	}
-
-	colorYellow("last unsuccessful probe: ")
-	if formattedLastUnsuccessfulProbe == nullTimeFormat {
-		colorGreen("Never failed\n")
-	} else {
-		colorRed("%v\n", formattedLastUnsuccessfulProbe)
-	}
-}
-
-/* Print the start and end time of the program */
-func printDurationStats(startTime, endTime time.Time) {
-	var duration time.Time
-	var durationDiff time.Duration
-
-	colorYellow("--------------------------------------\n")
-	colorYellow("TCPing started at: %v\n", startTime.Format(timeFormat))
-
-	/* If the program was not terminated, no need to show the end time */
-	if endTime.Format(timeFormat) == nullTimeFormat {
-		durationDiff = time.Since(startTime)
-	} else {
-		colorYellow("TCPing ended at:   %v\n", endTime.Format(timeFormat))
-		durationDiff = endTime.Sub(startTime)
-	}
-
-	duration = time.Time{}.Add(durationDiff)
-	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
-}
-
-/* Print statistics when program exits */
-func printStatistics(tcpStats *stats) {
-	rttResults := findMinAvgMaxRttTime(tcpStats.rtt)
-
-	if rttResults.hasResults {
-
-		totalPackets := tcpStats.totalSuccessfulPkts + tcpStats.totalUnsuccessfulPkts
-		totalUptime := calcTime(uint(tcpStats.totalUptime.Seconds()))
-		totalDowntime := calcTime(uint(tcpStats.totalDowntime.Seconds()))
-		packetLoss := (float32(tcpStats.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
-
-		/* general stats */
-		colorYellow("\n--- %s TCPing statistics ---\n", tcpStats.hostname)
-		colorYellow("%d probes transmitted, ", totalPackets)
-		colorYellow("%d received, ", tcpStats.totalSuccessfulPkts)
-
-		/* packet loss stats */
-		if packetLoss == 0 {
-			colorGreen("%.2f%%", packetLoss)
-		} else if packetLoss > 0 && packetLoss <= 30 {
-			colorLightYellow("%.2f%%", packetLoss)
-		} else {
-			colorRed("%.2f%%", packetLoss)
-		}
-
-		colorYellow(" packet loss\n")
-
-		/* successful packet stats */
-		colorYellow("successful probes:   ")
-		colorGreen("%d\n", tcpStats.totalSuccessfulPkts)
-
-		/* unsuccessful packet stats */
-		colorYellow("unsuccessful probes: ")
-		colorRed("%d\n", tcpStats.totalUnsuccessfulPkts)
-
-		printLastSucUnsucProbes(tcpStats.lastSuccessfulProbe, tcpStats.lastUnsuccessfulProbe)
-
-		/* uptime and downtime stats */
-		colorYellow("total uptime: ")
-		colorGreen("  %s\n", totalUptime)
-		colorYellow("total downtime: ")
-		colorRed("%s\n", totalDowntime)
-
-		/* calculate the last longest time */
-		if !tcpStats.wasDown {
-			calcLongestUptime(tcpStats, tcpStats.lastSuccessfulProbe)
-		} else {
-			calcLongestDowntime(tcpStats, tcpStats.lastUnsuccessfulProbe)
-		}
-
-		/* longest uptime stats */
-		printLongestUptime(tcpStats.longestUptime)
-
-		/* longest downtime stats */
-		printLongestDowntime(tcpStats.longestDowntime)
-
-		/* resolve retry stats */
-		if !tcpStats.isIP {
-			printRetryResolveStats(tcpStats.retriedHostnameResolves)
-		}
-
-		/*TODO: see if formatted string would suit better */
-		/* latency stats.*/
-		colorYellow("rtt ")
-		colorGreen("min")
-		colorYellow("/")
-		colorCyan("avg")
-		colorYellow("/")
-		colorRed("max: ")
-		colorGreen("%d", rttResults.fastest)
-		colorYellow("/")
-		colorCyan("%.2f", rttResults.average)
-		colorYellow("/")
-		colorRed("%d", rttResults.slowest)
-		colorYellow(" ms\n")
-
-		/* duration stats */
-		printDurationStats(tcpStats.startTime, tcpStats.endTime)
-	}
-}
-
-/* Print TCP probe replies according to our policies */
-func printReply(tcpStats *stats, replyMsg replyMsg) {
-	if tcpStats.isIP {
-		if replyMsg.msg == "No reply" {
-			colorRed("%s from %s on port %s TCP_conn=%d\n",
-				replyMsg.msg, tcpStats.ip, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
-		} else {
-			colorLightGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
-				replyMsg.msg, tcpStats.ip, tcpStats.port, tcpStats.totalSuccessfulPkts, replyMsg.rtt)
-		}
-	} else {
-		if replyMsg.msg == "No reply" {
-			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
-				replyMsg.msg, tcpStats.hostname, tcpStats.ip, tcpStats.port, tcpStats.totalUnsuccessfulPkts)
-		} else {
-			colorLightGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
-				replyMsg.msg, tcpStats.hostname, tcpStats.ip, tcpStats.port, tcpStats.totalSuccessfulPkts, replyMsg.rtt)
-		}
-	}
-}
-
-/* Print the longest uptime */
-func printLongestUptime(longestUptime longestTime) {
-	if longestUptime.duration == 0 {
-		return
-	}
-
-	uptime := calcTime(uint(math.Ceil(longestUptime.duration)))
-
-	colorYellow("longest uptime:   ")
-	colorGreen("%v ", uptime)
-	colorYellow("from ")
-	colorLightBlue("%v ", longestUptime.start.Format(timeFormat))
-	colorYellow("to ")
-	colorLightBlue("%v\n", longestUptime.end.Format(timeFormat))
-}
-
-/* Print the longest downtime */
-func printLongestDowntime(longestDowntime longestTime) {
-	if longestDowntime.duration == 0 {
-		return
-	}
-
-	downtime := calcTime(uint(math.Ceil(longestDowntime.duration)))
-
-	colorYellow("longest downtime: ")
-	colorRed("%v ", downtime)
-	colorYellow("from ")
-	colorLightBlue("%v ", longestDowntime.start.Format(timeFormat))
-	colorYellow("to ")
-	colorLightBlue("%v\n", longestDowntime.end.Format(timeFormat))
-}
-
-/* Print the number of times that we tried resolving a hostname after a failure */
-func printRetryResolveStats(retries uint) {
-	colorYellow("Retried to resolve hostname ")
-	colorRed("%d ", retries)
-	colorYellow("times\n")
-}
-
 /* Calculate the longest uptime */
 func calcLongestUptime(tcpStats *stats, endOfUptime time.Time) {
 	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat || endOfUptime.Format(timeFormat) == nullTimeFormat {
@@ -556,7 +373,7 @@ func calcLongestDowntime(tcpStats *stats, endOfDowntime time.Time) {
 	}
 }
 
-/* get current system time */
+/* Get current system time */
 func getSystemTime() time.Time {
 	return time.Now()
 }
@@ -593,16 +410,14 @@ func tcping(tcpStats *stats) {
 		tcpStats.lastUnsuccessfulProbe = now
 		tcpStats.ongoingUnsuccessfulPkts += 1
 
-		printReply(tcpStats, replyMsg{msg: "No reply", rtt: 0})
+		tcpStats.printReply(replyMsg{msg: "No reply", rtt: 0})
 	} else {
 		/* if the previous probe failed
 		and the current one succeeded: */
 		if tcpStats.wasDown {
 			/* calculate the total downtime since
 			the previous successful probe */
-			latestDowntimeDuration := time.Since(tcpStats.startOfDowntime).Seconds()
-			calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
-			color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
+			tcpStats.printTotalDownTime(now)
 
 			/* Update startOfUptime */
 			tcpStats.startOfUptime = now
@@ -626,7 +441,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.lastSuccessfulProbe = now
 
 		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
-		printReply(tcpStats, replyMsg{msg: "Reply", rtt: rtt})
+		tcpStats.printReply(replyMsg{msg: "Reply", rtt: rtt})
 
 		defer conn.Close()
 	}
@@ -644,27 +459,26 @@ func monitorStdin(stdinChan chan string) {
 }
 
 func main() {
-	var tcpStats stats
-	processUserInput(&tcpStats)
-	signalHandler(&tcpStats)
-
-	color.LightCyan.Printf("TCPinging %s on port %s\n", tcpStats.hostname, tcpStats.port)
+	tcpStats := &stats{}
+	processUserInput(tcpStats)
+	signalHandler(tcpStats)
+	tcpStats.printStart()
 
 	stdinChan := make(chan string)
 	go monitorStdin(stdinChan)
 
 	for {
 		if tcpStats.shouldRetryResolve {
-			retryResolve(&tcpStats)
+			retryResolve(tcpStats)
 		}
 
-		tcping(&tcpStats)
+		tcping(tcpStats)
 
 		/* print stats when the `enter` key is pressed */
 		select {
 		case stdin := <-stdinChan:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
-				printStatistics(&tcpStats)
+				tcpStats.printStatistics()
 			}
 		default:
 			continue
