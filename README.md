@@ -140,7 +140,7 @@ Please make sure to only work on a specific issue on your pull request and not a
 
 ## Tested on
 
-Windows, Linux and macOS.
+Windows, Linux and mac OS.
 
 ## Sponsor us
 
