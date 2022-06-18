@@ -236,11 +236,11 @@ func (p *statsPlanePrinter) printRetryingToResolve() {
 }
 
 /* Print message with json format */
-func jsonPrintf(message string) {
+func jsonPrintf(format string, a ...any) {
 	data := struct {
 		Message string `json:"message"`
 	}{
-		Message: message,
+		Message: fmt.Sprintf(format, a...),
 	}
 	outputJson, _ := json.Marshal(&data)
 	fmt.Println(string(outputJson))
