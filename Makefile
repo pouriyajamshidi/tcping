@@ -59,7 +59,7 @@ test:
 
 docker:
 	@echo "[+] Building the Docker image"
-	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping_linux tcping.go
+	@env GOOS=linux go build -ldflags "-s -w" -o $(EXEC_DIR)tcping_linux tcping.go && chmod +x $(EXEC_DIR)tcping_linux
 	@docker build --build-arg GOOS=linux -t tcping:develop .
 	@rm $(EXEC_DIR)tcping_linux
 	@echo "[+] Done"
