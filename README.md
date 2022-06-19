@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="Artwork/tcping_logo.png" style="width:60%;">
+ <img alt="tcping" src="Artwork/tcping_logo.png" style="width:50%;">
 </div>
 
 # TCPING
