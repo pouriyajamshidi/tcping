@@ -1,3 +1,7 @@
+<div align="center" style="width: 100%;">
+ <img alt="tcping" src="Artwork/tcping_logo.png" style="width:60%;">
+</div>
+
 # TCPING
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pouriyajamshidi/tcping)](https://goreportcard.com/report/github.com/pouriyajamshidi/tcping)
