@@ -59,7 +59,12 @@ test:
 
 container:
 	@echo "[+] Building container image"
-	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o tcpingDocker tcping.go statsprinter.go && chmod +x $(EXEC_DIR)tcping
+	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o $(EXEC_DIR)tcpingDocker tcping.go statsprinter.go && chmod +x $(EXEC_DIR)tcping
 	@docker build -t tcping:latest .
-	@rm $(EXEC_DIR)tcping
+	@rm $(EXEC_DIR)tcpingDocker
+	@echo "[+] Done"
+
+gitHubActions:
+	@echo "[+] Building container image - GitHub Actions"
+	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o tcpingDocker tcping.go statsprinter.go && chmod +x tcpingDocker
 	@echo "[+] Done"
