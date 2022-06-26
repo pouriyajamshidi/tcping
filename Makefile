@@ -1,4 +1,4 @@
-EXEC_DIR = execuatables/
+EXEC_DIR = executables/
 
 .PHONY: all build clean format test vet
 all: build
@@ -56,3 +56,10 @@ vet:
 test:
 	@echo "[+] Running tests"
 	@go test
+
+container:
+    @echo "[+] Building container image"
+    @env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o $(EXEC_DIR)tcping tcping.go statsprinter.go && chmod +x $(EXEC_DIR)tcping
+    @docker build -t tcping:latest .
+    @rm $(EXEC_DIR)tcping
+    @echo "[+] Done"
