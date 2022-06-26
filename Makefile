@@ -63,4 +63,3 @@ container:
     @docker build -t tcping:latest .
     @rm $(EXEC_DIR)tcping
     @echo "[+] Done"
-	
