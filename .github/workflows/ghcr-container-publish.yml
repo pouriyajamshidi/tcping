@@ -21,7 +21,7 @@ env:
 jobs:
   build:
 
-    runs-on: scratch
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
