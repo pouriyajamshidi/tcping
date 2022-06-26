@@ -1,5 +1,5 @@
 FROM scratch
 
-ADD executables/tcping /usr/bin/tcping
+ADD tcpingDocker /usr/bin/tcping
 
 ENTRYPOINT ["tcping"]

@@ -1,4 +1,4 @@
-name: Docker container
+name: Docker container build
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -7,9 +7,9 @@ name: Docker container
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: ["v*.*.*"]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -17,10 +17,8 @@ env:
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,8 +37,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25
         with:
-          cosign-release: 'v1.9.0'
-
+          cosign-release: "v1.9.0"
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
@@ -83,8 +80,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          image-name: tcping
-          dockerfile: Dockerfile
+          # image-name: tcping
+          # dockerfile: Dockerfile
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
