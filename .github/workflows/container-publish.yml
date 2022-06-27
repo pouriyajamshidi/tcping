@@ -78,8 +78,8 @@ jobs:
           images: |
             pouriyajamshidi/tcping
             ghcr.io/${{ github.repository }}
-          tags: |
-            type=semver,pattern={{version}}
+          tags: type=semver,pattern={{major}}.{{minor}}
+          # type=semver,pattern={{version}}
           # type=schedule
           # type=ref,event=branch
           # type=ref,event=pr
