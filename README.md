@@ -66,7 +66,15 @@ In addition to downloading the executables, you can install it using `go get` or
 
 If you have downloaded the executable, go to the directory/folder in which you have downloaded the application and extract the compressed file.
 
-### On `Linux` and `macOS`
+### On `Linux` and `mac OS`
+
+mac OS users can use `brew` to install `tcping`:
+
+```bash
+brew install pouriyajamshidi/tap/tcping
+```
+
+Additionally, you can follow the instructions below which applies to both `Linux` and `mac OS`:
 
 ```bash
 chmod +x tcping
