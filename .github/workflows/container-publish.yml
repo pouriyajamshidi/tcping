@@ -35,7 +35,7 @@ jobs:
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
         if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25
+        uses: sigstore/cosign-installer@441a29ec473755b0bc3a2be555989a1f8cef321d
         with:
           cosign-release: "v1.9.0"
 
@@ -44,7 +44,7 @@ jobs:
         uses: docker/setup-buildx-action@79abd3f86f79a9d68a23c75a09a9a85889262adf
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+        uses: docker/login-action@d398f07826957cd0a18ea1b059cf1207835e60bc
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASS }}
@@ -53,7 +53,7 @@ jobs:
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+        uses: docker/login-action@d398f07826957cd0a18ea1b059cf1207835e60bc
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -66,19 +66,27 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@97c170d70b5f8bfc77e6b23e68381f217cb64ded
         with:
           # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           images: |
             pouriyajamshidi/tcping
             ghcr.io/${{ github.repository }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
-        uses: actions/setup-go@v3
+        uses: docker/build-push-action@42863b1282f7046f6c1ec9222965bbceafae3bb8
+        uses: actions/setup-go@v3.2.0
         with:
           context: .
           go-version: '^1.18.1'
