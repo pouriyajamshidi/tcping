@@ -85,11 +85,13 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@42863b1282f7046f6c1ec9222965bbceafae3bb8
-        uses: actions/setup-go@v3.2.0
+        uses: |
+          docker/build-push-action@42863b1282f7046f6c1ec9222965bbceafae3bb8
+          actions/setup-go@v3.2.0
         with:
           context: .
-          go-version: '^1.18.1'
+          go-version-file: "go.mod"
+          # go-version: "^1.18.1"
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
