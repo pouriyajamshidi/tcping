@@ -31,23 +31,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Extract metadata (tags, labels) for Docker
-      # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@97c170d70b5f8bfc77e6b23e68381f217cb64ded
-        with:
-          # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          images: |
-            pouriyajamshidi/tcping
-            ghcr.io/${{ github.repository }}
-          tags: |
-            type=semver,pattern={{major}}.{{minor}}.{{patch}}
-          # type=ref,event=branch
-          # type=ref,event=pr
-          # type=semver,pattern={{version}}
-          # type=semver,pattern={{major}}.{{minor}}.{{patch}}
-
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -84,6 +67,25 @@ jobs:
 
       - name: build Docker image using Makefile
         run: make gitHubActions
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@97c170d70b5f8bfc77e6b23e68381f217cb64ded
+        with:
+          # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            pouriyajamshidi/tcping
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+          # type=semver,pattern={{major}}.{{minor}}.{{patch}}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
