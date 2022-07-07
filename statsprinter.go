@@ -17,6 +17,7 @@ var (
 	colorLightYellow = color.LightYellow.Printf
 	colorLightBlue   = color.FgLightBlue.Printf
 	colorLightGreen  = color.LightGreen.Printf
+	colorLightCyan   = color.LightCyan.Printf
 )
 
 type statsPrinter interface {
@@ -38,7 +39,7 @@ type statsPlanePrinter struct {
 
 /* Print host name and port to use on tcping */
 func (p *statsPlanePrinter) printStart() {
-	color.LightCyan.Printf("TCPinging %s on port %s\n", p.hostname, p.port)
+	colorLightCyan("TCPinging %s on port %s\n", p.hostname, p.port)
 }
 
 /* Print the last successful and unsuccessful probes */
@@ -188,7 +189,7 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 func (p *statsPlanePrinter) printTotalDownTime(now time.Time) {
 	latestDowntimeDuration := p.startOfDowntime.Sub(now).Seconds()
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
-	color.Yellow.Printf("No response received for %s\n", calculatedDowntime)
+	colorYellow("No response received for %s\n", calculatedDowntime)
 }
 
 /* Print the longest uptime */

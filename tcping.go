@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v45/github"
-	"github.com/gookit/color"
 )
 
 type stats struct {
@@ -244,7 +243,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		/* Prevent exit if application has been running for a while */
 		return tcpStats.ip
 	} else if err != nil {
-		color.Red.Printf("Failed to resolve %s\n", tcpStats.hostname)
+		colorRed("Failed to resolve %s\n", tcpStats.hostname)
 		os.Exit(1)
 	}
 
