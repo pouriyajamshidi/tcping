@@ -195,7 +195,7 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 
 /* Print the total downtime */
 func (p *statsPlanePrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := p.startOfDowntime.Sub(now).Seconds()
+	latestDowntimeDuration := time.Since(p.startOfDowntime).Seconds()
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 	colorYellow("No response received for %s\n", calculatedDowntime)
 }
@@ -388,7 +388,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 
 /* Print the total downtime in JSON format */
 func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := j.startOfDowntime.Sub(now).Seconds()
+	latestDowntimeDuration := time.Since(j.startOfDowntime).Seconds()
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 
 	jsonPrintf("No response received for %s", calculatedDowntime)
