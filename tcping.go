@@ -17,29 +17,29 @@ import (
 )
 
 type stats struct {
-	startTime                 time.Time
-	endTime                   time.Time
-	startOfUptime             time.Time
-	startOfDowntime           time.Time
-	lastSuccessfulProbe       time.Time
-	lastUnsuccessfulProbe     time.Time
+	startTime             time.Time
+	endTime               time.Time
+	startOfUptime         time.Time
+	startOfDowntime       time.Time
+	lastSuccessfulProbe   time.Time
+	lastUnsuccessfulProbe time.Time
+	statsPrinter
 	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
 	ip                        string
 	port                      string
 	hostname                  string
 	rtt                       []uint
-	totalDowntime             time.Duration
-	totalUptime               time.Duration
+	totalUnsuccessfulPkts     uint
 	longestDowntime           longestTime
 	totalSuccessfulPkts       uint
-	totalUnsuccessfulPkts     uint
+	totalUptime               time.Duration
 	ongoingUnsuccessfulPkts   uint
 	retriedHostnameResolves   uint
 	longestUptime             longestTime
+	totalDowntime             time.Duration
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 	shouldRetryResolve        bool
-	statsPrinter
 }
 
 type longestTime struct {
@@ -49,8 +49,8 @@ type longestTime struct {
 }
 
 type rttResults struct {
-	slowest    uint
-	fastest    uint
+	min        uint
+	max        uint
 	average    float32
 	hasResults bool
 }
@@ -65,7 +65,7 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.9.0"
+	version             = "1.12.0"
 	owner               = "pouriyajamshidi"
 	repo                = "tcping"
 	thousandMilliSecond = 1000 * time.Millisecond
@@ -77,13 +77,13 @@ const (
 
 /* Print how program should be run */
 func usage() {
-	commandName := os.Args[0]
+	executableName := os.Args[0]
 
-	colorRed("TCPING version %s\n\n", version)
-	colorRed("Try running %s like:\n", commandName)
-	colorRed("%s <hostname/ip> <port number> | for example:\n", commandName)
-	colorRed("%s www.example.com 443\n", commandName)
-	colorYellow("[optional]\n")
+	colorLightCyan("\nTCPING version %s\n\n", version)
+	colorRed("Try running %s like:\n", executableName)
+	colorRed("%s <hostname/ip> <port number>. For example:\n", executableName)
+	colorRed("%s www.example.com 443\n", executableName)
+	colorYellow("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
 		colorYellow("  -%s : %s\n", f.Name, f.Usage)
@@ -107,10 +107,13 @@ func signalHandler(tcpStats *stats) {
 
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
-	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes")
+	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
-	jsonFlag := flag.Bool("j", false, "output with JSON format.")
+	outputJson := flag.Bool("j", false, "output in JSON format.")
+	showVersion := flag.Bool("v", false, "show version.")
+
 	flag.CommandLine.Usage = usage
+
 	permuteArgs(os.Args[1:])
 	flag.Parse()
 
@@ -125,6 +128,11 @@ func processUserInput(tcpStats *stats) {
 		} else {
 			usage()
 		}
+	}
+
+	if *showVersion {
+		colorGreen("TCPING version %s\n", version)
+		os.Exit(0)
 	}
 
 	/* host and port must be specified　*/
@@ -153,7 +161,7 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	/* output format determination. */
-	if *jsonFlag {
+	if *outputJson {
 		tcpStats.statsPrinter = &statsJsonPrinter{stats: tcpStats}
 	} else {
 		tcpStats.statsPrinter = &statsPlanePrinter{stats: tcpStats}
@@ -275,17 +283,17 @@ func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 	var accum uint
 
 	var rttResults rttResults
-	rttResults.fastest = ^uint(0)
+	rttResults.min = ^uint(0)
 
 	for i := 0; i < arrLen; i++ {
 		accum += timeArr[i]
 
-		if timeArr[i] > rttResults.slowest {
-			rttResults.slowest = timeArr[i]
+		if timeArr[i] > rttResults.max {
+			rttResults.max = timeArr[i]
 		}
 
-		if timeArr[i] < rttResults.fastest {
-			rttResults.fastest = timeArr[i]
+		if timeArr[i] < rttResults.min {
+			rttResults.min = timeArr[i]
 		}
 	}
 
