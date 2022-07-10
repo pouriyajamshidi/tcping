@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.12.0 - 2022-7-10
+
+- add preliminary JSON output support thanks @icemint0828 for collaboration
+- add Docker container images on Docker Hub and GitHub container registry
+- add and optimize GitHub workflows
+- small refactoring and cleanups
+- add -v flag to show version
+- improve code readability
+- add logo thanks @code-hyker
+
 ## v1.9.0 - 2022-5-29
 
 - Add `-r` flag to retry resolving the hostname after a certain amount of probe failures (thanks to @icemint0828)
