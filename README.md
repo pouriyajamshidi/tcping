@@ -15,8 +15,6 @@ A cross-platform ping program for `TCP` ports inspired by the Linux's ping utili
 
 TCPING uses different `TCP sequence numbering` for successful and unsuccessful probes, so that when you look at the results and spot a failed probe, understanding the total packet drops to that point would be illustrative enough.
 
-## Features And Application
-
 - Monitor your network connection.
 - Calculate packet loss.
 - Assess the latency of your network.
@@ -28,6 +26,31 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 - Calculate the total uptime/downtime when conducting a maintenance.
 - An alternative to `ping` in environments that `ICMP` is blocked.
 
+---
+
+## Table of Contents
+
+- [TCPING](#tcping)
+  - [Table of Contents](#table-of-contents)
+  - [Demos](#demos)
+    - [Vanilla usage](#vanilla-usage)
+    - [Retry resolve (`-r`) flag](#retry-resolve--r-flag)
+  - [Download the executables for](#download-the-executables-for)
+  - [Usage](#usage)
+    - [On `Linux` and `macOS`](#on-linux-and-macos)
+    - [On `Windows`](#on-windows)
+    - [Using Docker](#using-docker)
+  - [Flags](#flags)
+  - [Tips](#tips)
+  - [Notes](#notes)
+  - [Contributing](#contributing)
+  - [Tested on](#tested-on)
+  - [Sponsor us](#sponsor-us)
+  - [Contact me](#contact-me)
+  - [License](#license)
+
+---
+
 ## Demos
 
 ### Vanilla usage
@@ -36,9 +59,11 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ---
 
-### Retry resolve (`-r`) in action
+### Retry resolve (`-r`) flag
 
 ![tcping](Images/tcpingrflag.gif)
+
+---
 
 ## Download the executables for
 
@@ -46,41 +71,61 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 - ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.zip)
 
-- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.zip)
+- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.zip) - also available through `brew`
 
-In addition to downloading the executables, you can install it using `go get` or `make` command:
+  ```bash
+  brew install pouriyajamshidi/tap/tcping
+  ```
 
-- Install it using `go get`:
+When the download is complete, head to the [usage](#usage) section.
+
+**Alternatively**, you can:
+
+- Install using `go get`:
 
   ```bash
   go get github.com/pouriyajamshidi/tcping
   ```
 
-- Or compile the code yourself by running the `make` command inside the cloned directory:
+- Use the `Docker` images:
+
+  ```bash
+  docker pull pouriyajamshidi/tcping:latest
+  ```
+
+  > Image is also available on GitHub container registry:
+
+  ```bash
+  docker pull ghcr.io/pouriyajamshidi/tcping:latest
+  ```
+
+- Or compile the code yourself by running the `make` command in the `tcping` directory:
 
   ```bash
   make build
   ```
 
+  This will give you a compressed file with executables for all the supported operating systems inside the `executables` folder.
+
+---
+
 ## Usage
 
-If you have downloaded the executable, go to the directory/folder in which you have downloaded the application and extract the compressed file.
+If you have decided to download the executables using the [aforementioned links](#download-the-executables-for) , go to the folder containing the file and extract it. Then, depending on your operating system, follow the instructions below:
 
-### On `Linux` and `mac OS`
+- [Linux and macOS](#on-linux-and-macos)
+- [Windows](#on-windows)
+- [Docker images](#using-docker)
 
-mac OS users can use `brew` to install `tcping`:
+### On `Linux` and `macOS`
 
-```bash
-brew install pouriyajamshidi/tap/tcping
-```
-
-Additionally, you can follow the instructions below which applies to both `Linux` and `mac OS`:
+Make the file executable:
 
 ```bash
 chmod +x tcping
 ```
 
-For easier use, you can copy it to your system `PATH` like `/bin/` or `/usr/bin/`:
+For easier use, copy the executable to your system `PATH` like `/usr/bin/`:
 
 ```bash
 cp tcping /usr/bin/
@@ -104,13 +149,13 @@ tcping www.example.com 443 -r 10
 tcping -r 10 www.example.com 443
 ```
 
-will result in a retry of name resolution after 10 probe failures.
+> The `-r 10` in the command above will result in a retry of name resolution after 10 probe failures.
 
 ### On `Windows`
 
-I recommend `Windows Terminal` for the best experience and proper colorization.
+I recommend [Windows Terminal](apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
 
-For easier use, copy `tcping.exe` to your system `PATH` like `C:\Windows\System32` and run it like:
+For easier use, copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
 
 ```powershell
 tcping www.example.com 443
@@ -120,7 +165,7 @@ tcping www.example.com 443
 tcping www.example.com 443 -r 10
 ```
 
-or from your terminal application, go to the folder that contains the `tcping.exe` program and run:
+> If you prefer not to add the executable to your `PATH`, go to the folder that contains the `tcping.exe` open up the terminal and run the following command:
 
 ```powershell
 .\tcping.exe 10.10.10.1 22
@@ -128,10 +173,38 @@ or from your terminal application, go to the folder that contains the `tcping.ex
 
 **Please note, if you copy the program to your system `PATH`, you don't need to specify `.\` and the `.exe` extension to run the program anymore.**
 
+### Using Docker
+
+The Docker image can be used like:
+
+```bash
+# Using Docker Hub
+docker run -it pouriyajamshidi/tcping:latest example.com 443
+
+# Using GitHub container registry:
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+```
+
+---
+
+## Flags
+
+The following flags are available to control the behavior of application:
+
+| Flag | Description                                               |
+| ---- | --------------------------------------------------------- |
+| `-r` | Retry resolving a hostname after `<n>` number of failures |
+| `-j` | Output in JSON format                                     |
+| `-u` | Check for updates                                         |
+| `-v` | Print version                                             |
+
+---
+
 ## Tips
 
 - While the program is running, press the `Enter` key to view the summary of all probes without exiting the program as depicted in the [demos](#Demos) section.
-- Specifying the `-r` flag followed by a number, for instance, 3, will retry resolving a hostname after 3 tcp probe failures.
+
+---
 
 ## Notes
 
@@ -153,7 +226,7 @@ Please make sure to only work on a specific issue on your pull request and not a
 
 ## Tested on
 
-Windows, Linux and mac OS.
+Windows, Linux and macOS.
 
 ## Sponsor us
 
