@@ -34,6 +34,13 @@ jobs:
       id-token: write
 
     steps:
+      - name: Setting Go version
+        uses: actions/setup-go@v3.2.1
+        with:
+          go-version-file: "go.mod"
+          check-latest: true
+          cache: true
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -65,13 +72,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setting Go version
-        uses: actions/setup-go@v3.2.1
-        with:
-          go-version-file: "go.mod"
-          check-latest: true
-          cache: true
-
       - name: build Docker image using Makefile
         run: make gitHubActions
 
@@ -88,9 +88,9 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=latest,enable={{is_default_branch}}
+          # type=semver,pattern={{version}}
           # type=ref,event=pr
           # type=semver,pattern={{raw}}
-          # type=semver,pattern={{version}}
           # type=semver,pattern={{major}}.{{minor}}
           # type=semver,pattern={{major}}
 
@@ -99,7 +99,6 @@ jobs:
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@42863b1282f7046f6c1ec9222965bbceafae3bb8
-        # actions/setup-go@v3.2.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
