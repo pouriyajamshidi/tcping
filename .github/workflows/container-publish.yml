@@ -39,7 +39,7 @@ jobs:
         with:
           go-version-file: "go.mod"
           check-latest: true
-          cache: true
+          # cache: true
 
       - name: Checkout repository
         uses: actions/checkout@v3
