@@ -208,7 +208,7 @@ func (p *statsPlanePrinter) printLongestUptime() {
 
 	uptime := calcTime(uint(math.Ceil(p.longestUptime.duration)))
 
-	colorYellow("longest consecutive uptime:  ")
+	colorYellow("longest consecutive uptime:   ")
 	colorGreen("%v ", uptime)
 	colorYellow("from ")
 	colorLightBlue("%v ", p.longestUptime.start.Format(timeFormat))

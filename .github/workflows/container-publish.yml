@@ -66,9 +66,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setting Go version
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v3.2.1
         with:
-          go-version-file: './go.mod'
+          go-version-file: "go.mod"
+          check-latest: true
+          cache: true
 
       - name: build Docker image using Makefile
         run: make gitHubActions
