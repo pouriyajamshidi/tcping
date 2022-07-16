@@ -1,11 +1,11 @@
 EXEC_DIR = executables/
 SOURCE_FILES = $(tcping.go statsprinter.go)
 
-.PHONY: all build clean format test vet gitHubActions container
+.PHONY: all build update clean format test vet gitHubActions container
 all: build
 check: format vet test
 
-build: clean format vet test
+build: clean update format vet test
 
 	@mkdir -p $(EXEC_DIR)
 	
@@ -38,6 +38,11 @@ build: clean format vet test
 	@echo "[+] Removing the MacOS binary"
 	@rm $(EXEC_DIR)tcping
 
+	@echo "[+] Done"
+
+update:
+	@echo "[+] Updating Go dependencies"
+	@go get -u
 	@echo "[+] Done"
 
 clean:
