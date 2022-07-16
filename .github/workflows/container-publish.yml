@@ -42,6 +42,7 @@ jobs:
           echo "##[set-output name=latest_tag;]$GITHUB_REPOSITORY:latest"
       - name: Print Version
         run: |
+          echo ${{steps.version_step.outputs.version}}
           echo ${{steps.version_step.outputs.version_tag}}
           echo ${{steps.version_step.outputs.latest_tag}}
 
@@ -90,16 +91,15 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@97c170d70b5f8bfc77e6b23e68381f217cb64ded
+        uses: docker/metadata-action@v4.0.1
         with:
-          # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           images: |
             pouriyajamshidi/tcping
             ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
-          # type=semver,pattern={{version}}
+            type=semver,pattern={{version}}
+          # type=ref,event=tag
+          # type=raw,value=latest,enable={{is_default_branch}}
           # type=ref,event=pr
           # type=semver,pattern={{raw}}
           # type=semver,pattern={{major}}.{{minor}}
