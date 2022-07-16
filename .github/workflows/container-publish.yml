@@ -98,8 +98,8 @@ jobs:
             ghcr.io/${{ github.repository }}
           tags: |
             type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
           # type=ref,event=tag
-          # type=raw,value=latest,enable={{is_default_branch}}
           # type=ref,event=pr
           # type=semver,pattern={{raw}}
           # type=semver,pattern={{major}}.{{minor}}
