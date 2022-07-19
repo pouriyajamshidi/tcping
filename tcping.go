@@ -245,7 +245,6 @@ func checkLatestVersion() {
 
 /* Hostname resolution */
 func resolveHostname(tcpStats *stats) (ipAddress, error) {
-	//ipRaw := net.ParseIP(tcpStats.hostname)
     ip, err := netip.ParseAddr(tcpStats.hostname)
     if err == nil {
         return ip, nil
@@ -257,8 +256,7 @@ func resolveHostname(tcpStats *stats) (ipAddress, error) {
 		/* Prevent exit if application has been running for a while */
 		return tcpStats.ip, nil
 	} else if err != nil {
-		colorRed("Failed to resolve %s\n", tcpStats.hostname)
-		os.Exit(1)
+		return ip, fmt.Errorf("failed to resolve %s", tcpStats.hostname)
 	}
 
 	return netip.ParseAddr(ipAddr[0].String()) 
