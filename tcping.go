@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"os/signal"
 	"regexp"
@@ -25,7 +26,7 @@ type stats struct {
 	lastUnsuccessfulProbe time.Time
 	statsPrinter
 	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
-	ip                        string
+	ip                        ipAddress
 	port                      string
 	hostname                  string
 	rtt                       []uint
@@ -60,7 +61,7 @@ type replyMsg struct {
 	rtt int64
 }
 
-type ipAddress = string
+type ipAddress = netip.Addr
 type cliArgs = []string
 type calculatedTimeString = string
 
@@ -149,10 +150,15 @@ func processUserInput(tcpStats *stats) {
 
 	tcpStats.hostname = args[0]
 	tcpStats.port = strconv.Itoa(port)
-	tcpStats.ip = resolveHostname(tcpStats)
+    var err error
+    tcpStats.ip, err = resolveHostname(tcpStats)
+    if err != nil {
+        colorRed(err.Error())
+        os.Exit(1)
+    }
 	tcpStats.startTime = getSystemTime()
 
-	if tcpStats.hostname == tcpStats.ip {
+	if tcpStats.hostname == tcpStats.ip.String() {
 		tcpStats.isIP = true
 	}
 
@@ -238,31 +244,31 @@ func checkLatestVersion() {
 }
 
 /* Hostname resolution */
-func resolveHostname(tcpStats *stats) ipAddress {
-	ipRaw := net.ParseIP(tcpStats.hostname)
-
-	if ipRaw != nil {
-		return ipRaw.String()
-	}
+func resolveHostname(tcpStats *stats) (ipAddress, error) {
+	//ipRaw := net.ParseIP(tcpStats.hostname)
+    ip, err := netip.ParseAddr(tcpStats.hostname)
+    if err == nil {
+        return ip, nil
+    }
 
 	ipAddr, err := net.LookupIP(tcpStats.hostname)
 
 	if err != nil && (tcpStats.totalSuccessfulPkts != 0 || tcpStats.totalUnsuccessfulPkts != 0) {
 		/* Prevent exit if application has been running for a while */
-		return tcpStats.ip
+		return tcpStats.ip, nil
 	} else if err != nil {
 		colorRed("Failed to resolve %s\n", tcpStats.hostname)
 		os.Exit(1)
 	}
 
-	return ipAddr[0].String()
+	return netip.ParseAddr(ipAddr[0].String()) 
 }
 
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
 	if tcpStats.ongoingUnsuccessfulPkts > *tcpStats.retryHostnameResolveAfter {
 		tcpStats.printRetryingToResolve()
-		tcpStats.ip = resolveHostname(tcpStats)
+		tcpStats.ip, _ = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulPkts = 0
 		tcpStats.retriedHostnameResolves += 1
 	}
@@ -388,7 +394,7 @@ func getSystemTime() time.Time {
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
 
-	IPAndPort := net.JoinHostPort(tcpStats.ip, tcpStats.port)
+	IPAndPort := net.JoinHostPort(tcpStats.ip.String(), tcpStats.port)
 
 	connStart := getSystemTime()
 	conn, err := net.DialTimeout("tcp", IPAndPort, oneSecond)
