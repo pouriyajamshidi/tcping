@@ -27,7 +27,7 @@ type stats struct {
 	statsPrinter
 	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
 	ip                        ipAddress
-	port                      string
+	port                      uint16
 	hostname                  string
 	rtt                       []uint
 	totalUnsuccessfulPkts     uint
@@ -148,9 +148,9 @@ func processUserInput(tcpStats *stats) {
 		os.Exit(1)
 	}
 
-	tcpStats.hostname = args[0]
-	tcpStats.port = strconv.Itoa(port)
 	var err error
+	tcpStats.hostname = args[0]
+	tcpStats.port = uint16(port)
 	tcpStats.ip = resolveHostname(tcpStats)
 	if err != nil {
 		colorRed(err.Error())
@@ -393,11 +393,10 @@ func getSystemTime() time.Time {
 
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
-
-	IPAndPort := net.JoinHostPort(tcpStats.ip.String(), tcpStats.port)
+    IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
 
 	connStart := getSystemTime()
-	conn, err := net.DialTimeout("tcp", IPAndPort, oneSecond)
+	conn, err := net.DialTimeout("tcp", IPAndPort.String(), oneSecond)
 	connEnd := time.Since(connStart)
 
 	rtt := connEnd.Milliseconds()
