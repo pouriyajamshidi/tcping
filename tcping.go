@@ -40,6 +40,7 @@ type stats struct {
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 	shouldRetryResolve        bool
+    timeout time.Duration
 }
 
 type longestTime struct {
@@ -111,6 +112,7 @@ func processUserInput(tcpStats *stats) {
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
 	showVersion := flag.Bool("v", false, "show version.")
+    timeout := flag.Int("t", 1, "timeout seconds.")
 
 	flag.CommandLine.Usage = usage
 
@@ -166,6 +168,8 @@ func processUserInput(tcpStats *stats) {
 	} else {
 		tcpStats.statsPrinter = &statsPlanePrinter{stats: tcpStats}
 	}
+
+    tcpStats.timeout = time.Duration(*timeout * int(time.Second))
 }
 
 /* Permute args for flag parsing stops just before the first non-flag argument.
@@ -391,7 +395,7 @@ func tcping(tcpStats *stats) {
 	IPAndPort := net.JoinHostPort(tcpStats.ip, tcpStats.port)
 
 	connStart := getSystemTime()
-	conn, err := net.DialTimeout("tcp", IPAndPort, oneSecond)
+	conn, err := net.DialTimeout("tcp", IPAndPort, tcpStats.timeout)
 	connEnd := time.Since(connStart)
 
 	rtt := connEnd.Milliseconds()
