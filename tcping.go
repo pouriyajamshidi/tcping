@@ -148,14 +148,9 @@ func processUserInput(tcpStats *stats) {
 		os.Exit(1)
 	}
 
-	var err error
 	tcpStats.hostname = args[0]
 	tcpStats.port = uint16(port)
 	tcpStats.ip = resolveHostname(tcpStats)
-	if err != nil {
-		colorRed(err.Error())
-		os.Exit(1)
-	}
 	tcpStats.startTime = getSystemTime()
 
 	if tcpStats.hostname == tcpStats.ip.String() {
