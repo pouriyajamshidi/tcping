@@ -111,17 +111,3 @@ func TestPermuteArgs(t *testing.T) {
 		})
 	}
 }
-
-func TestResolveHostname (t *testing.T) {
-    validAddr := "127.0.0.1"
-    s := &stats{hostname: validAddr}
-    addr, err := resolveHostname(s)
-    assert.Nil(t, err)
-    assert.Equal(t, validAddr, addr.String())
-
-    invalidAddr := "8.0.0.8.5"
-    s = &stats{hostname: invalidAddr}
-    addr, err = resolveHostname(s)
-    assert.NotNil(t, err)
-    assert.Equal(t, "invalid IP", addr.String())
-}
