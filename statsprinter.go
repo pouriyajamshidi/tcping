@@ -47,7 +47,7 @@ type statsJsonPrinter struct {
 
 /* Print host name and port to use on tcping */
 func (p *statsPlanePrinter) printStart() {
-	colorLightCyan("TCPinging %s on port %s\n", p.hostname, p.port)
+	colorLightCyan("TCPinging %s on port %d\n", p.hostname, p.port)
 }
 
 /* Print the last successful and unsuccessful probes */
@@ -176,18 +176,18 @@ func (p *statsPlanePrinter) printStatistics() {
 func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 	if p.isIP {
 		if replyMsg.msg == noReply {
-			colorRed("%s from %s on port %s TCP_conn=%d\n",
+			colorRed("%s from %s on port %d TCP_conn=%d\n",
 				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
-			colorLightGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s on port %d TCP_conn=%d time=%d ms\n",
 				replyMsg.msg, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
 		if replyMsg.msg == noReply {
-			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
+			colorRed("%s from %s (%s) on port %d TCP_conn=%d\n",
 				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
-			colorLightGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s (%s) on port %d TCP_conn=%d time=%d ms\n",
 				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
@@ -263,7 +263,7 @@ func jsonPrintf(format string, a ...interface{}) {
 
 /* Print host name and port to use on tcping in JSON format */
 func (j *statsJsonPrinter) printStart() {
-	jsonPrintf("TCPinging %s on port %s", j.hostname, j.port)
+	jsonPrintf("TCPinging %s on port %d", j.hostname, j.port)
 }
 
 /* Print the last successful and unsuccessful probes in JSON format */
@@ -369,18 +369,18 @@ func (j *statsJsonPrinter) printStatistics() {
 func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	if j.isIP {
 		if replyMsg.msg == noReply {
-			jsonPrintf("%s from %s on port %s TCP_conn=%d",
+			jsonPrintf("%s from %s on port %d TCP_conn=%d",
 				replyMsg.msg, j.ip, j.port, j.totalUnsuccessfulPkts)
 		} else {
-			jsonPrintf("%s from %s on port %s TCP_conn=%d time=%d ms",
+			jsonPrintf("%s from %s on port %d TCP_conn=%d time=%d ms",
 				replyMsg.msg, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
 		if replyMsg.msg == noReply {
-			jsonPrintf("%s from %s (%s) on port %s TCP_conn=%d",
+			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d",
 				replyMsg.msg, j.hostname, j.ip, j.port, j.totalUnsuccessfulPkts)
 		} else {
-			jsonPrintf("%s from %s (%s) on port %s TCP_conn=%d time=%d ms",
+			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d time=%d ms",
 				replyMsg.msg, j.hostname, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
