@@ -142,7 +142,13 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	/* the non-flag command-line arguments */
-	port, _ := strconv.Atoi(args[1])
+	port, err := strconv.ParseUint(args[1], 10, 16)
+
+	if err != nil {
+		colorRed("Invalid port number: %s\n", args[1])
+		os.Exit(1)
+	}
+
 	if port < 1 || port > 65535 {
 		print("Port should be in 1..65535 range\n")
 		os.Exit(1)
@@ -255,7 +261,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		os.Exit(1)
 	}
 
-    ip, _ = netip.ParseAddr(ipAddr[0].String())
+	ip, _ = netip.ParseAddr(ipAddr[0].String())
 	return ip
 }
 
@@ -388,7 +394,7 @@ func getSystemTime() time.Time {
 
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
-    IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
+	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
 
 	connStart := getSystemTime()
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), oneSecond)
