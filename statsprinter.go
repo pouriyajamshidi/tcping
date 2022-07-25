@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -47,7 +46,7 @@ type statsJsonPrinter struct {
 
 /* Print host name and port to use on tcping */
 func (p *statsPlanePrinter) printStart() {
-	colorLightCyan("TCPinging %s on port %d\n", p.hostname, p.port)
+	colorLightCyan("TCPinging %s on port %s\n", p.hostname, p.port)
 }
 
 /* Print the last successful and unsuccessful probes */
@@ -176,18 +175,18 @@ func (p *statsPlanePrinter) printStatistics() {
 func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 	if p.isIP {
 		if replyMsg.msg == noReply {
-			colorRed("%s from %s on port %d TCP_conn=%d\n",
+			colorRed("%s from %s on port %s TCP_conn=%d\n",
 				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
-			colorLightGreen("%s from %s on port %d TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s on port %s TCP_conn=%d time=%d ms\n",
 				replyMsg.msg, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
 		if replyMsg.msg == noReply {
-			colorRed("%s from %s (%s) on port %d TCP_conn=%d\n",
+			colorRed("%s from %s (%s) on port %s TCP_conn=%d\n",
 				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
-			colorLightGreen("%s from %s (%s) on port %d TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s (%s) on port %s TCP_conn=%d time=%d ms\n",
 				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
@@ -251,19 +250,13 @@ JSON output section
 */
 
 /* Print message  in JSON format */
-func jsonPrintf(format string, a ...interface{}) {
-	data := struct {
-		Message string `json:"message"`
-	}{
-		Message: fmt.Sprintf(format, a...),
-	}
-	outputJson, _ := json.Marshal(&data)
-	fmt.Println(string(outputJson))
+func jsonPrintf(message string, format string, a ...interface{}) {
+	fmt.Printf("{\"%s\": \"%s\"}\n", message, fmt.Sprintf(format, a...))
 }
 
 /* Print host name and port to use on tcping in JSON format */
 func (j *statsJsonPrinter) printStart() {
-	jsonPrintf("TCPinging %s on port %d", j.hostname, j.port)
+	jsonPrintf("TCPinging", "%s:%s", j.hostname, j.port)
 }
 
 /* Print the last successful and unsuccessful probes in JSON format */
@@ -271,18 +264,16 @@ func (j *statsJsonPrinter) printLastSucUnsucProbes() {
 	formattedLastSuccessfulProbe := j.lastSuccessfulProbe.Format(timeFormat)
 	formattedLastUnsuccessfulProbe := j.lastUnsuccessfulProbe.Format(timeFormat)
 
-	successMsg := "last successful probe:   "
 	if formattedLastSuccessfulProbe == nullTimeFormat {
-		jsonPrintf("%s%s", successMsg, "Never succeeded")
+		jsonPrintf("last successful probe", "%s", "Never succeeded")
 	} else {
-		jsonPrintf("%s%s", successMsg, formattedLastSuccessfulProbe)
+		jsonPrintf("last successful probe", "%s", formattedLastSuccessfulProbe)
 	}
 
-	failureMsg := "last unsuccessful probe: "
 	if formattedLastUnsuccessfulProbe == nullTimeFormat {
-		jsonPrintf("%s%s", failureMsg, "Never failed")
+		jsonPrintf("last unsuccessful probe", "%s", "Never failed")
 	} else {
-		jsonPrintf("%s%s", failureMsg, formattedLastUnsuccessfulProbe)
+		jsonPrintf("last unsuccessful probe", "%s", formattedLastUnsuccessfulProbe)
 	}
 }
 
@@ -292,20 +283,22 @@ func (j *statsJsonPrinter) printDurationStats() {
 	var durationDiff time.Duration
 	endMsg := "still running"
 
-	startMSg := fmt.Sprintf("started at: %v ", j.startTime.Format(timeFormat))
+	startMSg := fmt.Sprintf("%v", j.startTime.Format(timeFormat))
 
+	jsonPrintf("time started", "%s", startMSg)
 	/* If the program was not terminated, no need to show the end time */
 	if j.endTime.Format(timeFormat) == nullTimeFormat {
 		durationDiff = time.Since(j.startTime)
 	} else {
-		endMsg = fmt.Sprintf("ended at: %v ", j.endTime.Format(timeFormat))
+		endMsg = fmt.Sprintf("%v", j.endTime.Format(timeFormat))
 		durationDiff = j.endTime.Sub(j.startTime)
 	}
 
+	jsonPrintf("is end", "%s", endMsg)
 	duration = time.Time{}.Add(durationDiff)
-	durationFormatted := fmt.Sprintf("duration (HH:MM:SS): %v", duration.Format(hourFormat))
+	durationFormatted := fmt.Sprintf("%v", duration.Format(hourFormat))
 
-	jsonPrintf(startMSg + endMsg + durationFormatted)
+	jsonPrintf("duration (HH:MM:SS)", "%s", durationFormatted)
 }
 
 /* Print statistics when program exits in JSON format */
@@ -323,22 +316,24 @@ func (j *statsJsonPrinter) printStatistics() {
 	packetLoss := (float32(j.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
 
 	/* general stats */
-	jsonPrintf("%s TCPing statistics: %d probes transmitted, %d received", j.hostname, totalPackets, j.totalSuccessfulPkts)
+	jsonPrintf("TCPing statistics", "%s", j.hostname)
+	jsonPrintf("probes transmitted", "%d", totalPackets)
+	jsonPrintf("probes received", "%d", j.totalSuccessfulPkts)
 
 	/* packet loss stats */
-	jsonPrintf("%.2f%% packet loss", packetLoss)
+	jsonPrintf("packet loss", "%.2f%%", packetLoss)
 
 	/* successful packet stats */
-	jsonPrintf("successful probes: %d", j.totalSuccessfulPkts)
+	jsonPrintf("successful probes", "%d", j.totalSuccessfulPkts)
 
 	/* unsuccessful packet stats */
-	jsonPrintf("unsuccessful probes: %d", j.totalUnsuccessfulPkts)
+	jsonPrintf("unsuccessful probes", "%d", j.totalUnsuccessfulPkts)
 
 	j.printLastSucUnsucProbes()
 
 	/* uptime and downtime stats */
-	jsonPrintf("total uptime: %s", totalUptime)
-	jsonPrintf("total downtime: %s", totalDowntime)
+	jsonPrintf("total uptime", "%s", totalUptime)
+	jsonPrintf("total downtime", "%s", totalDowntime)
 
 	/* calculate the last longest time */
 	if !j.wasDown {
@@ -359,8 +354,9 @@ func (j *statsJsonPrinter) printStatistics() {
 	}
 
 	/* latency stats.*/
-	jsonPrintf("rtt min/avg/max: %d/%2f/%d", rttResults.min, rttResults.average, rttResults.max)
-
+	jsonPrintf("rtt min", "%d", rttResults.min)
+	jsonPrintf("rtt avg", "%2f", rttResults.average)
+	jsonPrintf("rtt max", "%d", rttResults.max)
 	/* duration stats */
 	j.printDurationStats()
 }
@@ -369,19 +365,19 @@ func (j *statsJsonPrinter) printStatistics() {
 func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	if j.isIP {
 		if replyMsg.msg == noReply {
-			jsonPrintf("%s from %s on port %d TCP_conn=%d",
-				replyMsg.msg, j.ip, j.port, j.totalUnsuccessfulPkts)
+			jsonPrintf("no reply", "%s on port %d TCP_conn=%d",
+				j.ip, j.port, j.totalUnsuccessfulPkts)
 		} else {
-			jsonPrintf("%s from %s on port %d TCP_conn=%d time=%d ms",
-				replyMsg.msg, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
+			jsonPrintf("reply", "%s on port %d TCP_conn=%d time=%d ms",
+				j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
 		if replyMsg.msg == noReply {
-			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d",
-				replyMsg.msg, j.hostname, j.ip, j.port, j.totalUnsuccessfulPkts)
+			jsonPrintf("no reply", "%s (%s) on port %d TCP_conn=%d",
+				j.hostname, j.ip, j.port, j.totalUnsuccessfulPkts)
 		} else {
-			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d time=%d ms",
-				replyMsg.msg, j.hostname, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
+			jsonPrintf("reply", "%s (%s) on port %d TCP_conn=%d time=%d ms",
+				j.hostname, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
 }
@@ -391,7 +387,7 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 	latestDowntimeDuration := time.Since(j.startOfDowntime).Seconds()
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 
-	jsonPrintf("No response received for %s", calculatedDowntime)
+	jsonPrintf("duration of no response", "%s", calculatedDowntime)
 }
 
 /* Print the longest uptime in JSON format */
@@ -404,7 +400,9 @@ func (j *statsJsonPrinter) printLongestUptime() {
 	longestUptimeStart := j.longestUptime.start.Format(timeFormat)
 	longestUptimeEnd := j.longestUptime.end.Format(timeFormat)
 
-	jsonPrintf("longest consecutive uptime: %v from %v to %v", uptime, longestUptimeStart, longestUptimeEnd)
+	jsonPrintf("longest consecutive uptime start", "%v", longestUptimeStart)
+	jsonPrintf("longest consecutive uptime end", "%v", longestUptimeEnd)
+	jsonPrintf("longest consecutive uptime duration", "%v", uptime)
 }
 
 /* Print the longest downtime in JSON format */
@@ -418,15 +416,17 @@ func (j *statsJsonPrinter) printLongestDowntime() {
 	longestDowntimeStart := j.longestDowntime.start.Format(timeFormat)
 	longestDowntimeEnd := j.longestDowntime.end.Format(timeFormat)
 
-	jsonPrintf("longest consecutive downtime: %v from %v to %v", downtime, longestDowntimeStart, longestDowntimeEnd)
+	jsonPrintf("longest consecutive downtime start", "%v", longestDowntimeStart)
+	jsonPrintf("longest consecutive downtime end", "%v", longestDowntimeEnd)
+	jsonPrintf("longest consecutive downtime duration", "%v", downtime)
 }
 
 /* Print the number of times that we tried resolving a hostname after a failure in JSON format */
 func (j *statsJsonPrinter) printRetryResolveStats() {
-	jsonPrintf("retried to resolve hostname %d times", j.retriedHostnameResolves)
+	jsonPrintf("retry resolve attempt", "%d", j.retriedHostnameResolves)
 }
 
 /* Print the message retrying to resolve in JSON format */
 func (j *statsJsonPrinter) printRetryingToResolve() {
-	jsonPrintf("retrying to resolve %s", j.hostname)
+	jsonPrintf("retrying resolve", "%s", j.hostname)
 }
