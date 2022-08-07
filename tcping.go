@@ -175,7 +175,9 @@ func processUserInput(tcpStats *stats) {
 	}
 }
 
-/* Permute args for flag parsing stops just before the first non-flag argument.
+/*
+	Permute args for flag parsing stops just before the first non-flag argument.
+
 see: https://pkg.go.dev/flag
 */
 func permuteArgs(args cliArgs) {
@@ -239,7 +241,7 @@ func checkLatestVersion() {
 		colorLightBlue("Please update TCPING from the URL below:\n")
 		colorLightBlue("https://github.com/%s/%s/releases/tag/%s\n", owner, repo, latestTagName)
 	} else {
-		colorLightBlue("Newer version not found . Your version %s is the latest.\n", version)
+		colorLightBlue("Newer version not found. %s is the latest version.\n", version)
 	}
 	os.Exit(0)
 }
