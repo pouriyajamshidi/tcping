@@ -85,7 +85,7 @@ When the download is complete, head to the [usage](#usage) section.
 - Install using `go get`:
 
   ```bash
-  go get github.com/pouriyajamshidi/tcping
+  go install github.com/pouriyajamshidi/tcping@latest
   ```
 
 - Use the `Docker` images:
