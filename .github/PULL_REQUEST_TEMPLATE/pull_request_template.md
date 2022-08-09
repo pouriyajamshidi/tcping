@@ -1,10 +1,19 @@
+# Important
+
+**Please provide the requested parameters below to help us review your pull request.**
+
+**Pull requests without a body or explanation will be rejected.**
+
 ## Describe your changes
 
 ## Issue ticket number and link
 
+Closes #
+
 ## Checklist before requesting a review
+
 - [ ] I have performed a self-review of my code
-- [ ] If it is a core feature, I have added thorough tests.
+- [ ] If it is a core feature, I have added tests.
 - [ ] I have run `make check` and there are no failures.
 
 ## Type of change
