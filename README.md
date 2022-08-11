@@ -36,7 +36,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
   - [Demos](#demos)
     - [Vanilla usage](#vanilla-usage)
     - [Retry resolve (`-r`) flag](#retry-resolve--r-flag)
-  - [Download the executables for](#download-the-executables-for)
+  - [Download the executables](#download-the-executables)
   - [Usage](#usage)
     - [On `Linux` and `macOS`](#on-linux-and-macos)
     - [On `Windows`](#on-windows)
@@ -66,7 +66,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ---
 
-## Download the executables for
+## Download the executables
 
 - ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
 
@@ -82,7 +82,7 @@ When the download is complete, head to the [usage](#usage) section.
 
 **Alternatively**, you can:
 
-- Install using `go get`:
+- Install using `go install`:
 
   ```bash
   go install github.com/pouriyajamshidi/tcping@latest
@@ -129,16 +129,14 @@ chmod +x tcping
 For easier use, copy the executable to your system `PATH` like `/usr/bin/`:
 
 ```bash
-cp tcping /usr/bin/
+sudo cp tcping /usr/local/bin/
 ```
 
 Then run it like, `tcping <hostname/IP address> <port>`. For instance:
 
 ```bash
 tcping www.example.com 443
-
 # OR
-
 tcping 10.10.10.1 22
 ```
 
@@ -154,7 +152,7 @@ tcping -r 10 www.example.com 443
 
 ### On `Windows`
 
-I recommend [Windows Terminal](apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
+We recommend [Windows Terminal](apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
 
 For easier use, copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
 
@@ -211,6 +209,10 @@ The following flags are available to control the behavior of application:
 
 TCPING is being constantly worked on and receives many new features and fixes. Make sure to check for newer versions.
 
+```bash
+tcping -u
+```
+
 ## Contributing
 
 Pull requests are welcome to solve bugs, add new features and also to help me with the open issues that can be found here ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
@@ -223,7 +225,7 @@ Pull requests are welcome to solve bugs, add new features and also to help me wi
 6. Run the tests `go test` or `make test`.
 7. Create a pull request
 
-Please make sure to only work on a specific issue on your pull request and not address two or more tickets in one PR. This will help me to review your pull request easier and also contributes to a cleaner git history.
+Please make sure to only work on a specific issue on your pull request and not address two or more tickets in one PR. This will help us review your pull request easier and also contributes to a cleaner git history.
 
 ## Tested on
 
