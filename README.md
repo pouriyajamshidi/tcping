@@ -17,10 +17,10 @@ A cross-platform ping program for `TCP` ports inspired by the Linux's ping utili
 TCPING uses different `TCP sequence numbering` for successful and unsuccessful probes, so that when you look at the results and spot a failed probe, understanding the total packet drops to that point would be illustrative enough.
 
 - Monitor your network connection.
-- Calculate packet loss.
-- Assess the latency of your network.
+- Determine packet loss.
+- Analyze the network's latency.
 - Show `min`/`avg`/`max` probes latency.
-- Retry resolving a hostname after a certain number of ping failures by using the `-r` flag. This option is useful if you are testing your Global Server Load Balancer (GSLB) or DNS load balancing.
+- Use the `-r` flag to retry hostname resolution after a predetermined number of ping failures. If you want to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`, you should utilize this option..
 - Print connection statistics on `Enter` key press.
 - Display the longest encountered downtime and uptime duration and time.
 - Monitor and audit your peers network.
@@ -112,7 +112,7 @@ When the download is complete, head to the [usage](#usage) section.
 
 ## Usage
 
-If you have decided to download the executables using the [aforementioned links](#download-the-executables-for) , go to the folder containing the file and extract it. Then, depending on your operating system, follow the instructions below:
+If you have decided to download the executables using the [aforementioned links](#download-the-executables), go to the folder containing the file and extract it. Then, depending on your operating system, follow the instructions below:
 
 - [Linux and macOS](#on-linux-and-macos)
 - [Windows](#on-windows)
@@ -201,13 +201,13 @@ The following flags are available to control the behavior of application:
 
 ## Tips
 
-- While the program is running, press the `Enter` key to view the summary of all probes without exiting the program as depicted in the [demos](#Demos) section.
+- Press the `Enter` key while the program is running to examine the summary of all probes without shutting it down, as shown in the [demos](#demos) section.
 
 ---
 
 ## Notes
 
-TCPING is being constantly worked on and receives many new features and fixes. Make sure to check for newer versions.
+`TCPING` is constantly being improved, adding numerous new features and fixing bugs. Be sure to look for updated versions..
 
 ```bash
 tcping -u
@@ -225,7 +225,7 @@ Pull requests are welcome to solve bugs, add new features and also to help me wi
 6. Run the tests `go test` or `make test`.
 7. Create a pull request
 
-Please make sure to only work on a specific issue on your pull request and not address two or more tickets in one PR. This will help us review your pull request easier and also contributes to a cleaner git history.
+Please make sure that your pull request only works on one specific issue and doesn't handle two or more tickets. This makes it simpler for us to examine your pull request and helps keep the git history clean.
 
 ## Tested on
 
