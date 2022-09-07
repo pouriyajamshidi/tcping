@@ -1,0 +1,25 @@
+name: "Close stale issues and PRs"
+on:
+  schedule:
+    - cron: "30 1 * * *"
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          exempt-issue-assignees: "pouriyajamshidi"
+          stale-issue-message: "This pull request has been automatically marked as stale because it has been open 30 days with no activity. Upon no further activity this will be closed in 7 days."
+          stale-issue-message: |
+            "This issue has been automatically marked as stale because it has not had recent activity :sleeping:
+            It will be closed in 7 days if no further activity occurs.
+            Let us figure out together how to push this issue forward by commenting here.
+
+            Thank you for your contribution :heart:"
+          days-before-stale: 30
+          days-before-close: 7
