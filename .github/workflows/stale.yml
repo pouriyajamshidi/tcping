@@ -14,7 +14,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           exempt-issue-assignees: "pouriyajamshidi"
-          stale-issue-message: "This pull request has been automatically marked as stale because it has been open 30 days with no activity. Upon no further activity this will be closed in 7 days."
           stale-issue-message: |
             "This issue has been automatically marked as stale because it has not had recent activity :sleeping:
             It will be closed in 7 days if no further activity occurs.
