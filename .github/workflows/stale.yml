@@ -17,7 +17,7 @@ jobs:
           stale-issue-message: |
             "This issue has been automatically marked as stale because it has not had recent activity :sleeping:
             It will be closed in 7 days if no further activity occurs.
-            Let us figure out together how to push this issue forward by commenting here.
+            Let's figure out together how to push this issue forward by commenting here.
 
             Thank you for your contribution :heart:"
           days-before-stale: 30
