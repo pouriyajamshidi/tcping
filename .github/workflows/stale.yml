@@ -14,11 +14,13 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           exempt-issue-assignees: "pouriyajamshidi"
-          stale-issue-message: |
-            This issue has been automatically marked as stale because it has not had recent activity.
+          stale-pr-message: |
+            This pull request has been automatically marked as stale because it has not had recent activity.
             It will be closed in 7 days if no further activity occurs.
             Let's figure out how to push this issue forward together by commenting here.
 
             Thank you for your contribution!
-          days-before-stale: 2
+          close-pr-message: |
+            This pull request has been automatically closed because it has not had recent activity or follow ups.
+          days-before-stale: 1
           days-before-close: 7
