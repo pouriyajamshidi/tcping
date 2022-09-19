@@ -113,7 +113,7 @@ jobs:
       - name: Checkout codebase
         uses: actions/checkout@v3
 
-      - name: Show workflow information 
+      - name: Show workflow information
         id: get_filename
         run: |
           export _NAME=$(jq ".[\"$GOOS-$GOARCH$GOARM$GOMIPS\"].friendlyName" -r < .github/build/friendly-filenames.json)
@@ -129,17 +129,12 @@ jobs:
 
       - name: Get project dependencies
         run: go mod download
-      
-      - name: Build program 
+
+      - name: Build program
         run: |
           mkdir -p build_assets
           go build -v -o build_assets/tcping-$ASSET_NAME -trimpath -ldflags "-s -w "
 
-          #      - name: Build on Windows 
-          #        if: matrix.goos == 'windows'
-          #        run: |
-          #          go build -v -o build_assets/tcping-$ASSET_NAME.exe -trimpath -ldflags "-s -w "
-    
       - name: Build Mips softfloat program
         if: matrix.goarch == 'mips' || matrix.goarch == 'mipsle'
         run: |
