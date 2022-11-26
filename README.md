@@ -71,13 +71,9 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 - ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
 
-- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.zip)
+- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.zip) - Also available through `brew`
 
-- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.zip) - also available through `brew`
-
-  ```bash
-  brew install pouriyajamshidi/tap/tcping
-  ```
+- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.zip) - Also available through `brew`
 
 When the download is complete, head to the [usage](#usage) section.
 
@@ -99,6 +95,12 @@ When the download is complete, head to the [usage](#usage) section.
 
   ```bash
   docker pull ghcr.io/pouriyajamshidi/tcping:latest
+  ```
+
+- Install using `brew`:
+
+  ```bash
+  brew install pouriyajamshidi/tap/tcping
   ```
 
 - Or compile the code yourself by running the `make` command in the `tcping` directory:
