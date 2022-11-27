@@ -62,7 +62,7 @@ jobs:
         uses: docker/setup-buildx-action@79abd3f86f79a9d68a23c75a09a9a85889262adf
 
       - name: Setting Go version
-        uses: actions/setup-go@v3.2.1
+        uses: actions/setup-go@v3.3.1
         with:
           go-version-file: "go.mod"
           check-latest: true
