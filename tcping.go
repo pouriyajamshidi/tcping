@@ -18,26 +18,26 @@ import (
 )
 
 type stats struct {
-	startTime             time.Time
 	endTime               time.Time
 	startOfUptime         time.Time
 	startOfDowntime       time.Time
 	lastSuccessfulProbe   time.Time
 	lastUnsuccessfulProbe time.Time
+	ip                    ipAddress
+	startTime             time.Time
 	statsPrinter
 	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
-	ip                        ipAddress
-	port                      uint16
 	hostname                  string
 	rtt                       []uint
-	totalUnsuccessfulPkts     uint
+	ongoingUnsuccessfulPkts   uint
 	longestDowntime           longestTime
 	totalSuccessfulPkts       uint
 	totalUptime               time.Duration
-	ongoingUnsuccessfulPkts   uint
 	retriedHostnameResolves   uint
 	longestUptime             longestTime
 	totalDowntime             time.Duration
+	totalUnsuccessfulPkts     uint
+	port                      uint16
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 	shouldRetryResolve        bool
@@ -394,6 +394,44 @@ func getSystemTime() time.Time {
 	return time.Now()
 }
 
+func (tcpStats *stats) handleConnError(now time.Time) {
+	if !tcpStats.wasDown {
+		tcpStats.startOfDowntime = now
+		calcLongestUptime(tcpStats, now)
+		tcpStats.startOfUptime = time.Time{}
+		tcpStats.wasDown = true
+	}
+
+	tcpStats.totalDowntime += time.Second
+	tcpStats.totalUnsuccessfulPkts += 1
+	tcpStats.lastUnsuccessfulProbe = now
+	tcpStats.ongoingUnsuccessfulPkts += 1
+
+	tcpStats.printReply(replyMsg{msg: "No reply", rtt: 0})
+}
+
+func (tcpStats *stats) handleConnSuccess(rtt int64, now time.Time) {
+	if tcpStats.wasDown {
+		tcpStats.printTotalDownTime(now)
+		tcpStats.startOfUptime = now
+		calcLongestDowntime(tcpStats, now)
+		tcpStats.startOfDowntime = time.Time{}
+		tcpStats.wasDown = false
+		tcpStats.ongoingUnsuccessfulPkts = 0
+	}
+
+	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
+		tcpStats.startOfUptime = now
+	}
+
+	tcpStats.totalUptime += time.Second
+	tcpStats.totalSuccessfulPkts += 1
+	tcpStats.lastSuccessfulProbe = now
+	tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
+
+	tcpStats.printReply(replyMsg{msg: "Reply", rtt: rtt})
+}
+
 /* Ping host, TCP style */
 func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
@@ -406,58 +444,9 @@ func tcping(tcpStats *stats) {
 	now := getSystemTime()
 
 	if err != nil {
-		/* if the previous probe was successful
-		and the current one failed: */
-		if !tcpStats.wasDown {
-			/* Update startOfDowntime */
-			tcpStats.startOfDowntime = now
-
-			/* Calculate the longest uptime */
-			endOfUptime := now
-			calcLongestUptime(tcpStats, endOfUptime)
-			tcpStats.startOfUptime = time.Time{}
-
-			tcpStats.wasDown = true
-		}
-
-		tcpStats.totalDowntime += time.Second
-		tcpStats.totalUnsuccessfulPkts += 1
-		tcpStats.lastUnsuccessfulProbe = now
-		tcpStats.ongoingUnsuccessfulPkts += 1
-
-		tcpStats.printReply(replyMsg{msg: "No reply", rtt: 0})
+		tcpStats.handleConnError(now)
 	} else {
-		/* if the previous probe failed
-		and the current one succeeded: */
-		if tcpStats.wasDown {
-			/* calculate the total downtime since
-			the previous successful probe */
-			tcpStats.printTotalDownTime(now)
-
-			/* Update startOfUptime */
-			tcpStats.startOfUptime = now
-
-			/* Calculate the longest downtime */
-			endOfDowntime := now
-			calcLongestDowntime(tcpStats, endOfDowntime)
-			tcpStats.startOfDowntime = time.Time{}
-
-			tcpStats.wasDown = false
-			tcpStats.ongoingUnsuccessfulPkts = 0
-		}
-
-		/* It means it is the first time to get a response*/
-		if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
-			tcpStats.startOfUptime = now
-		}
-
-		tcpStats.totalUptime += time.Second
-		tcpStats.totalSuccessfulPkts += 1
-		tcpStats.lastSuccessfulProbe = now
-
-		tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
-		tcpStats.printReply(replyMsg{msg: "Reply", rtt: rtt})
-
+		tcpStats.handleConnSuccess(rtt, now)
 		defer conn.Close()
 	}
 
