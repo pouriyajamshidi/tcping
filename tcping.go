@@ -407,12 +407,12 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	tcpStats.lastUnsuccessfulProbe = now
 	tcpStats.ongoingUnsuccessfulPkts += 1
 
-	tcpStats.printReply(replyMsg{msg: "No reply", rtt: 0})
+	tcpStats.statsPrinter.printReply(replyMsg{msg: "No reply", rtt: 0})
 }
 
 func (tcpStats *stats) handleConnSuccess(rtt int64, now time.Time) {
 	if tcpStats.wasDown {
-		tcpStats.printTotalDownTime(now)
+		tcpStats.statsPrinter.printTotalDownTime(now)
 		tcpStats.startOfUptime = now
 		calcLongestDowntime(tcpStats, now)
 		tcpStats.startOfDowntime = time.Time{}
@@ -429,7 +429,7 @@ func (tcpStats *stats) handleConnSuccess(rtt int64, now time.Time) {
 	tcpStats.lastSuccessfulProbe = now
 	tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
 
-	tcpStats.printReply(replyMsg{msg: "Reply", rtt: rtt})
+	tcpStats.statsPrinter.printReply(replyMsg{msg: "Reply", rtt: rtt})
 }
 
 /* Ping host, TCP style */
