@@ -220,7 +220,7 @@ tcping -u
 
 Pull requests are welcome to solve bugs, add new features and also to help me with the open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues)
 
-Current number of open issues: [GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
+Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
 
 1. Pick any issue that you feel comfortable with.
 2. Fork the repository.
