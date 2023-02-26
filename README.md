@@ -21,8 +21,8 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 - Determine packet loss.
 - Analyze the network's latency.
 - Show `min`/`avg`/`max` probes latency.
+- Print connection statistics by pressing the `Enter` key and without stopping the program.
 - Use the `-r` flag to retry hostname resolution after a predetermined number of ping failures. If you want to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`, you should utilize this option..
-- Print connection statistics on `Enter` key press.
 - Display the longest encountered downtime and uptime duration and time.
 - Monitor and audit your peers network.
 - Calculate the total uptime/downtime when conducting a maintenance.
@@ -37,7 +37,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
   - [Demos](#demos)
     - [Vanilla usage](#vanilla-usage)
     - [Retry resolve (`-r`) flag](#retry-resolve--r-flag)
-  - [Download the executables](#download-the-executables)
+  - [Download](#download)
   - [Usage](#usage)
     - [On `Linux` and `macOS`](#on-linux-and-macos)
     - [On `Windows`](#on-windows)
@@ -47,7 +47,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
   - [Notes](#notes)
   - [Contributing](#contributing)
   - [Tested on](#tested-on)
-  - [Sponsor us](#sponsor-us)
+  - [Sponsor The Project](#sponsor-the-project)
   - [Contact me](#contact-me)
   - [License](#license)
 
@@ -67,23 +67,17 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ---
 
-## Download the executables
+## Download
 
 - ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
 
-- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.zip) - Also available through `brew`
+- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - Also available through `brew`
 
-- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.zip) - Also available through `brew`
+- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.tar.gz) - Also available through `brew`
 
 When the download is complete, head to the [usage](#usage) section.
 
 **Alternatively**, you can:
-
-- Install using `go install`:
-
-  ```bash
-  go install github.com/pouriyajamshidi/tcping@latest
-  ```
 
 - Use the `Docker` images:
 
@@ -95,6 +89,12 @@ When the download is complete, head to the [usage](#usage) section.
 
   ```bash
   docker pull ghcr.io/pouriyajamshidi/tcping:latest
+  ```
+
+- Install using `go install`:
+
+  ```bash
+  go install github.com/pouriyajamshidi/tcping@latest
   ```
 
 - Install using `brew`:
@@ -123,13 +123,23 @@ If you have decided to download the executables using the [aforementioned links]
 
 ### On `Linux` and `macOS`
 
+De-compress the downloaded file:
+
+```bash
+tar -xvf tcping_Linux.tar.gz
+#
+# Or on Mac OS
+#
+tar -xvf tcping_MacOS.tar.gz
+```
+
 Make the file executable:
 
 ```bash
 chmod +x tcping
 ```
 
-For easier use, copy the executable to your system `PATH` like `/usr/bin/`:
+For easier use, copy the executable to your system `PATH` like `/usr/local/bin/`:
 
 ```bash
 sudo cp tcping /usr/local/bin/
@@ -236,7 +246,7 @@ Please make sure that your pull request only works on one specific issue and doe
 
 Windows, Linux and macOS.
 
-## Sponsor us
+## Sponsor The Project
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)  
 [![sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)  

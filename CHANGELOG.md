@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.19.0 - 2023-2-26
+
+- implmenet sub-millisecond timing report to make it suitable for Data center and Cloud environments
+- refactor `tcping` function and simplify it
+- fix downtime report miscalculation
+- fix picking of go version
+- improve build process
+- changed `ipAddress` type from string to `netip.Addr` thanks @segfault99
+- fix `statsprinter` formats thanks @segfault99
+- upgrade actions thanks @wutingfeng
+- fix undeclared `statsPrinter` warning
+- fix code scanning alert - Incorrect conversion between integer types #43
+- add `stale` workflow
+- add new logo
+- add Linux brew section
+- add docker demo recording
+- restructure README file
+- update dependencies and bump Go version
+- improve Makefile
+- fix tag detection on Actions workflow
+- add `Go` version to `CodeQL`
+- add `downloads` badge
+- improve checkUpdate message
+- fix go install guide
+- fix bug report template
+- create SECURITY.md
+- improve pull request template
+- improve stale workflow
+
 ## v1.12.0 - 2022-7-10
 
 - add preliminary JSON output support thanks @icemint0828 for collaboration
