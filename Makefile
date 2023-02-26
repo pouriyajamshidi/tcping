@@ -13,7 +13,7 @@ build: clean update format vet test
 	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
 
 	@echo "[+] Packaging the Linux version"
-	@zip -j $(EXEC_DIR)tcping_Linux.zip $(EXEC_DIR)tcping > /dev/null
+	@tar -czvf $(EXEC_DIR)tcping_Linux.tar.gz -C $(EXEC_DIR) tcping > /dev/null
 
 	@echo "[+] Removing the Linux binary"
 	@rm $(EXEC_DIR)tcping
@@ -33,7 +33,7 @@ build: clean update format vet test
 	@env GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
 
 	@echo "[+] Packaging the MacOS version"
-	@zip -j $(EXEC_DIR)tcping_MacOS.zip $(EXEC_DIR)tcping > /dev/null
+	@tar -czvf $(EXEC_DIR)tcping_MacOS.tar.gz -C $(EXEC_DIR) tcping > /dev/null
 
 	@echo "[+] Removing the MacOS binary"
 	@rm $(EXEC_DIR)tcping
@@ -49,7 +49,6 @@ clean:
 	@echo "[+] Cleaning files"
 	@rm -rf $(EXEC_DIR)
 	@echo "[+] Done"
-	@echo
 
 format:
 	@echo "[+] Formatting files"
@@ -62,6 +61,12 @@ vet:
 test:
 	@echo "[+] Running tests"
 	@go test
+
+tidyup:
+	@echo "[+] Tidying up"
+	@go get -u
+	@go get -u ./...
+	@go mod tidy
 
 container:
 	@echo "[+] Building container image"
