@@ -8,26 +8,26 @@
 - fix picking of go version
 - improve build process
 - changed `ipAddress` type from string to `netip.Addr` thanks @segfault99
+- fix `statsprinter` formats thanks @segfault99
 - upgrade actions thanks @wutingfeng
+- fix undeclared `statsPrinter` warning
+- fix code scanning alert - Incorrect conversion between integer types #43
+- add `stale` workflow
 - add new logo
-- restructure README file
+- add Linux brew section
 - add docker demo recording
+- restructure README file
 - update dependencies and bump Go version
 - improve Makefile
 - fix tag detection on Actions workflow
-- create SECURITY.md
 - add `Go` version to `CodeQL`
-- fixed statsprinter formats thanks @segfault99
-- Fix code scanning alert - Incorrect conversion between integer types #43
 - add `downloads` badge
 - improve checkUpdate message
 - fix go install guide
-- add `stale` workflow
 - fix bug report template
+- create SECURITY.md
 - improve pull request template
 - improve stale workflow
-- add Linux brew section
-- fix undeclared statsPrinter warning
 
 ## v1.12.0 - 2022-7-10
 
