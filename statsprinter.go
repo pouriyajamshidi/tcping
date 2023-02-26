@@ -161,11 +161,11 @@ func (p *statsPlanePrinter) printStatistics() {
 	colorCyan("avg")
 	colorYellow("/")
 	colorRed("max: ")
-	colorGreen("%d", rttResults.min)
+	colorGreen("%.3f", rttResults.min)
 	colorYellow("/")
-	colorCyan("%.2f", rttResults.average)
+	colorCyan("%.3f", rttResults.average)
 	colorYellow("/")
-	colorRed("%d", rttResults.max)
+	colorRed("%.3f", rttResults.max)
 	colorYellow(" ms\n")
 
 	/* duration stats */
@@ -179,7 +179,7 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 			colorRed("%s from %s on port %d TCP_conn=%d\n",
 				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
-			colorLightGreen("%s from %s on port %d TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s on port %d TCP_conn=%d time=%.3f ms\n",
 				replyMsg.msg, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
@@ -187,7 +187,7 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 			colorRed("%s from %s (%s) on port %d TCP_conn=%d\n",
 				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulPkts)
 		} else {
-			colorLightGreen("%s from %s (%s) on port %d TCP_conn=%d time=%d ms\n",
+			colorLightGreen("%s from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}
@@ -359,7 +359,7 @@ func (j *statsJsonPrinter) printStatistics() {
 	}
 
 	/* latency stats.*/
-	jsonPrintf("rtt min/avg/max: %d/%2f/%d", rttResults.min, rttResults.average, rttResults.max)
+	jsonPrintf("rtt min/avg/max: %.3f/%.3f/%.3f", rttResults.min, rttResults.average, rttResults.max)
 
 	/* duration stats */
 	j.printDurationStats()
@@ -372,7 +372,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 			jsonPrintf("%s from %s on port %d TCP_conn=%d",
 				replyMsg.msg, j.ip, j.port, j.totalUnsuccessfulPkts)
 		} else {
-			jsonPrintf("%s from %s on port %d TCP_conn=%d time=%d ms",
+			jsonPrintf("%s from %s on port %d TCP_conn=%d time=%.3f ms",
 				replyMsg.msg, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	} else {
@@ -380,7 +380,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d",
 				replyMsg.msg, j.hostname, j.ip, j.port, j.totalUnsuccessfulPkts)
 		} else {
-			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d time=%d ms",
+			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d time=%.3f ms",
 				replyMsg.msg, j.hostname, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
 		}
 	}

@@ -28,7 +28,7 @@ type stats struct {
 	statsPrinter
 	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
 	hostname                  string
-	rtt                       []uint
+	rtt                       []float32
 	ongoingUnsuccessfulPkts   uint
 	longestDowntime           longestTime
 	totalSuccessfulPkts       uint
@@ -50,15 +50,15 @@ type longestTime struct {
 }
 
 type rttResults struct {
-	min        uint
-	max        uint
+	min        float32
+	max        float32
 	average    float32
 	hasResults bool
 }
 
 type replyMsg struct {
 	msg string
-	rtt int64
+	rtt float32
 }
 
 type ipAddress = netip.Addr
@@ -287,12 +287,15 @@ func newLongestTime(startTime, endTime time.Time) longestTime {
 }
 
 /* Find min/avg/max RTT values. The last int acts as err code */
-func findMinAvgMaxRttTime(timeArr []uint) rttResults {
-	arrLen := len(timeArr)
-	var accum uint
-
+func findMinAvgMaxRttTime(timeArr []float32) rttResults {
+	var accum float32
 	var rttResults rttResults
-	rttResults.min = ^uint(0)
+
+	arrLen := len(timeArr)
+	// rttResults.min = ^uint(0.0)
+	if arrLen > 0 {
+		rttResults.min = timeArr[0]
+	}
 
 	for i := 0; i < arrLen; i++ {
 		accum += timeArr[i]
@@ -308,7 +311,7 @@ func findMinAvgMaxRttTime(timeArr []uint) rttResults {
 
 	if arrLen > 0 {
 		rttResults.hasResults = true
-		rttResults.average = float32(accum) / float32(arrLen)
+		rttResults.average = accum / float32(arrLen)
 	}
 
 	return rttResults
@@ -394,6 +397,10 @@ func getSystemTime() time.Time {
 	return time.Now()
 }
 
+func nanoToMillisecond(nano int64) float32 {
+	return float32(nano) / 1e6
+}
+
 func (tcpStats *stats) handleConnError(now time.Time) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = now
@@ -410,7 +417,7 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	tcpStats.statsPrinter.printReply(replyMsg{msg: "No reply", rtt: 0})
 }
 
-func (tcpStats *stats) handleConnSuccess(rtt int64, now time.Time) {
+func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	if tcpStats.wasDown {
 		tcpStats.statsPrinter.printTotalDownTime(now)
 		tcpStats.startOfUptime = now
@@ -427,7 +434,7 @@ func (tcpStats *stats) handleConnSuccess(rtt int64, now time.Time) {
 	tcpStats.totalUptime += time.Second
 	tcpStats.totalSuccessfulPkts += 1
 	tcpStats.lastSuccessfulProbe = now
-	tcpStats.rtt = append(tcpStats.rtt, uint(rtt))
+	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
 	tcpStats.statsPrinter.printReply(replyMsg{msg: "Reply", rtt: rtt})
 }
@@ -440,7 +447,7 @@ func tcping(tcpStats *stats) {
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), oneSecond)
 	connEnd := time.Since(connStart)
 
-	rtt := connEnd.Milliseconds()
+	rtt := nanoToMillisecond(connEnd.Nanoseconds())
 	now := getSystemTime()
 
 	if err != nil {
