@@ -38,6 +38,16 @@ build: clean update format vet test
 	@echo "[+] Removing the MacOS binary"
 	@rm $(EXEC_DIR)tcping
 
+	@echo
+	@echo "[+] Building the MacOS ARM version"
+	@env GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+	
+	@echo "[+] Packaging the MacOS ARM version"
+	@tar -czvf $(EXEC_DIR)tcping_MacOS_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+
+	@echo "[+] Removing the MacOS ARM binary"
+	@rm $(EXEC_DIR)tcping
+
 	@echo "[+] Done"
 
 update:

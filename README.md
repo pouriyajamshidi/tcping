@@ -75,6 +75,8 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 - ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.tar.gz) - Also available through `brew`
 
+- ### [macOS M1 - ARM](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS_ARM.tar.gz) - Also available through `brew`
+
 When the download is complete, head to the [usage](#usage) section.
 
 **Alternatively**, you can:
@@ -131,6 +133,10 @@ tar -xvf tcping_Linux.tar.gz
 # Or on Mac OS
 #
 tar -xvf tcping_MacOS.tar.gz
+#
+# on Mac OS ARM
+#
+tar -xvf tcping_MacOS_ARM.tar.gz
 ```
 
 Make the file executable:
