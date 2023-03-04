@@ -1,8 +1,12 @@
 # Changelog
 
+## v1.19.1 - 2023-3-4
+
+- close `TCP` connections faster to lessen the resource utilization on target
+
 ## v1.19.0 - 2023-2-26
 
-- implmenet sub-millisecond timing report to make it suitable for Data center and Cloud environments
+- implement sub-millisecond timing report to make it suitable for Data center and Cloud environments
 - refactor `tcping` function and simplify it
 - fix downtime report miscalculation
 - fix picking of go version
