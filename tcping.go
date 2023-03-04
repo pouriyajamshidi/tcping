@@ -454,7 +454,7 @@ func tcping(tcpStats *stats) {
 		tcpStats.handleConnError(now)
 	} else {
 		tcpStats.handleConnSuccess(rtt, now)
-		defer conn.Close()
+		conn.Close()
 	}
 
 	time.Sleep(thousandMilliSecond - connEnd)
