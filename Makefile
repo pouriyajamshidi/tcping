@@ -18,6 +18,15 @@ build: clean update format vet test
 	@echo "[+] Removing the Linux binary"
 	@rm $(EXEC_DIR)tcping
 
+	@echo "[+] Building the static Linux version"
+	@env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+
+	@echo "[+] Packaging the static Linux version"
+	@tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+
+	@echo "[+] Removing the static Linux binary"
+	@rm $(EXEC_DIR)tcping
+
 	@echo
 	@echo "[+] Building the Windows version"
 	@env GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping.exe $(SOURCE_FILES)
