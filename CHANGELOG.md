@@ -4,6 +4,7 @@
 
 - display stats even if all the probes had failed update version
 - update version
+- incorporate sha256sum into Makefile
 
 ## v1.19.1 - 2023-3-4
 
