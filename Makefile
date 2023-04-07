@@ -14,6 +14,7 @@ build: clean update format vet test
 
 	@echo "[+] Packaging the Linux version"
 	@tar -czvf $(EXEC_DIR)tcping_Linux.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_Linux.tar.gz
 
 	@echo "[+] Removing the Linux binary"
 	@rm $(EXEC_DIR)tcping
@@ -23,6 +24,7 @@ build: clean update format vet test
 
 	@echo "[+] Packaging the static Linux version"
 	@tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
 
 	@echo "[+] Removing the static Linux binary"
 	@rm $(EXEC_DIR)tcping
@@ -33,6 +35,7 @@ build: clean update format vet test
 
 	@echo "[+] Packaging the Windows version"
 	@zip -j $(EXEC_DIR)tcping_Windows.zip $(EXEC_DIR)tcping.exe > /dev/null
+	@sha256sum  $(EXEC_DIR)tcping_Windows.zip
 
 	@echo "[+] Removing the Windows binary"
 	@rm $(EXEC_DIR)tcping.exe
@@ -43,6 +46,7 @@ build: clean update format vet test
 
 	@echo "[+] Packaging the MacOS version"
 	@tar -czvf $(EXEC_DIR)tcping_MacOS.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_MacOS.tar.gz
 
 	@echo "[+] Removing the MacOS binary"
 	@rm $(EXEC_DIR)tcping
@@ -53,6 +57,7 @@ build: clean update format vet test
 	
 	@echo "[+] Packaging the MacOS ARM version"
 	@tar -czvf $(EXEC_DIR)tcping_MacOS_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_MacOS_ARM.tar.gz
 
 	@echo "[+] Removing the MacOS ARM binary"
 	@rm $(EXEC_DIR)tcping
