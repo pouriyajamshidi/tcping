@@ -90,13 +90,23 @@ func (p *statsPlanePrinter) printDurationStats() {
 	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
 }
 
+func (p *statsPlanePrinter) printRttResults(rtt *rttResults) {
+	colorYellow("rtt ")
+	colorGreen("min")
+	colorYellow("/")
+	colorCyan("avg")
+	colorYellow("/")
+	colorRed("max: ")
+	colorGreen("%.3f", rtt.min)
+	colorYellow("/")
+	colorCyan("%.3f", rtt.average)
+	colorYellow("/")
+	colorRed("%.3f", rtt.max)
+	colorYellow(" ms\n")
+}
+
 /* Print statistics when program exits */
 func (p *statsPlanePrinter) printStatistics() {
-	rttResults := findMinAvgMaxRttTime(p.rtt)
-
-	if !rttResults.hasResults {
-		return
-	}
 
 	totalPackets := p.totalSuccessfulPkts + p.totalUnsuccessfulPkts
 	totalUptime := calcTime(uint(p.totalUptime.Seconds()))
@@ -153,20 +163,11 @@ func (p *statsPlanePrinter) printStatistics() {
 		p.printRetryResolveStats()
 	}
 
-	/*TODO: see if formatted string would suit better */
-	/* latency stats.*/
-	colorYellow("rtt ")
-	colorGreen("min")
-	colorYellow("/")
-	colorCyan("avg")
-	colorYellow("/")
-	colorRed("max: ")
-	colorGreen("%.3f", rttResults.min)
-	colorYellow("/")
-	colorCyan("%.3f", rttResults.average)
-	colorYellow("/")
-	colorRed("%.3f", rttResults.max)
-	colorYellow(" ms\n")
+	rttResults := findMinAvgMaxRttTime(p.rtt)
+
+	if rttResults.hasResults {
+		p.printRttResults(&rttResults)
+	}
 
 	/* duration stats */
 	p.printDurationStats()
