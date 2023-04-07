@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.19.2 - 2023-4-7
+
+- display stats even if all the probes had failed update version
+- update version
+
 ## v1.19.1 - 2023-3-4
 
 - close `TCP` connections faster to lessen the resource utilization on target
