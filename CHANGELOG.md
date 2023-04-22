@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.20.0 - 2023-4-22
+
+- add hostname, IP and port number to summary output
+
 ## v1.19.2 - 2023-4-7
 
 - display stats even if all the probes had failed update version
