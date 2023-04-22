@@ -114,8 +114,12 @@ func (p *statsPlanePrinter) printStatistics() {
 	packetLoss := (float32(p.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
 
 	/* general stats */
-	colorYellow("\n--- %s TCPing statistics ---\n", p.hostname)
-	colorYellow("%d probes transmitted, ", totalPackets)
+	if !p.isIP {
+		colorYellow("\n--- %s (%s) TCPing statistics ---\n", p.hostname, p.ip)
+	} else {
+		colorYellow("\n--- %s TCPing statistics ---\n", p.hostname)
+	}
+	colorYellow("%d probes transmitted on port %d, ", totalPackets, p.port)
 	colorYellow("%d received, ", p.totalSuccessfulPkts)
 
 	/* packet loss stats */
