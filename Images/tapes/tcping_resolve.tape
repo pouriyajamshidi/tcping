@@ -1,10 +1,10 @@
 Set Shell "bash"
-Set FontSize 24
+Set FontSize 20
 Set Width 1300
 Set Height 800
 
-Type "./tcping google.com 80 -r 3" Sleep 500ms  Enter
+Type "./tcping example.com 90 -r 3" Sleep 500ms  Enter
 
-Sleep 8000ms Ctrl+C
+Sleep 15s Ctrl+C
 
 Sleep 3s
