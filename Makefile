@@ -1,4 +1,6 @@
 EXEC_DIR = executables/
+TAPE_DIR = Images/tapes/
+GIFS_DIR = Images/gifs/
 SOURCE_FILES = $(tcping.go statsprinter.go)
 
 .PHONY: all build update clean format test vet gitHubActions container
@@ -102,4 +104,13 @@ container:
 gitHubActions:
 	@echo "[+] Building container image - GitHub Actions"
 	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o tcpingDocker $(SOURCE_FILES)
+	@echo "[+] Done"
+
+gifs:
+	@echo "[+] Making tcping.gif"
+	@vhs $(TAPE_DIR)tcping.tape -o $(GIFS_DIR)tcping.gif
+	@echo "[+] Done"
+
+	@echo "[+] Making tcping_resolve.gif"
+	@vhs $(TAPE_DIR)tcping_resolve.tape -o $(GIFS_DIR)tcping_resolve.gif
 	@echo "[+] Done"
