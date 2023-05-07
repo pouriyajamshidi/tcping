@@ -23,6 +23,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 - Show `min`/`avg`/`max` probes latency.
 - Print connection statistics by pressing the `Enter` key and without stopping the program.
 - Use the `-r` flag to retry hostname resolution after a predetermined number of ping failures. If you want to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`, you should utilize this option..
+- Enforce using `IPv4` or `IPv6` address resolution
 - Display the longest encountered downtime and uptime duration and time.
 - Monitor and audit your peers network.
 - Calculate the total uptime/downtime when conducting a maintenance.
@@ -212,6 +213,8 @@ The following flags are available to control the behavior of application:
 | Flag | Description                                               |
 | ---- | --------------------------------------------------------- |
 | `-r` | Retry resolving a hostname after `<n>` number of failures |
+| `-4` | Only use IPv4 addresses                                   |
+| `-6` | Only use IPv6 addresses                                   |
 | `-j` | Output in JSON format                                     |
 | `-u` | Check for updates                                         |
 | `-v` | Print version                                             |

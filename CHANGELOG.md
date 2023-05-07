@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.21.0 - 2023-5-7
+
+- add option to enforce the use of IPv4 `-4` or IPv6 `-6` addresses only
+- instead of always picking the first, randomly pick an address from the list of resolved IP addresses
+
 ## v1.20.0 - 2023-4-22
 
 - add hostname, IP and port number to summary output
