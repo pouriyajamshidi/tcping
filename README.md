@@ -58,13 +58,13 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ### Vanilla usage
 
-![tcping](Images/tcping.gif)
+![tcping](Images/gifs/tcping.gif)
 
 ---
 
 ### Retry resolve (`-r`) flag
 
-![tcping](Images/tcpingrflag.gif)
+![tcping](Images/gifs/tcping_resolve.gif)
 
 ---
 
