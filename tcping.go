@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/netip"
 	"os"
@@ -41,6 +42,8 @@ type stats struct {
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
 	shouldRetryResolve        bool
+	useIPv4                   bool
+	useIPv6                   bool
 }
 
 type longestTime struct {
@@ -66,7 +69,7 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.20.0"
+	version             = "1.21.0"
 	owner               = "pouriyajamshidi"
 	repo                = "tcping"
 	thousandMilliSecond = 1000 * time.Millisecond
@@ -75,6 +78,19 @@ const (
 	nullTimeFormat      = "0001-01-01 00:00:00"
 	hourFormat          = "15:04:05"
 )
+
+/* Catch SIGINT and print tcping stats */
+func signalHandler(tcpStats *stats) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		tcpStats.endTime = getSystemTime()
+		tcpStats.printStatistics()
+		os.Exit(0)
+	}()
+}
 
 /* Print how program should be run */
 func usage() {
@@ -93,25 +109,14 @@ func usage() {
 	os.Exit(1)
 }
 
-/* Catch SIGINT and print tcping stats */
-func signalHandler(tcpStats *stats) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		tcpStats.endTime = getSystemTime()
-		tcpStats.printStatistics()
-		os.Exit(0)
-	}()
-}
-
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
 	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
 	showVersion := flag.Bool("v", false, "show version.")
+	useIPv4 := flag.Bool("4", false, "use IPv4 only.")
+	useIPv6 := flag.Bool("6", false, "use IPv6 only.")
 
 	flag.CommandLine.Usage = usage
 
@@ -136,6 +141,19 @@ func processUserInput(tcpStats *stats) {
 		os.Exit(0)
 	}
 
+	if *useIPv4 && *useIPv6 {
+		colorRed("Only one IP version can be specified\n")
+		usage()
+	}
+
+	if *useIPv4 {
+		tcpStats.useIPv4 = true
+	}
+
+	if *useIPv6 {
+		tcpStats.useIPv6 = true
+	}
+
 	/* host and port must be specified　*/
 	if len(args) != 2 {
 		usage()
@@ -150,7 +168,7 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	if port < 1 || port > 65535 {
-		print("Port should be in 1..65535 range\n")
+		colorRed("Port should be in 1..65535 range\n")
 		os.Exit(1)
 	}
 
@@ -253,7 +271,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		return ip
 	}
 
-	ipAddr, err := net.LookupIP(tcpStats.hostname)
+	ipAddrs, err := net.LookupIP(tcpStats.hostname)
 
 	if err != nil && (tcpStats.totalSuccessfulPkts != 0 || tcpStats.totalUnsuccessfulPkts != 0) {
 		/* Prevent exit if application has been running for a while */
@@ -263,7 +281,53 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		os.Exit(1)
 	}
 
-	ip, _ = netip.ParseAddr(ipAddr[0].String())
+	var index int
+	var ipList []net.IP
+
+	switch {
+	case tcpStats.useIPv4:
+		for _, ip := range ipAddrs {
+			if ip.To4() != nil {
+				ipList = append(ipList, ip)
+			}
+		}
+		if len(ipList) == 0 {
+			colorRed("Failed to find IPv4 address for %s\n", tcpStats.hostname)
+			os.Exit(1)
+		}
+		if len(ipAddrs) > 1 {
+			index = rand.Intn(len(ipAddrs))
+		} else {
+			index = 0
+		}
+		ip, _ = netip.ParseAddr(ipAddrs[index].String())
+
+	case tcpStats.useIPv6:
+		for _, ip := range ipAddrs {
+			if ip.To16() != nil {
+				ipList = append(ipList, ip)
+			}
+		}
+		if len(ipList) == 0 {
+			colorRed("Failed to find IPv6 address for %s\n", tcpStats.hostname)
+			os.Exit(1)
+		}
+		if len(ipAddrs) > 1 {
+			index = rand.Intn(len(ipAddrs))
+		} else {
+			index = 0
+		}
+		ip, _ = netip.ParseAddr(ipAddrs[index].String())
+
+	default:
+		if len(ipAddrs) > 1 {
+			index = rand.Intn(len(ipAddrs))
+		} else {
+			index = 0
+		}
+		ip, _ = netip.ParseAddr(ipAddrs[index].String())
+	}
+
 	return ip
 }
 
