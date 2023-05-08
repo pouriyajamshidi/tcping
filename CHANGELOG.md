@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.21.1 - 2023-5-8
+
+- fix retry resolve logic
+
 ## v1.21.0 - 2023-5-7
 
 - add option to enforce the use of IPv4 `-4` or IPv6 `-6` addresses only
