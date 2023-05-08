@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.21.2 - 2023-5-8
+
+- make `stats` struct fields' names uniform
+- add `|` separator to summary report for better visibility
+
 ## v1.21.1 - 2023-5-8
 
 - fix retry resolve logic
