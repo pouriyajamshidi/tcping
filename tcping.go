@@ -333,7 +333,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
-	if tcpStats.ongoingUnsuccessfulPkts > *tcpStats.retryHostnameResolveAfter {
+	if tcpStats.ongoingUnsuccessfulPkts >= *tcpStats.retryHostnameResolveAfter {
 		tcpStats.printRetryingToResolve()
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulPkts = 0
