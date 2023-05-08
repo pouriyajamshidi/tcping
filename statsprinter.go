@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/netip"
 	"os"
 	"time"
 
@@ -268,6 +267,7 @@ type JSONData struct {
 	// Possible types are:
 	//	- start
 	// 	- probe
+	// 	- retry
 	Type string `json:"type"`
 	// Message contains a human-readable message.
 	Message string `json:"message"`
@@ -277,12 +277,12 @@ type JSONData struct {
 	// Success is a special field from probe event, containing information
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted.
-	Success                 *bool      `json:"success,omitempty"`
-	Hostname                string     `json:"hostname,omitempty"`
-	Addr                    netip.Addr `json:"addr,omitempty"`
-	Port                    uint16     `json:"port,omitempty"`
-	TotalSuccessfulProbes   uint       `json:"total_successful_probes,omitempty"`
-	TotalUnsuccessfulProbes uint       `json:"total_unsuccessful_probes,omitempty"`
+	Success                 *bool  `json:"success,omitempty"`
+	Hostname                string `json:"hostname,omitempty"`
+	Addr                    string `json:"addr,omitempty"`
+	Port                    uint16 `json:"port,omitempty"`
+	TotalSuccessfulProbes   uint   `json:"total_successful_probes,omitempty"`
+	TotalUnsuccessfulProbes uint   `json:"total_unsuccessful_probes,omitempty"`
 	// Latency in ms.
 	Latency float32 `json:"latency,omitempty"`
 }
@@ -298,7 +298,7 @@ func jsonPrintf(format string, a ...interface{}) {
 	fmt.Println(string(outputJson))
 }
 
-/* Print host name and port to use on tcping in JSON format */
+// printStart prints the initial message before doing probes.
 func (j *statsJsonPrinter) printStart() {
 	_ = printJson(JSONData{
 		Type:     "start",
@@ -306,6 +306,36 @@ func (j *statsJsonPrinter) printStart() {
 		Hostname: j.hostname,
 		Port:     j.port,
 	})
+}
+
+// printReply prints TCP probe replies according to our policies in JSON format.
+func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
+	f := false
+	data := JSONData{
+		Type:    "probe",
+		Addr:    j.ip.String(),
+		Port:    j.port,
+		Success: &f,
+	}
+
+	ipStr := data.Addr
+	if !j.isIP {
+		data.Hostname = j.hostname
+		ipStr = fmt.Sprintf("%s (%s)", data.Hostname, ipStr)
+	}
+
+	data.Message = fmt.Sprintf("%s from %s on port %d", replyMsg.msg, ipStr, j.port)
+
+	if replyMsg.msg != noReply {
+		data.Latency = replyMsg.rtt
+		data.TotalSuccessfulProbes = j.totalSuccessfulProbes
+		t := true
+		data.Success = &t
+	} else {
+		data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
+	}
+
+	_ = printJson(data)
 }
 
 /* Print the last successful and unsuccessful probes in JSON format */
@@ -350,14 +380,14 @@ func (j *statsJsonPrinter) printDurationStats() {
 	jsonPrintf(startMSg + endMsg + durationFormatted)
 }
 
-/* Print statistics when program exits in JSON format */
+// printStatistics prints all gathered stats when program exits.
 func (j *statsJsonPrinter) printStatistics() {
-
 	rttResults := findMinAvgMaxRttTime(j.rtt)
-
 	if !rttResults.hasResults {
 		return
 	}
+
+	// data := JSONData{}
 
 	totalPackets := j.totalSuccessfulProbes + j.totalUnsuccessfulProbes
 	totalUptime := calcTime(uint(j.totalUptime.Seconds()))
@@ -407,36 +437,6 @@ func (j *statsJsonPrinter) printStatistics() {
 	j.printDurationStats()
 }
 
-// printReply prints TCP probe replies according to our policies in JSON format.
-func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
-	f := false
-	data := JSONData{
-		Type:    "probe",
-		Addr:    j.ip,
-		Port:    j.port,
-		Success: &f,
-	}
-
-	ipStr := data.Addr.String()
-	if !j.isIP {
-		data.Hostname = j.hostname
-		ipStr = fmt.Sprintf("%s (%s)", data.Hostname, ipStr)
-	}
-
-	data.Message = fmt.Sprintf("%s from %s on port %d", replyMsg.msg, ipStr, j.port)
-
-	if replyMsg.msg != noReply {
-		data.Latency = replyMsg.rtt
-		data.TotalSuccessfulProbes = j.totalSuccessfulProbes
-		t := true
-		data.Success = &t
-	} else {
-		data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
-	}
-
-	_ = printJson(data)
-}
-
 /* Print the total downtime in JSON format */
 func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 	latestDowntimeDuration := time.Since(j.startOfDowntime).Seconds()
@@ -477,7 +477,12 @@ func (j *statsJsonPrinter) printRetryResolveStats() {
 	jsonPrintf("retried to resolve hostname %d times", j.retriedHostnameResolves)
 }
 
-/* Print the message retrying to resolve in JSON format */
+// printRetryingToResolve print the message retrying to resolve,
+// after n failed probes.
 func (j *statsJsonPrinter) printRetryingToResolve() {
-	jsonPrintf("retrying to resolve %s", j.hostname)
+	_ = printJson(JSONData{
+		Type:     "retry",
+		Message:  fmt.Sprintf("retrying to resolve %s", j.hostname),
+		Hostname: j.hostname,
+	})
 }
