@@ -108,10 +108,10 @@ func (p *statsPlanePrinter) printRttResults(rtt *rttResults) {
 /* Print statistics when program exits */
 func (p *statsPlanePrinter) printStatistics() {
 
-	totalPackets := p.totalSuccessfulPkts + p.totalUnsuccessfulPkts
+	totalPackets := p.totalSuccessfulProbes + p.totalUnsuccessfulProbes
 	totalUptime := calcTime(uint(p.totalUptime.Seconds()))
 	totalDowntime := calcTime(uint(p.totalDowntime.Seconds()))
-	packetLoss := (float32(p.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
+	packetLoss := (float32(p.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
 	if !p.isIP {
@@ -119,8 +119,8 @@ func (p *statsPlanePrinter) printStatistics() {
 	} else {
 		colorYellow("\n--- %s TCPing statistics ---\n", p.hostname)
 	}
-	colorYellow("%d probes transmitted on port %d, ", totalPackets, p.port)
-	colorYellow("%d received, ", p.totalSuccessfulPkts)
+	colorYellow("%d probes transmitted on port %d | ", totalPackets, p.port)
+	colorYellow("%d received, ", p.totalSuccessfulProbes)
 
 	/* packet loss stats */
 	if packetLoss == 0 {
@@ -135,11 +135,11 @@ func (p *statsPlanePrinter) printStatistics() {
 
 	/* successful packet stats */
 	colorYellow("successful probes:   ")
-	colorGreen("%d\n", p.totalSuccessfulPkts)
+	colorGreen("%d\n", p.totalSuccessfulProbes)
 
 	/* unsuccessful packet stats */
 	colorYellow("unsuccessful probes: ")
-	colorRed("%d\n", p.totalUnsuccessfulPkts)
+	colorRed("%d\n", p.totalUnsuccessfulProbes)
 
 	p.printLastSucUnsucProbes()
 
@@ -182,18 +182,18 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 	if p.isIP {
 		if replyMsg.msg == noReply {
 			colorRed("%s from %s on port %d TCP_conn=%d\n",
-				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulPkts)
+				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulProbes)
 		} else {
 			colorLightGreen("%s from %s on port %d TCP_conn=%d time=%.3f ms\n",
-				replyMsg.msg, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
+				replyMsg.msg, p.ip, p.port, p.totalSuccessfulProbes, replyMsg.rtt)
 		}
 	} else {
 		if replyMsg.msg == noReply {
 			colorRed("%s from %s (%s) on port %d TCP_conn=%d\n",
-				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulPkts)
+				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulProbes)
 		} else {
 			colorLightGreen("%s from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulPkts, replyMsg.rtt)
+				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulProbes, replyMsg.rtt)
 		}
 	}
 }
@@ -322,22 +322,22 @@ func (j *statsJsonPrinter) printStatistics() {
 		return
 	}
 
-	totalPackets := j.totalSuccessfulPkts + j.totalUnsuccessfulPkts
+	totalPackets := j.totalSuccessfulProbes + j.totalUnsuccessfulProbes
 	totalUptime := calcTime(uint(j.totalUptime.Seconds()))
 	totalDowntime := calcTime(uint(j.totalDowntime.Seconds()))
-	packetLoss := (float32(j.totalUnsuccessfulPkts) / float32(totalPackets)) * 100
+	packetLoss := (float32(j.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
-	jsonPrintf("%s TCPing statistics: %d probes transmitted, %d received", j.hostname, totalPackets, j.totalSuccessfulPkts)
+	jsonPrintf("%s TCPing statistics: %d probes transmitted, %d received", j.hostname, totalPackets, j.totalSuccessfulProbes)
 
 	/* packet loss stats */
 	jsonPrintf("%.2f%% packet loss", packetLoss)
 
 	/* successful packet stats */
-	jsonPrintf("successful probes: %d", j.totalSuccessfulPkts)
+	jsonPrintf("successful probes: %d", j.totalSuccessfulProbes)
 
 	/* unsuccessful packet stats */
-	jsonPrintf("unsuccessful probes: %d", j.totalUnsuccessfulPkts)
+	jsonPrintf("unsuccessful probes: %d", j.totalUnsuccessfulProbes)
 
 	j.printLastSucUnsucProbes()
 
@@ -375,18 +375,18 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	if j.isIP {
 		if replyMsg.msg == noReply {
 			jsonPrintf("%s from %s on port %d TCP_conn=%d",
-				replyMsg.msg, j.ip, j.port, j.totalUnsuccessfulPkts)
+				replyMsg.msg, j.ip, j.port, j.totalUnsuccessfulProbes)
 		} else {
 			jsonPrintf("%s from %s on port %d TCP_conn=%d time=%.3f ms",
-				replyMsg.msg, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
+				replyMsg.msg, j.ip, j.port, j.totalSuccessfulProbes, replyMsg.rtt)
 		}
 	} else {
 		if replyMsg.msg == noReply {
 			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d",
-				replyMsg.msg, j.hostname, j.ip, j.port, j.totalUnsuccessfulPkts)
+				replyMsg.msg, j.hostname, j.ip, j.port, j.totalUnsuccessfulProbes)
 		} else {
 			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d time=%.3f ms",
-				replyMsg.msg, j.hostname, j.ip, j.port, j.totalSuccessfulPkts, replyMsg.rtt)
+				replyMsg.msg, j.hostname, j.ip, j.port, j.totalSuccessfulProbes, replyMsg.rtt)
 		}
 	}
 }

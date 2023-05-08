@@ -27,17 +27,17 @@ type stats struct {
 	ip                    ipAddress
 	startTime             time.Time
 	statsPrinter
-	retryHostnameResolveAfter *uint // Retry resolving target's hostname after a certain number of failed requests
+	retryHostnameResolveAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	hostname                  string
 	rtt                       []float32
-	ongoingUnsuccessfulPkts   uint
+	ongoingUnsuccessfulProbes uint
 	longestDowntime           longestTime
-	totalSuccessfulPkts       uint
+	totalSuccessfulProbes     uint
 	totalUptime               time.Duration
 	retriedHostnameResolves   uint
 	longestUptime             longestTime
 	totalDowntime             time.Duration
-	totalUnsuccessfulPkts     uint
+	totalUnsuccessfulProbes   uint
 	port                      uint16
 	wasDown                   bool // Used to determine the duration of a downtime
 	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
@@ -69,7 +69,7 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.21.1"
+	version             = "1.21.2"
 	owner               = "pouriyajamshidi"
 	repo                = "tcping"
 	thousandMilliSecond = 1000 * time.Millisecond
@@ -111,7 +111,7 @@ func usage() {
 
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
-	tcpStats.retryHostnameResolveAfter = flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
+	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
 	showVersion := flag.Bool("v", false, "show version.")
@@ -126,6 +126,10 @@ func processUserInput(tcpStats *stats) {
 	/* validation for flag and args */
 	args := flag.Args()
 	nFlag := flag.NFlag()
+
+	if *retryHostnameResolveAfter > 0 {
+		tcpStats.retryHostnameResolveAfter = *retryHostnameResolveAfter
+	}
 
 	/* -u works on its own. */
 	if *shouldCheckUpdates {
@@ -181,7 +185,7 @@ func processUserInput(tcpStats *stats) {
 		tcpStats.isIP = true
 	}
 
-	if *tcpStats.retryHostnameResolveAfter > 0 && !tcpStats.isIP {
+	if tcpStats.retryHostnameResolveAfter > 0 && !tcpStats.isIP {
 		tcpStats.shouldRetryResolve = true
 	}
 
@@ -273,7 +277,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 
 	ipAddrs, err := net.LookupIP(tcpStats.hostname)
 
-	if err != nil && (tcpStats.totalSuccessfulPkts != 0 || tcpStats.totalUnsuccessfulPkts != 0) {
+	if err != nil && (tcpStats.totalSuccessfulProbes != 0 || tcpStats.totalUnsuccessfulProbes != 0) {
 		/* Prevent exit if application has been running for a while */
 		return tcpStats.ip
 	} else if err != nil {
@@ -333,10 +337,10 @@ func resolveHostname(tcpStats *stats) ipAddress {
 
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
-	if tcpStats.ongoingUnsuccessfulPkts >= *tcpStats.retryHostnameResolveAfter {
+	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.retryHostnameResolveAfter {
 		tcpStats.printRetryingToResolve()
 		tcpStats.ip = resolveHostname(tcpStats)
-		tcpStats.ongoingUnsuccessfulPkts = 0
+		tcpStats.ongoingUnsuccessfulProbes = 0
 		tcpStats.retriedHostnameResolves += 1
 	}
 }
@@ -474,9 +478,9 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	}
 
 	tcpStats.totalDowntime += time.Second
-	tcpStats.totalUnsuccessfulPkts += 1
 	tcpStats.lastUnsuccessfulProbe = now
-	tcpStats.ongoingUnsuccessfulPkts += 1
+	tcpStats.totalUnsuccessfulProbes += 1
+	tcpStats.ongoingUnsuccessfulProbes += 1
 
 	tcpStats.statsPrinter.printReply(replyMsg{msg: "No reply", rtt: 0})
 }
@@ -488,7 +492,7 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 		calcLongestDowntime(tcpStats, now)
 		tcpStats.startOfDowntime = time.Time{}
 		tcpStats.wasDown = false
-		tcpStats.ongoingUnsuccessfulPkts = 0
+		tcpStats.ongoingUnsuccessfulProbes = 0
 	}
 
 	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
@@ -496,8 +500,8 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	}
 
 	tcpStats.totalUptime += time.Second
-	tcpStats.totalSuccessfulPkts += 1
 	tcpStats.lastSuccessfulProbe = now
+	tcpStats.totalSuccessfulProbes += 1
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
 	tcpStats.statsPrinter.printReply(replyMsg{msg: "Reply", rtt: rtt})
