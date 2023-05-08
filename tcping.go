@@ -69,7 +69,7 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.21.0"
+	version             = "1.21.1"
 	owner               = "pouriyajamshidi"
 	repo                = "tcping"
 	thousandMilliSecond = 1000 * time.Millisecond
@@ -333,7 +333,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
-	if tcpStats.ongoingUnsuccessfulPkts > *tcpStats.retryHostnameResolveAfter {
+	if tcpStats.ongoingUnsuccessfulPkts >= *tcpStats.retryHostnameResolveAfter {
 		tcpStats.printRetryingToResolve()
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulPkts = 0
