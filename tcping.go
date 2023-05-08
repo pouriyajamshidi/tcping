@@ -69,7 +69,7 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.21.0"
+	version             = "1.21.1"
 	owner               = "pouriyajamshidi"
 	repo                = "tcping"
 	thousandMilliSecond = 1000 * time.Millisecond
