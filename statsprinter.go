@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/netip"
+	"os"
 	"time"
 
 	"github.com/gookit/color"
@@ -255,7 +257,37 @@ JSON output section
 
 */
 
-/* Print message  in JSON format */
+// printJson is a shortcut for Encode() on os.Stdout.
+var printJson = json.NewEncoder(os.Stdout).Encode
+
+// JSONData contains all possible fields for JSON output.
+// Because one event usually contains only a subset of fields,
+// other fields will be omitted in the output.
+type JSONData struct {
+	// Type is a mandatory field that specifies type of a message.
+	// Possible types are:
+	//	- start
+	// 	- probe
+	Type string `json:"type"`
+	// Message contains a human-readable message.
+	Message string `json:"message"`
+
+	// Optional fields below
+
+	// Success is a special field from probe event, containing information
+	// whether request was successful or not.
+	// It's a pointer on purpose, otherwise success=false will be omitted.
+	Success                 *bool      `json:"success,omitempty"`
+	Hostname                string     `json:"hostname,omitempty"`
+	Addr                    netip.Addr `json:"addr,omitempty"`
+	Port                    uint16     `json:"port,omitempty"`
+	TotalSuccessfulProbes   uint       `json:"total_successful_probes,omitempty"`
+	TotalUnsuccessfulProbes uint       `json:"total_unsuccessful_probes,omitempty"`
+	// Latency in ms.
+	Latency float32 `json:"latency,omitempty"`
+}
+
+// TODO: remove
 func jsonPrintf(format string, a ...interface{}) {
 	data := struct {
 		Message string `json:"message"`
@@ -268,7 +300,12 @@ func jsonPrintf(format string, a ...interface{}) {
 
 /* Print host name and port to use on tcping in JSON format */
 func (j *statsJsonPrinter) printStart() {
-	jsonPrintf("TCPinging %s on port %d", j.hostname, j.port)
+	_ = printJson(JSONData{
+		Type:     "start",
+		Message:  fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
+		Hostname: j.hostname,
+		Port:     j.port,
+	})
 }
 
 /* Print the last successful and unsuccessful probes in JSON format */
@@ -370,25 +407,34 @@ func (j *statsJsonPrinter) printStatistics() {
 	j.printDurationStats()
 }
 
-/* Print TCP probe replies according to our policies in JSON format */
+// printReply prints TCP probe replies according to our policies in JSON format.
 func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
-	if j.isIP {
-		if replyMsg.msg == noReply {
-			jsonPrintf("%s from %s on port %d TCP_conn=%d",
-				replyMsg.msg, j.ip, j.port, j.totalUnsuccessfulProbes)
-		} else {
-			jsonPrintf("%s from %s on port %d TCP_conn=%d time=%.3f ms",
-				replyMsg.msg, j.ip, j.port, j.totalSuccessfulProbes, replyMsg.rtt)
-		}
-	} else {
-		if replyMsg.msg == noReply {
-			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d",
-				replyMsg.msg, j.hostname, j.ip, j.port, j.totalUnsuccessfulProbes)
-		} else {
-			jsonPrintf("%s from %s (%s) on port %d TCP_conn=%d time=%.3f ms",
-				replyMsg.msg, j.hostname, j.ip, j.port, j.totalSuccessfulProbes, replyMsg.rtt)
-		}
+	f := false
+	data := JSONData{
+		Type:    "probe",
+		Addr:    j.ip,
+		Port:    j.port,
+		Success: &f,
 	}
+
+	ipStr := data.Addr.String()
+	if !j.isIP {
+		data.Hostname = j.hostname
+		ipStr = fmt.Sprintf("%s (%s)", data.Hostname, ipStr)
+	}
+
+	data.Message = fmt.Sprintf("%s from %s on port %d", replyMsg.msg, ipStr, j.port)
+
+	if replyMsg.msg != noReply {
+		data.Latency = replyMsg.rtt
+		data.TotalSuccessfulProbes = j.totalSuccessfulProbes
+		t := true
+		data.Success = &t
+	} else {
+		data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
+	}
+
+	_ = printJson(data)
 }
 
 /* Print the total downtime in JSON format */
