@@ -286,27 +286,32 @@ type JSONData struct {
 
 	// Optional fields below
 
-	Addr                  string    `json:"addr,omitempty"`
-	Hostname              string    `json:"hostname,omitempty"`
-	IsIP                  *bool     `json:"is_ip,omitempty"`
-	LastSuccessfulProbe   time.Time `json:"last_successful_probe,omitempty"`
-	LastUnsuccessfulProbe time.Time `json:"last_unsuccessful_probe,omitempty"`
-	// Latency in ms for a successful probe.
-	Latency            float32   `json:"latency,omitempty"`
-	LongestUptime      float64   `json:"longest_uptime,omitempty"`
-	LongestUptimeEnd   time.Time `json:"longest_uptime_end,omitempty"`
-	LongestUptimeStart time.Time `json:"longest_uptime_start,omitempty"`
-	Port               uint16    `json:"port,omitempty"`
 	// Success is a special field from probe event, containing information
 	// whether request was successful or not.
-	// It's a pointer on purpose, otherwise success=false will be omitted.
-	Success                 *bool         `json:"success,omitempty"`
-	TotalDowntime           time.Duration `json:"total_downtime,omitempty"`
-	TotalPacketLoss         float32       `json:"total_packet_loss,omitempty"`
-	TotalPackets            uint          `json:"total_packets,omitempty"`
-	TotalSuccessfulProbes   uint          `json:"total_successful_probes,omitempty"`
-	TotalUnsuccessfulProbes uint          `json:"total_unsuccessful_probes,omitempty"`
-	TotalUptime             time.Duration `json:"total_uptime,omitempty"`
+	// It's a pointer on purpose, otherwise success=false will be omitted,
+	// but we still need to omit it for non-probe events.
+	Success *bool `json:"success,omitempty"`
+
+	// Latency in ms for a successful probe.
+	Latency float32 `json:"latency,omitempty"`
+
+	Addr                    string     `json:"addr,omitempty"`
+	Hostname                string     `json:"hostname,omitempty"`
+	IsIP                    *bool      `json:"is_ip,omitempty"`
+	LastSuccessfulProbe     *time.Time `json:"last_successful_probe,omitempty"`
+	LastUnsuccessfulProbe   *time.Time `json:"last_unsuccessful_probe,omitempty"`
+	LongestUptime           float64    `json:"longest_uptime,omitempty"`
+	LongestUptimeEnd        *time.Time `json:"longest_uptime_end,omitempty"`
+	LongestUptimeStart      *time.Time `json:"longest_uptime_start,omitempty"`
+	Port                    uint16     `json:"port,omitempty"`
+	TotalPacketLoss         float32    `json:"total_packet_loss,omitempty"`
+	TotalPackets            uint       `json:"total_packets,omitempty"`
+	TotalSuccessfulProbes   uint       `json:"total_successful_probes,omitempty"`
+	TotalUnsuccessfulProbes uint       `json:"total_unsuccessful_probes,omitempty"`
+	// TotalUptime in seconds.
+	TotalUptime float64 `json:"total_uptime,omitempty"`
+	// TotalDowntime in seconds.
+	TotalDowntime float64 `json:"total_downtime,omitempty"`
 }
 
 // TODO: remove
@@ -408,10 +413,14 @@ func (j *statsJsonPrinter) printStatistics() {
 	data.TotalPackets = totalPackets
 	data.TotalSuccessfulProbes = j.totalSuccessfulProbes
 	data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
-	data.LastSuccessfulProbe = j.lastSuccessfulProbe
-	data.LastUnsuccessfulProbe = j.lastUnsuccessfulProbe
-	data.TotalUptime = j.totalUptime
-	data.TotalDowntime = j.totalDowntime
+	if !j.lastSuccessfulProbe.IsZero() {
+		data.LastSuccessfulProbe = &j.lastSuccessfulProbe
+	}
+	if !j.lastUnsuccessfulProbe.IsZero() {
+		data.LastUnsuccessfulProbe = &j.lastUnsuccessfulProbe
+	}
+	data.TotalUptime = j.totalUptime.Seconds()
+	data.TotalDowntime = j.totalDowntime.Seconds()
 
 	/* calculate the last longest time */
 	if !j.wasDown {
@@ -422,8 +431,8 @@ func (j *statsJsonPrinter) printStatistics() {
 
 	if j.longestUptime.duration != 0 {
 		data.LongestUptime = j.longestUptime.duration
-		data.LongestUptimeStart = j.longestUptime.start
-		data.LongestUptimeEnd = j.longestUptime.end
+		data.LongestUptimeStart = &j.longestUptime.start
+		data.LongestUptimeEnd = &j.longestUptime.end
 	}
 
 	/* longest downtime stats */
