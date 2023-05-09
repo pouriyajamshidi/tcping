@@ -271,6 +271,8 @@ type JSONData struct {
 	Type string `json:"type"`
 	// Message contains a human-readable message.
 	Message string `json:"message"`
+	// Timestamp contains data when a message was sent.
+	Timestamp time.Time `json:"timestamp"`
 
 	// Optional fields below
 
@@ -281,6 +283,7 @@ type JSONData struct {
 	Hostname                string `json:"hostname,omitempty"`
 	Addr                    string `json:"addr,omitempty"`
 	Port                    uint16 `json:"port,omitempty"`
+	IsIP                    *bool  `json:"is_ip,omitempty"`
 	TotalSuccessfulProbes   uint   `json:"total_successful_probes,omitempty"`
 	TotalUnsuccessfulProbes uint   `json:"total_unsuccessful_probes,omitempty"`
 	// Latency in ms.
@@ -301,26 +304,33 @@ func jsonPrintf(format string, a ...interface{}) {
 // printStart prints the initial message before doing probes.
 func (j *statsJsonPrinter) printStart() {
 	_ = printJson(JSONData{
-		Type:     "start",
-		Message:  fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
-		Hostname: j.hostname,
-		Port:     j.port,
+		Type:      "start",
+		Message:   fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
+		Hostname:  j.hostname,
+		Port:      j.port,
+		Timestamp: time.Now(),
 	})
 }
 
 // printReply prints TCP probe replies according to our policies in JSON format.
 func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
+	// for *bool fields
 	f := false
+	t := true
+
 	data := JSONData{
-		Type:    "probe",
-		Addr:    j.ip.String(),
-		Port:    j.port,
-		Success: &f,
+		Type:      "probe",
+		Addr:      j.ip.String(),
+		Port:      j.port,
+		IsIP:      &t,
+		Success:   &f,
+		Timestamp: time.Now(),
 	}
 
 	ipStr := data.Addr
 	if !j.isIP {
 		data.Hostname = j.hostname
+		data.IsIP = &f
 		ipStr = fmt.Sprintf("%s (%s)", data.Hostname, ipStr)
 	}
 
@@ -329,7 +339,6 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	if replyMsg.msg != noReply {
 		data.Latency = replyMsg.rtt
 		data.TotalSuccessfulProbes = j.totalSuccessfulProbes
-		t := true
 		data.Success = &t
 	} else {
 		data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
@@ -481,8 +490,9 @@ func (j *statsJsonPrinter) printRetryResolveStats() {
 // after n failed probes.
 func (j *statsJsonPrinter) printRetryingToResolve() {
 	_ = printJson(JSONData{
-		Type:     "retry",
-		Message:  fmt.Sprintf("retrying to resolve %s", j.hostname),
-		Hostname: j.hostname,
+		Type:      "retry",
+		Message:   fmt.Sprintf("retrying to resolve %s", j.hostname),
+		Hostname:  j.hostname,
+		Timestamp: time.Now(),
 	})
 }
