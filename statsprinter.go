@@ -286,18 +286,27 @@ type JSONData struct {
 
 	// Optional fields below
 
+	Addr                  string    `json:"addr,omitempty"`
+	Hostname              string    `json:"hostname,omitempty"`
+	IsIP                  *bool     `json:"is_ip,omitempty"`
+	LastSuccessfulProbe   time.Time `json:"last_successful_probe,omitempty"`
+	LastUnsuccessfulProbe time.Time `json:"last_unsuccessful_probe,omitempty"`
+	// Latency in ms for a successful probe.
+	Latency            float32   `json:"latency,omitempty"`
+	LongestUptime      float64   `json:"longest_uptime,omitempty"`
+	LongestUptimeEnd   time.Time `json:"longest_uptime_end,omitempty"`
+	LongestUptimeStart time.Time `json:"longest_uptime_start,omitempty"`
+	Port               uint16    `json:"port,omitempty"`
 	// Success is a special field from probe event, containing information
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted.
-	Success                 *bool  `json:"success,omitempty"`
-	Hostname                string `json:"hostname,omitempty"`
-	Addr                    string `json:"addr,omitempty"`
-	Port                    uint16 `json:"port,omitempty"`
-	IsIP                    *bool  `json:"is_ip,omitempty"`
-	TotalSuccessfulProbes   uint   `json:"total_successful_probes,omitempty"`
-	TotalUnsuccessfulProbes uint   `json:"total_unsuccessful_probes,omitempty"`
-	// Latency in ms for a successful probe.
-	Latency float32 `json:"latency,omitempty"`
+	Success                 *bool         `json:"success,omitempty"`
+	TotalDowntime           time.Duration `json:"total_downtime,omitempty"`
+	TotalPacketLoss         float32       `json:"total_packet_loss,omitempty"`
+	TotalPackets            uint          `json:"total_packets,omitempty"`
+	TotalSuccessfulProbes   uint          `json:"total_successful_probes,omitempty"`
+	TotalUnsuccessfulProbes uint          `json:"total_unsuccessful_probes,omitempty"`
+	TotalUptime             time.Duration `json:"total_uptime,omitempty"`
 }
 
 // TODO: remove
@@ -357,26 +366,6 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	_ = printJson(data)
 }
 
-/* Print the last successful and unsuccessful probes in JSON format */
-func (j *statsJsonPrinter) printLastSucUnsucProbes() {
-	formattedLastSuccessfulProbe := j.lastSuccessfulProbe.Format(timeFormat)
-	formattedLastUnsuccessfulProbe := j.lastUnsuccessfulProbe.Format(timeFormat)
-
-	successMsg := "last successful probe:   "
-	if formattedLastSuccessfulProbe == nullTimeFormat {
-		jsonPrintf("%s%s", successMsg, "Never succeeded")
-	} else {
-		jsonPrintf("%s%s", successMsg, formattedLastSuccessfulProbe)
-	}
-
-	failureMsg := "last unsuccessful probe: "
-	if formattedLastUnsuccessfulProbe == nullTimeFormat {
-		jsonPrintf("%s%s", failureMsg, "Never failed")
-	} else {
-		jsonPrintf("%s%s", failureMsg, formattedLastUnsuccessfulProbe)
-	}
-}
-
 /* Print the start and end time of the program in JSON format */
 func (j *statsJsonPrinter) printDurationStats() {
 	var duration time.Time
@@ -406,32 +395,23 @@ func (j *statsJsonPrinter) printStatistics() {
 		return
 	}
 
-	// data := JSONData{
-	// 	Type: Stats,
-	// }
+	data := JSONData{
+		Type:      Stats,
+		Hostname:  j.hostname,
+		Timestamp: time.Now(),
+	}
 
 	totalPackets := j.totalSuccessfulProbes + j.totalUnsuccessfulProbes
-	totalUptime := calcTime(uint(j.totalUptime.Seconds()))
-	totalDowntime := calcTime(uint(j.totalDowntime.Seconds()))
 	packetLoss := (float32(j.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
-	/* general stats */
-	jsonPrintf("%s TCPing statistics: %d probes transmitted, %d received", j.hostname, totalPackets, j.totalSuccessfulProbes)
-
-	/* packet loss stats */
-	jsonPrintf("%.2f%% packet loss", packetLoss)
-
-	/* successful packet stats */
-	jsonPrintf("successful probes: %d", j.totalSuccessfulProbes)
-
-	/* unsuccessful packet stats */
-	jsonPrintf("unsuccessful probes: %d", j.totalUnsuccessfulProbes)
-
-	j.printLastSucUnsucProbes()
-
-	/* uptime and downtime stats */
-	jsonPrintf("total uptime: %s", totalUptime)
-	jsonPrintf("total downtime: %s", totalDowntime)
+	data.TotalPacketLoss = packetLoss
+	data.TotalPackets = totalPackets
+	data.TotalSuccessfulProbes = j.totalSuccessfulProbes
+	data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
+	data.LastSuccessfulProbe = j.lastSuccessfulProbe
+	data.LastUnsuccessfulProbe = j.lastUnsuccessfulProbe
+	data.TotalUptime = j.totalUptime
+	data.TotalDowntime = j.totalDowntime
 
 	/* calculate the last longest time */
 	if !j.wasDown {
@@ -440,8 +420,11 @@ func (j *statsJsonPrinter) printStatistics() {
 		calcLongestDowntime(j.stats, j.lastUnsuccessfulProbe)
 	}
 
-	/* longest uptime stats */
-	j.printLongestUptime()
+	if j.longestUptime.duration != 0 {
+		data.LongestUptime = j.longestUptime.duration
+		data.LongestUptimeStart = j.longestUptime.start
+		data.LongestUptimeEnd = j.longestUptime.end
+	}
 
 	/* longest downtime stats */
 	j.printLongestDowntime()
@@ -456,6 +439,8 @@ func (j *statsJsonPrinter) printStatistics() {
 
 	/* duration stats */
 	j.printDurationStats()
+
+	_ = printJson(data)
 }
 
 /* Print the total downtime in JSON format */
@@ -464,19 +449,6 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 
 	jsonPrintf("No response received for %s", calculatedDowntime)
-}
-
-/* Print the longest uptime in JSON format */
-func (j *statsJsonPrinter) printLongestUptime() {
-	if j.longestUptime.duration == 0 {
-		return
-	}
-
-	uptime := calcTime(uint(math.Ceil(j.longestUptime.duration)))
-	longestUptimeStart := j.longestUptime.start.Format(timeFormat)
-	longestUptimeEnd := j.longestUptime.end.Format(timeFormat)
-
-	jsonPrintf("longest consecutive uptime: %v from %v to %v", uptime, longestUptimeStart, longestUptimeEnd)
 }
 
 /* Print the longest downtime in JSON format */
