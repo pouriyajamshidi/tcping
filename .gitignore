@@ -4,3 +4,4 @@ executables/
 tcping
 .DS_Store
 .vscode
+*.code-workspace
