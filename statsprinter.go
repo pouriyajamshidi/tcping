@@ -256,6 +256,15 @@ JSON output section
 
 */
 
+type JSONEventType string
+
+const (
+	Start JSONEventType = "start"
+	Probe JSONEventType = "probe"
+	Retry JSONEventType = "retry"
+	Stats JSONEventType = "stats"
+)
+
 // printJson is a shortcut for Encode() on os.Stdout.
 var printJson = json.NewEncoder(os.Stdout).Encode
 
@@ -268,7 +277,8 @@ type JSONData struct {
 	//	- start
 	// 	- probe
 	// 	- retry
-	Type string `json:"type"`
+	// 	- stats
+	Type JSONEventType `json:"type"`
 	// Message contains a human-readable message.
 	Message string `json:"message"`
 	// Timestamp contains data when a message was sent.
@@ -286,7 +296,7 @@ type JSONData struct {
 	IsIP                    *bool  `json:"is_ip,omitempty"`
 	TotalSuccessfulProbes   uint   `json:"total_successful_probes,omitempty"`
 	TotalUnsuccessfulProbes uint   `json:"total_unsuccessful_probes,omitempty"`
-	// Latency in ms.
+	// Latency in ms for a successful probe.
 	Latency float32 `json:"latency,omitempty"`
 }
 
@@ -304,7 +314,7 @@ func jsonPrintf(format string, a ...interface{}) {
 // printStart prints the initial message before doing probes.
 func (j *statsJsonPrinter) printStart() {
 	_ = printJson(JSONData{
-		Type:      "start",
+		Type:      Start,
 		Message:   fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
 		Hostname:  j.hostname,
 		Port:      j.port,
@@ -319,7 +329,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	t := true
 
 	data := JSONData{
-		Type:      "probe",
+		Type:      Probe,
 		Addr:      j.ip.String(),
 		Port:      j.port,
 		IsIP:      &t,
@@ -396,7 +406,9 @@ func (j *statsJsonPrinter) printStatistics() {
 		return
 	}
 
-	// data := JSONData{}
+	// data := JSONData{
+	// 	Type: Stats,
+	// }
 
 	totalPackets := j.totalSuccessfulProbes + j.totalUnsuccessfulProbes
 	totalUptime := calcTime(uint(j.totalUptime.Seconds()))
@@ -490,7 +502,7 @@ func (j *statsJsonPrinter) printRetryResolveStats() {
 // after n failed probes.
 func (j *statsJsonPrinter) printRetryingToResolve() {
 	_ = printJson(JSONData{
-		Type:      "retry",
+		Type:      Retry,
 		Message:   fmt.Sprintf("retrying to resolve %s", j.hostname),
 		Hostname:  j.hostname,
 		Timestamp: time.Now(),
