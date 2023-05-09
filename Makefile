@@ -114,3 +114,7 @@ gifs:
 	@echo "[+] Making tcping_resolve.gif"
 	@vhs $(TAPE_DIR)tcping_resolve.tape -o $(GIFS_DIR)tcping_resolve.gif
 	@echo "[+] Done"
+
+	@echo "[+] Making tcping_json_pretty.gif"
+	@vhs $(TAPE_DIR)tcping_json_pretty.tape -o $(GIFS_DIR)tcping_json_pretty.gif
+	@echo "[+] Done"
