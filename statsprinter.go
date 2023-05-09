@@ -259,11 +259,20 @@ JSON output section
 type JSONEventType string
 
 const (
-	Probe        JSONEventType = "probe"
-	Retry        JSONEventType = "retry"
+	// Probe is an event type that represent 1 probe / ping / request event.
+	Probe JSONEventType = "probe"
+	// Retry is an event type that's being sent,
+	// when tcping retries to resolve a hostname.
+	Retry JSONEventType = "retry"
+	// RetrySuccess is a sub-type for of Retry event,
+	// when previous retry was unsuccessful, but the next one became successful.
 	RetrySuccess JSONEventType = "retry-success"
-	Start        JSONEventType = "start"
-	Stats        JSONEventType = "stats"
+	// Start is an event type that's sent only one,
+	// before doing any actual work.
+	Start JSONEventType = "start"
+	// Stats is a final event that's being sent
+	// before tcping exits.
+	Stats JSONEventType = "stats"
 )
 
 // jsonEncoder stores the encoder for json output.
@@ -308,10 +317,11 @@ type JSONData struct {
 	// Latency in ms for a successful probe messages.
 	Latency float32 `json:"latency,omitempty"`
 
-	// Latency stats for stats messages.
-
+	// LatencyMin is a latency stat for stats event.
 	LatencyMin float32 `json:"latency_min,omitempty"`
+	// LatencyAvg is a latency stat for stats event.
 	LatencyAvg float32 `json:"latency_avg,omitempty"`
+	// LatencyMax is a latency stat for stats event.
 	LatencyMax float32 `json:"latency_max,omitempty"`
 
 	// TotalDuration is a total amount of seconds that program was running.
