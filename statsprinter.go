@@ -286,6 +286,12 @@ type JSONData struct {
 
 	// Optional fields below
 
+	Addr                 string `json:"addr,omitempty"`
+	Hostname             string `json:"hostname,omitempty"`
+	HostnameResolveTries uint   `json:"hostname_resolve_tries,omitempty"`
+	IsIP                 *bool  `json:"is_ip,omitempty"`
+	Port                 uint16 `json:"port,omitempty"`
+
 	// Success is a special field from probe event, containing information
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted,
@@ -301,11 +307,10 @@ type JSONData struct {
 	LatencyAvg float32 `json:"latency_avg,omitempty"`
 	LatencyMax float32 `json:"latency_max,omitempty"`
 
-	Addr                 string `json:"addr,omitempty"`
-	Hostname             string `json:"hostname,omitempty"`
-	HostnameResolveTries uint   `json:"hostname_resolve_tries,omitempty"`
-	IsIP                 *bool  `json:"is_ip,omitempty"`
-	Port                 uint16 `json:"port,omitempty"`
+	// TotalDuration is a total amount of seconds that program was running.
+	TotalDuration  float64    `json:"duration,omitempty"`
+	StartTimestamp *time.Time `json:"start_timestamp,omitempty"`
+	EndTimestamp   *time.Time `json:"end_timestamp,omitempty"`
 
 	LastSuccessfulProbe   *time.Time `json:"last_successful_probe,omitempty"`
 	LastUnsuccessfulProbe *time.Time `json:"last_unsuccessful_probe,omitempty"`
@@ -387,28 +392,6 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	_ = printJson(data)
 }
 
-/* Print the start and end time of the program in JSON format */
-func (j *statsJsonPrinter) printDurationStats() {
-	var duration time.Time
-	var durationDiff time.Duration
-	endMsg := "still running"
-
-	startMSg := fmt.Sprintf("started at: %v ", j.startTime.Format(timeFormat))
-
-	/* If the program was not terminated, no need to show the end time */
-	if j.endTime.Format(timeFormat) == nullTimeFormat {
-		durationDiff = time.Since(j.startTime)
-	} else {
-		endMsg = fmt.Sprintf("ended at: %v ", j.endTime.Format(timeFormat))
-		durationDiff = j.endTime.Sub(j.startTime)
-	}
-
-	duration = time.Time{}.Add(durationDiff)
-	durationFormatted := fmt.Sprintf("duration (HH:MM:SS): %v", duration.Format(hourFormat))
-
-	jsonPrintf(startMSg + endMsg + durationFormatted)
-}
-
 // printStatistics prints all gathered stats when program exits.
 func (j *statsJsonPrinter) printStatistics() {
 	data := JSONData{
@@ -463,8 +446,16 @@ func (j *statsJsonPrinter) printStatistics() {
 		data.LatencyMax = latencyStats.max
 	}
 
-	/* duration stats */
-	j.printDurationStats()
+	data.StartTimestamp = &j.startTime
+
+	if j.endTime.IsZero() {
+		t := time.Now()
+		data.EndTimestamp = &t
+	} else {
+		data.EndTimestamp = &j.endTime
+	}
+
+	data.TotalDuration = data.EndTimestamp.Sub(*data.StartTimestamp).Seconds()
 
 	_ = printJson(data)
 }
