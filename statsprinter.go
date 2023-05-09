@@ -266,8 +266,13 @@ const (
 	Stats        JSONEventType = "stats"
 )
 
-// printJson is a shortcut for Encode() on os.Stdout.
-var printJson = json.NewEncoder(os.Stdout).Encode
+// jsonEncoder stores the encoder for json output.
+// It could be used to tweak default options, like indentation or
+// change output to another writer interface.
+var jsonEncoder = json.NewEncoder(os.Stdout)
+
+// printJson is a shortcut for Encode() on jsonEncoder.
+var printJson = jsonEncoder.Encode
 
 // JSONData contains all possible fields for JSON output.
 // Because one event usually contains only a subset of fields,
