@@ -389,25 +389,26 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 func (j *statsJsonPrinter) printStatistics() {
 	data := JSONData{
 		Type:      Stats,
+		Message:   fmt.Sprintf("stats for %s", j.hostname),
 		Hostname:  j.hostname,
 		Timestamp: time.Now(),
+
+		StartTimestamp:          &j.startTime,
+		TotalDowntime:           j.totalDowntime.Seconds(),
+		TotalPackets:            j.totalSuccessfulProbes + j.totalUnsuccessfulProbes,
+		TotalSuccessfulProbes:   j.totalSuccessfulProbes,
+		TotalUnsuccessfulProbes: j.totalUnsuccessfulProbes,
+		TotalUptime:             j.totalUptime.Seconds(),
 	}
 
-	totalPackets := j.totalSuccessfulProbes + j.totalUnsuccessfulProbes
-	packetLoss := (float32(j.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
+	data.TotalPacketLoss = (float32(data.TotalUnsuccessfulProbes) / float32(data.TotalPackets)) * 100
 
-	data.TotalPacketLoss = packetLoss
-	data.TotalPackets = totalPackets
-	data.TotalSuccessfulProbes = j.totalSuccessfulProbes
-	data.TotalUnsuccessfulProbes = j.totalUnsuccessfulProbes
 	if !j.lastSuccessfulProbe.IsZero() {
 		data.LastSuccessfulProbe = &j.lastSuccessfulProbe
 	}
 	if !j.lastUnsuccessfulProbe.IsZero() {
 		data.LastUnsuccessfulProbe = &j.lastUnsuccessfulProbe
 	}
-	data.TotalUptime = j.totalUptime.Seconds()
-	data.TotalDowntime = j.totalDowntime.Seconds()
 
 	/* calculate the last longest time */
 	if !j.wasDown {
@@ -438,8 +439,6 @@ func (j *statsJsonPrinter) printStatistics() {
 		data.LatencyAvg = latencyStats.average
 		data.LatencyMax = latencyStats.max
 	}
-
-	data.StartTimestamp = &j.startTime
 
 	if j.endTime.IsZero() {
 		t := time.Now()
