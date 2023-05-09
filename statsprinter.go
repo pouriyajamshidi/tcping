@@ -295,10 +295,11 @@ type JSONData struct {
 	// Latency in ms for a successful probe.
 	Latency float32 `json:"latency,omitempty"`
 
-	Addr     string `json:"addr,omitempty"`
-	Hostname string `json:"hostname,omitempty"`
-	Port     uint16 `json:"port,omitempty"`
-	IsIP     *bool  `json:"is_ip,omitempty"`
+	Addr                 string `json:"addr,omitempty"`
+	Hostname             string `json:"hostname,omitempty"`
+	HostnameResolveTries uint   `json:"hostname_resolve_tries,omitempty"`
+	IsIP                 *bool  `json:"is_ip,omitempty"`
+	Port                 uint16 `json:"port,omitempty"`
 
 	LastSuccessfulProbe   *time.Time `json:"last_successful_probe,omitempty"`
 	LastUnsuccessfulProbe *time.Time `json:"last_unsuccessful_probe,omitempty"`
@@ -450,9 +451,8 @@ func (j *statsJsonPrinter) printStatistics() {
 		data.LongestDowntimeEnd = &j.longestDowntime.end
 	}
 
-	/* resolve retry stats */
 	if !j.isIP {
-		j.printRetryResolveStats()
+		data.HostnameResolveTries = j.retriedHostnameResolves
 	}
 
 	/* latency stats.*/
@@ -470,11 +470,6 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 
 	jsonPrintf("No response received for %s", calculatedDowntime)
-}
-
-/* Print the number of times that we tried resolving a hostname after a failure in JSON format */
-func (j *statsJsonPrinter) printRetryResolveStats() {
-	jsonPrintf("retried to resolve hostname %d times", j.retriedHostnameResolves)
 }
 
 // printRetryingToResolve print the message retrying to resolve,
