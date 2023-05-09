@@ -295,19 +295,28 @@ type JSONData struct {
 	// Latency in ms for a successful probe.
 	Latency float32 `json:"latency,omitempty"`
 
-	Addr                    string     `json:"addr,omitempty"`
-	Hostname                string     `json:"hostname,omitempty"`
-	IsIP                    *bool      `json:"is_ip,omitempty"`
-	LastSuccessfulProbe     *time.Time `json:"last_successful_probe,omitempty"`
-	LastUnsuccessfulProbe   *time.Time `json:"last_unsuccessful_probe,omitempty"`
-	LongestUptime           float64    `json:"longest_uptime,omitempty"`
-	LongestUptimeEnd        *time.Time `json:"longest_uptime_end,omitempty"`
-	LongestUptimeStart      *time.Time `json:"longest_uptime_start,omitempty"`
-	Port                    uint16     `json:"port,omitempty"`
-	TotalPacketLoss         float32    `json:"total_packet_loss,omitempty"`
-	TotalPackets            uint       `json:"total_packets,omitempty"`
-	TotalSuccessfulProbes   uint       `json:"total_successful_probes,omitempty"`
-	TotalUnsuccessfulProbes uint       `json:"total_unsuccessful_probes,omitempty"`
+	Addr     string `json:"addr,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
+	Port     uint16 `json:"port,omitempty"`
+	IsIP     *bool  `json:"is_ip,omitempty"`
+
+	LastSuccessfulProbe   *time.Time `json:"last_successful_probe,omitempty"`
+	LastUnsuccessfulProbe *time.Time `json:"last_unsuccessful_probe,omitempty"`
+
+	// LongestUptime in seconds.
+	LongestUptime      float64    `json:"longest_uptime,omitempty"`
+	LongestUptimeEnd   *time.Time `json:"longest_uptime_end,omitempty"`
+	LongestUptimeStart *time.Time `json:"longest_uptime_start,omitempty"`
+
+	// LongestDowntime in seconds.
+	LongestDowntime      float64    `json:"longest_downtime,omitempty"`
+	LongestDowntimeEnd   *time.Time `json:"longest_downtime_end,omitempty"`
+	LongestDowntimeStart *time.Time `json:"longest_downtime_start,omitempty"`
+
+	TotalPacketLoss         float32 `json:"total_packet_loss,omitempty"`
+	TotalPackets            uint    `json:"total_packets,omitempty"`
+	TotalSuccessfulProbes   uint    `json:"total_successful_probes,omitempty"`
+	TotalUnsuccessfulProbes uint    `json:"total_unsuccessful_probes,omitempty"`
 	// TotalUptime in seconds.
 	TotalUptime float64 `json:"total_uptime,omitempty"`
 	// TotalDowntime in seconds.
@@ -435,8 +444,11 @@ func (j *statsJsonPrinter) printStatistics() {
 		data.LongestUptimeEnd = &j.longestUptime.end
 	}
 
-	/* longest downtime stats */
-	j.printLongestDowntime()
+	if j.longestDowntime.duration != 0 {
+		data.LongestDowntime = j.longestDowntime.duration
+		data.LongestDowntimeStart = &j.longestDowntime.start
+		data.LongestDowntimeEnd = &j.longestDowntime.end
+	}
 
 	/* resolve retry stats */
 	if !j.isIP {
@@ -458,20 +470,6 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
 
 	jsonPrintf("No response received for %s", calculatedDowntime)
-}
-
-/* Print the longest downtime in JSON format */
-func (j *statsJsonPrinter) printLongestDowntime() {
-	if j.longestDowntime.duration == 0 {
-		return
-	}
-
-	downtime := calcTime(uint(math.Ceil(j.longestDowntime.duration)))
-
-	longestDowntimeStart := j.longestDowntime.start.Format(timeFormat)
-	longestDowntimeEnd := j.longestDowntime.end.Format(timeFormat)
-
-	jsonPrintf("longest consecutive downtime: %v from %v to %v", downtime, longestDowntimeStart, longestDowntimeEnd)
 }
 
 /* Print the number of times that we tried resolving a hostname after a failure in JSON format */
