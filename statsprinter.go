@@ -292,8 +292,14 @@ type JSONData struct {
 	// but we still need to omit it for non-probe events.
 	Success *bool `json:"success,omitempty"`
 
-	// Latency in ms for a successful probe.
+	// Latency in ms for a successful probe event.
 	Latency float32 `json:"latency,omitempty"`
+
+	// Latency stats for stats event.
+
+	LatencyMin float32 `json:"latency_min,omitempty"`
+	LatencyAvg float32 `json:"latency_avg,omitempty"`
+	LatencyMax float32 `json:"latency_max,omitempty"`
 
 	Addr                 string `json:"addr,omitempty"`
 	Hostname             string `json:"hostname,omitempty"`
@@ -405,11 +411,6 @@ func (j *statsJsonPrinter) printDurationStats() {
 
 // printStatistics prints all gathered stats when program exits.
 func (j *statsJsonPrinter) printStatistics() {
-	rttResults := findMinAvgMaxRttTime(j.rtt)
-	if !rttResults.hasResults {
-		return
-	}
-
 	data := JSONData{
 		Type:      Stats,
 		Hostname:  j.hostname,
@@ -455,8 +456,12 @@ func (j *statsJsonPrinter) printStatistics() {
 		data.HostnameResolveTries = j.retriedHostnameResolves
 	}
 
-	/* latency stats.*/
-	jsonPrintf("rtt min/avg/max: %.3f/%.3f/%.3f", rttResults.min, rttResults.average, rttResults.max)
+	latencyStats := findMinAvgMaxRttTime(j.rtt)
+	if latencyStats.hasResults {
+		data.LatencyMin = latencyStats.min
+		data.LatencyAvg = latencyStats.average
+		data.LatencyMax = latencyStats.max
+	}
 
 	/* duration stats */
 	j.printDurationStats()
