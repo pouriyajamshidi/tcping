@@ -259,10 +259,11 @@ JSON output section
 type JSONEventType string
 
 const (
-	Start JSONEventType = "start"
-	Probe JSONEventType = "probe"
-	Retry JSONEventType = "retry"
-	Stats JSONEventType = "stats"
+	Probe        JSONEventType = "probe"
+	Retry        JSONEventType = "retry"
+	RetrySuccess JSONEventType = "retry-success"
+	Start        JSONEventType = "start"
+	Stats        JSONEventType = "stats"
 )
 
 // printJson is a shortcut for Encode() on os.Stdout.
@@ -272,12 +273,13 @@ var printJson = json.NewEncoder(os.Stdout).Encode
 // Because one event usually contains only a subset of fields,
 // other fields will be omitted in the output.
 type JSONData struct {
-	// Type is a mandatory field that specifies type of a message.
+	// Type is a mandatory field that specifies type of a message/event.
 	// Possible types are:
 	//	- start
 	// 	- probe
 	// 	- retry
 	// 	- stats
+	//	- retry-success
 	Type JSONEventType `json:"type"`
 	// Message contains a human-readable message.
 	Message string `json:"message"`
@@ -292,25 +294,27 @@ type JSONData struct {
 	IsIP                 *bool  `json:"is_ip,omitempty"`
 	Port                 uint16 `json:"port,omitempty"`
 
-	// Success is a special field from probe event, containing information
+	// Success is a special field from probe messages, containing information
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted,
-	// but we still need to omit it for non-probe events.
+	// but we still need to omit it for non-probe messages.
 	Success *bool `json:"success,omitempty"`
 
-	// Latency in ms for a successful probe event.
+	// Latency in ms for a successful probe messages.
 	Latency float32 `json:"latency,omitempty"`
 
-	// Latency stats for stats event.
+	// Latency stats for stats messages.
 
 	LatencyMin float32 `json:"latency_min,omitempty"`
 	LatencyAvg float32 `json:"latency_avg,omitempty"`
 	LatencyMax float32 `json:"latency_max,omitempty"`
 
 	// TotalDuration is a total amount of seconds that program was running.
-	TotalDuration  float64    `json:"duration,omitempty"`
+	TotalDuration float64 `json:"duration,omitempty"`
+	// StartTimestamp is used as a start time of TotalDuration for stats messages.
 	StartTimestamp *time.Time `json:"start_timestamp,omitempty"`
-	EndTimestamp   *time.Time `json:"end_timestamp,omitempty"`
+	// EndTimestamp is used as an end of TotalDuration for stats messages.
+	EndTimestamp *time.Time `json:"end_timestamp,omitempty"`
 
 	LastSuccessfulProbe   *time.Time `json:"last_successful_probe,omitempty"`
 	LastUnsuccessfulProbe *time.Time `json:"last_unsuccessful_probe,omitempty"`
@@ -333,17 +337,6 @@ type JSONData struct {
 	TotalUptime float64 `json:"total_uptime,omitempty"`
 	// TotalDowntime in seconds.
 	TotalDowntime float64 `json:"total_downtime,omitempty"`
-}
-
-// TODO: remove
-func jsonPrintf(format string, a ...interface{}) {
-	data := struct {
-		Message string `json:"message"`
-	}{
-		Message: fmt.Sprintf(format, a...),
-	}
-	outputJson, _ := json.Marshal(&data)
-	fmt.Println(string(outputJson))
 }
 
 // printStart prints the initial message before doing probes.
@@ -460,12 +453,18 @@ func (j *statsJsonPrinter) printStatistics() {
 	_ = printJson(data)
 }
 
-/* Print the total downtime in JSON format */
+// printTotalDownTime prints the total downtime,
+// if the next retry was successfull.
 func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := time.Since(j.startOfDowntime).Seconds()
-	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
+	downtime := time.Since(j.startOfDowntime).Seconds()
+	downtimeStr := calcTime(uint(math.Ceil(downtime)))
 
-	jsonPrintf("No response received for %s", calculatedDowntime)
+	_ = printJson(&JSONData{
+		Type:          RetrySuccess,
+		Message:       fmt.Sprintf("no response received for %s", downtimeStr),
+		TotalDowntime: downtime,
+		Timestamp:     time.Now(),
+	})
 }
 
 // printRetryingToResolve print the message retrying to resolve,
