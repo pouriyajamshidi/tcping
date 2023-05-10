@@ -159,7 +159,7 @@ func processUserInput(tcpStats *stats) {
 		tcpStats.useIPv6 = true
 	}
 
-	if *prettyJson {
+	if *outputJson && *prettyJson {
 		jsonEncoder.SetIndent("", "\t")
 	}
 
