@@ -103,7 +103,12 @@ func usage() {
 	colorYellow("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
-		colorYellow("  -%s : %s\n", f.Name, f.Usage)
+		flagName := f.Name
+		if len(f.Name) > 1 {
+			flagName = "-" + flagName
+		}
+
+		colorYellow("  -%s : %s\n", flagName, f.Usage)
 	})
 
 	os.Exit(1)
