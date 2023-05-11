@@ -259,20 +259,18 @@ JSON output section
 type JSONEventType string
 
 const (
-	// Probe is an event type that represent 1 probe / ping / request event.
-	Probe JSONEventType = "probe"
-	// Retry is an event type that's being sent,
+	// probe is an event type that represent 1 probe / ping / request event.
+	probe JSONEventType = "probe"
+	// retry is an event type that's being sent,
 	// when tcping retries to resolve a hostname.
-	Retry JSONEventType = "retry"
-	// RetrySuccess is a sub-type for of Retry event,
+	retry JSONEventType = "retry"
+	// retrySuccess is a sub-type for of Retry event,
 	// when previous retry was unsuccessful, but the next one became successful.
-	RetrySuccess JSONEventType = "retry-success"
-	// Start is an event type that's sent only one,
-	// before doing any actual work.
-	Start JSONEventType = "start"
-	// Stats is a final event that's being sent
-	// before tcping exits.
-	Stats JSONEventType = "stats"
+	retrySuccess JSONEventType = "retry-success"
+	// start is an event type that's sent only one, before doing any actual work.
+	start JSONEventType = "start"
+	// statsEvent is a final event that's being sent before tcping exits.
+	statsEvent JSONEventType = "stats"
 )
 
 // jsonEncoder stores the encoder for json output.
@@ -357,7 +355,7 @@ type JSONData struct {
 // printStart prints the initial message before doing probes.
 func (j *statsJsonPrinter) printStart() {
 	_ = printJson(JSONData{
-		Type:      Start,
+		Type:      start,
 		Message:   fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
 		Hostname:  j.hostname,
 		Port:      j.port,
@@ -372,7 +370,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 	t := true
 
 	data := JSONData{
-		Type:      Probe,
+		Type:      probe,
 		Addr:      j.ip.String(),
 		Port:      j.port,
 		IsIP:      &t,
@@ -403,7 +401,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 // printStatistics prints all gathered stats when program exits.
 func (j *statsJsonPrinter) printStatistics() {
 	data := JSONData{
-		Type:      Stats,
+		Type:      statsEvent,
 		Message:   fmt.Sprintf("stats for %s", j.hostname),
 		Hostname:  j.hostname,
 		Timestamp: time.Now(),
@@ -474,7 +472,7 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 	downtimeStr := calcTime(uint(math.Ceil(downtime)))
 
 	_ = printJson(&JSONData{
-		Type:          RetrySuccess,
+		Type:          retrySuccess,
 		Message:       fmt.Sprintf("no response received for %s", downtimeStr),
 		TotalDowntime: downtime,
 		Timestamp:     time.Now(),
@@ -485,7 +483,7 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 // after n failed probes.
 func (j *statsJsonPrinter) printRetryingToResolve() {
 	_ = printJson(JSONData{
-		Type:      Retry,
+		Type:      retry,
 		Message:   fmt.Sprintf("retrying to resolve %s", j.hostname),
 		Hostname:  j.hostname,
 		Timestamp: time.Now(),
