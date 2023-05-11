@@ -68,7 +68,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ---
 
-### Pretty json output (`-j -p`)
+### Pretty json output (`-j --pretty`)
 
 ![tcping json example](Images/gifs/tcping_json_pretty.gif)
 
