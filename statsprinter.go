@@ -259,23 +259,24 @@ JSON output section
 type JSONEventType string
 
 const (
-	// probe is an event type that represent 1 probe / ping / request event.
+	// probe is an event type that represents 1 probe / ping / request event.
 	probe JSONEventType = "probe"
 	// retry is an event type that's being sent,
 	// when tcping retries to resolve a hostname.
 	retry JSONEventType = "retry"
-	// retrySuccess is a sub-type for of Retry event,
-	// when previous retry was unsuccessful, but the next one became successful.
+	// retrySuccess is a sub-type for of Retry event, when previous retry
+	// was unsuccessful, but the next one became successful.
 	retrySuccess JSONEventType = "retry-success"
-	// start is an event type that's sent only one, before doing any actual work.
+	// start is an event type that's sent only once, at the very beginning
+	// before doing any actual work.
 	start JSONEventType = "start"
 	// statsEvent is a final event that's being sent before tcping exits.
 	statsEvent JSONEventType = "stats"
 )
 
 // jsonEncoder stores the encoder for json output.
-// It could be used to tweak default options, like indentation or
-// change output to another writer interface.
+// It could be used to tweak default options, like indentation
+// or change output to another writer interface.
 var jsonEncoder = json.NewEncoder(os.Stdout)
 
 // printJson is a shortcut for Encode() on jsonEncoder.
@@ -315,11 +316,11 @@ type JSONData struct {
 	// Latency in ms for a successful probe messages.
 	Latency float32 `json:"latency,omitempty"`
 
-	// LatencyMin is a latency stat for stats event.
+	// LatencyMin is a latency stat for the stats event.
 	LatencyMin float32 `json:"latency_min,omitempty"`
-	// LatencyAvg is a latency stat for stats event.
+	// LatencyAvg is a latency stat for the stats event.
 	LatencyAvg float32 `json:"latency_avg,omitempty"`
-	// LatencyMax is a latency stat for stats event.
+	// LatencyMax is a latency stat for the stats event.
 	LatencyMax float32 `json:"latency_max,omitempty"`
 
 	// TotalDuration is a total amount of seconds that program was running.
