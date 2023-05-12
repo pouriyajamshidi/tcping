@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -49,7 +50,7 @@ type stats struct {
 type longestTime struct {
 	start    time.Time
 	end      time.Time
-	duration float64
+	duration time.Duration
 }
 
 type rttResults struct {
@@ -350,7 +351,7 @@ func newLongestTime(startTime, endTime time.Time) longestTime {
 	return longestTime{
 		start:    startTime,
 		end:      endTime,
-		duration: endTime.Sub(startTime).Seconds(),
+		duration: endTime.Sub(startTime),
 	}
 }
 
@@ -385,46 +386,43 @@ func findMinAvgMaxRttTime(timeArr []float32) rttResults {
 	return rttResults
 }
 
-/* Calculate cumulative time */
-func calcTime(time uint) calculatedTimeString {
-	var timeStr string
-
-	hours := time / (60 * 60)
-	timeMod := time % (60 * 60)
-	minutes := timeMod / (60)
-	seconds := timeMod % (60)
-
-	/* Calculate hours */
-	if hours >= 2 {
-		timeStr = fmt.Sprintf("%d hours %d minutes %d seconds", hours, minutes, seconds)
-		return timeStr
-	} else if hours == 1 && minutes == 0 && seconds == 0 {
-		timeStr = fmt.Sprintf("%d hour", hours)
-		return timeStr
-	} else if hours == 1 {
-		timeStr = fmt.Sprintf("%d hour %d minutes %d seconds", hours, minutes, seconds)
-		return timeStr
+// calcTime creates a human-readable string for a given duration
+func calcTime(duration time.Duration) calculatedTimeString {
+	hours := math.Floor(duration.Hours())
+	if hours > 0 {
+		duration -= time.Duration(hours * float64(time.Hour))
 	}
 
-	/* Calculate minutes */
-	if minutes >= 2 {
-		timeStr = fmt.Sprintf("%d minutes %d seconds", minutes, seconds)
-		return timeStr
-	} else if minutes == 1 && seconds == 0 {
-		timeStr = fmt.Sprintf("%d minute", minutes)
-		return timeStr
-	} else if minutes == 1 {
-		timeStr = fmt.Sprintf("%d minute %d seconds", minutes, seconds)
-		return timeStr
+	minutes := math.Floor(duration.Minutes())
+	if minutes > 0 {
+		duration -= time.Duration(minutes * float64(time.Minute))
 	}
 
-	/* Calculate seconds */
-	if seconds >= 2 {
-		timeStr = fmt.Sprintf("%d seconds", seconds)
-		return timeStr
-	} else {
-		timeStr = fmt.Sprintf("%d second", seconds)
-		return timeStr
+	seconds := duration.Seconds()
+
+	switch {
+	// Hours
+	case hours >= 2:
+		return fmt.Sprintf("%.0f hours %.0f minutes %.0f seconds", hours, minutes, seconds)
+	case hours == 1 && minutes == 0 && seconds == 0:
+		return fmt.Sprintf("%.0f hour", hours)
+	case hours == 1:
+		return fmt.Sprintf("%.0f hour %.0f minutes %.0f seconds", hours, minutes, seconds)
+
+	// Minutes
+	case minutes >= 2:
+		return fmt.Sprintf("%.0f minutes %.0f seconds", minutes, seconds)
+	case minutes == 1 && seconds == 0:
+		return fmt.Sprintf("%.0f minute", minutes)
+	case minutes == 1:
+		return fmt.Sprintf("%.0f minute %.0f seconds", minutes, seconds)
+
+	// Seconds
+	case seconds == 1:
+		return fmt.Sprintf("%.0f second", seconds)
+	default:
+		return fmt.Sprintf("%.0f seconds", seconds)
+
 	}
 }
 

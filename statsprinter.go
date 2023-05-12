@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/gookit/color"
@@ -109,8 +108,8 @@ func (p *statsPlanePrinter) printRttResults(rtt *rttResults) {
 func (p *statsPlanePrinter) printStatistics() {
 
 	totalPackets := p.totalSuccessfulProbes + p.totalUnsuccessfulProbes
-	totalUptime := calcTime(uint(p.totalUptime.Seconds()))
-	totalDowntime := calcTime(uint(p.totalDowntime.Seconds()))
+	totalUptime := calcTime(p.totalUptime)
+	totalDowntime := calcTime(p.totalDowntime)
 	packetLoss := (float32(p.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
@@ -200,8 +199,8 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 
 /* Print the total downtime */
 func (p *statsPlanePrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := time.Since(p.startOfDowntime).Seconds()
-	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
+	latestDowntimeDuration := time.Since(p.startOfDowntime)
+	calculatedDowntime := calcTime(latestDowntimeDuration)
 	colorYellow("No response received for %s\n", calculatedDowntime)
 }
 
@@ -211,7 +210,7 @@ func (p *statsPlanePrinter) printLongestUptime() {
 		return
 	}
 
-	uptime := calcTime(uint(math.Ceil(p.longestUptime.duration)))
+	uptime := calcTime(p.longestUptime.duration)
 
 	colorYellow("longest consecutive uptime:   ")
 	colorGreen("%v ", uptime)
@@ -227,7 +226,7 @@ func (p *statsPlanePrinter) printLongestDowntime() {
 		return
 	}
 
-	downtime := calcTime(uint(math.Ceil(p.longestDowntime.duration)))
+	downtime := calcTime(p.longestDowntime.duration)
 
 	colorYellow("longest consecutive downtime: ")
 	colorRed("%v ", downtime)
@@ -323,8 +322,8 @@ func (j *statsJsonPrinter) printStatistics() {
 	}
 
 	totalPackets := j.totalSuccessfulProbes + j.totalUnsuccessfulProbes
-	totalUptime := calcTime(uint(j.totalUptime.Seconds()))
-	totalDowntime := calcTime(uint(j.totalDowntime.Seconds()))
+	totalUptime := calcTime(j.totalUptime)
+	totalDowntime := calcTime(j.totalDowntime)
 	packetLoss := (float32(j.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
@@ -393,8 +392,8 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 
 /* Print the total downtime in JSON format */
 func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := time.Since(j.startOfDowntime).Seconds()
-	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
+	latestDowntimeDuration := time.Since(j.startOfDowntime)
+	calculatedDowntime := calcTime(latestDowntimeDuration)
 
 	jsonPrintf("No response received for %s", calculatedDowntime)
 }
@@ -405,7 +404,7 @@ func (j *statsJsonPrinter) printLongestUptime() {
 		return
 	}
 
-	uptime := calcTime(uint(math.Ceil(j.longestUptime.duration)))
+	uptime := calcTime(j.longestUptime.duration)
 	longestUptimeStart := j.longestUptime.start.Format(timeFormat)
 	longestUptimeEnd := j.longestUptime.end.Format(timeFormat)
 
@@ -418,7 +417,7 @@ func (j *statsJsonPrinter) printLongestDowntime() {
 		return
 	}
 
-	downtime := calcTime(uint(math.Ceil(j.longestDowntime.duration)))
+	downtime := calcTime(j.longestDowntime.duration)
 
 	longestDowntimeStart := j.longestDowntime.start.Format(timeFormat)
 	longestDowntimeEnd := j.longestDowntime.end.Format(timeFormat)
