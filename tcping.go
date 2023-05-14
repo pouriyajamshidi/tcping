@@ -70,14 +70,12 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.21.2"
-	owner               = "pouriyajamshidi"
-	repo                = "tcping"
-	thousandMilliSecond = 1000 * time.Millisecond
-	oneSecond           = 1 * time.Second
-	timeFormat          = "2006-01-02 15:04:05"
-	nullTimeFormat      = "0001-01-01 00:00:00"
-	hourFormat          = "15:04:05"
+	version        = "1.21.2"
+	owner          = "pouriyajamshidi"
+	repo           = "tcping"
+	timeFormat     = "2006-01-02 15:04:05"
+	nullTimeFormat = "0001-01-01 00:00:00"
+	hourFormat     = "15:04:05"
 )
 
 /* Catch SIGINT and print tcping stats */
@@ -525,7 +523,7 @@ func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
 
 	connStart := getSystemTime()
-	conn, err := net.DialTimeout("tcp", IPAndPort.String(), oneSecond)
+	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
 	connEnd := time.Since(connStart)
 
 	rtt := nanoToMillisecond(connEnd.Nanoseconds())
@@ -538,7 +536,7 @@ func tcping(tcpStats *stats) {
 		conn.Close()
 	}
 
-	time.Sleep(thousandMilliSecond - connEnd)
+	time.Sleep(time.Second - connEnd)
 }
 
 /* Capture keystrokes from stdin */
