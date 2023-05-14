@@ -317,14 +317,26 @@ type JSONData struct {
 	Latency float32 `json:"latency,omitempty"`
 
 	// LatencyMin is a latency stat for the stats event.
-	LatencyMin float32 `json:"latency_min,omitempty"`
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	LatencyMin string `json:"latency_min,omitempty"`
 	// LatencyAvg is a latency stat for the stats event.
-	LatencyAvg float32 `json:"latency_avg,omitempty"`
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	LatencyAvg string `json:"latency_avg,omitempty"`
 	// LatencyMax is a latency stat for the stats event.
-	LatencyMax float32 `json:"latency_max,omitempty"`
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	LatencyMax string `json:"latency_max,omitempty"`
 
 	// TotalDuration is a total amount of seconds that program was running.
-	TotalDuration float64 `json:"duration,omitempty"`
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	TotalDuration string `json:"duration,omitempty"`
 	// StartTimestamp is used as a start time of TotalDuration for stats messages.
 	StartTimestamp *time.Time `json:"start_timestamp,omitempty"`
 	// EndTimestamp is used as an end of TotalDuration for stats messages.
@@ -334,12 +346,18 @@ type JSONData struct {
 	LastUnsuccessfulProbe *time.Time `json:"last_unsuccessful_probe,omitempty"`
 
 	// LongestUptime in seconds.
-	LongestUptime      float64    `json:"longest_uptime,omitempty"`
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	LongestUptime      string     `json:"longest_uptime,omitempty"`
 	LongestUptimeEnd   *time.Time `json:"longest_uptime_end,omitempty"`
 	LongestUptimeStart *time.Time `json:"longest_uptime_start,omitempty"`
 
 	// LongestDowntime in seconds.
-	LongestDowntime      float64    `json:"longest_downtime,omitempty"`
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	LongestDowntime      string     `json:"longest_downtime,omitempty"`
 	LongestDowntimeEnd   *time.Time `json:"longest_downtime_end,omitempty"`
 	LongestDowntimeStart *time.Time `json:"longest_downtime_start,omitempty"`
 
@@ -432,13 +450,13 @@ func (j *statsJsonPrinter) printStatistics() {
 	}
 
 	if j.longestUptime.duration != 0 {
-		data.LongestUptime = j.longestUptime.duration
+		data.LongestUptime = fmt.Sprintf("%.3f", j.longestUptime.duration)
 		data.LongestUptimeStart = &j.longestUptime.start
 		data.LongestUptimeEnd = &j.longestUptime.end
 	}
 
 	if j.longestDowntime.duration != 0 {
-		data.LongestDowntime = j.longestDowntime.duration
+		data.LongestDowntime = fmt.Sprintf("%.3f", j.longestDowntime.duration)
 		data.LongestDowntimeStart = &j.longestDowntime.start
 		data.LongestDowntimeEnd = &j.longestDowntime.end
 	}
@@ -449,9 +467,9 @@ func (j *statsJsonPrinter) printStatistics() {
 
 	latencyStats := findMinAvgMaxRttTime(j.rtt)
 	if latencyStats.hasResults {
-		data.LatencyMin = latencyStats.min
-		data.LatencyAvg = latencyStats.average
-		data.LatencyMax = latencyStats.max
+		data.LatencyMin = fmt.Sprintf("%.3f", latencyStats.min)
+		data.LatencyAvg = fmt.Sprintf("%.3f", latencyStats.average)
+		data.LatencyMax = fmt.Sprintf("%.3f", latencyStats.max)
 	}
 
 	if j.endTime.IsZero() {
@@ -461,7 +479,8 @@ func (j *statsJsonPrinter) printStatistics() {
 		data.EndTimestamp = &j.endTime
 	}
 
-	data.TotalDuration = data.EndTimestamp.Sub(*data.StartTimestamp).Seconds()
+	data.TotalDuration = fmt.Sprintf("%.3f",
+		data.EndTimestamp.Sub(*data.StartTimestamp).Seconds())
 
 	_ = printJson(data)
 }
