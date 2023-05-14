@@ -439,34 +439,40 @@ func calcTime(duration time.Duration) calculatedTimeString {
 	}
 }
 
-/* Calculate the longest uptime */
+// calcLongestUptime calculates the longest uptime and sets it to tcpStats.
 func calcLongestUptime(tcpStats *stats, endOfUptime time.Time) {
-	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat || endOfUptime.Format(timeFormat) == nullTimeFormat {
+	if tcpStats.startOfUptime.IsZero() || endOfUptime.IsZero() {
 		return
 	}
 
 	longestUptime := newLongestTime(tcpStats.startOfUptime, endOfUptime)
 
-	if tcpStats.longestUptime.end.Format(timeFormat) == nullTimeFormat {
-		/* It means it is the first time we're calling this function */
+	// It means it is the first time we're calling this function
+	if tcpStats.longestUptime.end.IsZero() {
 		tcpStats.longestUptime = longestUptime
-	} else if longestUptime.duration >= tcpStats.longestUptime.duration {
+		return
+	}
+
+	if longestUptime.duration >= tcpStats.longestUptime.duration {
 		tcpStats.longestUptime = longestUptime
 	}
 }
 
-/* Calculate the longest downtime */
+// calcLongestDowntime calculates the longest downtime and sets it to tcpStats.
 func calcLongestDowntime(tcpStats *stats, endOfDowntime time.Time) {
-	if tcpStats.startOfDowntime.Format(timeFormat) == nullTimeFormat || endOfDowntime.Format(timeFormat) == nullTimeFormat {
+	if tcpStats.startOfDowntime.IsZero() || endOfDowntime.IsZero() {
 		return
 	}
 
 	longestDowntime := newLongestTime(tcpStats.startOfDowntime, endOfDowntime)
 
-	if tcpStats.longestDowntime.end.Format(timeFormat) == nullTimeFormat {
-		/* It means it is the first time we're calling this function */
+	// It means it is the first time we're calling this function
+	if tcpStats.longestDowntime.end.IsZero() {
 		tcpStats.longestDowntime = longestDowntime
-	} else if longestDowntime.duration >= tcpStats.longestDowntime.duration {
+		return
+	}
+
+	if longestDowntime.duration >= tcpStats.longestDowntime.duration {
 		tcpStats.longestDowntime = longestDowntime
 	}
 }
