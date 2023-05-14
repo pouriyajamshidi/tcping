@@ -70,12 +70,11 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version        = "1.21.2"
-	owner          = "pouriyajamshidi"
-	repo           = "tcping"
-	timeFormat     = "2006-01-02 15:04:05"
-	nullTimeFormat = "0001-01-01 00:00:00"
-	hourFormat     = "15:04:05"
+	version    = "1.21.2"
+	owner      = "pouriyajamshidi"
+	repo       = "tcping"
+	timeFormat = "2006-01-02 15:04:05"
+	hourFormat = "15:04:05"
 )
 
 /* Catch SIGINT and print tcping stats */
@@ -512,7 +511,7 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 		tcpStats.ongoingUnsuccessfulProbes = 0
 	}
 
-	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
+	if tcpStats.startOfUptime.IsZero() {
 		tcpStats.startOfUptime = now
 	}
 

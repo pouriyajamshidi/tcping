@@ -52,21 +52,18 @@ func (p *statsPlanePrinter) printStart() {
 
 /* Print the last successful and unsuccessful probes */
 func (p *statsPlanePrinter) printLastSucUnsucProbes() {
-	formattedLastSuccessfulProbe := p.lastSuccessfulProbe.Format(timeFormat)
-	formattedLastUnsuccessfulProbe := p.lastUnsuccessfulProbe.Format(timeFormat)
-
 	colorYellow("last successful probe:   ")
-	if formattedLastSuccessfulProbe == nullTimeFormat {
+	if p.lastSuccessfulProbe.IsZero() {
 		colorRed("Never succeeded\n")
 	} else {
-		colorGreen("%v\n", formattedLastSuccessfulProbe)
+		colorGreen("%v\n", p.lastSuccessfulProbe.Format(timeFormat))
 	}
 
 	colorYellow("last unsuccessful probe: ")
-	if formattedLastUnsuccessfulProbe == nullTimeFormat {
+	if p.lastUnsuccessfulProbe.IsZero() {
 		colorGreen("Never failed\n")
 	} else {
-		colorRed("%v\n", formattedLastUnsuccessfulProbe)
+		colorRed("%v\n", p.lastUnsuccessfulProbe.Format(timeFormat))
 	}
 }
 
@@ -79,7 +76,7 @@ func (p *statsPlanePrinter) printDurationStats() {
 	colorYellow("TCPing started at: %v\n", p.startTime.Format(timeFormat))
 
 	/* If the program was not terminated, no need to show the end time */
-	if p.endTime.Format(timeFormat) == nullTimeFormat {
+	if p.endTime.IsZero() {
 		durationDiff = time.Since(p.startTime)
 	} else {
 		colorYellow("TCPing ended at:   %v\n", p.endTime.Format(timeFormat))
