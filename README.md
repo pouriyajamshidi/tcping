@@ -22,7 +22,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 - Analyze the network's latency.
 - Show `min`/`avg`/`max` probes latency.
 - Print connection statistics by pressing the `Enter` key and without stopping the program.
-- Use the `-r` flag to retry hostname resolution after a predetermined number of ping failures. If you want to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`, you should utilize this option..
+- Use the `-r` flag to retry hostname resolution after a predetermined number of ping failures. If you want to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`, you should utilize this option.
 - Enforce using `IPv4` or `IPv6` address resolution
 - Display the longest encountered downtime and uptime duration and time.
 - Monitor and audit your peers network.
@@ -38,6 +38,7 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
   - [Demos](#demos)
     - [Vanilla usage](#vanilla-usage)
     - [Retry resolve (`-r`) flag](#retry-resolve--r-flag)
+    - [Pretty json output (`-j --pretty`)](#pretty-json-output--j---pretty)
   - [Download](#download)
   - [Usage](#usage)
     - [On `Linux` and `macOS`](#on-linux-and-macos)
@@ -124,7 +125,7 @@ When the download is complete, head to the [usage](#usage) section.
 
 ## Usage
 
-If you have decided to download the executables using the [aforementioned links](#download-the-executables), go to the folder containing the file and extract it. Then, depending on your operating system, follow the instructions below:
+If you have decided to download the executables using the [aforementioned links](#download), go to the folder containing the file and extract it. Then, depending on your operating system, follow the instructions below:
 
 - [Linux and macOS](#on-linux-and-macos)
 - [Windows](#on-windows)
@@ -216,14 +217,15 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 
 The following flags are available to control the behavior of application:
 
-| Flag | Description                                               |
-| ---- | --------------------------------------------------------- |
-| `-r` | Retry resolving a hostname after `<n>` number of failures |
-| `-4` | Only use IPv4 addresses                                   |
-| `-6` | Only use IPv6 addresses                                   |
-| `-j` | Output in JSON format                                     |
-| `-u` | Check for updates                                         |
-| `-v` | Print version                                             |
+| Flag       | Description                                               |
+| ---------- | --------------------------------------------------------- |
+| `-r`       | Retry resolving a hostname after `<n>` number of failures |
+| `-4`       | Only use IPv4 addresses                                   |
+| `-6`       | Only use IPv6 addresses                                   |
+| `-j`       | Output in JSON format                                     |
+| `--pretty` | Prettify the JSON output                                  |
+| `-u`       | Check for updates                                         |
+| `-v`       | Print version                                             |
 
 ---
 
@@ -235,7 +237,7 @@ The following flags are available to control the behavior of application:
 
 ## Notes
 
-`TCPING` is constantly being improved, adding numerous new features and fixing bugs. Be sure to look for updated versions..
+`TCPING` is constantly being improved, adding numerous new features and fixing bugs. Be sure to look for updated versions.
 
 ```bash
 tcping -u
