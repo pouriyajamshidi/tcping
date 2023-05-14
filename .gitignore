@@ -1,3 +1,7 @@
 *.sh
 executables/
 .idea/
+tcping
+.DS_Store
+.vscode
+*.code-workspace

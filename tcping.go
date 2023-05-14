@@ -103,7 +103,12 @@ func usage() {
 	colorYellow("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
-		colorYellow("  -%s : %s\n", f.Name, f.Usage)
+		flagName := f.Name
+		if len(f.Name) > 1 {
+			flagName = "-" + flagName
+		}
+
+		colorYellow("  -%s : %s\n", flagName, f.Usage)
 	})
 
 	os.Exit(1)
@@ -114,6 +119,7 @@ func processUserInput(tcpStats *stats) {
 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
+	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the -j flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	useIPv4 := flag.Bool("4", false, "use IPv4 only.")
 	useIPv6 := flag.Bool("6", false, "use IPv6 only.")
@@ -156,6 +162,15 @@ func processUserInput(tcpStats *stats) {
 
 	if *useIPv6 {
 		tcpStats.useIPv6 = true
+	}
+
+	if *prettyJson {
+		if !*outputJson {
+			colorRed("--pretty has no effect without the -j flag.\n")
+			usage()
+		}
+
+		jsonEncoder.SetIndent("", "\t")
 	}
 
 	/* host and port must be specified　*/

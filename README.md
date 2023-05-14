@@ -64,7 +64,13 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 
 ### Retry resolve (`-r`) flag
 
-![tcping](Images/gifs/tcping_resolve.gif)
+![tcping resolve example](Images/gifs/tcping_resolve.gif)
+
+---
+
+### Pretty json output (`-j --pretty`)
+
+![tcping json example](Images/gifs/tcping_json_pretty.gif)
 
 ---
 
