@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"time"
 
@@ -450,13 +449,13 @@ func (j *statsJsonPrinter) printStatistics() {
 	}
 
 	if j.longestUptime.duration != 0 {
-		data.LongestUptime = fmt.Sprintf("%.3f", j.longestUptime.duration)
+		data.LongestUptime = fmt.Sprintf("%.3f", j.longestUptime.duration.Seconds())
 		data.LongestUptimeStart = &j.longestUptime.start
 		data.LongestUptimeEnd = &j.longestUptime.end
 	}
 
 	if j.longestDowntime.duration != 0 {
-		data.LongestDowntime = fmt.Sprintf("%.3f", j.longestDowntime.duration)
+		data.LongestDowntime = fmt.Sprintf("%.3f", j.longestDowntime.duration.Seconds())
 		data.LongestDowntimeStart = &j.longestDowntime.start
 		data.LongestDowntimeEnd = &j.longestDowntime.end
 	}
@@ -488,13 +487,12 @@ func (j *statsJsonPrinter) printStatistics() {
 // printTotalDownTime prints the total downtime,
 // if the next retry was successfull.
 func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
-	downtime := time.Since(j.startOfDowntime).Seconds()
-	downtimeStr := calcTime(uint(math.Ceil(downtime)))
+	downtime := time.Since(j.startOfDowntime)
 
 	_ = printJson(&JSONData{
 		Type:          retrySuccess,
-		Message:       fmt.Sprintf("no response received for %s", downtimeStr),
-		TotalDowntime: downtime,
+		Message:       fmt.Sprintf("no response received for %s", calcTime(downtime)),
+		TotalDowntime: downtime.Seconds(),
 		Timestamp:     time.Now(),
 	})
 }
