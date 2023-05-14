@@ -84,7 +84,7 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
-		tcpStats.endTime = getSystemTime()
+		tcpStats.endTime = time.Now()
 		tcpStats.printStatistics()
 		os.Exit(0)
 	}()
@@ -192,7 +192,7 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.hostname = args[0]
 	tcpStats.port = uint16(port)
 	tcpStats.ip = resolveHostname(tcpStats)
-	tcpStats.startTime = getSystemTime()
+	tcpStats.startTime = time.Now()
 
 	if tcpStats.hostname == tcpStats.ip.String() {
 		tcpStats.isIP = true
@@ -476,11 +476,6 @@ func calcLongestDowntime(tcpStats *stats, endOfDowntime time.Time) {
 	}
 }
 
-/* Get current system time */
-func getSystemTime() time.Time {
-	return time.Now()
-}
-
 func nanoToMillisecond(nano int64) float32 {
 	return float32(nano) / 1e6
 }
@@ -527,17 +522,16 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
 
-	connStart := getSystemTime()
+	connStart := time.Now()
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
 	connEnd := time.Since(connStart)
 
 	rtt := nanoToMillisecond(connEnd.Nanoseconds())
-	now := getSystemTime()
 
 	if err != nil {
-		tcpStats.handleConnError(now)
+		tcpStats.handleConnError(time.Now())
 	} else {
-		tcpStats.handleConnSuccess(rtt, now)
+		tcpStats.handleConnSuccess(rtt, time.Now())
 		conn.Close()
 	}
 
