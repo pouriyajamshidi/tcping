@@ -70,7 +70,7 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version    = "1.21.2"
+	version    = "1.22.1"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	timeFormat = "2006-01-02 15:04:05.999999999"
@@ -312,12 +312,12 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			colorRed("Failed to find IPv4 address for %s\n", tcpStats.hostname)
 			os.Exit(1)
 		}
-		if len(ipAddrs) > 1 {
+		if len(ipList) > 1 {
 			index = rand.Intn(len(ipAddrs))
 		} else {
 			index = 0
 		}
-		ip, _ = netip.ParseAddr(ipAddrs[index].String())
+		ip, _ = netip.ParseAddr(ipList[index].String())
 
 	case tcpStats.useIPv6:
 		for _, ip := range ipAddrs {
@@ -329,12 +329,12 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			colorRed("Failed to find IPv6 address for %s\n", tcpStats.hostname)
 			os.Exit(1)
 		}
-		if len(ipAddrs) > 1 {
+		if len(ipList) > 1 {
 			index = rand.Intn(len(ipAddrs))
 		} else {
 			index = 0
 		}
-		ip, _ = netip.ParseAddr(ipAddrs[index].String())
+		ip, _ = netip.ParseAddr(ipList[index].String())
 
 	default:
 		if len(ipAddrs) > 1 {

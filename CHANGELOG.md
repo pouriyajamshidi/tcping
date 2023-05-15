@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.22.1 - 2023-5-14
+
+- new feature: implement JSON output thanks to @ravsii
+- new feature: implement JSON output [prettifier](https://github.com/pouriyajamshidi/tcping/raw/master/Images/gifs/tcping_json_pretty.gif) thanks to @ravsii
+- fix IP version selection bug when `-4` or `-6` flags are passed
+
 ## v1.21.2 - 2023-5-8
 
 - make `stats` struct fields' names uniform
