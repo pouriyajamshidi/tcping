@@ -525,13 +525,13 @@ func tcping(tcpStats *stats) {
 	connStart := time.Now()
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
 	connEnd := time.Since(connStart)
-
 	rtt := nanoToMillisecond(connEnd.Nanoseconds())
+	now := time.Now()
 
 	if err != nil {
-		tcpStats.handleConnError(time.Now())
+		tcpStats.handleConnError(now)
 	} else {
-		tcpStats.handleConnSuccess(rtt, time.Now())
+		tcpStats.handleConnSuccess(rtt, now)
 		conn.Close()
 	}
 
