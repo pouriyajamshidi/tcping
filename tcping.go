@@ -73,7 +73,7 @@ const (
 	version    = "1.21.2"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
-	timeFormat = "2006-01-02 15:04:05"
+	timeFormat = "2006-01-02 15:04:05.999999999"
 	hourFormat = "15:04:05"
 )
 
