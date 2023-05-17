@@ -148,9 +148,11 @@ func (p *statsPlanePrinter) printStatistics() {
 
 	/* calculate the last longest time */
 	if !p.wasDown {
-		calcLongestUptime(p.stats, p.lastSuccessfulProbe)
+		calcLongestUptime(p.stats,
+			time.Duration(p.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestDowntime(p.stats, p.lastUnsuccessfulProbe)
+		calcLongestUptime(p.stats,
+			time.Duration(p.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
 	/* longest uptime stats */
@@ -440,9 +442,11 @@ func (j *statsJsonPrinter) printStatistics() {
 
 	/* calculate the last longest time */
 	if !j.wasDown {
-		calcLongestUptime(j.stats, j.lastSuccessfulProbe)
+		calcLongestUptime(j.stats,
+			time.Duration(j.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestDowntime(j.stats, j.lastUnsuccessfulProbe)
+		calcLongestUptime(j.stats,
+			time.Duration(j.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
 	if j.longestUptime.duration != 0 {
