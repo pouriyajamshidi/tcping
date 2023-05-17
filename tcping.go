@@ -45,6 +45,9 @@ type stats struct {
 	shouldRetryResolve        bool
 	useIPv4                   bool
 	useIPv6                   bool
+
+	// ticker is used to handle time between probes.
+	ticker *time.Ticker
 }
 
 type longestTime struct {
@@ -535,7 +538,7 @@ func tcping(tcpStats *stats) {
 		conn.Close()
 	}
 
-	time.Sleep(time.Second - connEnd)
+	<-tcpStats.ticker.C
 }
 
 /* Capture keystrokes from stdin */
@@ -548,7 +551,10 @@ func monitorStdin(stdinChan chan string) {
 }
 
 func main() {
-	tcpStats := &stats{}
+	tcpStats := &stats{
+		ticker: time.NewTicker(time.Second),
+	}
+	defer tcpStats.ticker.Stop()
 	processUserInput(tcpStats)
 	signalHandler(tcpStats)
 	tcpStats.printStart()
