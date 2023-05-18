@@ -88,7 +88,8 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
-		tcpStats.endTime = tcpStats.startTime.Add(tcpStats.totalUptime).Add(tcpStats.totalDowntime)
+		totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
+		tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
 		tcpStats.printStatistics()
 		os.Exit(0)
 	}()
