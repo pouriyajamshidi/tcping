@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -31,6 +32,7 @@ type stats struct {
 	hostname                  string
 	rtt                       []float32
 	ongoingUnsuccessfulProbes uint
+	ongoingSuccessfulProbes   uint
 	longestDowntime           longestTime
 	totalSuccessfulProbes     uint
 	totalUptime               time.Duration
@@ -44,12 +46,15 @@ type stats struct {
 	shouldRetryResolve        bool
 	useIPv4                   bool
 	useIPv6                   bool
+
+	// ticker is used to handle time between probes.
+	ticker *time.Ticker
 }
 
 type longestTime struct {
 	start    time.Time
 	end      time.Time
-	duration float64
+	duration time.Duration
 }
 
 type rttResults struct {
@@ -69,14 +74,11 @@ type cliArgs = []string
 type calculatedTimeString = string
 
 const (
-	version             = "1.22.1"
-	owner               = "pouriyajamshidi"
-	repo                = "tcping"
-	thousandMilliSecond = 1000 * time.Millisecond
-	oneSecond           = 1 * time.Second
-	timeFormat          = "2006-01-02 15:04:05"
-	nullTimeFormat      = "0001-01-01 00:00:00"
-	hourFormat          = "15:04:05"
+	version    = "1.22.1"
+	owner      = "pouriyajamshidi"
+	repo       = "tcping"
+	timeFormat = "2006-01-02 15:04:05"
+	hourFormat = "15:04:05"
 )
 
 /* Catch SIGINT and print tcping stats */
@@ -86,7 +88,8 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
-		tcpStats.endTime = getSystemTime()
+		totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
+		tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
 		tcpStats.printStatistics()
 		os.Exit(0)
 	}()
@@ -194,7 +197,7 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.hostname = args[0]
 	tcpStats.port = uint16(port)
 	tcpStats.ip = resolveHostname(tcpStats)
-	tcpStats.startTime = getSystemTime()
+	tcpStats.startTime = time.Now()
 
 	if tcpStats.hostname == tcpStats.ip.String() {
 		tcpStats.isIP = true
@@ -361,11 +364,11 @@ func retryResolve(tcpStats *stats) {
 }
 
 /* Create LongestTime structure */
-func newLongestTime(startTime, endTime time.Time) longestTime {
+func newLongestTime(startTime time.Time, duration time.Duration) longestTime {
 	return longestTime{
 		start:    startTime,
-		end:      endTime,
-		duration: endTime.Sub(startTime).Seconds(),
+		end:      startTime.Add(duration),
+		duration: duration,
 	}
 }
 
@@ -400,84 +403,82 @@ func findMinAvgMaxRttTime(timeArr []float32) rttResults {
 	return rttResults
 }
 
-/* Calculate cumulative time */
-func calcTime(time uint) calculatedTimeString {
-	var timeStr string
-
-	hours := time / (60 * 60)
-	timeMod := time % (60 * 60)
-	minutes := timeMod / (60)
-	seconds := timeMod % (60)
-
-	/* Calculate hours */
-	if hours >= 2 {
-		timeStr = fmt.Sprintf("%d hours %d minutes %d seconds", hours, minutes, seconds)
-		return timeStr
-	} else if hours == 1 && minutes == 0 && seconds == 0 {
-		timeStr = fmt.Sprintf("%d hour", hours)
-		return timeStr
-	} else if hours == 1 {
-		timeStr = fmt.Sprintf("%d hour %d minutes %d seconds", hours, minutes, seconds)
-		return timeStr
+// calcTime creates a human-readable string for a given duration
+func calcTime(duration time.Duration) calculatedTimeString {
+	hours := math.Floor(duration.Hours())
+	if hours > 0 {
+		duration -= time.Duration(hours * float64(time.Hour))
 	}
 
-	/* Calculate minutes */
-	if minutes >= 2 {
-		timeStr = fmt.Sprintf("%d minutes %d seconds", minutes, seconds)
-		return timeStr
-	} else if minutes == 1 && seconds == 0 {
-		timeStr = fmt.Sprintf("%d minute", minutes)
-		return timeStr
-	} else if minutes == 1 {
-		timeStr = fmt.Sprintf("%d minute %d seconds", minutes, seconds)
-		return timeStr
+	minutes := math.Floor(duration.Minutes())
+	if minutes > 0 {
+		duration -= time.Duration(minutes * float64(time.Minute))
 	}
 
-	/* Calculate seconds */
-	if seconds >= 2 {
-		timeStr = fmt.Sprintf("%d seconds", seconds)
-		return timeStr
-	} else {
-		timeStr = fmt.Sprintf("%d second", seconds)
-		return timeStr
+	seconds := duration.Seconds()
+
+	switch {
+	// Hours
+	case hours >= 2:
+		return fmt.Sprintf("%.0f hours %.0f minutes %.0f seconds", hours, minutes, seconds)
+	case hours == 1 && minutes == 0 && seconds == 0:
+		return fmt.Sprintf("%.0f hour", hours)
+	case hours == 1:
+		return fmt.Sprintf("%.0f hour %.0f minutes %.0f seconds", hours, minutes, seconds)
+
+	// Minutes
+	case minutes >= 2:
+		return fmt.Sprintf("%.0f minutes %.0f seconds", minutes, seconds)
+	case minutes == 1 && seconds == 0:
+		return fmt.Sprintf("%.0f minute", minutes)
+	case minutes == 1:
+		return fmt.Sprintf("%.0f minute %.0f seconds", minutes, seconds)
+
+	// Seconds
+	case seconds == 1:
+		return fmt.Sprintf("%.0f second", seconds)
+	default:
+		return fmt.Sprintf("%.0f seconds", seconds)
+
 	}
 }
 
-/* Calculate the longest uptime */
-func calcLongestUptime(tcpStats *stats, endOfUptime time.Time) {
-	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat || endOfUptime.Format(timeFormat) == nullTimeFormat {
+// calcLongestUptime calculates the longest uptime and sets it to tcpStats.
+func calcLongestUptime(tcpStats *stats, duration time.Duration) {
+	if tcpStats.startOfUptime.IsZero() {
 		return
 	}
 
-	longestUptime := newLongestTime(tcpStats.startOfUptime, endOfUptime)
+	longestUptime := newLongestTime(tcpStats.startOfUptime, duration)
 
-	if tcpStats.longestUptime.end.Format(timeFormat) == nullTimeFormat {
-		/* It means it is the first time we're calling this function */
+	// It means it is the first time we're calling this function
+	if tcpStats.longestUptime.end.IsZero() {
 		tcpStats.longestUptime = longestUptime
-	} else if longestUptime.duration >= tcpStats.longestUptime.duration {
-		tcpStats.longestUptime = longestUptime
-	}
-}
-
-/* Calculate the longest downtime */
-func calcLongestDowntime(tcpStats *stats, endOfDowntime time.Time) {
-	if tcpStats.startOfDowntime.Format(timeFormat) == nullTimeFormat || endOfDowntime.Format(timeFormat) == nullTimeFormat {
 		return
 	}
 
-	longestDowntime := newLongestTime(tcpStats.startOfDowntime, endOfDowntime)
-
-	if tcpStats.longestDowntime.end.Format(timeFormat) == nullTimeFormat {
-		/* It means it is the first time we're calling this function */
-		tcpStats.longestDowntime = longestDowntime
-	} else if longestDowntime.duration >= tcpStats.longestDowntime.duration {
-		tcpStats.longestDowntime = longestDowntime
+	if longestUptime.duration >= tcpStats.longestUptime.duration {
+		tcpStats.longestUptime = longestUptime
 	}
 }
 
-/* Get current system time */
-func getSystemTime() time.Time {
-	return time.Now()
+// calcLongestDowntime calculates the longest downtime and sets it to tcpStats.
+func calcLongestDowntime(tcpStats *stats, duration time.Duration) {
+	if tcpStats.startOfDowntime.IsZero() {
+		return
+	}
+
+	longestDowntime := newLongestTime(tcpStats.startOfDowntime, duration)
+
+	// It means it is the first time we're calling this function
+	if tcpStats.longestDowntime.end.IsZero() {
+		tcpStats.longestDowntime = longestDowntime
+		return
+	}
+
+	if longestDowntime.duration >= tcpStats.longestDowntime.duration {
+		tcpStats.longestDowntime = longestDowntime
+	}
 }
 
 func nanoToMillisecond(nano int64) float32 {
@@ -487,7 +488,8 @@ func nanoToMillisecond(nano int64) float32 {
 func (tcpStats *stats) handleConnError(now time.Time) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = now
-		calcLongestUptime(tcpStats, now)
+		calcLongestUptime(tcpStats,
+			time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
 		tcpStats.startOfUptime = time.Time{}
 		tcpStats.wasDown = true
 	}
@@ -504,19 +506,22 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	if tcpStats.wasDown {
 		tcpStats.statsPrinter.printTotalDownTime(now)
 		tcpStats.startOfUptime = now
-		calcLongestDowntime(tcpStats, now)
+		calcLongestDowntime(tcpStats,
+			time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
 		tcpStats.startOfDowntime = time.Time{}
 		tcpStats.wasDown = false
 		tcpStats.ongoingUnsuccessfulProbes = 0
+		tcpStats.ongoingSuccessfulProbes = 0
 	}
 
-	if tcpStats.startOfUptime.Format(timeFormat) == nullTimeFormat {
+	if tcpStats.startOfUptime.IsZero() {
 		tcpStats.startOfUptime = now
 	}
 
 	tcpStats.totalUptime += time.Second
 	tcpStats.lastSuccessfulProbe = now
 	tcpStats.totalSuccessfulProbes += 1
+	tcpStats.ongoingSuccessfulProbes += 1
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
 	tcpStats.statsPrinter.printReply(replyMsg{msg: "Reply", rtt: rtt})
@@ -526,12 +531,11 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
 
-	connStart := getSystemTime()
-	conn, err := net.DialTimeout("tcp", IPAndPort.String(), oneSecond)
+	connStart := time.Now()
+	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
 	connEnd := time.Since(connStart)
-
 	rtt := nanoToMillisecond(connEnd.Nanoseconds())
-	now := getSystemTime()
+	now := time.Now()
 
 	if err != nil {
 		tcpStats.handleConnError(now)
@@ -540,7 +544,7 @@ func tcping(tcpStats *stats) {
 		conn.Close()
 	}
 
-	time.Sleep(thousandMilliSecond - connEnd)
+	<-tcpStats.ticker.C
 }
 
 /* Capture keystrokes from stdin */
@@ -553,7 +557,10 @@ func monitorStdin(stdinChan chan string) {
 }
 
 func main() {
-	tcpStats := &stats{}
+	tcpStats := &stats{
+		ticker: time.NewTicker(time.Second),
+	}
+	defer tcpStats.ticker.Stop()
 	processUserInput(tcpStats)
 	signalHandler(tcpStats)
 	tcpStats.printStart()

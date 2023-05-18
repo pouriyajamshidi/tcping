@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"time"
 
@@ -53,21 +52,18 @@ func (p *statsPlanePrinter) printStart() {
 
 /* Print the last successful and unsuccessful probes */
 func (p *statsPlanePrinter) printLastSucUnsucProbes() {
-	formattedLastSuccessfulProbe := p.lastSuccessfulProbe.Format(timeFormat)
-	formattedLastUnsuccessfulProbe := p.lastUnsuccessfulProbe.Format(timeFormat)
-
 	colorYellow("last successful probe:   ")
-	if formattedLastSuccessfulProbe == nullTimeFormat {
+	if p.lastSuccessfulProbe.IsZero() {
 		colorRed("Never succeeded\n")
 	} else {
-		colorGreen("%v\n", formattedLastSuccessfulProbe)
+		colorGreen("%v\n", p.lastSuccessfulProbe.Format(timeFormat))
 	}
 
 	colorYellow("last unsuccessful probe: ")
-	if formattedLastUnsuccessfulProbe == nullTimeFormat {
+	if p.lastUnsuccessfulProbe.IsZero() {
 		colorGreen("Never failed\n")
 	} else {
-		colorRed("%v\n", formattedLastUnsuccessfulProbe)
+		colorRed("%v\n", p.lastUnsuccessfulProbe.Format(timeFormat))
 	}
 }
 
@@ -80,7 +76,7 @@ func (p *statsPlanePrinter) printDurationStats() {
 	colorYellow("TCPing started at: %v\n", p.startTime.Format(timeFormat))
 
 	/* If the program was not terminated, no need to show the end time */
-	if p.endTime.Format(timeFormat) == nullTimeFormat {
+	if p.endTime.IsZero() {
 		durationDiff = time.Since(p.startTime)
 	} else {
 		colorYellow("TCPing ended at:   %v\n", p.endTime.Format(timeFormat))
@@ -110,8 +106,8 @@ func (p *statsPlanePrinter) printRttResults(rtt *rttResults) {
 func (p *statsPlanePrinter) printStatistics() {
 
 	totalPackets := p.totalSuccessfulProbes + p.totalUnsuccessfulProbes
-	totalUptime := calcTime(uint(p.totalUptime.Seconds()))
-	totalDowntime := calcTime(uint(p.totalDowntime.Seconds()))
+	totalUptime := calcTime(p.totalUptime)
+	totalDowntime := calcTime(p.totalDowntime)
 	packetLoss := (float32(p.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
@@ -152,9 +148,11 @@ func (p *statsPlanePrinter) printStatistics() {
 
 	/* calculate the last longest time */
 	if !p.wasDown {
-		calcLongestUptime(p.stats, p.lastSuccessfulProbe)
+		calcLongestUptime(p.stats,
+			time.Duration(p.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestDowntime(p.stats, p.lastUnsuccessfulProbe)
+		calcLongestDowntime(p.stats,
+			time.Duration(p.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
 	/* longest uptime stats */
@@ -201,8 +199,8 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 
 /* Print the total downtime */
 func (p *statsPlanePrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := time.Since(p.startOfDowntime).Seconds()
-	calculatedDowntime := calcTime(uint(math.Ceil(latestDowntimeDuration)))
+	latestDowntimeDuration := time.Since(p.startOfDowntime)
+	calculatedDowntime := calcTime(latestDowntimeDuration)
 	colorYellow("No response received for %s\n", calculatedDowntime)
 }
 
@@ -212,7 +210,7 @@ func (p *statsPlanePrinter) printLongestUptime() {
 		return
 	}
 
-	uptime := calcTime(uint(math.Ceil(p.longestUptime.duration)))
+	uptime := calcTime(p.longestUptime.duration)
 
 	colorYellow("longest consecutive uptime:   ")
 	colorGreen("%v ", uptime)
@@ -228,7 +226,7 @@ func (p *statsPlanePrinter) printLongestDowntime() {
 		return
 	}
 
-	downtime := calcTime(uint(math.Ceil(p.longestDowntime.duration)))
+	downtime := calcTime(p.longestDowntime.duration)
 
 	colorYellow("longest consecutive downtime: ")
 	colorRed("%v ", downtime)
@@ -444,19 +442,21 @@ func (j *statsJsonPrinter) printStatistics() {
 
 	/* calculate the last longest time */
 	if !j.wasDown {
-		calcLongestUptime(j.stats, j.lastSuccessfulProbe)
+		calcLongestUptime(j.stats,
+			time.Duration(j.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestDowntime(j.stats, j.lastUnsuccessfulProbe)
+		calcLongestDowntime(j.stats,
+			time.Duration(j.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
 	if j.longestUptime.duration != 0 {
-		data.LongestUptime = fmt.Sprintf("%.3f", j.longestUptime.duration)
+		data.LongestUptime = fmt.Sprintf("%.3f", j.longestUptime.duration.Seconds())
 		data.LongestUptimeStart = &j.longestUptime.start
 		data.LongestUptimeEnd = &j.longestUptime.end
 	}
 
 	if j.longestDowntime.duration != 0 {
-		data.LongestDowntime = fmt.Sprintf("%.3f", j.longestDowntime.duration)
+		data.LongestDowntime = fmt.Sprintf("%.3f", j.longestDowntime.duration.Seconds())
 		data.LongestDowntimeStart = &j.longestDowntime.start
 		data.LongestDowntimeEnd = &j.longestDowntime.end
 	}
@@ -488,13 +488,12 @@ func (j *statsJsonPrinter) printStatistics() {
 // printTotalDownTime prints the total downtime,
 // if the next retry was successfull.
 func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
-	downtime := time.Since(j.startOfDowntime).Seconds()
-	downtimeStr := calcTime(uint(math.Ceil(downtime)))
+	downtime := time.Since(j.startOfDowntime)
 
 	_ = printJson(&JSONData{
 		Type:          retrySuccess,
-		Message:       fmt.Sprintf("no response received for %s", downtimeStr),
-		TotalDowntime: downtime,
+		Message:       fmt.Sprintf("no response received for %s", calcTime(downtime)),
+		TotalDowntime: downtime.Seconds(),
 		Timestamp:     time.Now(),
 	})
 }
