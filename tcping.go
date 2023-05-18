@@ -488,8 +488,8 @@ func nanoToMillisecond(nano int64) float32 {
 func (tcpStats *stats) handleConnError(now time.Time) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = now
-		calcLongestDowntime(tcpStats,
-			time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+		calcLongestUptime(tcpStats,
+			time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
 		tcpStats.startOfUptime = time.Time{}
 		tcpStats.wasDown = true
 	}
@@ -507,7 +507,7 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 		tcpStats.statsPrinter.printTotalDownTime(now)
 		tcpStats.startOfUptime = now
 		calcLongestDowntime(tcpStats,
-			time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
+			time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
 		tcpStats.startOfDowntime = time.Time{}
 		tcpStats.wasDown = false
 		tcpStats.ongoingUnsuccessfulProbes = 0

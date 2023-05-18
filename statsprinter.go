@@ -151,7 +151,7 @@ func (p *statsPlanePrinter) printStatistics() {
 		calcLongestUptime(p.stats,
 			time.Duration(p.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestUptime(p.stats,
+		calcLongestDowntime(p.stats,
 			time.Duration(p.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
@@ -445,7 +445,7 @@ func (j *statsJsonPrinter) printStatistics() {
 		calcLongestUptime(j.stats,
 			time.Duration(j.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestUptime(j.stats,
+		calcLongestDowntime(j.stats,
 			time.Duration(j.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
