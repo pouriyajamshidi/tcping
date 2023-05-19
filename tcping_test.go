@@ -109,3 +109,24 @@ func TestPermuteArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestNanoToMilliseconds(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		d    time.Duration
+		want float32
+	}{
+		{d: time.Millisecond, want: 1},
+		{d: 100*time.Millisecond + 123*time.Nanosecond, want: 100.000123},
+		{d: time.Second, want: 1000},
+		{d: time.Second + 100*time.Nanosecond, want: 1000.000123},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.d.String(), func(t *testing.T) {
+			t.Parallel()
+			got := nanoToMillisecond(tt.d.Nanoseconds())
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

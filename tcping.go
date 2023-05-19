@@ -481,8 +481,11 @@ func calcLongestDowntime(tcpStats *stats, duration time.Duration) {
 	}
 }
 
+// nanoToMillisecond returns an amount of milliseconds from nanoseconds.
+// Using duration.Milliseconds() is not an option, because it drops
+// decimal points, returning an int.
 func nanoToMillisecond(nano int64) float32 {
-	return float32(nano) / 1e6
+	return float32(nano) / float32(time.Millisecond)
 }
 
 func (tcpStats *stats) handleConnError(now time.Time) {
