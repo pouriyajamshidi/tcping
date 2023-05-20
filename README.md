@@ -179,7 +179,7 @@ tcping -r 10 www.example.com 443
 
 ### On `Windows`
 
-We recommend [Windows Terminal](apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
+We recommend [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
 
 For easier use, copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
 
