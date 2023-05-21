@@ -20,84 +20,26 @@ var (
 	colorLightCyan   = color.LightCyan.Printf
 )
 
-const (
-	noReply = "No reply"
-)
-
 type coloredPrinter struct{}
 
 func (p *coloredPrinter) printStart(hostname string, port uint16) {
 	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
 }
 
-/* Print the last successful and unsuccessful probes */
-func (p *coloredPrinter) printLastSucUnsucProbes() {
-	colorYellow("last successful probe:   ")
-	if p.lastSuccessfulProbe.IsZero() {
-		colorRed("Never succeeded\n")
-	} else {
-		colorGreen("%v\n", p.lastSuccessfulProbe.Format(timeFormat))
-	}
-
-	colorYellow("last unsuccessful probe: ")
-	if p.lastUnsuccessfulProbe.IsZero() {
-		colorGreen("Never failed\n")
-	} else {
-		colorRed("%v\n", p.lastUnsuccessfulProbe.Format(timeFormat))
-	}
-}
-
-/* Print the start and end time of the program */
-func (p *coloredPrinter) printDurationStats() {
-	var duration time.Time
-	var durationDiff time.Duration
-
-	colorYellow("--------------------------------------\n")
-	colorYellow("TCPing started at: %v\n", p.startTime.Format(timeFormat))
-
-	/* If the program was not terminated, no need to show the end time */
-	if p.endTime.IsZero() {
-		durationDiff = time.Since(p.startTime)
-	} else {
-		colorYellow("TCPing ended at:   %v\n", p.endTime.Format(timeFormat))
-		durationDiff = p.endTime.Sub(p.startTime)
-	}
-
-	duration = time.Time{}.Add(durationDiff)
-	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
-}
-
-func (p *coloredPrinter) printRttResults(rtt *rttResults) {
-	colorYellow("rtt ")
-	colorGreen("min")
-	colorYellow("/")
-	colorCyan("avg")
-	colorYellow("/")
-	colorRed("max: ")
-	colorGreen("%.3f", rtt.min)
-	colorYellow("/")
-	colorCyan("%.3f", rtt.average)
-	colorYellow("/")
-	colorRed("%.3f", rtt.max)
-	colorYellow(" ms\n")
-}
-
-/* Print statistics when program exits */
-func (p *coloredPrinter) printStatistics() {
-
-	totalPackets := p.totalSuccessfulProbes + p.totalUnsuccessfulProbes
-	totalUptime := calcTime(p.totalUptime)
-	totalDowntime := calcTime(p.totalDowntime)
-	packetLoss := (float32(p.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
+func (p *coloredPrinter) printStatistics(s stats) {
+	totalPackets := s.totalSuccessfulProbes + s.totalUnsuccessfulProbes
+	totalUptime := calcTime(s.totalUptime)
+	totalDowntime := calcTime(s.totalDowntime)
+	packetLoss := (float32(s.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
-	if !p.isIP {
-		colorYellow("\n--- %s (%s) TCPing statistics ---\n", p.hostname, p.ip)
+	if !s.isIP {
+		colorYellow("\n--- %s (%s) TCPing statistics ---\n", s.hostname, s.ip)
 	} else {
-		colorYellow("\n--- %s TCPing statistics ---\n", p.hostname)
+		colorYellow("\n--- %s TCPing statistics ---\n", s.hostname)
 	}
-	colorYellow("%d probes transmitted on port %d | ", totalPackets, p.port)
-	colorYellow("%d received, ", p.totalSuccessfulProbes)
+	colorYellow("%d probes transmitted on port %d | ", totalPackets, s.port)
+	colorYellow("%d received, ", s.totalSuccessfulProbes)
 
 	/* packet loss stats */
 	if packetLoss == 0 {
@@ -112,13 +54,25 @@ func (p *coloredPrinter) printStatistics() {
 
 	/* successful packet stats */
 	colorYellow("successful probes:   ")
-	colorGreen("%d\n", p.totalSuccessfulProbes)
+	colorGreen("%d\n", s.totalSuccessfulProbes)
 
 	/* unsuccessful packet stats */
 	colorYellow("unsuccessful probes: ")
-	colorRed("%d\n", p.totalUnsuccessfulProbes)
+	colorRed("%d\n", s.totalUnsuccessfulProbes)
 
-	p.printLastSucUnsucProbes()
+	colorYellow("last successful probe:   ")
+	if s.lastSuccessfulProbe.IsZero() {
+		colorRed("Never succeeded\n")
+	} else {
+		colorGreen("%v\n", s.lastSuccessfulProbe.Format(timeFormat))
+	}
+
+	colorYellow("last unsuccessful probe: ")
+	if s.lastUnsuccessfulProbe.IsZero() {
+		colorGreen("Never failed\n")
+	} else {
+		colorRed("%v\n", s.lastUnsuccessfulProbe.Format(timeFormat))
+	}
 
 	/* uptime and downtime stats */
 	colorYellow("total uptime: ")
@@ -127,108 +81,112 @@ func (p *coloredPrinter) printStatistics() {
 	colorRed("%s\n", totalDowntime)
 
 	/* calculate the last longest time */
-	if !p.wasDown {
-		calcLongestUptime(p.stats,
-			time.Duration(p.ongoingSuccessfulProbes)*time.Second)
+	if !s.wasDown {
+		calcLongestUptime(&s,
+			time.Duration(s.ongoingSuccessfulProbes)*time.Second)
 	} else {
-		calcLongestDowntime(p.stats,
-			time.Duration(p.ongoingUnsuccessfulProbes)*time.Second)
+		calcLongestDowntime(&s,
+			time.Duration(s.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
 	/* longest uptime stats */
-	p.printLongestUptime()
+	if s.longestUptime.duration != 0 {
+		uptime := calcTime(s.longestUptime.duration)
 
-	/* longest downtime stats */
-	p.printLongestDowntime()
-
-	/* resolve retry stats */
-	if !p.isIP {
-		p.printRetryResolveStats()
+		colorYellow("longest consecutive uptime:   ")
+		colorGreen("%v ", uptime)
+		colorYellow("from ")
+		colorLightBlue("%v ", s.longestUptime.start.Format(timeFormat))
+		colorYellow("to ")
+		colorLightBlue("%v\n", s.longestUptime.end.Format(timeFormat))
 	}
 
-	rttResults := findMinAvgMaxRttTime(p.rtt)
+	/* longest downtime stats */
+	if s.longestDowntime.duration != 0 {
+		downtime := calcTime(s.longestDowntime.duration)
 
-	if rttResults.hasResults {
-		p.printRttResults(&rttResults)
+		colorYellow("longest consecutive downtime: ")
+		colorRed("%v ", downtime)
+		colorYellow("from ")
+		colorLightBlue("%v ", s.longestDowntime.start.Format(timeFormat))
+		colorYellow("to ")
+		colorLightBlue("%v\n", s.longestDowntime.end.Format(timeFormat))
+	}
+
+	/* resolve retry stats */
+	if !s.isIP {
+		colorYellow("retried to resolve hostname ")
+		colorRed("%d ", s.retriedHostnameResolves)
+		colorYellow("times\n")
+	}
+
+	rtt := findMinAvgMaxRttTime(s.rtt)
+	if rtt.hasResults {
+		colorYellow("rtt ")
+		colorGreen("min")
+		colorYellow("/")
+		colorCyan("avg")
+		colorYellow("/")
+		colorRed("max: ")
+		colorGreen("%.3f", rtt.min)
+		colorYellow("/")
+		colorCyan("%.3f", rtt.average)
+		colorYellow("/")
+		colorRed("%.3f", rtt.max)
+		colorYellow(" ms\n")
 	}
 
 	/* duration stats */
-	p.printDurationStats()
-}
+	var duration time.Time
+	var durationDiff time.Duration
 
-/* Print TCP probe replies according to our policies */
-func (p *coloredPrinter) printReply(replyMsg replyMsg) {
-	if p.isIP {
-		if replyMsg.msg == noReply {
-			colorRed("%s from %s on port %d TCP_conn=%d\n",
-				replyMsg.msg, p.ip, p.port, p.totalUnsuccessfulProbes)
-		} else {
-			colorLightGreen("%s from %s on port %d TCP_conn=%d time=%.3f ms\n",
-				replyMsg.msg, p.ip, p.port, p.totalSuccessfulProbes, replyMsg.rtt)
-		}
+	colorYellow("--------------------------------------\n")
+	colorYellow("TCPing started at: %v\n", s.startTime.Format(timeFormat))
+
+	/* If the program was not terminated, no need to show the end time */
+	if s.endTime.IsZero() {
+		durationDiff = time.Since(s.startTime)
 	} else {
-		if replyMsg.msg == noReply {
-			colorRed("%s from %s (%s) on port %d TCP_conn=%d\n",
-				replyMsg.msg, p.hostname, p.ip, p.port, p.totalUnsuccessfulProbes)
-		} else {
-			colorLightGreen("%s from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-				replyMsg.msg, p.hostname, p.ip, p.port, p.totalSuccessfulProbes, replyMsg.rtt)
-		}
+		colorYellow("TCPing ended at:   %v\n", s.endTime.Format(timeFormat))
+		durationDiff = s.endTime.Sub(s.startTime)
 	}
+
+	duration = time.Time{}.Add(durationDiff)
+	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
 }
 
-/* Print the total downtime */
-func (p *coloredPrinter) printTotalDownTime(now time.Time) {
-	latestDowntimeDuration := time.Since(p.startOfDowntime)
-	calculatedDowntime := calcTime(latestDowntimeDuration)
-	colorYellow("No response received for %s\n", calculatedDowntime)
-}
-
-/* Print the longest uptime */
-func (p *coloredPrinter) printLongestUptime() {
-	if p.longestUptime.duration == 0 {
+func (p *coloredPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+	if hostname == "" {
+		colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			ip, port, streak, rtt)
 		return
 	}
 
-	uptime := calcTime(p.longestUptime.duration)
-
-	colorYellow("longest consecutive uptime:   ")
-	colorGreen("%v ", uptime)
-	colorYellow("from ")
-	colorLightBlue("%v ", p.longestUptime.start.Format(timeFormat))
-	colorYellow("to ")
-	colorLightBlue("%v\n", p.longestUptime.end.Format(timeFormat))
+	colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+		hostname, ip, port, streak, rtt)
 }
 
-/* Print the longest downtime */
-func (p *coloredPrinter) printLongestDowntime() {
-	if p.longestDowntime.duration == 0 {
+func (p *coloredPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+	if hostname == "" {
+		colorRed("No reply from %s on port %d TCP_conn=%d\n",
+			ip, port, streak)
 		return
 	}
-
-	downtime := calcTime(p.longestDowntime.duration)
-
-	colorYellow("longest consecutive downtime: ")
-	colorRed("%v ", downtime)
-	colorYellow("from ")
-	colorLightBlue("%v ", p.longestDowntime.start.Format(timeFormat))
-	colorYellow("to ")
-	colorLightBlue("%v\n", p.longestDowntime.end.Format(timeFormat))
+	colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n",
+		hostname, ip, port, streak)
 }
 
-/* Print the number of times that we tried resolving a hostname after a failure */
-func (p *coloredPrinter) printRetryResolveStats() {
-	colorYellow("retried to resolve hostname ")
-	colorRed("%d ", p.retriedHostnameResolves)
-	colorYellow("times\n")
+func (p *coloredPrinter) printTotalDownTime(downtime time.Duration) {
+	colorYellow("No response received for %s\n", calcTime(downtime))
 }
 
-/* Print the message retrying to resolve */
-func (p *coloredPrinter) printRetryingToResolve() {
-	colorLightYellow("retrying to resolve %s\n", p.hostname)
+func (p *coloredPrinter) printRetryingToResolve(hostname string) {
+	colorLightYellow("retrying to resolve %s\n", hostname)
 }
 
-type jsonPrinter struct{}
+type jsonPrinter struct {
+	*stats
+}
 
 type JSONEventType string
 
@@ -380,7 +338,8 @@ func (j *jsonPrinter) printReply(replyMsg replyMsg) {
 
 	data.Message = fmt.Sprintf("%s from %s on port %d", replyMsg.msg, ipStr, j.port)
 
-	if replyMsg.msg != noReply {
+	// TODO: no reply
+	if replyMsg.msg != "No Reply" {
 		data.Latency = replyMsg.rtt
 		data.TotalSuccessfulProbes = j.totalSuccessfulProbes
 		data.Success = &t
