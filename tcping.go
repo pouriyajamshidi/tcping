@@ -86,6 +86,7 @@ type stats struct {
 	shouldRetryResolve        bool
 	useIPv4                   bool
 	useIPv6                   bool
+	probesBeforeQuit          uint
 
 	// ticker is used to handle time between probes.
 	ticker *time.Ticker
@@ -159,13 +160,14 @@ func usage() {
 
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
+	useIPv4 := flag.Bool("4", false, "use IPv4 only.")
+	useIPv6 := flag.Bool("6", false, "use IPv6 only.")
 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
-	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
+	probesBeforeQuit := flag.Uint("c", 0, "do n probes and quit, regardless of the result. If c is 0 (default), no limit will be applied")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the -j flag.")
 	showVersion := flag.Bool("v", false, "show version.")
-	useIPv4 := flag.Bool("4", false, "use IPv4 only.")
-	useIPv6 := flag.Bool("6", false, "use IPv6 only.")
+	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 
 	flag.CommandLine.Usage = usage
 
@@ -238,6 +240,7 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.port = uint16(port)
 	tcpStats.ip = resolveHostname(tcpStats)
 	tcpStats.startTime = time.Now()
+	tcpStats.probesBeforeQuit = *probesBeforeQuit
 
 	if tcpStats.hostname == tcpStats.ip.String() {
 		tcpStats.isIP = true
@@ -269,6 +272,8 @@ func permuteArgs(args cliArgs) {
 		if v[0] == '-' {
 			optionName := v[1:]
 			switch optionName {
+			case "c":
+				fallthrough
 			case "r":
 				/* out of index */
 				if len(args) <= i+1 {
@@ -623,6 +628,7 @@ func main() {
 	stdinChan := make(chan string)
 	go monitorStdin(stdinChan)
 
+	var probeCount uint = 0
 	for {
 		if tcpStats.shouldRetryResolve {
 			retryResolve(tcpStats)
@@ -637,7 +643,16 @@ func main() {
 				currentPrinter.printStatistics(*tcpStats)
 			}
 		default:
+		}
+
+		if tcpStats.probesBeforeQuit == 0 {
 			continue
+		}
+
+		probeCount++
+		if probeCount == tcpStats.probesBeforeQuit {
+			tcpStats.printStatistics()
+			return
 		}
 	}
 }

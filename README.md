@@ -217,15 +217,16 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 
 The following flags are available to control the behavior of application:
 
-| Flag       | Description                                               |
-| ---------- | --------------------------------------------------------- |
-| `-r`       | Retry resolving a hostname after `<n>` number of failures |
-| `-4`       | Only use IPv4 addresses                                   |
-| `-6`       | Only use IPv6 addresses                                   |
-| `-j`       | Output in JSON format                                     |
-| `--pretty` | Prettify the JSON output                                  |
-| `-u`       | Check for updates                                         |
-| `-v`       | Print version                                             |
+| Flag       | Description                                                                          |
+|------------|--------------------------------------------------------------------------------------|
+| `-4`       | Only use IPv4 addresses                                                              |
+| `-6`       | Only use IPv6 addresses                                                              |
+| `-r`       | Retry resolving a hostname after `<n>` number of failures                            |
+| `-c`       | Ping `<n>` amount of times, regardless of the result  (available from version v1.23) |
+| `-j`       | Output in JSON format                                                                |
+| `--pretty` | Prettify the JSON output                                                             |
+| `-v`       | Print version                                                                        |
+| `-u`       | Check for updates                                                                    |
 
 ---
 
