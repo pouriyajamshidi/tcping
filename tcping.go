@@ -651,7 +651,7 @@ func main() {
 
 		probeCount++
 		if probeCount == tcpStats.probesBeforeQuit {
-			tcpStats.printStatistics()
+			currentPrinter.printStatistics(*tcpStats)
 			return
 		}
 	}
