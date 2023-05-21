@@ -24,34 +24,14 @@ const (
 	noReply = "No reply"
 )
 
-type statsPrinter interface {
-	printStart()
-	printLastSucUnsucProbes()
-	printDurationStats()
-	printStatistics()
-	printReply(replyMsg replyMsg)
-	printTotalDownTime(time.Time)
-	printLongestUptime()
-	printLongestDowntime()
-	printRetryResolveStats()
-	printRetryingToResolve()
-}
+type coloredPrinter struct{}
 
-type statsPlanePrinter struct {
-	*stats
-}
-
-type statsJsonPrinter struct {
-	*stats
-}
-
-/* Print host name and port to use on tcping */
-func (p *statsPlanePrinter) printStart() {
-	colorLightCyan("TCPinging %s on port %d\n", p.hostname, p.port)
+func (p *coloredPrinter) printStart(hostname string, port uint16) {
+	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
 }
 
 /* Print the last successful and unsuccessful probes */
-func (p *statsPlanePrinter) printLastSucUnsucProbes() {
+func (p *coloredPrinter) printLastSucUnsucProbes() {
 	colorYellow("last successful probe:   ")
 	if p.lastSuccessfulProbe.IsZero() {
 		colorRed("Never succeeded\n")
@@ -68,7 +48,7 @@ func (p *statsPlanePrinter) printLastSucUnsucProbes() {
 }
 
 /* Print the start and end time of the program */
-func (p *statsPlanePrinter) printDurationStats() {
+func (p *coloredPrinter) printDurationStats() {
 	var duration time.Time
 	var durationDiff time.Duration
 
@@ -87,7 +67,7 @@ func (p *statsPlanePrinter) printDurationStats() {
 	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
 }
 
-func (p *statsPlanePrinter) printRttResults(rtt *rttResults) {
+func (p *coloredPrinter) printRttResults(rtt *rttResults) {
 	colorYellow("rtt ")
 	colorGreen("min")
 	colorYellow("/")
@@ -103,7 +83,7 @@ func (p *statsPlanePrinter) printRttResults(rtt *rttResults) {
 }
 
 /* Print statistics when program exits */
-func (p *statsPlanePrinter) printStatistics() {
+func (p *coloredPrinter) printStatistics() {
 
 	totalPackets := p.totalSuccessfulProbes + p.totalUnsuccessfulProbes
 	totalUptime := calcTime(p.totalUptime)
@@ -177,7 +157,7 @@ func (p *statsPlanePrinter) printStatistics() {
 }
 
 /* Print TCP probe replies according to our policies */
-func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
+func (p *coloredPrinter) printReply(replyMsg replyMsg) {
 	if p.isIP {
 		if replyMsg.msg == noReply {
 			colorRed("%s from %s on port %d TCP_conn=%d\n",
@@ -198,14 +178,14 @@ func (p *statsPlanePrinter) printReply(replyMsg replyMsg) {
 }
 
 /* Print the total downtime */
-func (p *statsPlanePrinter) printTotalDownTime(now time.Time) {
+func (p *coloredPrinter) printTotalDownTime(now time.Time) {
 	latestDowntimeDuration := time.Since(p.startOfDowntime)
 	calculatedDowntime := calcTime(latestDowntimeDuration)
 	colorYellow("No response received for %s\n", calculatedDowntime)
 }
 
 /* Print the longest uptime */
-func (p *statsPlanePrinter) printLongestUptime() {
+func (p *coloredPrinter) printLongestUptime() {
 	if p.longestUptime.duration == 0 {
 		return
 	}
@@ -221,7 +201,7 @@ func (p *statsPlanePrinter) printLongestUptime() {
 }
 
 /* Print the longest downtime */
-func (p *statsPlanePrinter) printLongestDowntime() {
+func (p *coloredPrinter) printLongestDowntime() {
 	if p.longestDowntime.duration == 0 {
 		return
 	}
@@ -237,22 +217,18 @@ func (p *statsPlanePrinter) printLongestDowntime() {
 }
 
 /* Print the number of times that we tried resolving a hostname after a failure */
-func (p *statsPlanePrinter) printRetryResolveStats() {
+func (p *coloredPrinter) printRetryResolveStats() {
 	colorYellow("retried to resolve hostname ")
 	colorRed("%d ", p.retriedHostnameResolves)
 	colorYellow("times\n")
 }
 
 /* Print the message retrying to resolve */
-func (p *statsPlanePrinter) printRetryingToResolve() {
+func (p *coloredPrinter) printRetryingToResolve() {
 	colorLightYellow("retrying to resolve %s\n", p.hostname)
 }
 
-/*
-
-JSON output section
-
-*/
+type jsonPrinter struct{}
 
 type JSONEventType string
 
@@ -370,7 +346,7 @@ type JSONData struct {
 }
 
 // printStart prints the initial message before doing probes.
-func (j *statsJsonPrinter) printStart() {
+func (j *jsonPrinter) printStart() {
 	_ = printJson(JSONData{
 		Type:      start,
 		Message:   fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
@@ -381,7 +357,7 @@ func (j *statsJsonPrinter) printStart() {
 }
 
 // printReply prints TCP probe replies according to our policies in JSON format.
-func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
+func (j *jsonPrinter) printReply(replyMsg replyMsg) {
 	// for *bool fields
 	f := false
 	t := true
@@ -416,7 +392,7 @@ func (j *statsJsonPrinter) printReply(replyMsg replyMsg) {
 }
 
 // printStatistics prints all gathered stats when program exits.
-func (j *statsJsonPrinter) printStatistics() {
+func (j *jsonPrinter) printStatistics() {
 	data := JSONData{
 		Type:      statsEvent,
 		Message:   fmt.Sprintf("stats for %s", j.hostname),
@@ -487,7 +463,7 @@ func (j *statsJsonPrinter) printStatistics() {
 
 // printTotalDownTime prints the total downtime,
 // if the next retry was successfull.
-func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
+func (j *jsonPrinter) printTotalDownTime(now time.Time) {
 	downtime := time.Since(j.startOfDowntime)
 
 	_ = printJson(&JSONData{
@@ -500,7 +476,7 @@ func (j *statsJsonPrinter) printTotalDownTime(now time.Time) {
 
 // printRetryingToResolve print the message retrying to resolve,
 // after n failed probes.
-func (j *statsJsonPrinter) printRetryingToResolve() {
+func (j *jsonPrinter) printRetryingToResolve() {
 	_ = printJson(JSONData{
 		Type:      retry,
 		Message:   fmt.Sprintf("retrying to resolve %s", j.hostname),

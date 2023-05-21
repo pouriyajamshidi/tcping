@@ -19,15 +19,33 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
+// printer is an interface that holds methods
+// for different printers to implement.
+type printer interface {
+	// printStart should print the first message
+	printStart()
+	printLastSucUnsucProbes()
+	printDurationStats()
+	printStatistics()
+	printReply(replyMsg replyMsg)
+	printTotalDownTime(time.Time)
+	printLongestUptime()
+	printLongestDowntime()
+	printRetryResolveStats()
+	printRetryingToResolve()
+}
+
 type stats struct {
-	endTime               time.Time
-	startOfUptime         time.Time
-	startOfDowntime       time.Time
-	lastSuccessfulProbe   time.Time
-	lastUnsuccessfulProbe time.Time
-	ip                    ipAddress
-	startTime             time.Time
-	statsPrinter
+	// w holds a printing interface for outputting info.
+	w printer
+
+	endTime                   time.Time
+	startOfUptime             time.Time
+	startOfDowntime           time.Time
+	lastSuccessfulProbe       time.Time
+	lastUnsuccessfulProbe     time.Time
+	ip                        ipAddress
+	startTime                 time.Time
 	retryHostnameResolveAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	hostname                  string
 	rtt                       []float32
@@ -209,9 +227,9 @@ func processUserInput(tcpStats *stats) {
 
 	/* output format determination. */
 	if *outputJson {
-		tcpStats.statsPrinter = &statsJsonPrinter{stats: tcpStats}
+		tcpStats.w = &jsonPrinter{stats: tcpStats}
 	} else {
-		tcpStats.statsPrinter = &statsPlanePrinter{stats: tcpStats}
+		tcpStats.w = &coloredPrinter{stats: tcpStats}
 	}
 }
 
@@ -502,12 +520,12 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	tcpStats.totalUnsuccessfulProbes += 1
 	tcpStats.ongoingUnsuccessfulProbes += 1
 
-	tcpStats.statsPrinter.printReply(replyMsg{msg: "No reply", rtt: 0})
+	tcpStats.w.printReply(replyMsg{msg: "No reply", rtt: 0})
 }
 
 func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	if tcpStats.wasDown {
-		tcpStats.statsPrinter.printTotalDownTime(now)
+		tcpStats.w.printTotalDownTime(now)
 		tcpStats.startOfUptime = now
 		calcLongestDowntime(tcpStats,
 			time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
@@ -527,7 +545,7 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	tcpStats.ongoingSuccessfulProbes += 1
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
-	tcpStats.statsPrinter.printReply(replyMsg{msg: "Reply", rtt: rtt})
+	tcpStats.w.printReply(replyMsg{msg: "Reply", rtt: rtt})
 }
 
 /* Ping host, TCP style */
