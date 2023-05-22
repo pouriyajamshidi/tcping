@@ -268,7 +268,7 @@ func processUserInput(tcpStats *stats) {
 	if *outputJson {
 		// currentPrinter = jsonPrinter{stats: tcpStats}
 	} else {
-		currentPrinter = &coloredPrinter{}
+		currentPrinter = &planePrinter{}
 	}
 }
 

@@ -20,13 +20,13 @@ var (
 	colorLightCyan   = color.LightCyan.Printf
 )
 
-type coloredPrinter struct{}
+type planePrinter struct{}
 
-func (p *coloredPrinter) printStart(hostname string, port uint16) {
+func (p *planePrinter) printStart(hostname string, port uint16) {
 	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
 }
 
-func (p *coloredPrinter) printStatistics(s stats) {
+func (p *planePrinter) printStatistics(s stats) {
 	totalPackets := s.totalSuccessfulProbes + s.totalUnsuccessfulProbes
 	totalUptime := calcTime(s.totalUptime)
 	totalDowntime := calcTime(s.totalDowntime)
@@ -155,7 +155,7 @@ func (p *coloredPrinter) printStatistics(s stats) {
 	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
 }
 
-func (p *coloredPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
 	if hostname == "" {
 		colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 			ip, port, streak, rtt)
@@ -166,7 +166,7 @@ func (p *coloredPrinter) printProbeSuccess(hostname, ip string, port uint16, str
 		hostname, ip, port, streak, rtt)
 }
 
-func (p *coloredPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
 	if hostname == "" {
 		colorRed("No reply from %s on port %d TCP_conn=%d\n",
 			ip, port, streak)
@@ -176,23 +176,23 @@ func (p *coloredPrinter) printProbeFail(hostname, ip string, port uint16, streak
 		hostname, ip, port, streak)
 }
 
-func (p *coloredPrinter) printTotalDownTime(downtime time.Duration) {
+func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
 	colorYellow("No response received for %s\n", calcTime(downtime))
 }
 
-func (p *coloredPrinter) printRetryingToResolve(hostname string) {
+func (p *planePrinter) printRetryingToResolve(hostname string) {
 	colorLightYellow("retrying to resolve %s\n", hostname)
 }
 
-func (p *coloredPrinter) printInfo(format string, args ...any) {
+func (p *planePrinter) printInfo(format string, args ...any) {
 	colorLightBlue(format+"\n", args...)
 }
 
-func (p *coloredPrinter) printError(format string, args ...any) {
+func (p *planePrinter) printError(format string, args ...any) {
 	colorRed(format+"\n", args...)
 }
 
-func (p *coloredPrinter) printVersion() {
+func (p *planePrinter) printVersion() {
 	colorGreen("TCPING version %s\n", version)
 }
 
