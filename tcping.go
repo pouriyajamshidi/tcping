@@ -224,13 +224,9 @@ func processUserInput(tcpStats *stats) {
 		tcpStats.useIPv6 = true
 	}
 
-	if *prettyJson {
-		if !*outputJson {
-			currentPrinter.printError("--pretty has no effect without the -j flag.")
-			usage()
-		}
-
-		jsonEncoder.SetIndent("", "\t")
+	if *prettyJson && !*outputJson {
+		currentPrinter.printError("--pretty has no effect without the -j flag.")
+		usage()
 	}
 
 	/* host and port must be specified　*/
@@ -266,7 +262,7 @@ func processUserInput(tcpStats *stats) {
 
 	/* output format determination. */
 	if *outputJson {
-		// currentPrinter = jsonPrinter{stats: tcpStats}
+		currentPrinter = newJsonPrinter(*prettyJson)
 	} else {
 		currentPrinter = &planePrinter{}
 	}

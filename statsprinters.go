@@ -197,34 +197,41 @@ func (p *planePrinter) printVersion() {
 }
 
 type jsonPrinter struct {
-	*stats
+	e *json.Encoder
 }
 
+func newJsonPrinter(withIndent bool) *jsonPrinter {
+	encoder := json.NewEncoder(os.Stdout)
+	if withIndent {
+		encoder.SetIndent("", "\t")
+	}
+	return &jsonPrinter{e: encoder}
+}
+
+// JSONEventType is a special type, each for each method
+// in the printer interface so that automatic tools
+// can understand what kind of an event they've received.
 type JSONEventType string
 
 const (
-	// probe is an event type that represents 1 probe / ping / request event.
-	probe JSONEventType = "probe"
-	// retry is an event type that's being sent,
-	// when tcping retries to resolve a hostname.
-	retry JSONEventType = "retry"
-	// retrySuccess is a sub-type for of Retry event, when previous retry
-	// was unsuccessful, but the next one became successful.
-	retrySuccess JSONEventType = "retry-success"
-	// start is an event type that's sent only once, at the very beginning
-	// before doing any actual work.
-	start JSONEventType = "start"
-	// statsEvent is a final event that's being sent before tcping exits.
-	statsEvent JSONEventType = "stats"
+	// startEvent is an event type for [printStart] method.
+	startEvent JSONEventType = "start"
+	// probeEvent is a general event type for both
+	// [printProbeSuccess] and [printProbeFail].
+	probeEvent JSONEventType = "probe"
+	// retryEvent is an event type for [printRetryingToResolve] method.
+	retryEvent JSONEventType = "retry"
+	// retrySuccessEvent is an event type for [printTotalDowntime] method.
+	retrySuccessEvent JSONEventType = "retry-success"
+	// statistics is a event type for [printStatistics] method.
+	statisticsEvent JSONEventType = "statistics"
+	// statistics is a event type for [printStatistics] method.
+	infoEvent JSONEventType = "info"
+	// statistics is a event type for [printStatistics] method.
+	versionEvent JSONEventType = "version"
+	// statistics is a event type for [printStatistics] method.
+	errorEvent JSONEventType = "error"
 )
-
-// jsonEncoder stores the encoder for json output.
-// It could be used to tweak default options, like indentation
-// or change output to another writer interface.
-var jsonEncoder = json.NewEncoder(os.Stdout)
-
-// printJson is a shortcut for Encode() on jsonEncoder.
-var printJson = jsonEncoder.Encode
 
 // JSONData contains all possible fields for JSON output.
 // Because one event usually contains only a subset of fields,
@@ -318,7 +325,7 @@ type JSONData struct {
 // printStart prints the initial message before doing probes.
 func (j *jsonPrinter) printStart() {
 	_ = printJson(JSONData{
-		Type:      start,
+		Type:      startEvent,
 		Message:   fmt.Sprintf("TCPinging %s on port %d", j.hostname, j.port),
 		Hostname:  j.hostname,
 		Port:      j.port,
@@ -333,7 +340,7 @@ func (j *jsonPrinter) printReply(replyMsg replyMsg) {
 	t := true
 
 	data := JSONData{
-		Type:      probe,
+		Type:      probeEvent,
 		Addr:      j.ip.String(),
 		Port:      j.port,
 		IsIP:      &t,
@@ -365,7 +372,7 @@ func (j *jsonPrinter) printReply(replyMsg replyMsg) {
 // printStatistics prints all gathered stats when program exits.
 func (j *jsonPrinter) printStatistics() {
 	data := JSONData{
-		Type:      statsEvent,
+		Type:      statistics,
 		Message:   fmt.Sprintf("stats for %s", j.hostname),
 		Hostname:  j.hostname,
 		Timestamp: time.Now(),
@@ -438,7 +445,7 @@ func (j *jsonPrinter) printTotalDownTime(now time.Time) {
 	downtime := time.Since(j.startOfDowntime)
 
 	_ = printJson(&JSONData{
-		Type:          retrySuccess,
+		Type:          retrySuccessEvent,
 		Message:       fmt.Sprintf("no response received for %s", calcTime(downtime)),
 		TotalDowntime: downtime.Seconds(),
 		Timestamp:     time.Now(),
@@ -449,9 +456,21 @@ func (j *jsonPrinter) printTotalDownTime(now time.Time) {
 // after n failed probes.
 func (j *jsonPrinter) printRetryingToResolve() {
 	_ = printJson(JSONData{
-		Type:      retry,
+		Type:      retryEvent,
 		Message:   fmt.Sprintf("retrying to resolve %s", j.hostname),
 		Hostname:  j.hostname,
 		Timestamp: time.Now(),
 	})
+}
+
+func (p *jsonPrinter) printInfo(format string, args ...any) {
+	colorLightBlue(format+"\n", args...)
+}
+
+func (p *jsonPrinter) printError(format string, args ...any) {
+	colorRed(format+"\n", args...)
+}
+
+func (p *jsonPrinter) printVersion() {
+	colorGreen("TCPING version %s\n", version)
 }
