@@ -184,6 +184,18 @@ func (p *coloredPrinter) printRetryingToResolve(hostname string) {
 	colorLightYellow("retrying to resolve %s\n", hostname)
 }
 
+func (p *coloredPrinter) printInfo(format string, args ...any) {
+	colorLightBlue(format+"\n", args...)
+}
+
+func (p *coloredPrinter) printError(format string, args ...any) {
+	colorRed(format+"\n", args...)
+}
+
+func (p *coloredPrinter) printVersion() {
+	colorGreen("TCPING version %s\n", version)
+}
+
 type jsonPrinter struct {
 	*stats
 }

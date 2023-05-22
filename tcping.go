@@ -55,6 +55,19 @@ type printer interface {
 	//
 	// This is being called on exit and when user hits "Enter".
 	printStatistics(s stats)
+
+	// printVersion should print the current version.
+	printVersion()
+
+	// printInfo should a message, which is not directly related
+	// to the pinging and serves as a helpful information.
+	//
+	// Example of such: new version with -u flag.
+	printInfo(format string, args ...any)
+
+	// printError should print an error message.
+	// Printer should also apply \n to the given string.
+	printError(format string, args ...any)
 }
 
 // currentPrinter is used for outputting information.
@@ -110,9 +123,11 @@ type replyMsg struct {
 	rtt float32
 }
 
-type ipAddress = netip.Addr
-type cliArgs = []string
-type calculatedTimeString = string
+type (
+	ipAddress            = netip.Addr
+	cliArgs              = []string
+	calculatedTimeString = string
+)
 
 const (
 	version    = "1.22.1"
@@ -192,12 +207,12 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	if *showVersion {
-		colorGreen("TCPING version %s\n", version)
+		currentPrinter.printVersion()
 		os.Exit(0)
 	}
 
 	if *useIPv4 && *useIPv6 {
-		colorRed("Only one IP version can be specified\n")
+		currentPrinter.printError("Only one IP version can be specified")
 		usage()
 	}
 
@@ -211,7 +226,7 @@ func processUserInput(tcpStats *stats) {
 
 	if *prettyJson {
 		if !*outputJson {
-			colorRed("--pretty has no effect without the -j flag.\n")
+			currentPrinter.printError("--pretty has no effect without the -j flag.")
 			usage()
 		}
 
@@ -225,14 +240,13 @@ func processUserInput(tcpStats *stats) {
 
 	/* the non-flag command-line arguments */
 	port, err := strconv.ParseUint(args[1], 10, 16)
-
 	if err != nil {
-		colorRed("Invalid port number: %s\n", args[1])
+		currentPrinter.printError("Invalid port number: %s\n", args[1])
 		os.Exit(1)
 	}
 
 	if port < 1 || port > 65535 {
-		colorRed("Port should be in 1..65535 range\n")
+		currentPrinter.printError("Port should be in 1..65535 range")
 		os.Exit(1)
 	}
 
@@ -308,7 +322,7 @@ func checkLatestVersion() {
 	/* unauthenticated requests from the same IP are limited to 60 per hour. */
 	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
 	if err != nil {
-		colorRed("Failed to check for updates %s\n", err.Error())
+		currentPrinter.printError("Failed to check for updates %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -317,16 +331,18 @@ func checkLatestVersion() {
 	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
 
 	if len(latestVersion) == 0 {
-		colorRed("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
+		currentPrinter.printError("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
 		os.Exit(1)
 	}
 
 	if latestVersion[1] != version {
-		colorLightBlue("Found newer version %s\n", latestVersion[1])
-		colorLightBlue("Please update TCPING from the URL below:\n")
-		colorLightBlue("https://github.com/%s/%s/releases/tag/%s\n", owner, repo, latestTagName)
+		currentPrinter.printInfo("Found newer version %s", latestVersion[1])
+		currentPrinter.printInfo("Please update TCPING from the URL below:")
+		currentPrinter.printInfo("https://github.com/%s/%s/releases/tag/%s",
+			owner, repo, latestTagName)
 	} else {
-		colorLightBlue("Newer version not found. %s is the latest version.\n", version)
+		currentPrinter.printInfo("Newer version not found. %s is the latest version.",
+			version)
 	}
 	os.Exit(0)
 }
@@ -344,7 +360,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		/* Prevent exit if application has been running for a while */
 		return tcpStats.ip
 	} else if err != nil {
-		colorRed("Failed to resolve %s\n", tcpStats.hostname)
+		currentPrinter.printError("Failed to resolve %s", tcpStats.hostname)
 		os.Exit(1)
 	}
 
@@ -359,7 +375,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			}
 		}
 		if len(ipList) == 0 {
-			colorRed("Failed to find IPv4 address for %s\n", tcpStats.hostname)
+			currentPrinter.printError("Failed to find IPv4 address for %s\n", tcpStats.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
@@ -376,7 +392,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			}
 		}
 		if len(ipList) == 0 {
-			colorRed("Failed to find IPv6 address for %s\n", tcpStats.hostname)
+			currentPrinter.printError("Failed to find IPv6 address for %s\n", tcpStats.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
