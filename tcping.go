@@ -66,7 +66,7 @@ type printer interface {
 	printInfo(format string, args ...any)
 
 	// printError should print an error message.
-	// Printer should also apply \n to the given string.
+	// Printer should also apply \n to the given string, if needed.
 	printError(format string, args ...any)
 }
 
@@ -241,7 +241,7 @@ func processUserInput(tcpStats *stats) {
 	/* the non-flag command-line arguments */
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
-		currentPrinter.printError("Invalid port number: %s\n", args[1])
+		currentPrinter.printError("Invalid port number: %s", args[1])
 		os.Exit(1)
 	}
 
@@ -331,7 +331,7 @@ func checkLatestVersion() {
 	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
 
 	if len(latestVersion) == 0 {
-		currentPrinter.printError("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
+		currentPrinter.printError("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
 		os.Exit(1)
 	}
 
@@ -375,7 +375,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			}
 		}
 		if len(ipList) == 0 {
-			currentPrinter.printError("Failed to find IPv4 address for %s\n", tcpStats.hostname)
+			currentPrinter.printError("Failed to find IPv4 address for %s", tcpStats.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
@@ -392,7 +392,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			}
 		}
 		if len(ipList) == 0 {
-			currentPrinter.printError("Failed to find IPv6 address for %s\n", tcpStats.hostname)
+			currentPrinter.printError("Failed to find IPv6 address for %s", tcpStats.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
