@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -28,8 +29,8 @@ func (p *planePrinter) printStart(hostname string, port uint16) {
 
 func (p *planePrinter) printStatistics(s stats) {
 	totalPackets := s.totalSuccessfulProbes + s.totalUnsuccessfulProbes
-	totalUptime := calcTime(s.totalUptime)
-	totalDowntime := calcTime(s.totalDowntime)
+	totalUptime := durationToString(s.totalUptime)
+	totalDowntime := durationToString(s.totalDowntime)
 	packetLoss := (float32(s.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
@@ -91,7 +92,7 @@ func (p *planePrinter) printStatistics(s stats) {
 
 	/* longest uptime stats */
 	if s.longestUptime.duration != 0 {
-		uptime := calcTime(s.longestUptime.duration)
+		uptime := durationToString(s.longestUptime.duration)
 
 		colorYellow("longest consecutive uptime:   ")
 		colorGreen("%v ", uptime)
@@ -103,7 +104,7 @@ func (p *planePrinter) printStatistics(s stats) {
 
 	/* longest downtime stats */
 	if s.longestDowntime.duration != 0 {
-		downtime := calcTime(s.longestDowntime.duration)
+		downtime := durationToString(s.longestDowntime.duration)
 
 		colorYellow("longest consecutive downtime: ")
 		colorRed("%v ", downtime)
@@ -177,7 +178,7 @@ func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak u
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
-	colorYellow("No response received for %s\n", calcTime(downtime))
+	colorYellow("No response received for %s\n", durationToString(downtime))
 }
 
 func (p *planePrinter) printRetryingToResolve(hostname string) {
@@ -475,7 +476,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 func (p *jsonPrinter) printTotalDownTime(downtime time.Duration) {
 	p.print(JSONData{
 		Type:          retrySuccessEvent,
-		Message:       fmt.Sprintf("no response received for %s", calcTime(downtime)),
+		Message:       fmt.Sprintf("no response received for %s", durationToString(downtime)),
 		TotalDowntime: downtime.Seconds(),
 	})
 }
@@ -509,4 +510,44 @@ func (p *jsonPrinter) printVersion() {
 		Type:    versionEvent,
 		Message: fmt.Sprintf("TCPING version %s\n", version),
 	})
+}
+
+// durationToString creates a human-readable string for a given duration
+func durationToString(duration time.Duration) string {
+	hours := math.Floor(duration.Hours())
+	if hours > 0 {
+		duration -= time.Duration(hours * float64(time.Hour))
+	}
+
+	minutes := math.Floor(duration.Minutes())
+	if minutes > 0 {
+		duration -= time.Duration(minutes * float64(time.Minute))
+	}
+
+	seconds := duration.Seconds()
+
+	switch {
+	// Hours
+	case hours >= 2:
+		return fmt.Sprintf("%.0f hours %.0f minutes %.0f seconds", hours, minutes, seconds)
+	case hours == 1 && minutes == 0 && seconds == 0:
+		return fmt.Sprintf("%.0f hour", hours)
+	case hours == 1:
+		return fmt.Sprintf("%.0f hour %.0f minutes %.0f seconds", hours, minutes, seconds)
+
+	// Minutes
+	case minutes >= 2:
+		return fmt.Sprintf("%.0f minutes %.0f seconds", minutes, seconds)
+	case minutes == 1 && seconds == 0:
+		return fmt.Sprintf("%.0f minute", minutes)
+	case minutes == 1:
+		return fmt.Sprintf("%.0f minute %.0f seconds", minutes, seconds)
+
+	// Seconds
+	case seconds == 1:
+		return fmt.Sprintf("%.0f second", seconds)
+	default:
+		return fmt.Sprintf("%.0f seconds", seconds)
+
+	}
 }
