@@ -10,6 +10,11 @@ import (
 	"github.com/gookit/color"
 )
 
+const (
+	timeFormat = "2006-01-02 15:04:05"
+	hourFormat = "15:04:05"
+)
+
 var (
 	colorYellow      = color.Yellow.Printf
 	colorGreen       = color.Green.Printf
@@ -29,8 +34,6 @@ func (p *planePrinter) printStart(hostname string, port uint16) {
 
 func (p *planePrinter) printStatistics(s stats) {
 	totalPackets := s.totalSuccessfulProbes + s.totalUnsuccessfulProbes
-	totalUptime := durationToString(s.totalUptime)
-	totalDowntime := durationToString(s.totalDowntime)
 	packetLoss := (float32(s.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	/* general stats */
@@ -77,9 +80,9 @@ func (p *planePrinter) printStatistics(s stats) {
 
 	/* uptime and downtime stats */
 	colorYellow("total uptime: ")
-	colorGreen("  %s\n", totalUptime)
+	colorGreen("  %s\n", durationToString(s.totalUptime))
 	colorYellow("total downtime: ")
-	colorRed("%s\n", totalDowntime)
+	colorRed("%s\n", durationToString(s.totalDowntime))
 
 	/* calculate the last longest time */
 	if !s.wasDown {
@@ -137,22 +140,18 @@ func (p *planePrinter) printStatistics(s stats) {
 		colorYellow(" ms\n")
 	}
 
-	/* duration stats */
-	var duration time.Time
-	var durationDiff time.Duration
-
 	colorYellow("--------------------------------------\n")
 	colorYellow("TCPing started at: %v\n", s.startTime.Format(timeFormat))
 
+	totalDuration := s.totalDowntime + s.totalUptime
+
 	/* If the program was not terminated, no need to show the end time */
-	if s.endTime.IsZero() {
-		durationDiff = time.Since(s.startTime)
-	} else {
-		colorYellow("TCPing ended at:   %v\n", s.endTime.Format(timeFormat))
-		durationDiff = s.endTime.Sub(s.startTime)
+	if !s.endTime.IsZero() {
+		colorYellow("TCPing ended at:   %v\n",
+			s.startTime.Add(totalDuration).Format(timeFormat))
 	}
 
-	duration = time.Time{}.Add(durationDiff)
+	duration := time.Time{}.Add(totalDuration)
 	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
 }
 

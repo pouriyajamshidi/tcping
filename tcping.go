@@ -127,11 +127,9 @@ type (
 )
 
 const (
-	version    = "1.22.1"
-	owner      = "pouriyajamshidi"
-	repo       = "tcping"
-	timeFormat = "2006-01-02 15:04:05"
-	hourFormat = "15:04:05"
+	version = "1.22.1"
+	owner   = "pouriyajamshidi"
+	repo    = "tcping"
 )
 
 /* Catch SIGINT and print tcping stats */
@@ -459,7 +457,7 @@ func findMinAvgMaxRttTime(timeArr []float32) rttResults {
 
 // calcLongestUptime calculates the longest uptime and sets it to tcpStats.
 func calcLongestUptime(tcpStats *stats, duration time.Duration) {
-	if tcpStats.startOfUptime.IsZero() {
+	if tcpStats.startOfUptime.IsZero() || duration == 0 {
 		return
 	}
 
@@ -478,7 +476,7 @@ func calcLongestUptime(tcpStats *stats, duration time.Duration) {
 
 // calcLongestDowntime calculates the longest downtime and sets it to tcpStats.
 func calcLongestDowntime(tcpStats *stats, duration time.Duration) {
-	if tcpStats.startOfDowntime.IsZero() {
+	if tcpStats.startOfDowntime.IsZero() || duration == 0 {
 		return
 	}
 
@@ -520,7 +518,7 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 		tcpStats.hostname,
 		tcpStats.ip.String(),
 		tcpStats.port,
-		tcpStats.ongoingSuccessfulProbes,
+		tcpStats.ongoingUnsuccessfulProbes,
 	)
 }
 
