@@ -115,19 +115,18 @@ func (p *planePrinter) printStatistics(s stats) {
 		colorYellow("times\n")
 	}
 
-	rtt := findMinAvgMaxRttTime(s.rtt)
-	if rtt.hasResults {
+	if s.rttResults.hasResults {
 		colorYellow("rtt ")
 		colorGreen("min")
 		colorYellow("/")
 		colorCyan("avg")
 		colorYellow("/")
 		colorRed("max: ")
-		colorGreen("%.3f", rtt.min)
+		colorGreen("%.3f", s.rttResults.min)
 		colorYellow("/")
-		colorCyan("%.3f", rtt.average)
+		colorCyan("%.3f", s.rttResults.average)
 		colorYellow("/")
-		colorRed("%.3f", rtt.max)
+		colorRed("%.3f", s.rttResults.max)
 		colorYellow(" ms\n")
 	}
 
@@ -432,11 +431,10 @@ func (p *jsonPrinter) printStatistics(s stats) {
 		data.HostnameResolveTries = s.retriedHostnameResolves
 	}
 
-	latencyStats := findMinAvgMaxRttTime(s.rtt)
-	if latencyStats.hasResults {
-		data.LatencyMin = fmt.Sprintf("%.3f", latencyStats.min)
-		data.LatencyAvg = fmt.Sprintf("%.3f", latencyStats.average)
-		data.LatencyMax = fmt.Sprintf("%.3f", latencyStats.max)
+	if s.rttResults.hasResults {
+		data.LatencyMin = fmt.Sprintf("%.3f", s.rttResults.min)
+		data.LatencyAvg = fmt.Sprintf("%.3f", s.rttResults.average)
+		data.LatencyMax = fmt.Sprintf("%.3f", s.rttResults.max)
 	}
 
 	if s.endTime.IsZero() {

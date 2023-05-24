@@ -82,6 +82,7 @@ type stats struct {
 	retryHostnameResolveAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	hostname                  string
 	rtt                       []float32
+	rttResults                rttResults
 	ongoingUnsuccessfulProbes uint
 	ongoingSuccessfulProbes   uint
 	longestDowntime           longestTime
@@ -553,11 +554,18 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	)
 }
 
+// printStats is a helper method for printStatistics
+// for the current printer.
+//
+// This should be used instead, as it makes
+// all the nescessary calculations beforehand.
 func (tcpStats *stats) printStats() {
 	calcLongestUptime(tcpStats,
 		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
 	calcLongestDowntime(tcpStats,
 		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+
+	tcpStats.rttResults = findMinAvgMaxRttTime(tcpStats.rtt)
 
 	currentPrinter.printStatistics(*tcpStats)
 }
