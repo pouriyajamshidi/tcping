@@ -133,15 +133,12 @@ func (p *planePrinter) printStatistics(s stats) {
 	colorYellow("--------------------------------------\n")
 	colorYellow("TCPing started at: %v\n", s.startTime.Format(timeFormat))
 
-	totalDuration := s.totalDowntime + s.totalUptime
-
 	/* If the program was not terminated, no need to show the end time */
 	if !s.endTime.IsZero() {
-		colorYellow("TCPing ended at:   %v\n",
-			s.startTime.Add(totalDuration).Format(timeFormat))
+		colorYellow("TCPing ended at:   %v\n", s.endTime.Format(timeFormat))
 	}
 
-	durationTime := time.Time{}.Add(totalDuration)
+	durationTime := time.Time{}.Add(s.totalDowntime + s.totalUptime)
 	colorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
@@ -437,10 +434,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 		data.LatencyMax = fmt.Sprintf("%.3f", s.rttResults.max)
 	}
 
-	if s.endTime.IsZero() {
-		t := time.Now()
-		data.EndTimestamp = &t
-	} else {
+	if !s.endTime.IsZero() {
 		data.EndTimestamp = &s.endTime
 	}
 
