@@ -141,7 +141,7 @@ func signalHandler(tcpStats *stats) {
 		<-sigChan
 		totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
 		tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
-		currentPrinter.printStatistics(*tcpStats)
+		tcpStats.printStats()
 		os.Exit(0)
 	}()
 }
@@ -524,11 +524,10 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 
 func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	if tcpStats.wasDown {
-		currentPrinter.printTotalDownTime(
-			time.Duration(tcpStats.ongoingUnsuccessfulProbes) * time.Second)
 		tcpStats.startOfUptime = now
-		calcLongestDowntime(tcpStats,
-			time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+		downtime := time.Since(tcpStats.startOfDowntime).Truncate(time.Second)
+		calcLongestDowntime(tcpStats, downtime)
+		currentPrinter.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
 		tcpStats.wasDown = false
 		tcpStats.ongoingUnsuccessfulProbes = 0
@@ -552,6 +551,15 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 		tcpStats.ongoingSuccessfulProbes,
 		rtt,
 	)
+}
+
+func (tcpStats *stats) printStats() {
+	calcLongestUptime(tcpStats,
+		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
+	calcLongestDowntime(tcpStats,
+		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+
+	currentPrinter.printStatistics(*tcpStats)
 }
 
 /* Ping host, TCP style */
@@ -607,7 +615,7 @@ func main() {
 		select {
 		case stdin := <-stdinChan:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
-				currentPrinter.printStatistics(*tcpStats)
+				tcpStats.printStats()
 			}
 		default:
 		}
@@ -618,7 +626,7 @@ func main() {
 
 		probeCount++
 		if probeCount == tcpStats.probesBeforeQuit {
-			currentPrinter.printStatistics(*tcpStats)
+			tcpStats.printStats()
 			return
 		}
 	}

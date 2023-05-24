@@ -84,15 +84,6 @@ func (p *planePrinter) printStatistics(s stats) {
 	colorYellow("total downtime: ")
 	colorRed("%s\n", durationToString(s.totalDowntime))
 
-	/* calculate the last longest time */
-	if !s.wasDown {
-		calcLongestUptime(&s,
-			time.Duration(s.ongoingSuccessfulProbes)*time.Second)
-	} else {
-		calcLongestDowntime(&s,
-			time.Duration(s.ongoingUnsuccessfulProbes)*time.Second)
-	}
-
 	/* longest uptime stats */
 	if s.longestUptime.duration != 0 {
 		uptime := durationToString(s.longestUptime.duration)
@@ -423,15 +414,6 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	}
 	if !s.lastUnsuccessfulProbe.IsZero() {
 		data.LastUnsuccessfulProbe = &s.lastUnsuccessfulProbe
-	}
-
-	/* calculate the last longest time */
-	if !s.wasDown {
-		calcLongestUptime(&s,
-			time.Duration(s.ongoingSuccessfulProbes)*time.Second)
-	} else {
-		calcLongestDowntime(&s,
-			time.Duration(s.ongoingUnsuccessfulProbes)*time.Second)
 	}
 
 	if s.longestUptime.duration != 0 {
