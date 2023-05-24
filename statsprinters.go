@@ -141,8 +141,8 @@ func (p *planePrinter) printStatistics(s stats) {
 			s.startTime.Add(totalDuration).Format(timeFormat))
 	}
 
-	duration := time.Time{}.Add(totalDuration)
-	colorYellow("duration (HH:MM:SS): %v\n\n", duration.Format(hourFormat))
+	durationTime := time.Time{}.Add(totalDuration)
+	colorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
 func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
@@ -284,7 +284,7 @@ type JSONData struct {
 	//
 	// It's a string on purpose, as we'd like to have exactly
 	// 3 decimal places without doing extra math.
-	TotalDuration string `json:"duration,omitempty"`
+	TotalDuration string `json:"total_duration,omitempty"`
 	// StartTimestamp is used as a start time of TotalDuration for stats messages.
 	StartTimestamp *time.Time `json:"start_timestamp,omitempty"`
 	// EndTimestamp is used as an end of TotalDuration for stats messages.
@@ -444,8 +444,8 @@ func (p *jsonPrinter) printStatistics(s stats) {
 		data.EndTimestamp = &s.endTime
 	}
 
-	data.TotalDuration = fmt.Sprintf("%.3f",
-		data.EndTimestamp.Sub(*data.StartTimestamp).Seconds())
+	totalDuration := s.totalDowntime + s.totalUptime
+	data.TotalDuration = fmt.Sprintf("%.3f", totalDuration.Seconds())
 
 	p.print(data)
 }
