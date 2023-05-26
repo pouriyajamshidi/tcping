@@ -232,12 +232,6 @@ const (
 // other fields will be omitted in the output.
 type JSONData struct {
 	// Type is a mandatory field that specifies type of a message/event.
-	// Possible types are:
-	//	- start
-	// 	- probe
-	// 	- retry
-	// 	- stats
-	//	- retry-success
 	Type JSONEventType `json:"type"`
 	// Message contains a human-readable message.
 	Message string `json:"message"`
