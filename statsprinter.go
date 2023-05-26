@@ -300,10 +300,14 @@ type JSONData struct {
 	LongestDowntimeEnd   *time.Time `json:"longest_downtime_end,omitempty"`
 	LongestDowntimeStart *time.Time `json:"longest_downtime_start,omitempty"`
 
-	TotalPacketLoss         float32 `json:"total_packet_loss,omitempty"`
-	TotalPackets            uint    `json:"total_packets,omitempty"`
-	TotalSuccessfulProbes   uint    `json:"total_successful_probes,omitempty"`
-	TotalUnsuccessfulProbes uint    `json:"total_unsuccessful_probes,omitempty"`
+	// TotalPacketLoss in seconds.
+	//
+	// It's a string on purpose, as we'd like to have exactly
+	// 3 decimal places without doing extra math.
+	TotalPacketLoss         string `json:"total_packet_loss,omitempty"`
+	TotalPackets            uint   `json:"total_packets,omitempty"`
+	TotalSuccessfulProbes   uint   `json:"total_successful_probes,omitempty"`
+	TotalUnsuccessfulProbes uint   `json:"total_unsuccessful_probes,omitempty"`
 	// TotalUptime in seconds.
 	TotalUptime float64 `json:"total_uptime,omitempty"`
 	// TotalDowntime in seconds.
@@ -397,7 +401,8 @@ func (p *jsonPrinter) printStatistics(s stats) {
 		TotalUptime:             s.totalUptime.Seconds(),
 	}
 
-	data.TotalPacketLoss = (float32(data.TotalUnsuccessfulProbes) / float32(data.TotalPackets)) * 100
+	data.TotalPacketLoss = fmt.Sprintf("%.3f",
+		(float32(data.TotalUnsuccessfulProbes)/float32(data.TotalPackets))*100)
 
 	if !s.lastSuccessfulProbe.IsZero() {
 		data.LastSuccessfulProbe = &s.lastSuccessfulProbe
