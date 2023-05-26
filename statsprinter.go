@@ -217,13 +217,13 @@ const (
 	retryEvent JSONEventType = "retry"
 	// retrySuccessEvent is an event type for [printTotalDowntime] method.
 	retrySuccessEvent JSONEventType = "retry-success"
-	// statistics is a event type for [printStatistics] method.
+	// statisticsEvent is a event type for [printStatistics] method.
 	statisticsEvent JSONEventType = "statistics"
-	// statistics is a event type for [printStatistics] method.
+	// infoEvent is a event type for [printInfo] method.
 	infoEvent JSONEventType = "info"
-	// statistics is a event type for [printStatistics] method.
+	// versionEvent is a event type for [printVersion] method.
 	versionEvent JSONEventType = "version"
-	// statistics is a event type for [printStatistics] method.
+	// errorEvent is a event type for [printError] method.
 	errorEvent JSONEventType = "error"
 )
 
