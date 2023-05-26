@@ -332,13 +332,13 @@ func (p *jsonPrinter) printProbeSuccess(
 		f    = false
 		t    = true
 		data = JSONData{
-			Type:                    probeEvent,
-			Hostname:                hostname,
-			Addr:                    ip,
-			Port:                    port,
-			IsIP:                    &t,
-			Success:                 &t,
-			TotalUnsuccessfulProbes: streak,
+			Type:                  probeEvent,
+			Hostname:              hostname,
+			Addr:                  ip,
+			Port:                  port,
+			IsIP:                  &t,
+			Success:               &t,
+			TotalSuccessfulProbes: streak,
 		}
 	)
 
