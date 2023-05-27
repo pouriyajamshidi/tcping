@@ -125,8 +125,8 @@ type replyMsg struct {
 }
 
 type hostnameChange struct {
-	addr netip.Addr
-	when time.Time
+	Addr netip.Addr `json:"addr,omitempty"`
+	When time.Time  `json:"when,omitempty"`
 }
 
 type (
@@ -426,8 +426,8 @@ func retryResolve(tcpStats *stats) {
 		tcpStats.retriedHostnameResolves += 1
 
 		tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
-			addr: tcpStats.ip,
-			when: time.Now(),
+			Addr: tcpStats.ip,
+			When: time.Now(),
 		})
 	}
 }
