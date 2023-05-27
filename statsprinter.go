@@ -113,6 +113,17 @@ func (p *planePrinter) printStatistics(s stats) {
 		colorYellow("retried to resolve hostname ")
 		colorRed("%d ", s.retriedHostnameResolves)
 		colorYellow("times\n")
+
+		if len(s.hostnameChanges) >= 2 {
+			for i := 0; i < len(s.hostnameChanges)-1; i++ {
+				colorYellow("IP address changed from ")
+				colorRed(s.hostnameChanges[i].addr.String())
+				colorYellow(" to ")
+				colorGreen(s.hostnameChanges[i+1].addr.String())
+				colorYellow(" at ")
+				colorLightBlue("%v\n", s.hostnameChanges[i+1].when.Format(timeFormat))
+			}
+		}
 	}
 
 	if s.rttResults.hasResults {
