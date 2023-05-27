@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"fmt"
-	"math"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -19,18 +17,69 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
+// printer is a set of methods for printers to implement.
+//
+// Printers should NOT modify any existing data nor do any calculations.
+// They should only perform visual operations on given data.
+type printer interface {
+	// printStart should print the first message, after the program starts.
+	// This message is printed only once, at the very beginning.
+	printStart(hostname string, port uint16)
+
+	// printProbeSuccess should print a message after each successful probe.
+	// hostname could be empty, meaning it's pinging an address.
+	// streak is the number of successful consecutive probes.
+	printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32)
+
+	// printProbeFail should print a message after each failed probe.
+	// hostname could be empty, meaning it's pinging an address.
+	// streak is the number of successful consecutive probes.
+	printProbeFail(hostname, ip string, port uint16, streak uint)
+
+	// printRetryingToResolve should print a message with the hostname
+	// it is trying to resolve an ip for.
+	//
+	// This is only being printed when the -r flag is applied.
+	printRetryingToResolve(hostname string)
+
+	// printTotalDownTime should print a downtime duration.
+	//
+	// This is being called when host was unavailable for some time
+	// but the latest probe was successful (became available).
+	printTotalDownTime(downtime time.Duration)
+
+	// printStatistics should print a message with
+	// helpful statistics information.
+	//
+	// This is being called on exit and when user hits "Enter".
+	printStatistics(s stats)
+
+	// printVersion should print the current version.
+	printVersion()
+
+	// printInfo should a message, which is not directly related
+	// to the pinging and serves as a helpful information.
+	//
+	// Example of such: new version with -u flag.
+	printInfo(format string, args ...any)
+
+	// printError should print an error message.
+	// Printer should also apply \n to the given string, if needed.
+	printError(format string, args ...any)
+}
+
 type stats struct {
-	endTime               time.Time
-	startOfUptime         time.Time
-	startOfDowntime       time.Time
-	lastSuccessfulProbe   time.Time
-	lastUnsuccessfulProbe time.Time
-	ip                    ipAddress
-	startTime             time.Time
-	statsPrinter
+	endTime                   time.Time
+	startOfUptime             time.Time
+	startOfDowntime           time.Time
+	lastSuccessfulProbe       time.Time
+	lastUnsuccessfulProbe     time.Time
+	ip                        ipAddress
+	startTime                 time.Time
 	retryHostnameResolveAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	hostname                  string
 	rtt                       []float32
+	rttResults                rttResults
 	ongoingUnsuccessfulProbes uint
 	ongoingSuccessfulProbes   uint
 	longestDowntime           longestTime
@@ -50,6 +99,10 @@ type stats struct {
 
 	// ticker is used to handle time between probes.
 	ticker *time.Ticker
+
+	// printer holds the choosen printer implementation for
+	// outputting information and data.
+	printer printer
 }
 
 type longestTime struct {
@@ -70,16 +123,15 @@ type replyMsg struct {
 	rtt float32
 }
 
-type ipAddress = netip.Addr
-type cliArgs = []string
-type calculatedTimeString = string
+type (
+	ipAddress = netip.Addr
+	cliArgs   = []string
+)
 
 const (
-	version    = "1.22.1"
-	owner      = "pouriyajamshidi"
-	repo       = "tcping"
-	timeFormat = "2006-01-02 15:04:05"
-	hourFormat = "15:04:05"
+	version = "1.22.1"
+	owner   = "pouriyajamshidi"
+	repo    = "tcping"
 )
 
 /* Catch SIGINT and print tcping stats */
@@ -91,7 +143,7 @@ func signalHandler(tcpStats *stats) {
 		<-sigChan
 		totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
 		tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
-		tcpStats.printStatistics()
+		tcpStats.printStats()
 		os.Exit(0)
 	}()
 }
@@ -138,6 +190,19 @@ func processUserInput(tcpStats *stats) {
 	args := flag.Args()
 	nFlag := flag.NFlag()
 
+	// we need to set printers first, because they're used for
+	// errors reporting and other output.
+	if *outputJson {
+		tcpStats.printer = newJsonPrinter(*prettyJson)
+	} else {
+		tcpStats.printer = &planePrinter{}
+	}
+
+	if *prettyJson && !*outputJson {
+		tcpStats.printer.printError("--pretty has no effect without the -j flag.")
+		usage()
+	}
+
 	if *retryHostnameResolveAfter > 0 {
 		tcpStats.retryHostnameResolveAfter = *retryHostnameResolveAfter
 	}
@@ -145,19 +210,19 @@ func processUserInput(tcpStats *stats) {
 	/* -u works on its own. */
 	if *shouldCheckUpdates {
 		if len(args) == 0 && nFlag == 1 {
-			checkLatestVersion()
+			checkLatestVersion(tcpStats.printer)
 		} else {
 			usage()
 		}
 	}
 
 	if *showVersion {
-		colorGreen("TCPING version %s\n", version)
+		tcpStats.printer.printVersion()
 		os.Exit(0)
 	}
 
 	if *useIPv4 && *useIPv6 {
-		colorRed("Only one IP version can be specified\n")
+		tcpStats.printer.printError("Only one IP version can be specified")
 		usage()
 	}
 
@@ -169,15 +234,6 @@ func processUserInput(tcpStats *stats) {
 		tcpStats.useIPv6 = true
 	}
 
-	if *prettyJson {
-		if !*outputJson {
-			colorRed("--pretty has no effect without the -j flag.\n")
-			usage()
-		}
-
-		jsonEncoder.SetIndent("", "\t")
-	}
-
 	/* host and port must be specified　*/
 	if len(args) != 2 {
 		usage()
@@ -185,14 +241,13 @@ func processUserInput(tcpStats *stats) {
 
 	/* the non-flag command-line arguments */
 	port, err := strconv.ParseUint(args[1], 10, 16)
-
 	if err != nil {
-		colorRed("Invalid port number: %s\n", args[1])
+		tcpStats.printer.printError("Invalid port number: %s", args[1])
 		os.Exit(1)
 	}
 
 	if port < 1 || port > 65535 {
-		colorRed("Port should be in 1..65535 range\n")
+		tcpStats.printer.printError("Port should be in 1..65535 range")
 		os.Exit(1)
 	}
 
@@ -208,13 +263,6 @@ func processUserInput(tcpStats *stats) {
 
 	if tcpStats.retryHostnameResolveAfter > 0 && !tcpStats.isIP {
 		tcpStats.shouldRetryResolve = true
-	}
-
-	/* output format determination. */
-	if *outputJson {
-		tcpStats.statsPrinter = &statsJsonPrinter{stats: tcpStats}
-	} else {
-		tcpStats.statsPrinter = &statsPlanePrinter{stats: tcpStats}
 	}
 }
 
@@ -262,13 +310,13 @@ func permuteArgs(args cliArgs) {
 }
 
 /* Check for updates and print messages if there is a newer version */
-func checkLatestVersion() {
+func checkLatestVersion(p printer) {
 	c := github.NewClient(nil)
 
 	/* unauthenticated requests from the same IP are limited to 60 per hour. */
 	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
 	if err != nil {
-		colorRed("Failed to check for updates %s\n", err.Error())
+		p.printError("Failed to check for updates %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -277,16 +325,18 @@ func checkLatestVersion() {
 	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
 
 	if len(latestVersion) == 0 {
-		colorRed("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
+		p.printError("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
 		os.Exit(1)
 	}
 
 	if latestVersion[1] != version {
-		colorLightBlue("Found newer version %s\n", latestVersion[1])
-		colorLightBlue("Please update TCPING from the URL below:\n")
-		colorLightBlue("https://github.com/%s/%s/releases/tag/%s\n", owner, repo, latestTagName)
+		p.printInfo("Found newer version %s", latestVersion[1])
+		p.printInfo("Please update TCPING from the URL below:")
+		p.printInfo("https://github.com/%s/%s/releases/tag/%s",
+			owner, repo, latestTagName)
 	} else {
-		colorLightBlue("Newer version not found. %s is the latest version.\n", version)
+		p.printInfo("Newer version not found. %s is the latest version.",
+			version)
 	}
 	os.Exit(0)
 }
@@ -304,7 +354,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		/* Prevent exit if application has been running for a while */
 		return tcpStats.ip
 	} else if err != nil {
-		colorRed("Failed to resolve %s\n", tcpStats.hostname)
+		tcpStats.printer.printError("Failed to resolve %s", tcpStats.hostname)
 		os.Exit(1)
 	}
 
@@ -319,7 +369,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			}
 		}
 		if len(ipList) == 0 {
-			colorRed("Failed to find IPv4 address for %s\n", tcpStats.hostname)
+			tcpStats.printer.printError("Failed to find IPv4 address for %s", tcpStats.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
@@ -336,7 +386,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 			}
 		}
 		if len(ipList) == 0 {
-			colorRed("Failed to find IPv6 address for %s\n", tcpStats.hostname)
+			tcpStats.printer.printError("Failed to find IPv6 address for %s", tcpStats.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
@@ -361,7 +411,7 @@ func resolveHostname(tcpStats *stats) ipAddress {
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
 	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.retryHostnameResolveAfter {
-		tcpStats.printRetryingToResolve()
+		tcpStats.printer.printRetryingToResolve(tcpStats.hostname)
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulProbes = 0
 		tcpStats.retriedHostnameResolves += 1
@@ -408,49 +458,9 @@ func findMinAvgMaxRttTime(timeArr []float32) rttResults {
 	return rttResults
 }
 
-// calcTime creates a human-readable string for a given duration
-func calcTime(duration time.Duration) calculatedTimeString {
-	hours := math.Floor(duration.Hours())
-	if hours > 0 {
-		duration -= time.Duration(hours * float64(time.Hour))
-	}
-
-	minutes := math.Floor(duration.Minutes())
-	if minutes > 0 {
-		duration -= time.Duration(minutes * float64(time.Minute))
-	}
-
-	seconds := duration.Seconds()
-
-	switch {
-	// Hours
-	case hours >= 2:
-		return fmt.Sprintf("%.0f hours %.0f minutes %.0f seconds", hours, minutes, seconds)
-	case hours == 1 && minutes == 0 && seconds == 0:
-		return fmt.Sprintf("%.0f hour", hours)
-	case hours == 1:
-		return fmt.Sprintf("%.0f hour %.0f minutes %.0f seconds", hours, minutes, seconds)
-
-	// Minutes
-	case minutes >= 2:
-		return fmt.Sprintf("%.0f minutes %.0f seconds", minutes, seconds)
-	case minutes == 1 && seconds == 0:
-		return fmt.Sprintf("%.0f minute", minutes)
-	case minutes == 1:
-		return fmt.Sprintf("%.0f minute %.0f seconds", minutes, seconds)
-
-	// Seconds
-	case seconds == 1:
-		return fmt.Sprintf("%.0f second", seconds)
-	default:
-		return fmt.Sprintf("%.0f seconds", seconds)
-
-	}
-}
-
 // calcLongestUptime calculates the longest uptime and sets it to tcpStats.
 func calcLongestUptime(tcpStats *stats, duration time.Duration) {
-	if tcpStats.startOfUptime.IsZero() {
+	if tcpStats.startOfUptime.IsZero() || duration == 0 {
 		return
 	}
 
@@ -469,7 +479,7 @@ func calcLongestUptime(tcpStats *stats, duration time.Duration) {
 
 // calcLongestDowntime calculates the longest downtime and sets it to tcpStats.
 func calcLongestDowntime(tcpStats *stats, duration time.Duration) {
-	if tcpStats.startOfDowntime.IsZero() {
+	if tcpStats.startOfDowntime.IsZero() || duration == 0 {
 		return
 	}
 
@@ -507,15 +517,20 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	tcpStats.totalUnsuccessfulProbes += 1
 	tcpStats.ongoingUnsuccessfulProbes += 1
 
-	tcpStats.statsPrinter.printReply(replyMsg{msg: "No reply", rtt: 0})
+	tcpStats.printer.printProbeFail(
+		tcpStats.hostname,
+		tcpStats.ip.String(),
+		tcpStats.port,
+		tcpStats.ongoingUnsuccessfulProbes,
+	)
 }
 
 func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	if tcpStats.wasDown {
-		tcpStats.statsPrinter.printTotalDownTime(now)
 		tcpStats.startOfUptime = now
-		calcLongestDowntime(tcpStats,
-			time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+		downtime := time.Since(tcpStats.startOfDowntime).Truncate(time.Second)
+		calcLongestDowntime(tcpStats, downtime)
+		tcpStats.printer.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
 		tcpStats.wasDown = false
 		tcpStats.ongoingUnsuccessfulProbes = 0
@@ -532,7 +547,29 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	tcpStats.ongoingSuccessfulProbes += 1
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
-	tcpStats.statsPrinter.printReply(replyMsg{msg: "Reply", rtt: rtt})
+	tcpStats.printer.printProbeSuccess(
+		tcpStats.hostname,
+		tcpStats.ip.String(),
+		tcpStats.port,
+		tcpStats.ongoingSuccessfulProbes,
+		rtt,
+	)
+}
+
+// printStats is a helper method for printStatistics
+// for the current printer.
+//
+// This should be used instead, as it makes
+// all the nescessary calculations beforehand.
+func (tcpStats *stats) printStats() {
+	calcLongestUptime(tcpStats,
+		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
+	calcLongestDowntime(tcpStats,
+		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+
+	tcpStats.rttResults = findMinAvgMaxRttTime(tcpStats.rtt)
+
+	tcpStats.printer.printStatistics(*tcpStats)
 }
 
 /* Ping host, TCP style */
@@ -571,7 +608,7 @@ func main() {
 	defer tcpStats.ticker.Stop()
 	processUserInput(tcpStats)
 	signalHandler(tcpStats)
-	tcpStats.printStart()
+	tcpStats.printer.printStart(tcpStats.hostname, tcpStats.port)
 
 	stdinChan := make(chan string)
 	go monitorStdin(stdinChan)
@@ -588,7 +625,7 @@ func main() {
 		select {
 		case stdin := <-stdinChan:
 			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
-				tcpStats.printStatistics()
+				tcpStats.printStats()
 			}
 		default:
 		}
@@ -599,7 +636,7 @@ func main() {
 
 		probeCount++
 		if probeCount == tcpStats.probesBeforeQuit {
-			tcpStats.printStatistics()
+			tcpStats.printStats()
 			return
 		}
 	}
