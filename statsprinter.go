@@ -401,8 +401,8 @@ func (p *jsonPrinter) printStatistics(s stats) {
 		TotalUptime:             s.totalUptime.Seconds(),
 	}
 
-	data.TotalPacketLoss = fmt.Sprintf("%.3f",
-		(float32(data.TotalUnsuccessfulProbes)/float32(data.TotalPackets))*100)
+	loss := (float32(data.TotalUnsuccessfulProbes) / float32(data.TotalPackets)) * 100
+	data.TotalPacketLoss = fmt.Sprintf("%.2f", loss)
 
 	if !s.lastSuccessfulProbe.IsZero() {
 		data.LastSuccessfulProbe = &s.lastSuccessfulProbe
@@ -412,13 +412,13 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	}
 
 	if s.longestUptime.duration != 0 {
-		data.LongestUptime = fmt.Sprintf("%.3f", s.longestUptime.duration.Seconds())
+		data.LongestUptime = fmt.Sprintf("%.0f", s.longestUptime.duration.Seconds())
 		data.LongestUptimeStart = &s.longestUptime.start
 		data.LongestUptimeEnd = &s.longestUptime.end
 	}
 
 	if s.longestDowntime.duration != 0 {
-		data.LongestDowntime = fmt.Sprintf("%.3f", s.longestDowntime.duration.Seconds())
+		data.LongestDowntime = fmt.Sprintf("%.0f", s.longestDowntime.duration.Seconds())
 		data.LongestDowntimeStart = &s.longestDowntime.start
 		data.LongestDowntimeEnd = &s.longestDowntime.end
 	}
@@ -438,7 +438,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	}
 
 	totalDuration := s.totalDowntime + s.totalUptime
-	data.TotalDuration = fmt.Sprintf("%.3f", totalDuration.Seconds())
+	data.TotalDuration = fmt.Sprintf("%.0f", totalDuration.Seconds())
 
 	p.print(data)
 }
