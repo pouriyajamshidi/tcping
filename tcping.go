@@ -264,7 +264,9 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.probesBeforeQuit = *probesBeforeQuit
 
 	// this serves as a default starting value for tracking changes.
-	tcpStats.hostnameChanges = []hostnameChange{{tcpStats.ip, time.Now()}}
+	tcpStats.hostnameChanges = []hostnameChange{
+		{tcpStats.ip, time.Now()},
+	}
 
 	if tcpStats.hostname == tcpStats.ip.String() {
 		tcpStats.isIP = true
@@ -424,11 +426,6 @@ func retryResolve(tcpStats *stats) {
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulProbes = 0
 		tcpStats.retriedHostnameResolves += 1
-
-		tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
-			Addr: tcpStats.ip,
-			When: time.Now(),
-		})
 	}
 }
 
@@ -549,6 +546,14 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 		tcpStats.wasDown = false
 		tcpStats.ongoingUnsuccessfulProbes = 0
 		tcpStats.ongoingSuccessfulProbes = 0
+
+		lastAddr := tcpStats.hostnameChanges[len(tcpStats.hostnameChanges)-1].Addr
+		if lastAddr != tcpStats.ip {
+			tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
+				Addr: tcpStats.ip,
+				When: time.Now(),
+			})
+		}
 	}
 
 	if tcpStats.startOfUptime.IsZero() {
