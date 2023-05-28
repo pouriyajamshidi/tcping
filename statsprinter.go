@@ -115,8 +115,9 @@ func (p *planePrinter) printStatistics(s stats) {
 		colorYellow("times\n")
 
 		if len(s.hostnameChanges) >= 2 {
+			colorYellow("IP address changes:\n")
 			for i := 0; i < len(s.hostnameChanges)-1; i++ {
-				colorYellow("IP address changed from ")
+				colorYellow("  from ")
 				colorRed(s.hostnameChanges[i].Addr.String())
 				colorYellow(" to ")
 				colorGreen(s.hostnameChanges[i+1].Addr.String())
