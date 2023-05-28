@@ -404,6 +404,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	data := JSONData{
 		Type:     statisticsEvent,
 		Message:  fmt.Sprintf("stats for %s", s.hostname),
+		Addr:     s.ip.String(),
 		Hostname: s.hostname,
 
 		StartTimestamp:          &s.startTime,
