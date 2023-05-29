@@ -421,28 +421,24 @@ func resolveHostname(tcpStats *stats) ipAddress {
 
 /* Retry resolve hostname after certain number of failures */
 func retryResolve(tcpStats *stats) {
-	// If we have a limit set (-r) and not reached it yet, just continue pinging.
-	if tcpStats.retryHostnameResolveAfter != 0 &&
-		tcpStats.ongoingUnsuccessfulProbes < tcpStats.retryHostnameResolveAfter {
-		return
-	}
+	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.retryHostnameResolveAfter {
+		tcpStats.printer.printRetryingToResolve(tcpStats.hostname)
+		tcpStats.ip = resolveHostname(tcpStats)
+		tcpStats.ongoingUnsuccessfulProbes = 0
+		tcpStats.retriedHostnameResolves += 1
 
-	tcpStats.printer.printRetryingToResolve(tcpStats.hostname)
-	tcpStats.ip = resolveHostname(tcpStats)
-	tcpStats.ongoingUnsuccessfulProbes = 0
-	tcpStats.retriedHostnameResolves += 1
+		// At this point hostnameChanges should have len > 0, but just in case
+		if len(tcpStats.hostnameChanges) == 0 {
+			return
+		}
 
-	// At this point hostnameChanges should have len > 0, but just in case
-	if len(tcpStats.hostnameChanges) == 0 {
-		return
-	}
-
-	lastAddr := tcpStats.hostnameChanges[len(tcpStats.hostnameChanges)-1].Addr
-	if lastAddr != tcpStats.ip {
-		tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
-			Addr: tcpStats.ip,
-			When: time.Now(),
-		})
+		lastAddr := tcpStats.hostnameChanges[len(tcpStats.hostnameChanges)-1].Addr
+		if lastAddr != tcpStats.ip {
+			tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
+				Addr: tcpStats.ip,
+				When: time.Now(),
+			})
+		}
 	}
 }
 
