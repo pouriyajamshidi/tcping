@@ -113,6 +113,18 @@ func (p *planePrinter) printStatistics(s stats) {
 		colorYellow("retried to resolve hostname ")
 		colorRed("%d ", s.retriedHostnameResolves)
 		colorYellow("times\n")
+
+		if len(s.hostnameChanges) >= 2 {
+			colorYellow("IP address changes:\n")
+			for i := 0; i < len(s.hostnameChanges)-1; i++ {
+				colorYellow("  from ")
+				colorRed(s.hostnameChanges[i].Addr.String())
+				colorYellow(" to ")
+				colorGreen(s.hostnameChanges[i+1].Addr.String())
+				colorYellow(" at ")
+				colorLightBlue("%v\n", s.hostnameChanges[i+1].When.Format(timeFormat))
+			}
+		}
 	}
 
 	if s.rttResults.hasResults {
@@ -240,11 +252,12 @@ type JSONData struct {
 
 	// Optional fields below
 
-	Addr                 string `json:"addr,omitempty"`
-	Hostname             string `json:"hostname,omitempty"`
-	HostnameResolveTries uint   `json:"hostname_resolve_tries,omitempty"`
-	IsIP                 *bool  `json:"is_ip,omitempty"`
-	Port                 uint16 `json:"port,omitempty"`
+	Addr                 string           `json:"addr,omitempty"`
+	Hostname             string           `json:"hostname,omitempty"`
+	HostnameResolveTries uint             `json:"hostname_resolve_tries,omitempty"`
+	HostnameChanges      []hostnameChange `json:"hostname_changes,omitempty"`
+	IsIP                 *bool            `json:"is_ip,omitempty"`
+	Port                 uint16           `json:"port,omitempty"`
 
 	// Success is a special field from probe messages, containing information
 	// whether request was successful or not.
@@ -391,6 +404,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	data := JSONData{
 		Type:     statisticsEvent,
 		Message:  fmt.Sprintf("stats for %s", s.hostname),
+		Addr:     s.ip.String(),
 		Hostname: s.hostname,
 
 		StartTimestamp:          &s.startTime,
@@ -399,6 +413,10 @@ func (p *jsonPrinter) printStatistics(s stats) {
 		TotalSuccessfulProbes:   s.totalSuccessfulProbes,
 		TotalUnsuccessfulProbes: s.totalUnsuccessfulProbes,
 		TotalUptime:             s.totalUptime.Seconds(),
+	}
+
+	if len(s.hostnameChanges) > 1 {
+		data.HostnameChanges = s.hostnameChanges
 	}
 
 	loss := (float32(data.TotalUnsuccessfulProbes) / float32(data.TotalPackets)) * 100

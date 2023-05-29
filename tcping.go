@@ -78,6 +78,7 @@ type stats struct {
 	startTime                 time.Time
 	retryHostnameResolveAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	hostname                  string
+	hostnameChanges           []hostnameChange
 	rtt                       []float32
 	rttResults                rttResults
 	ongoingUnsuccessfulProbes uint
@@ -121,6 +122,11 @@ type rttResults struct {
 type replyMsg struct {
 	msg string
 	rtt float32
+}
+
+type hostnameChange struct {
+	Addr netip.Addr `json:"addr,omitempty"`
+	When time.Time  `json:"when,omitempty"`
 }
 
 type (
@@ -256,6 +262,11 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.ip = resolveHostname(tcpStats)
 	tcpStats.startTime = time.Now()
 	tcpStats.probesBeforeQuit = *probesBeforeQuit
+
+	// this serves as a default starting value for tracking changes.
+	tcpStats.hostnameChanges = []hostnameChange{
+		{tcpStats.ip, time.Now()},
+	}
 
 	if tcpStats.hostname == tcpStats.ip.String() {
 		tcpStats.isIP = true
@@ -415,6 +426,19 @@ func retryResolve(tcpStats *stats) {
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulProbes = 0
 		tcpStats.retriedHostnameResolves += 1
+
+		// At this point hostnameChanges should have len > 0, but just in case
+		if len(tcpStats.hostnameChanges) == 0 {
+			return
+		}
+
+		lastAddr := tcpStats.hostnameChanges[len(tcpStats.hostnameChanges)-1].Addr
+		if lastAddr != tcpStats.ip {
+			tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
+				Addr: tcpStats.ip,
+				When: time.Now(),
+			})
+		}
 	}
 }
 
