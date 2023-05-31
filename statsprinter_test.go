@@ -5,19 +5,19 @@ import (
 	"time"
 )
 
-// fakePrinter is a fake test implementation of a printer
-// that does nothing.
-type fakePrinter struct{}
+// dummyPrinter is a fake test implementation
+// of a printer that does nothing.
+type dummyPrinter struct{}
 
-func (fp *fakePrinter) printStart(_ string, _ uint16)                              {}
-func (fp *fakePrinter) printProbeFail(_, _ string, _ uint16, _ uint)               {}
-func (fp *fakePrinter) printRetryingToResolve(_ string)                            {}
-func (fp *fakePrinter) printTotalDownTime(_ time.Duration)                         {}
-func (fp *fakePrinter) printStatistics(_ stats)                                    {}
-func (fp *fakePrinter) printVersion()                                              {}
-func (fp *fakePrinter) printInfo(_ string, _ ...interface{})                       {}
-func (fp *fakePrinter) printError(_ string, _ ...interface{})                      {}
-func (fp *fakePrinter) printProbeSuccess(_, _ string, _ uint16, _ uint, _ float32) {}
+func (fp *dummyPrinter) printStart(_ string, _ uint16)                              {}
+func (fp *dummyPrinter) printProbeFail(_, _ string, _ uint16, _ uint)               {}
+func (fp *dummyPrinter) printRetryingToResolve(_ string)                            {}
+func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                         {}
+func (fp *dummyPrinter) printStatistics(_ stats)                                    {}
+func (fp *dummyPrinter) printVersion()                                              {}
+func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                       {}
+func (fp *dummyPrinter) printError(_ string, _ ...interface{})                      {}
+func (fp *dummyPrinter) printProbeSuccess(_, _ string, _ uint16, _ uint, _ float32) {}
 
 func TestDurationToString(t *testing.T) {
 	t.Parallel()

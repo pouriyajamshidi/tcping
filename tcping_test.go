@@ -15,7 +15,7 @@ import (
 func createTestStats(t *testing.T) *stats {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := stats{
-		printer: &fakePrinter{},
+		printer: &dummyPrinter{},
 		ip:      addr,
 		port:    12345,
 		ticker:  time.NewTicker(time.Second),
