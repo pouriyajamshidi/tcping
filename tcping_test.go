@@ -1,11 +1,99 @@
 package main
 
 import (
+	"net"
+	"net/netip"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+// createTestStats should be used to create new stats structs.
+// it uses "127.0.0.1:12345" as default values, because
+// [testServerListen] use the same values.
+// It'll call t.Errorf if netip.ParseAddr has failed.
+func createTestStats(t *testing.T) *stats {
+	addr, err := netip.ParseAddr("127.0.0.1")
+	s := stats{
+		printer: &dummyPrinter{},
+		ip:      addr,
+		port:    12345,
+		ticker:  time.NewTicker(time.Second),
+	}
+	if err != nil {
+		t.Errorf("ip parse: %v", err)
+	}
+
+	return &s
+}
+
+// testServerListen creates a new listener
+// on port 12345 and automatically starts it.
+//
+// Use t.Cleanup with srv.Close() to close it after
+// the test, so that other tests are not affected.
+//
+// It could fail if net.Listen or Accept has failed.
+func testServerListen(t *testing.T) net.Listener {
+	srv, err := net.Listen("tcp", ":12345")
+	if err != nil {
+		t.Errorf("test server: %v", err)
+	}
+
+	go func() {
+		for {
+			c, err := srv.Accept()
+			if err != nil {
+				return
+			}
+
+			c.Close()
+		}
+	}()
+
+	return srv
+}
+
+func TestProbeSuccess(t *testing.T) {
+	stats := createTestStats(t)
+	stats.ticker = time.NewTicker(time.Nanosecond)
+	srv := testServerListen(t)
+	t.Cleanup(func() {
+		if err := srv.Close(); err != nil {
+			t.Errorf("srv close: %v", err)
+		}
+	})
+
+	expectedSuccessfull := 100
+
+	for i := 0; i < expectedSuccessfull; i++ {
+		tcping(stats)
+	}
+
+	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessfull))
+	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessfull))
+
+	// TODO: change when custom ping intervals will be introduced
+	assert.Equal(t, stats.totalUptime, 100*time.Second)
+}
+
+func TestProbeFail(t *testing.T) {
+	stats := createTestStats(t)
+	stats.ticker = time.NewTicker(time.Nanosecond)
+
+	expectedFailed := 100
+
+	for i := 0; i < expectedFailed; i++ {
+		tcping(stats)
+	}
+
+	assert.Equal(t, stats.totalUnsuccessfulProbes, uint(expectedFailed))
+	assert.Equal(t, stats.ongoingUnsuccessfulProbes, uint(expectedFailed))
+
+	// TODO: change when custom ping intervals will be introduced
+	assert.Equal(t, stats.totalDowntime, 100*time.Second)
+}
 
 func TestPermuteArgs(t *testing.T) {
 	type args struct {
