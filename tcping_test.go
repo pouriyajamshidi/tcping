@@ -10,8 +10,9 @@ import (
 )
 
 // createTestStats should be used to create new stats structs.
-// it uses localhost and 12345 to be tested using the testServerListen.
-// it could fail if netip.ParseAddr has failed.
+// it uses "127.0.0.1:12345" as default values, because
+// [testServerListen] use the same values.
+// It'll call t.Errorf if netip.ParseAddr has failed.
 func createTestStats(t *testing.T) *stats {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := stats{
@@ -30,8 +31,8 @@ func createTestStats(t *testing.T) *stats {
 // testServerListen creates a new listener
 // on port 12345 and automatically starts it.
 //
-// Use t.Cleanup to close it after the test,
-// so that other tests are not affected.
+// Use t.Cleanup with srv.Close() to close it after
+// the test, so that other tests are not affected.
 //
 // It could fail if net.Listen or Accept has failed.
 func testServerListen(t *testing.T) net.Listener {
