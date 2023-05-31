@@ -5,6 +5,20 @@ import (
 	"time"
 )
 
+// fakePrinter is a fake test implementation of a printer
+// that does nothing.
+type fakePrinter struct{}
+
+func (fp *fakePrinter) printStart(_ string, _ uint16)                              {}
+func (fp *fakePrinter) printProbeFail(_, _ string, _ uint16, _ uint)               {}
+func (fp *fakePrinter) printRetryingToResolve(_ string)                            {}
+func (fp *fakePrinter) printTotalDownTime(_ time.Duration)                         {}
+func (fp *fakePrinter) printStatistics(_ stats)                                    {}
+func (fp *fakePrinter) printVersion()                                              {}
+func (fp *fakePrinter) printInfo(_ string, _ ...interface{})                       {}
+func (fp *fakePrinter) printError(_ string, _ ...interface{})                      {}
+func (fp *fakePrinter) printProbeSuccess(_, _ string, _ uint16, _ uint, _ float32) {}
+
 func TestDurationToString(t *testing.T) {
 	t.Parallel()
 
