@@ -36,6 +36,10 @@ func (p *planePrinter) printStatistics(s stats) {
 	totalPackets := s.totalSuccessfulProbes + s.totalUnsuccessfulProbes
 	packetLoss := (float32(s.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
+	if math.IsNaN(float64(packetLoss)) {
+		packetLoss = 0
+	}
+
 	/* general stats */
 	if !s.isIP {
 		colorYellow("\n--- %s (%s) TCPing statistics ---\n", s.hostname, s.ip)
@@ -420,6 +424,9 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	}
 
 	loss := (float32(data.TotalUnsuccessfulProbes) / float32(data.TotalPackets)) * 100
+	if math.IsNaN(float64(loss)) {
+		loss = 0
+	}
 	data.TotalPacketLoss = fmt.Sprintf("%.2f", loss)
 
 	if !s.lastSuccessfulProbe.IsZero() {
