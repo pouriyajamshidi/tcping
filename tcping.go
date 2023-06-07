@@ -147,10 +147,7 @@ func signalHandler(tcpStats *stats) {
 
 	go func() {
 		<-sigChan
-		totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
-		tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
-		tcpStats.printStats()
-		os.Exit(0)
+		shutdown(tcpStats)
 	}()
 }
 
@@ -625,6 +622,15 @@ func monitorStdin(stdinChan chan string) {
 	}
 }
 
+// shutdown calculates endTime, prints statistics and callc os.Exit(0).
+// This should be used as a main exit-point.
+func shutdown(tcpStats *stats) {
+	totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
+	tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
+	tcpStats.printStats()
+	os.Exit(0)
+}
+
 func main() {
 	tcpStats := &stats{
 		ticker: time.NewTicker(time.Second),
@@ -660,8 +666,7 @@ func main() {
 
 		probeCount++
 		if probeCount == tcpStats.probesBeforeQuit {
-			tcpStats.printStats()
-			return
+			shutdown(tcpStats)
 		}
 	}
 }
