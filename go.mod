@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/gookit/color v1.5.3
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.4
 )
 
 require (
