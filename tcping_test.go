@@ -65,14 +65,14 @@ func TestProbeSuccess(t *testing.T) {
 		}
 	})
 
-	expectedSuccessfull := 100
+	expectedSuccessful := 100
 
-	for i := 0; i < expectedSuccessfull; i++ {
+	for i := 0; i < expectedSuccessful; i++ {
 		tcping(stats)
 	}
 
-	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessfull))
-	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessfull))
+	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessful))
+	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessful))
 
 	// TODO: change when custom ping intervals will be introduced
 	assert.Equal(t, stats.totalUptime, 100*time.Second)
