@@ -175,12 +175,12 @@ func usage() {
 
 /* Get and validate user input */
 func processUserInput(tcpStats *stats) {
-	useIPv4 := flag.Bool("4", false, "use IPv4 only.")
-	useIPv6 := flag.Bool("6", false, "use IPv6 only.")
-	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed requests. e.g. -r 10 for 10 failed probes.")
-	probesBeforeQuit := flag.Uint("c", 0, "do n probes and quit, regardless of the result. If c is 0 (default), no limit will be applied")
+	useIPv4 := flag.Bool("4", false, "only use IPv4.")
+	useIPv6 := flag.Bool("6", false, "only use IPv6.")
+	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
+	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
-	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the -j flag.")
+	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 
@@ -661,10 +661,6 @@ func main() {
 				tcpStats.printStats()
 			}
 		default:
-		}
-
-		if tcpStats.probesBeforeQuit == 0 {
-			continue
 		}
 
 		probeCount++
