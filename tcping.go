@@ -69,18 +69,19 @@ type printer interface {
 }
 
 type stats struct {
-	endTime                   time.Time
-	startOfUptime             time.Time
-	startOfDowntime           time.Time
-	lastSuccessfulProbe       time.Time
-	lastUnsuccessfulProbe     time.Time
-	ip                        ipAddress
-	startTime                 time.Time
-	retryHostnameResolveAfter uint // Retry resolving target's hostname after a certain number of failed requests
+	endTime               time.Time
+	startOfUptime         time.Time
+	startOfDowntime       time.Time
+	lastSuccessfulProbe   time.Time
+	lastUnsuccessfulProbe time.Time
+	ip                    ipAddress
+	startTime             time.Time
+	// Retry resolving target's hostname after a certain number of failed requests
+	retryHostnameLookupAfter  uint
 	hostname                  string
 	hostnameChanges           []hostnameChange
 	rtt                       []float32
-	rttResults                rttResults
+	rttResults                rttResult
 	ongoingUnsuccessfulProbes uint
 	ongoingSuccessfulProbes   uint
 	longestDowntime           longestTime
@@ -91,17 +92,19 @@ type stats struct {
 	totalDowntime             time.Duration
 	totalUnsuccessfulProbes   uint
 	port                      uint16
-	wasDown                   bool // Used to determine the duration of a downtime
-	isIP                      bool // If IP is provided instead of hostname, suppresses printing the IP information twice
-	shouldRetryResolve        bool
-	useIPv4                   bool
-	useIPv6                   bool
-	probesBeforeQuit          uint
+	// Used to determine the duration of a downtime
+	wasDown bool
+	// If IP is provided instead of hostname, suppresses printing the IP information twice
+	isIP               bool
+	shouldRetryResolve bool
+	useIPv4            bool
+	useIPv6            bool
+	probesBeforeQuit   uint
 
 	// ticker is used to handle time between probes.
 	ticker *time.Ticker
 
-	// printer holds the choosen printer implementation for
+	// printer holds the chosen printer implementation for
 	// outputting information and data.
 	printer printer
 }
@@ -112,7 +115,7 @@ type longestTime struct {
 	duration time.Duration
 }
 
-type rttResults struct {
+type rttResult struct {
 	min        float32
 	max        float32
 	average    float32
@@ -140,7 +143,7 @@ const (
 	repo    = "tcping"
 )
 
-/* Catch SIGINT and print tcping stats */
+// signalHandler catches SIGINT and SIGTERM then prints tcping stats
 func signalHandler(tcpStats *stats) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -151,7 +154,16 @@ func signalHandler(tcpStats *stats) {
 	}()
 }
 
-/* Print how program should be run */
+// shutdown calculates endTime, prints statistics and calls os.Exit(0).
+// This should be used as a main exit-point.
+func shutdown(tcpStats *stats) {
+	totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
+	tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
+	tcpStats.printStats()
+	os.Exit(0)
+}
+
+// usage prints how program should be run
 func usage() {
 	executableName := os.Args[0]
 
@@ -173,7 +185,7 @@ func usage() {
 	os.Exit(1)
 }
 
-/* Get and validate user input */
+// processUserInput gets and validate user input
 func processUserInput(tcpStats *stats) {
 	useIPv4 := flag.Bool("4", false, "only use IPv4.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6.")
@@ -207,7 +219,7 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	if *retryHostnameResolveAfter > 0 {
-		tcpStats.retryHostnameResolveAfter = *retryHostnameResolveAfter
+		tcpStats.retryHostnameLookupAfter = *retryHostnameResolveAfter
 	}
 
 	/* -u works on its own. */
@@ -269,13 +281,13 @@ func processUserInput(tcpStats *stats) {
 		tcpStats.isIP = true
 	}
 
-	if tcpStats.retryHostnameResolveAfter > 0 && !tcpStats.isIP {
+	if tcpStats.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
 		tcpStats.shouldRetryResolve = true
 	}
 }
 
 /*
-	Permute args for flag parsing stops just before the first non-flag argument.
+permuteArgs permute args for flag parsing stops just before the first non-flag argument.
 
 see: https://pkg.go.dev/flag
 */
@@ -317,7 +329,7 @@ func permuteArgs(args cliArgs) {
 	}
 }
 
-/* Check for updates and print messages if there is a newer version */
+// checkLatestVersion checks for updates and print a message
 func checkLatestVersion(p printer) {
 	c := github.NewClient(nil)
 
@@ -349,7 +361,7 @@ func checkLatestVersion(p printer) {
 	os.Exit(0)
 }
 
-/* Hostname resolution */
+// resolveHostname handles hostname resolution
 func resolveHostname(tcpStats *stats) ipAddress {
 	ip, err := netip.ParseAddr(tcpStats.hostname)
 	if err == nil {
@@ -416,9 +428,9 @@ func resolveHostname(tcpStats *stats) ipAddress {
 	return ip
 }
 
-/* Retry resolve hostname after certain number of failures */
+// retryResolve retries resolving a hostname after certain number of failures
 func retryResolve(tcpStats *stats) {
-	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.retryHostnameResolveAfter {
+	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.retryHostnameLookupAfter {
 		tcpStats.printer.printRetryingToResolve(tcpStats.hostname)
 		tcpStats.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulProbes = 0
@@ -439,7 +451,7 @@ func retryResolve(tcpStats *stats) {
 	}
 }
 
-/* Create LongestTime structure */
+// newLongestTime creates LongestTime structure
 func newLongestTime(startTime time.Time, duration time.Duration) longestTime {
 	return longestTime{
 		start:    startTime,
@@ -448,35 +460,35 @@ func newLongestTime(startTime time.Time, duration time.Duration) longestTime {
 	}
 }
 
-/* Find min/avg/max RTT values. The last int acts as err code */
-func findMinAvgMaxRttTime(timeArr []float32) rttResults {
-	var accum float32
-	var rttResults rttResults
+// calcMinAvgMaxRttTime calculates min, avg and max RTT values
+func calcMinAvgMaxRttTime(timeArr []float32) rttResult {
+	var total float32
+	var result rttResult
 
 	arrLen := len(timeArr)
 	// rttResults.min = ^uint(0.0)
 	if arrLen > 0 {
-		rttResults.min = timeArr[0]
+		result.min = timeArr[0]
 	}
 
 	for i := 0; i < arrLen; i++ {
-		accum += timeArr[i]
+		total += timeArr[i]
 
-		if timeArr[i] > rttResults.max {
-			rttResults.max = timeArr[i]
+		if timeArr[i] > result.max {
+			result.max = timeArr[i]
 		}
 
-		if timeArr[i] < rttResults.min {
-			rttResults.min = timeArr[i]
+		if timeArr[i] < result.min {
+			result.min = timeArr[i]
 		}
 	}
 
 	if arrLen > 0 {
-		rttResults.hasResults = true
-		rttResults.average = accum / float32(arrLen)
+		result.hasResults = true
+		result.average = total / float32(arrLen)
 	}
 
-	return rttResults
+	return result
 }
 
 // calcLongestUptime calculates the longest uptime and sets it to tcpStats.
@@ -524,6 +536,7 @@ func nanoToMillisecond(nano int64) float32 {
 	return float32(nano) / float32(time.Millisecond)
 }
 
+// handleConnError processes failed probes
 func (tcpStats *stats) handleConnError(now time.Time) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = now
@@ -546,6 +559,7 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	)
 }
 
+// handleConnSuccess processes successful probes
 func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	if tcpStats.wasDown {
 		tcpStats.startOfUptime = now
@@ -581,19 +595,19 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 // for the current printer.
 //
 // This should be used instead, as it makes
-// all the nescessary calculations beforehand.
+// all the necessary calculations beforehand.
 func (tcpStats *stats) printStats() {
 	calcLongestUptime(tcpStats,
 		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
 	calcLongestDowntime(tcpStats,
 		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
 
-	tcpStats.rttResults = findMinAvgMaxRttTime(tcpStats.rtt)
+	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
 
 	tcpStats.printer.printStatistics(*tcpStats)
 }
 
-/* Ping host, TCP style */
+// tcping pings a host, TCP style
 func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
 
@@ -613,7 +627,7 @@ func tcping(tcpStats *stats) {
 	<-tcpStats.ticker.C
 }
 
-/* monitorStdin checks stdin to see whether the Enter key was pressed */
+// monitorStdin checks stdin to see whether the 'Enter' key was pressed
 func monitorStdin(stdinChan chan bool) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -625,22 +639,15 @@ func monitorStdin(stdinChan chan bool) {
 	}
 }
 
-// shutdown calculates endTime, prints statistics and callc os.Exit(0).
-// This should be used as a main exit-point.
-func shutdown(tcpStats *stats) {
-	totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
-	tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
-	tcpStats.printStats()
-	os.Exit(0)
-}
-
 func main() {
 	tcpStats := &stats{
 		ticker: time.NewTicker(time.Second),
 	}
 	defer tcpStats.ticker.Stop()
+
 	processUserInput(tcpStats)
 	signalHandler(tcpStats)
+
 	tcpStats.printer.printStart(tcpStats.hostname, tcpStats.port)
 
 	stdinChan := make(chan bool)
@@ -654,7 +661,6 @@ func main() {
 
 		tcping(tcpStats)
 
-		/* print stats when the `enter` key is pressed */
 		select {
 		case pressedEnter := <-stdinChan:
 			if pressedEnter {
@@ -663,9 +669,11 @@ func main() {
 		default:
 		}
 
-		probeCount++
-		if probeCount == tcpStats.probesBeforeQuit {
-			shutdown(tcpStats)
+		if tcpStats.probesBeforeQuit != 0 {
+			probeCount++
+			if probeCount == tcpStats.probesBeforeQuit {
+				shutdown(tcpStats)
+			}
 		}
 	}
 }
