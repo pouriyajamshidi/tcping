@@ -469,7 +469,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 }
 
 // printTotalDownTime prints the total downtime,
-// if the next retry was successfull.
+// if the next retry was successful.
 func (p *jsonPrinter) printTotalDownTime(downtime time.Duration) {
 	p.print(JSONData{
 		Type:          retrySuccessEvent,
