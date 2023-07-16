@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="Artwork/tcping_logo2.png" style="width:50%;">
+ <img alt="tcping" src="Artwork/tcping_logo2.png" style="width:70%;">
 </div>
 
 # TCPING
@@ -13,21 +13,23 @@
 ![Download](https://img.shields.io/github/downloads/pouriyajamshidi/tcping/total.svg?label=DOWNLOADS&logo=github)
 ![Docker Pulls](https://img.shields.io/docker/pulls/pouriyajamshidi/tcping)
 
-A cross-platform ping program for `TCP` ports inspired by the Linux's ping utility. This program will send `TCP` probes to an `IP address` or a `hostname` specified by you and prints the result. It works with both `IPv4` and `IPv6`.
+A cross-platform ping program for `TCP` ports inspired by the Linux's ping utility. This program will send `TCP` probes to an `IP address` or a `hostname` specified by you and prints the results. It supports both `IPv4` and `IPv6`.
 
-TCPING uses different `TCP sequence numbering` for successful and unsuccessful probes, so that when you look at the results and spot a failed probe, understanding the total packet drops to that point would be illustrative enough.
+**TCPING** uses different `TCP sequence numbering` for _successful_ and _unsuccessful_ probes, so that when you look at the results and spot a failed probe, inferring the total packet drops to that point would be easy.
 
+Here are some of the features of **TCPING**:
+
+- An alternative to `ping` in environments that `ICMP` is blocked.
 - Monitor your network connection.
 - Determine packet loss.
 - Analyze the network's latency.
-- Show `min`/`avg`/`max` probes latency.
-- Print connection statistics by pressing the `Enter` key and without stopping the program.
-- Use the `-r` flag to retry hostname resolution after a predetermined number of ping failures. If you want to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`, you should utilize this option.
-- Enforce using `IPv4` or `IPv6` address resolution
-- Display the longest encountered downtime and uptime duration and time.
-- Monitor and audit your peers network.
-- Calculate the total uptime/downtime when conducting a maintenance.
-- An alternative to `ping` in environments that `ICMP` is blocked.
+- Calculate `minimum`, `average` and `maximum` latency of network probes.
+- Print connection statistics by pressing the `Enter` key, without stopping the program.
+- Retry hostname resolution after a predetermined number of probe failures by using the `-r` flag . Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
+- Enforce using `IPv4` or `IPv6`.
+- Display the longest encountered `downtime` and `uptime` duration and time.
+- Monitor and audit your peers network (SLA).
+- Calculate the total uptime or downtime of your network when conducting a maintenance.
 
 ---
 
@@ -36,42 +38,115 @@ TCPING uses different `TCP sequence numbering` for successful and unsuccessful p
 - [TCPING](#tcping)
   - [Table of Contents](#table-of-contents)
   - [Demos](#demos)
-    - [Vanilla usage](#vanilla-usage)
-    - [Retry resolve (`-r`) flag](#retry-resolve--r-flag)
-    - [Pretty json output (`-j --pretty`)](#pretty-json-output--j---pretty)
-  - [Download](#download)
+    - [Basic usage](#basic-usage)
+    - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
+    - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
   - [Usage](#usage)
     - [On `Linux` and `macOS`](#on-linux-and-macos)
     - [On `Windows`](#on-windows)
     - [Using Docker](#using-docker)
+  - [Download](#download)
   - [Flags](#flags)
   - [Tips](#tips)
   - [Notes](#notes)
   - [Contributing](#contributing)
+  - [Feature Requests and Issues](#feature-requests-and-issues)
   - [Tested on](#tested-on)
   - [Sponsor The Project](#sponsor-the-project)
-  - [Contact me](#contact-me)
   - [License](#license)
 
 ---
 
 ## Demos
 
-### Vanilla usage
+### Basic usage
 
 ![tcping](Images/gifs/tcping.gif)
 
 ---
 
-### Retry resolve (`-r`) flag
+### Retry hostname lookup (`-r`) flag
 
 ![tcping resolve example](Images/gifs/tcping_resolve.gif)
 
 ---
 
-### Pretty json output (`-j --pretty`)
+### JSON output (`-j --pretty`) flag
 
 ![tcping json example](Images/gifs/tcping_json_pretty.gif)
+
+---
+
+## Usage
+
+Download TCPING for your operating system [here](#download), extract it. Then, follow the instructions below:
+
+- [Linux and macOS](#on-linux-and-macos)
+- [Windows](#on-windows)
+- [Docker images](#using-docker)
+
+Also check the [available flags here](#flags).
+
+### On `Linux` and `macOS`
+
+Extract the file:
+
+```bash
+tar -xvf tcping_Linux.tar.gz
+#
+# Or on Mac OS
+#
+tar -xvf tcping_MacOS.tar.gz
+#
+# on Mac OS ARM
+#
+tar -xvf tcping_MacOS_ARM.tar.gz
+```
+
+Make the file executable:
+
+```bash
+chmod +x tcping
+```
+
+Copy the executable to your system `PATH` like `/usr/local/bin/`:
+
+```bash
+sudo cp tcping /usr/local/bin/
+```
+
+Run it like:
+
+```bash
+tcping www.example.com 443
+# Or
+tcping 10.10.10.1 22
+```
+
+### On `Windows`
+
+We recommend [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
+
+Copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
+
+```powershell
+tcping www.example.com 443
+# Or provide the -r flag to
+# enable name resolution retries after a certain number of failures:
+tcping www.example.com 443 -r 10
+```
+
+### Using Docker
+
+The Docker image can be used like:
+
+```bash
+# Using Docker Hub
+docker run -it pouriyajamshidi/tcping:latest example.com 443
+
+# Using GitHub container registry:
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+```
 
 ---
 
@@ -123,96 +198,6 @@ When the download is complete, head to the [usage](#usage) section.
 
 ---
 
-## Usage
-
-If you have decided to download the executables using the [aforementioned links](#download), go to the folder containing the file and extract it. Then, depending on your operating system, follow the instructions below:
-
-- [Linux and macOS](#on-linux-and-macos)
-- [Windows](#on-windows)
-- [Docker images](#using-docker)
-
-### On `Linux` and `macOS`
-
-De-compress the downloaded file:
-
-```bash
-tar -xvf tcping_Linux.tar.gz
-#
-# Or on Mac OS
-#
-tar -xvf tcping_MacOS.tar.gz
-#
-# on Mac OS ARM
-#
-tar -xvf tcping_MacOS_ARM.tar.gz
-```
-
-Make the file executable:
-
-```bash
-chmod +x tcping
-```
-
-For easier use, copy the executable to your system `PATH` like `/usr/local/bin/`:
-
-```bash
-sudo cp tcping /usr/local/bin/
-```
-
-Then run it like, `tcping <hostname/IP address> <port>`. For instance:
-
-```bash
-tcping www.example.com 443
-# OR
-tcping 10.10.10.1 22
-```
-
-Specifying the `-r` option will cause a name resolution retry after a certain number of failures. For instance:
-
-```bash
-tcping www.example.com 443 -r 10
-# OR
-tcping -r 10 www.example.com 443
-```
-
-> The `-r 10` in the command above will result in a retry of name resolution after 10 probe failures.
-
-### On `Windows`
-
-We recommend [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
-
-For easier use, copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
-
-```powershell
-tcping www.example.com 443
-
-# OR provide the -r flag to
-# enable name resolution retries after a certain number of failures:
-tcping www.example.com 443 -r 10
-```
-
-> If you prefer not to add the executable to your `PATH`, go to the folder that contains the `tcping.exe` open up the terminal and run the following command:
-
-```powershell
-.\tcping.exe 10.10.10.1 22
-```
-
-**Please note, if you copy the program to your system `PATH`, you don't need to specify `.\` and the `.exe` extension to run the program anymore.**
-
-### Using Docker
-
-The Docker image can be used like:
-
-```bash
-# Using Docker Hub
-docker run -it pouriyajamshidi/tcping:latest example.com 443
-
-# Using GitHub container registry:
-docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
-```
-
----
-
 ## Flags
 
 The following flags are available to control the behavior of application:
@@ -228,11 +213,13 @@ The following flags are available to control the behavior of application:
 | `-v`       | Print version                                                                                                             |
 | `-u`       | Check for updates                                                                                                         |
 
+> Without specifying the `-4` and `-6` flags, tcping will use one randomly based on DNS lookups.
+
 ---
 
 ## Tips
 
-- Press the `Enter` key while the program is running to examine the summary of all probes without shutting it down, as shown in the [demos](#demos) section.
+- Press the `Enter` key while the program is running to examine the summary of all probes without terminating the program, as shown in the [demos](#demos) section.
 
 ---
 
@@ -258,7 +245,11 @@ Current number of open issues: ![GitHub issues](https://img.shields.io/github/is
 6. Run the tests `go test` or `make test`.
 7. Create a pull request
 
-Please make sure that your pull request only works on one specific issue and doesn't handle two or more tickets. This makes it simpler for us to examine your pull request and helps keep the git history clean.
+Please make sure that your pull request **only covers one specific issue** and doesn't handle two or more tickets. This makes it simpler for us to examine your pull request and helps keep the git history clean.
+
+## Feature Requests and Issues
+
+Should you need a new feature or find a bug, please feel free to [open a pull request](#contributing) or submit an issue.
 
 ## Tested on
 
@@ -269,10 +260,6 @@ Windows, Linux and macOS.
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)  
 [![sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)  
 ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
-
-## Contact me
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/pouriya-jamshidi/)
 
 ## License
 
