@@ -613,12 +613,15 @@ func tcping(tcpStats *stats) {
 	<-tcpStats.ticker.C
 }
 
-/* Capture keystrokes from stdin */
-func monitorStdin(stdinChan chan string) {
+/* monitorStdin checks stdin to see whether the Enter key was pressed */
+func monitorStdin(stdinChan chan bool) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		key, _ := reader.ReadString('\n')
-		stdinChan <- key
+		input, _ := reader.ReadString('\n')
+
+		if input == "\n" {
+			stdinChan <- true
+		}
 	}
 }
 
@@ -640,7 +643,7 @@ func main() {
 	signalHandler(tcpStats)
 	tcpStats.printer.printStart(tcpStats.hostname, tcpStats.port)
 
-	stdinChan := make(chan string)
+	stdinChan := make(chan bool)
 	go monitorStdin(stdinChan)
 
 	var probeCount uint = 0
@@ -653,8 +656,8 @@ func main() {
 
 		/* print stats when the `enter` key is pressed */
 		select {
-		case stdin := <-stdinChan:
-			if stdin == "\n" || stdin == "\r" || stdin == "\r\n" {
+		case pressedEnter := <-stdinChan:
+			if pressedEnter {
 				tcpStats.printStats()
 			}
 		default:
