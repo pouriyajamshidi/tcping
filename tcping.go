@@ -633,7 +633,7 @@ func monitorStdin(stdinChan chan bool) {
 	for {
 		input, _ := reader.ReadString('\n')
 
-		if input == "\n" {
+		if input == "\n" || input == "\r" || input == "\r\n" {
 			stdinChan <- true
 		}
 	}
