@@ -69,44 +69,46 @@ type printer interface {
 }
 
 type stats struct {
-	endTime               time.Time
-	startOfUptime         time.Time
-	startOfDowntime       time.Time
-	lastSuccessfulProbe   time.Time
-	lastUnsuccessfulProbe time.Time
-	ip                    ipAddress
-	startTime             time.Time
-	// Retry resolving target's hostname after a certain number of failed requests
-	retryHostnameLookupAfter  uint
-	hostname                  string
+	startTime                 time.Time
+	endTime                   time.Time
+	startOfUptime             time.Time
+	startOfDowntime           time.Time
+	lastSuccessfulProbe       time.Time
+	lastUnsuccessfulProbe     time.Time
 	hostnameChanges           []hostnameChange
 	rtt                       []float32
 	rttResults                rttResult
 	ongoingUnsuccessfulProbes uint
 	ongoingSuccessfulProbes   uint
-	longestDowntime           longestTime
-	totalSuccessfulProbes     uint
-	totalUptime               time.Duration
-	retriedHostnameResolves   uint
 	longestUptime             longestTime
+	longestDowntime           longestTime
+	totalUptime               time.Duration
 	totalDowntime             time.Duration
+	totalSuccessfulProbes     uint
+	retriedHostnameLookups    uint
 	totalUnsuccessfulProbes   uint
-	port                      uint16
 	// Used to determine the duration of a downtime
 	wasDown bool
 	// If IP is provided instead of hostname, suppresses printing the IP information twice
-	isIP               bool
-	shouldRetryResolve bool
-	useIPv4            bool
-	useIPv6            bool
-	probesBeforeQuit   uint
-
+	isIP bool
 	// ticker is used to handle time between probes.
 	ticker *time.Ticker
-
 	// printer holds the chosen printer implementation for
 	// outputting information and data.
-	printer printer
+	printer   printer
+	userInput userInput
+}
+
+type userInput struct {
+	ip       ipAddress
+	useIPv4  bool
+	useIPv6  bool
+	hostname string
+	port     uint16
+	// Retry resolving target's hostname after a certain number of failed requests
+	retryHostnameLookupAfter uint
+	shouldRetryResolve       bool
+	probesBeforeQuit         uint
 }
 
 type longestTime struct {
@@ -163,7 +165,7 @@ func shutdown(tcpStats *stats) {
 	os.Exit(0)
 }
 
-// usage prints how program should be run
+// usage prints how tcping should be run
 func usage() {
 	executableName := os.Args[0]
 
@@ -201,7 +203,7 @@ func processUserInput(tcpStats *stats) {
 	permuteArgs(os.Args[1:])
 	flag.Parse()
 
-	/* validation for flag and args */
+	// validation for flag and args
 	args := flag.Args()
 	nFlag := flag.NFlag()
 
@@ -213,16 +215,7 @@ func processUserInput(tcpStats *stats) {
 		tcpStats.printer = &planePrinter{}
 	}
 
-	if *prettyJson && !*outputJson {
-		tcpStats.printer.printError("--pretty has no effect without the -j flag.")
-		usage()
-	}
-
-	if *retryHostnameResolveAfter > 0 {
-		tcpStats.retryHostnameLookupAfter = *retryHostnameResolveAfter
-	}
-
-	/* -u works on its own. */
+	// -u works on its own
 	if *shouldCheckUpdates {
 		if len(args) == 0 && nFlag == 1 {
 			checkLatestVersion(tcpStats.printer)
@@ -236,25 +229,34 @@ func processUserInput(tcpStats *stats) {
 		os.Exit(0)
 	}
 
+	// host and port must be specified
+	if len(args) != 2 {
+		usage()
+	}
+
+	if *prettyJson && !*outputJson {
+		tcpStats.printer.printError("--pretty has no effect without the -j flag.")
+		usage()
+	}
+
 	if *useIPv4 && *useIPv6 {
 		tcpStats.printer.printError("Only one IP version can be specified")
 		usage()
 	}
 
+	if *retryHostnameResolveAfter > 0 {
+		tcpStats.userInput.retryHostnameLookupAfter = *retryHostnameResolveAfter
+	}
+
 	if *useIPv4 {
-		tcpStats.useIPv4 = true
+		tcpStats.userInput.useIPv4 = true
 	}
 
 	if *useIPv6 {
-		tcpStats.useIPv6 = true
+		tcpStats.userInput.useIPv6 = true
 	}
 
-	/* host and port must be specified　*/
-	if len(args) != 2 {
-		usage()
-	}
-
-	/* the non-flag command-line arguments */
+	// the non-flag command-line arguments
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
 		tcpStats.printer.printError("Invalid port number: %s", args[1])
@@ -266,23 +268,23 @@ func processUserInput(tcpStats *stats) {
 		os.Exit(1)
 	}
 
-	tcpStats.hostname = args[0]
-	tcpStats.port = uint16(port)
-	tcpStats.ip = resolveHostname(tcpStats)
+	tcpStats.userInput.hostname = args[0]
+	tcpStats.userInput.port = uint16(port)
+	tcpStats.userInput.ip = resolveHostname(tcpStats)
 	tcpStats.startTime = time.Now()
-	tcpStats.probesBeforeQuit = *probesBeforeQuit
+	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
 
 	// this serves as a default starting value for tracking changes.
 	tcpStats.hostnameChanges = []hostnameChange{
-		{tcpStats.ip, time.Now()},
+		{tcpStats.userInput.ip, time.Now()},
 	}
 
-	if tcpStats.hostname == tcpStats.ip.String() {
+	if tcpStats.userInput.hostname == tcpStats.userInput.ip.String() {
 		tcpStats.isIP = true
 	}
 
-	if tcpStats.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
-		tcpStats.shouldRetryResolve = true
+	if tcpStats.userInput.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
+		tcpStats.userInput.shouldRetryResolve = true
 	}
 }
 
@@ -363,18 +365,18 @@ func checkLatestVersion(p printer) {
 
 // resolveHostname handles hostname resolution
 func resolveHostname(tcpStats *stats) ipAddress {
-	ip, err := netip.ParseAddr(tcpStats.hostname)
+	ip, err := netip.ParseAddr(tcpStats.userInput.hostname)
 	if err == nil {
 		return ip
 	}
 
-	ipAddrs, err := net.LookupIP(tcpStats.hostname)
+	ipAddrs, err := net.LookupIP(tcpStats.userInput.hostname)
 
 	if err != nil && (tcpStats.totalSuccessfulProbes != 0 || tcpStats.totalUnsuccessfulProbes != 0) {
-		/* Prevent exit if application has been running for a while */
-		return tcpStats.ip
+		// Prevent exit if application has been running for a while
+		return tcpStats.userInput.ip
 	} else if err != nil {
-		tcpStats.printer.printError("Failed to resolve %s", tcpStats.hostname)
+		tcpStats.printer.printError("Failed to resolve %s: %s", tcpStats.userInput.hostname, err)
 		os.Exit(1)
 	}
 
@@ -382,14 +384,14 @@ func resolveHostname(tcpStats *stats) ipAddress {
 	var ipList []net.IP
 
 	switch {
-	case tcpStats.useIPv4:
+	case tcpStats.userInput.useIPv4:
 		for _, ip := range ipAddrs {
 			if ip.To4() != nil {
 				ipList = append(ipList, ip)
 			}
 		}
 		if len(ipList) == 0 {
-			tcpStats.printer.printError("Failed to find IPv4 address for %s", tcpStats.hostname)
+			tcpStats.printer.printError("Failed to find IPv4 address for %s", tcpStats.userInput.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
@@ -399,14 +401,14 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		}
 		ip, _ = netip.ParseAddr(ipList[index].String())
 
-	case tcpStats.useIPv6:
+	case tcpStats.userInput.useIPv6:
 		for _, ip := range ipAddrs {
 			if ip.To16() != nil {
 				ipList = append(ipList, ip)
 			}
 		}
 		if len(ipList) == 0 {
-			tcpStats.printer.printError("Failed to find IPv6 address for %s", tcpStats.hostname)
+			tcpStats.printer.printError("Failed to find IPv6 address for %s", tcpStats.userInput.hostname)
 			os.Exit(1)
 		}
 		if len(ipList) > 1 {
@@ -430,11 +432,11 @@ func resolveHostname(tcpStats *stats) ipAddress {
 
 // retryResolve retries resolving a hostname after certain number of failures
 func retryResolve(tcpStats *stats) {
-	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.retryHostnameLookupAfter {
-		tcpStats.printer.printRetryingToResolve(tcpStats.hostname)
-		tcpStats.ip = resolveHostname(tcpStats)
+	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.userInput.retryHostnameLookupAfter {
+		tcpStats.printer.printRetryingToResolve(tcpStats.userInput.hostname)
+		tcpStats.userInput.ip = resolveHostname(tcpStats)
 		tcpStats.ongoingUnsuccessfulProbes = 0
-		tcpStats.retriedHostnameResolves += 1
+		tcpStats.retriedHostnameLookups += 1
 
 		// At this point hostnameChanges should have len > 0, but just in case
 		if len(tcpStats.hostnameChanges) == 0 {
@@ -442,9 +444,9 @@ func retryResolve(tcpStats *stats) {
 		}
 
 		lastAddr := tcpStats.hostnameChanges[len(tcpStats.hostnameChanges)-1].Addr
-		if lastAddr != tcpStats.ip {
+		if lastAddr != tcpStats.userInput.ip {
 			tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
-				Addr: tcpStats.ip,
+				Addr: tcpStats.userInput.ip,
 				When: time.Now(),
 			})
 		}
@@ -552,9 +554,9 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	tcpStats.ongoingUnsuccessfulProbes += 1
 
 	tcpStats.printer.printProbeFail(
-		tcpStats.hostname,
-		tcpStats.ip.String(),
-		tcpStats.port,
+		tcpStats.userInput.hostname,
+		tcpStats.userInput.ip.String(),
+		tcpStats.userInput.port,
 		tcpStats.ongoingUnsuccessfulProbes,
 	)
 }
@@ -583,9 +585,9 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
 	tcpStats.printer.printProbeSuccess(
-		tcpStats.hostname,
-		tcpStats.ip.String(),
-		tcpStats.port,
+		tcpStats.userInput.hostname,
+		tcpStats.userInput.ip.String(),
+		tcpStats.userInput.port,
 		tcpStats.ongoingSuccessfulProbes,
 		rtt,
 	)
@@ -609,7 +611,7 @@ func (tcpStats *stats) printStats() {
 
 // tcping pings a host, TCP style
 func tcping(tcpStats *stats) {
-	IPAndPort := netip.AddrPortFrom(tcpStats.ip, tcpStats.port)
+	IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
 
 	connStart := time.Now()
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
@@ -648,14 +650,14 @@ func main() {
 	processUserInput(tcpStats)
 	signalHandler(tcpStats)
 
-	tcpStats.printer.printStart(tcpStats.hostname, tcpStats.port)
+	tcpStats.printer.printStart(tcpStats.userInput.hostname, tcpStats.userInput.port)
 
 	stdinChan := make(chan bool)
 	go monitorStdin(stdinChan)
 
 	var probeCount uint = 0
 	for {
-		if tcpStats.shouldRetryResolve {
+		if tcpStats.userInput.shouldRetryResolve {
 			retryResolve(tcpStats)
 		}
 
@@ -669,9 +671,9 @@ func main() {
 		default:
 		}
 
-		if tcpStats.probesBeforeQuit != 0 {
+		if tcpStats.userInput.probesBeforeQuit != 0 {
 			probeCount++
-			if probeCount == tcpStats.probesBeforeQuit {
+			if probeCount == tcpStats.userInput.probesBeforeQuit {
 				shutdown(tcpStats)
 			}
 		}

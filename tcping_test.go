@@ -17,9 +17,11 @@ func createTestStats(t *testing.T) *stats {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := stats{
 		printer: &dummyPrinter{},
-		ip:      addr,
-		port:    12345,
-		ticker:  time.NewTicker(time.Second),
+		userInput: userInput{
+			ip:   addr,
+			port: 12345,
+		},
+		ticker: time.NewTicker(time.Second),
 	}
 	if err != nil {
 		t.Errorf("ip parse: %v", err)
