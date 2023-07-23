@@ -75,40 +75,34 @@ type stats struct {
 	startOfDowntime           time.Time
 	lastSuccessfulProbe       time.Time
 	lastUnsuccessfulProbe     time.Time
-	hostnameChanges           []hostnameChange
-	rtt                       []float32
-	rttResults                rttResult
-	ongoingUnsuccessfulProbes uint
-	ongoingSuccessfulProbes   uint
+	printer                   printer      // printer holds the chosen printer implementation for outputting information and data.
+	ticker                    *time.Ticker // ticker is used to handle time between probes.
 	longestUptime             longestTime
 	longestDowntime           longestTime
-	totalUptime               time.Duration
+	rtt                       []float32
+	hostnameChanges           []hostnameChange
+	userInput                 userInput
+	ongoingSuccessfulProbes   uint
+	ongoingUnsuccessfulProbes uint
 	totalDowntime             time.Duration
+	totalUptime               time.Duration
 	totalSuccessfulProbes     uint
-	retriedHostnameLookups    uint
 	totalUnsuccessfulProbes   uint
-	// Used to determine the duration of a downtime
-	wasDown bool
-	// If IP is provided instead of hostname, suppresses printing the IP information twice
-	isIP bool
-	// ticker is used to handle time between probes.
-	ticker *time.Ticker
-	// printer holds the chosen printer implementation for
-	// outputting information and data.
-	printer   printer
-	userInput userInput
+	retriedHostnameLookups    uint
+	rttResults                rttResult
+	wasDown                   bool // wasDown is used to determine the duration of a downtime
+	isIP                      bool // isIP suppresses printing the IP information twice when hostname is not provided
 }
 
 type userInput struct {
-	ip       ipAddress
-	useIPv4  bool
-	useIPv6  bool
-	hostname string
-	port     uint16
-	// Retry resolving target's hostname after a certain number of failed requests
-	retryHostnameLookupAfter uint
-	shouldRetryResolve       bool
+	ip                       ipAddress
+	hostname                 string
+	retryHostnameLookupAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	probesBeforeQuit         uint
+	port                     uint16
+	useIPv4                  bool
+	useIPv6                  bool
+	shouldRetryResolve       bool
 }
 
 type longestTime struct {
