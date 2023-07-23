@@ -42,11 +42,11 @@ func (p *planePrinter) printStatistics(s stats) {
 
 	/* general stats */
 	if !s.isIP {
-		colorYellow("\n--- %s (%s) TCPing statistics ---\n", s.hostname, s.ip)
+		colorYellow("\n--- %s (%s) TCPing statistics ---\n", s.userInput.hostname, s.userInput.ip)
 	} else {
-		colorYellow("\n--- %s TCPing statistics ---\n", s.hostname)
+		colorYellow("\n--- %s TCPing statistics ---\n", s.userInput.hostname)
 	}
-	colorYellow("%d probes transmitted on port %d | ", totalPackets, s.port)
+	colorYellow("%d probes transmitted on port %d | ", totalPackets, s.userInput.port)
 	colorYellow("%d received, ", s.totalSuccessfulProbes)
 
 	/* packet loss stats */
@@ -115,7 +115,7 @@ func (p *planePrinter) printStatistics(s stats) {
 	/* resolve retry stats */
 	if !s.isIP {
 		colorYellow("retried to resolve hostname ")
-		colorRed("%d ", s.retriedHostnameResolves)
+		colorRed("%d ", s.retriedHostnameLookups)
 		colorYellow("times\n")
 
 		if len(s.hostnameChanges) >= 2 {
@@ -407,9 +407,9 @@ func (p *jsonPrinter) printProbeFail(hostname, ip string, port uint16, streak ui
 func (p *jsonPrinter) printStatistics(s stats) {
 	data := JSONData{
 		Type:     statisticsEvent,
-		Message:  fmt.Sprintf("stats for %s", s.hostname),
-		Addr:     s.ip.String(),
-		Hostname: s.hostname,
+		Message:  fmt.Sprintf("stats for %s", s.userInput.hostname),
+		Addr:     s.userInput.ip.String(),
+		Hostname: s.userInput.hostname,
 
 		StartTimestamp:          &s.startTime,
 		TotalDowntime:           s.totalDowntime.Seconds(),
@@ -449,7 +449,7 @@ func (p *jsonPrinter) printStatistics(s stats) {
 	}
 
 	if !s.isIP {
-		data.HostnameResolveTries = s.retriedHostnameResolves
+		data.HostnameResolveTries = s.retriedHostnameLookups
 	}
 
 	if s.rttResults.hasResults {
