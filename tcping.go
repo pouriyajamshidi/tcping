@@ -150,6 +150,34 @@ func signalHandler(tcpStats *stats) {
 	}()
 }
 
+// monitorStdin checks stdin to see whether the 'Enter' key was pressed
+func monitorStdin(stdinChan chan bool) {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		input, _ := reader.ReadString('\n')
+
+		if input == "\n" || input == "\r" || input == "\r\n" {
+			stdinChan <- true
+		}
+	}
+}
+
+// printStats is a helper method for printStatistics
+// for the current printer.
+//
+// This should be used instead, as it makes
+// all the necessary calculations beforehand.
+func (tcpStats *stats) printStats() {
+	calcLongestUptime(tcpStats,
+		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
+	calcLongestDowntime(tcpStats,
+		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+
+	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
+
+	tcpStats.printer.printStatistics(*tcpStats)
+}
+
 // shutdown calculates endTime, prints statistics and calls os.Exit(0).
 // This should be used as a main exit-point.
 func shutdown(tcpStats *stats) {
@@ -458,7 +486,7 @@ func newLongestTime(startTime time.Time, duration time.Duration) longestTime {
 
 // calcMinAvgMaxRttTime calculates min, avg and max RTT values
 func calcMinAvgMaxRttTime(timeArr []float32) rttResult {
-	var total float32
+	var sum float32
 	var result rttResult
 
 	arrLen := len(timeArr)
@@ -468,7 +496,7 @@ func calcMinAvgMaxRttTime(timeArr []float32) rttResult {
 	}
 
 	for i := 0; i < arrLen; i++ {
-		total += timeArr[i]
+		sum += timeArr[i]
 
 		if timeArr[i] > result.max {
 			result.max = timeArr[i]
@@ -481,7 +509,7 @@ func calcMinAvgMaxRttTime(timeArr []float32) rttResult {
 
 	if arrLen > 0 {
 		result.hasResults = true
-		result.average = total / float32(arrLen)
+		result.average = sum / float32(arrLen)
 	}
 
 	return result
@@ -587,22 +615,6 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	)
 }
 
-// printStats is a helper method for printStatistics
-// for the current printer.
-//
-// This should be used instead, as it makes
-// all the necessary calculations beforehand.
-func (tcpStats *stats) printStats() {
-	calcLongestUptime(tcpStats,
-		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
-	calcLongestDowntime(tcpStats,
-		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
-
-	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
-
-	tcpStats.printer.printStatistics(*tcpStats)
-}
-
 // tcping pings a host, TCP style
 func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
@@ -621,18 +633,6 @@ func tcping(tcpStats *stats) {
 	}
 
 	<-tcpStats.ticker.C
-}
-
-// monitorStdin checks stdin to see whether the 'Enter' key was pressed
-func monitorStdin(stdinChan chan bool) {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		input, _ := reader.ReadString('\n')
-
-		if input == "\n" || input == "\r" || input == "\r\n" {
-			stdinChan <- true
-		}
-	}
 }
 
 func main() {
