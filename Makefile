@@ -2,14 +2,31 @@ EXEC_DIR = executables/
 TAPE_DIR = Images/tapes/
 GIFS_DIR = Images/gifs/
 SOURCE_FILES = $(tcping.go statsprinter.go)
+PACKAGE_NAME = tcping
+VERSION = 1.22.1
+ARCHITECTURE = amd64
+DEB_PACKAGE_DIR = $(EXEC_DIR)/debian
+DEBIAN_DIR = $(DEB_PACKAGE_DIR)/DEBIAN
+CONTROL_FILE = $(DEBIAN_DIR)/control
+EXECUTABLE_PATH = $(EXEC_DIR)/tcping
+TARGET_EXECUTABLE_PATH = $(DEB_PACKAGE_DIR)/usr/bin/
+PACKAGE = $(PACKAGE_NAME)-$(VERSION)_$(ARCHITECTURE).deb
+MAINTAINER = https://github.com/pouriyajamshidi
+DESCRIPTION = Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
 .PHONY: all build update clean format test vet gitHubActions container
 all: build
 check: format vet test
 
-build: clean update format vet test
+build: clean update tidyup format vet test
+	@echo
+	@echo "[+] Version: $(VERSION)"
+	@echo
 
 	@mkdir -p $(EXEC_DIR)
+	@mkdir -p $(DEB_PACKAGE_DIR)
+	@mkdir -p $(DEBIAN_DIR)
+	@mkdir -p $(TARGET_EXECUTABLE_PATH)
 	
 	@echo "[+] Building the Linux version"
 	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
@@ -21,12 +38,34 @@ build: clean update format vet test
 	@echo "[+] Removing the Linux binary"
 	@rm $(EXEC_DIR)tcping
 
+	@echo
 	@echo "[+] Building the static Linux version"
 	@env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
 
 	@echo "[+] Packaging the static Linux version"
 	@tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
 	@sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
+
+	@echo
+	@echo "[+] Building the Debian package"
+	@cp $(EXECUTABLE_PATH) $(TARGET_EXECUTABLE_PATH)
+
+	@echo "[+] Creating control file"
+	@echo "Package: $(PACKAGE_NAME)" > $(CONTROL_FILE)
+	@echo "Version: $(VERSION)" >> $(CONTROL_FILE)
+	@echo "Section: custom" >> $(CONTROL_FILE)
+	@echo "Priority: optional" >> $(CONTROL_FILE)
+	@echo "Architecture: amd64" >> $(CONTROL_FILE)
+	@echo "Essential: no" >> $(CONTROL_FILE)
+	@echo "Installed-Size: 2048" >> $(CONTROL_FILE)
+	@echo "Maintainer: $(MAINTAINER)" >> $(CONTROL_FILE)
+	@echo "Description: $(DESCRIPTION)" >> $(CONTROL_FILE)
+
+	@echo "[+] Building package"
+	@dpkg-deb --build $(DEB_PACKAGE_DIR)
+
+	@echo "[+] Renaming package"
+	@mv $(DEB_PACKAGE_DIR).deb $(EXEC_DIR)/$(PACKAGE)
 
 	@echo "[+] Removing the static Linux binary"
 	@rm $(EXEC_DIR)tcping
@@ -64,6 +103,18 @@ build: clean update format vet test
 	@echo "[+] Removing the MacOS ARM binary"
 	@rm $(EXEC_DIR)tcping
 
+	@echo
+	@echo "[+] Building the FreeBSD version"
+	@env GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+
+	@echo "[+] Packaging the FreeBSD AMD64 version"
+	@tar -czvf $(EXEC_DIR)tcping_freebsd.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_freebsd.tar.gz
+
+	@echo "[+] Removing the FreeBSD binary"
+	@rm $(EXEC_DIR)tcping
+
+	@echo
 	@echo "[+] Done"
 
 update:
@@ -89,8 +140,7 @@ test:
 	@go test
 
 tidyup:
-	@echo "[+] Tidying up"
-	@go get -u
+	@echo "[+] Running go mod tidy"
 	@go get -u ./...
 	@go mod tidy
 
