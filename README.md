@@ -41,11 +41,12 @@ Here are some of the features of **TCPING**:
     - [Basic usage](#basic-usage)
     - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
     - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
-  - [Usage](#usage)
-    - [On `Linux` and `macOS`](#on-linux-and-macos)
-    - [On `Windows`](#on-windows)
-    - [Using Docker](#using-docker)
   - [Download](#download)
+  - [Usage](#usage)
+    - [Linux - Debian and Ubuntu](#linux---debian-and-ubuntu)
+    - [Linux, BSD and mac OS](#linux-bsd-and-mac-os)
+    - [Windows](#windows)
+    - [Docker](#docker)
   - [Flags](#flags)
   - [Tips](#tips)
   - [Notes](#notes)
@@ -77,88 +78,17 @@ Here are some of the features of **TCPING**:
 
 ---
 
-## Usage
-
-Download TCPING for your operating system [here](#download), extract it. Then, follow the instructions below:
-
-- [Linux and macOS](#on-linux-and-macos)
-- [Windows](#on-windows)
-- [Docker images](#using-docker)
-
-Also check the [available flags here](#flags).
-
-### On `Linux` and `macOS`
-
-Extract the file:
-
-```bash
-tar -xvf tcping_Linux.tar.gz
-#
-# Or on Mac OS
-#
-tar -xvf tcping_MacOS.tar.gz
-#
-# on Mac OS ARM
-#
-tar -xvf tcping_MacOS_ARM.tar.gz
-```
-
-Make the file executable:
-
-```bash
-chmod +x tcping
-```
-
-Copy the executable to your system `PATH` like `/usr/local/bin/`:
-
-```bash
-sudo cp tcping /usr/local/bin/
-```
-
-Run it like:
-
-```bash
-tcping www.example.com 443
-# Or
-tcping 10.10.10.1 22
-```
-
-### On `Windows`
-
-We recommend [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
-
-Copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
-
-```powershell
-tcping www.example.com 443
-# Or provide the -r flag to
-# enable name resolution retries after a certain number of failures:
-tcping www.example.com 443 -r 10
-```
-
-### Using Docker
-
-The Docker image can be used like:
-
-```bash
-# Using Docker Hub
-docker run -it pouriyajamshidi/tcping:latest example.com 443
-
-# Using GitHub container registry:
-docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
-```
-
----
-
 ## Download
 
 - ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
 
-- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - Also available through `brew`
+- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - Also available through `brew` and `.deb` package
 
 - ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.tar.gz) - Also available through `brew`
 
 - ### [macOS M1 - ARM](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS_ARM.tar.gz) - Also available through `brew`
+
+- ### [FreeBSD](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_FreeBSD.tar.gz)
 
 When the download is complete, head to the [usage](#usage) section.
 
@@ -198,20 +128,114 @@ When the download is complete, head to the [usage](#usage) section.
 
 ---
 
+## Usage
+
+Follow the instructions below for your operating system:
+
+- [Linux - Debian and Ubuntu](#linux---debian-and-ubuntu)
+- [Linux, BSD and macOS](#linux-bsd-and-mac-os)
+- [Windows](#windows)
+- [Docker images](#docker)
+
+Also check the [available flags here](#flags).
+
+### Linux - Debian and Ubuntu
+
+On **Debian** and its flavors such as **Ubuntu**, download the `.deb` package:
+
+```bash
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_amd64.deb -O /tmp/tcping.deb
+```
+
+And install it:
+
+```bash
+sudo apt install -y /tmp/tcping.deb
+```
+
+If you are using different Linux distros, proceed to [this section](#linux-bsd-and-mac-os).
+
+### Linux, BSD and mac OS
+
+Extract the file:
+
+```bash
+tar -xvf tcping_Linux.tar.gz
+#
+# Or on Mac OS
+#
+tar -xvf tcping_MacOS.tar.gz
+#
+# on Mac OS ARM
+#
+tar -xvf tcping_MacOS_ARM.tar.gz
+#
+# on BSD
+#
+tar -xvf tcping_FreeBSD.tar.gz
+```
+
+Make the file executable:
+
+```bash
+chmod +x tcping
+```
+
+Copy the executable to your system `PATH` like `/usr/local/bin/`:
+
+```bash
+sudo cp tcping /usr/local/bin/
+```
+
+Run it like:
+
+```bash
+tcping www.example.com 443
+# Or
+tcping 10.10.10.1 22
+```
+
+### Windows
+
+We recommend [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
+
+Copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
+
+```powershell
+tcping www.example.com 443
+# Or provide the -r flag to
+# enable name resolution retries after a certain number of failures:
+tcping www.example.com 443 -r 10
+```
+
+### Docker
+
+The Docker image can be used like:
+
+```bash
+# Using Docker Hub
+docker run -it pouriyajamshidi/tcping:latest example.com 443
+
+# Using GitHub container registry:
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+```
+
+---
+
 ## Flags
 
 The following flags are available to control the behavior of application:
 
-| Flag       | Description                                                                                                               |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `-4`       | Only use IPv4 addresses                                                                                                   |
-| `-6`       | Only use IPv6 addresses                                                                                                   |
-| `-r`       | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes         |
-| `-c`       | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied  (available from version `v1.23`) |
-| `-j`       | Output in `JSON` format                                                                                                   |
-| `--pretty` | Prettify the `JSON` output                                                                                                |
-| `-v`       | Print version                                                                                                             |
-| `-u`       | Check for updates                                                                                                         |
+| Flag       | Description                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `-4`       | Only use IPv4 addresses                                                                                           |
+| `-6`       | Only use IPv6 addresses                                                                                           |
+| `-r`       | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
+| `-c`       | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
+| `-j`       | Output in `JSON` format                                                                                           |
+| `--pretty` | Prettify the `JSON` output                                                                                        |
+| `-v`       | Print version                                                                                                     |
+| `-u`       | Check for updates                                                                                                 |
 
 > Without specifying the `-4` and `-6` flags, tcping will use one randomly based on DNS lookups.
 
