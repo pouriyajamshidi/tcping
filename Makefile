@@ -3,14 +3,14 @@ TAPE_DIR = Images/tapes/
 GIFS_DIR = Images/gifs/
 SOURCE_FILES = $(tcping.go statsprinter.go)
 PACKAGE_NAME = tcping
-VERSION = 1.22.1
+VERSION = 2.0.0
 ARCHITECTURE = amd64
 DEB_PACKAGE_DIR = $(EXEC_DIR)/debian
 DEBIAN_DIR = $(DEB_PACKAGE_DIR)/DEBIAN
 CONTROL_FILE = $(DEBIAN_DIR)/control
 EXECUTABLE_PATH = $(EXEC_DIR)/tcping
 TARGET_EXECUTABLE_PATH = $(DEB_PACKAGE_DIR)/usr/bin/
-PACKAGE = $(PACKAGE_NAME)-$(VERSION)_$(ARCHITECTURE).deb
+PACKAGE = $(PACKAGE_NAME)_$(ARCHITECTURE).deb
 MAINTAINER = https://github.com/pouriyajamshidi
 DESCRIPTION = Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
