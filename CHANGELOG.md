@@ -2,10 +2,12 @@
 
 ## v2.0.0 - 2023-08-05
 
-- new feature: add `-c` or count flag to exit **TCPING** after a certain amount of probes specified by user
+- new feature: add `-c` or count flag to exit **TCPING** after a certain amount of probes specified by user thanks to @ravsii
 - new feature: add **BSD** support
 - new feature: add **Debian** package to make **TCPING** `apt installable`
 - fix: packet loss `NaN` when program terminated too quickly thanks to @ravsii
+- fix: random IP address selector index out of range bug
+- fix: display format of IPv4 embedded in IPv6 addresses
 - fix: time report bug. Everything is now accurate
 - fix: Enter key detection for Windows machines
 - refactor: complete overhaul of time calculation. **TCPING** now is hack-free when it comes to time handling thanks to @ravsii
