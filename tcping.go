@@ -137,7 +137,7 @@ const (
 	version    = "1.22.1"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
-	dnsTimeout = 1 * time.Second
+	dnsTimeout = 2 * time.Second
 )
 
 // signalHandler catches SIGINT and SIGTERM then prints tcping stats
@@ -578,9 +578,9 @@ func nanoToMillisecond(nano int64) float32 {
 }
 
 // handleConnError processes failed probes
-func (tcpStats *stats) handleConnError(now time.Time) {
+func (tcpStats *stats) handleConnError(connTime time.Time) {
 	if !tcpStats.wasDown {
-		tcpStats.startOfDowntime = now
+		tcpStats.startOfDowntime = connTime
 		calcLongestUptime(tcpStats,
 			time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
 		tcpStats.startOfUptime = time.Time{}
@@ -588,7 +588,7 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 	}
 
 	tcpStats.totalDowntime += time.Second
-	tcpStats.lastUnsuccessfulProbe = now
+	tcpStats.lastUnsuccessfulProbe = connTime
 	tcpStats.totalUnsuccessfulProbes += 1
 	tcpStats.ongoingUnsuccessfulProbes += 1
 
@@ -601,9 +601,9 @@ func (tcpStats *stats) handleConnError(now time.Time) {
 }
 
 // handleConnSuccess processes successful probes
-func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
+func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time) {
 	if tcpStats.wasDown {
-		tcpStats.startOfUptime = now
+		tcpStats.startOfUptime = connTime
 		downtime := time.Since(tcpStats.startOfDowntime).Truncate(time.Second)
 		calcLongestDowntime(tcpStats, downtime)
 		tcpStats.printer.printTotalDownTime(downtime)
@@ -614,11 +614,11 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, now time.Time) {
 	}
 
 	if tcpStats.startOfUptime.IsZero() {
-		tcpStats.startOfUptime = now
+		tcpStats.startOfUptime = connTime
 	}
 
 	tcpStats.totalUptime += time.Second
-	tcpStats.lastSuccessfulProbe = now
+	tcpStats.lastSuccessfulProbe = connTime
 	tcpStats.totalSuccessfulProbes += 1
 	tcpStats.ongoingSuccessfulProbes += 1
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
@@ -640,12 +640,11 @@ func tcping(tcpStats *stats) {
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
 	connEnd := time.Since(connStart)
 	rtt := nanoToMillisecond(connEnd.Nanoseconds())
-	now := time.Now()
 
 	if err != nil {
-		tcpStats.handleConnError(now)
+		tcpStats.handleConnError(connStart)
 	} else {
-		tcpStats.handleConnSuccess(rtt, now)
+		tcpStats.handleConnSuccess(rtt, connStart)
 		conn.Close()
 	}
 
