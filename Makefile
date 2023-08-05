@@ -50,7 +50,7 @@ build: clean update tidyup format vet test
 	@echo "[+] Building the Debian package"
 	@cp $(EXECUTABLE_PATH) $(TARGET_EXECUTABLE_PATH)
 
-	@echo "[+] Creating control file"
+	@echo "[+] Creating the Debian control file"
 	@echo "Package: $(PACKAGE_NAME)" > $(CONTROL_FILE)
 	@echo "Version: $(VERSION)" >> $(CONTROL_FILE)
 	@echo "Section: custom" >> $(CONTROL_FILE)
@@ -61,10 +61,10 @@ build: clean update tidyup format vet test
 	@echo "Maintainer: $(MAINTAINER)" >> $(CONTROL_FILE)
 	@echo "Description: $(DESCRIPTION)" >> $(CONTROL_FILE)
 
-	@echo "[+] Building package"
+	@echo "[+] Building the Debian package"
 	@dpkg-deb --build $(DEB_PACKAGE_DIR)
 
-	@echo "[+] Renaming package"
+	@echo "[+] Renaming the Debian package"
 	@mv $(DEB_PACKAGE_DIR).deb $(EXEC_DIR)/$(PACKAGE)
 
 	@echo "[+] Removing the static Linux binary"
@@ -108,8 +108,8 @@ build: clean update tidyup format vet test
 	@env GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
 
 	@echo "[+] Packaging the FreeBSD AMD64 version"
-	@tar -czvf $(EXEC_DIR)tcping_freebsd.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_freebsd.tar.gz
+	@tar -czvf $(EXEC_DIR)tcping_FreeBSD.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_FreeBSD.tar.gz
 
 	@echo "[+] Removing the FreeBSD binary"
 	@rm $(EXEC_DIR)tcping
