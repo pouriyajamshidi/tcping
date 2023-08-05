@@ -406,12 +406,12 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
 		}
 
 		if len(ipList) > 1 {
-			index = rand.Intn(len(ipAddrs))
+			index = rand.Intn(len(ipList))
 		} else {
 			index = 0
 		}
 
-		ip, _ = netip.ParseAddr(ipList[index].String())
+		ip, _ = netip.ParseAddr(ipList[index].Unmap().String())
 
 	case tcpStats.userInput.useIPv6:
 		for _, ip := range ipAddrs {
@@ -426,12 +426,12 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
 		}
 
 		if len(ipList) > 1 {
-			index = rand.Intn(len(ipAddrs))
+			index = rand.Intn(len(ipList))
 		} else {
 			index = 0
 		}
 
-		ip, _ = netip.ParseAddr(ipList[index].String())
+		ip, _ = netip.ParseAddr(ipList[index].Unmap().String())
 
 	default:
 		if len(ipAddrs) > 1 {
@@ -440,7 +440,7 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
 			index = 0
 		}
 
-		ip, _ = netip.ParseAddr(ipAddrs[index].String())
+		ip, _ = netip.ParseAddr(ipAddrs[index].Unmap().String())
 	}
 
 	return ip
