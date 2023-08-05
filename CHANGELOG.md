@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.0.0 - 2023-08-05
+
+- new feature: add `-c` or count flag to exit **TCPING** after a certain amount of probes specified by user
+- new feature: add **BSD** support
+- new feature: add **Debian** package to make **TCPING** `apt installable`
+- fix: packet loss `NaN` when program terminated too quickly thanks to @ravsii
+- fix: time report bug. Everything is now accurate
+- fix: Enter key detection for Windows machines
+- refactor: complete overhaul of time calculation. **TCPING** now is hack-free when it comes to time handling thanks to @ravsii
+- refactor: memory align `structs`
+- refactor: improve code readability
+- refactor: refactor `stats struct` and extract user input to a separate `struct`
+- refactor: Enter key detection logic
+- refactor: name resolution handling. The maximum allowed time to wait for DNS response is now 2 seconds
+- refactor: and unify exit points thanks to @ravsii
+- tests: feature: add more test special thanks to @ravsii
+- enhancement:add dependabot
+- docs: improve documentation
+
 ## v1.22.1 - 2023-5-14
 
 - new feature: implement JSON output thanks to @ravsii

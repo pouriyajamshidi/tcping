@@ -134,7 +134,7 @@ type (
 )
 
 const (
-	version    = "1.22.1"
+	version    = "2.0.0"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
