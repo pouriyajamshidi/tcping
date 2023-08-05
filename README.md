@@ -82,7 +82,7 @@ Here are some of the features of **TCPING**:
 
 - ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
 
-- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - Also available through `brew` and `.deb` package
+- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - Also available through `brew` and [.deb package](#linux---debian-and-ubuntu)
 
 - ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.tar.gz) - Also available through `brew`
 
