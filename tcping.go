@@ -134,9 +134,10 @@ type (
 )
 
 const (
-	version = "1.22.1"
-	owner   = "pouriyajamshidi"
-	repo    = "tcping"
+	version    = "1.22.1"
+	owner      = "pouriyajamshidi"
+	repo       = "tcping"
+	dnsTimeout = 1 * time.Second
 )
 
 // signalHandler catches SIGINT and SIGTERM then prints tcping stats
@@ -385,59 +386,51 @@ func checkLatestVersion(p printer) {
 	os.Exit(0)
 }
 
-// resolveHostname handles hostname resolution
-func resolveHostname(tcpStats *stats) ipAddress {
-	ip, err := netip.ParseAddr(tcpStats.userInput.hostname)
-	if err == nil {
-		return ip
-	}
-
-	ipAddrs, err := net.LookupIP(tcpStats.userInput.hostname)
-
-	if err != nil && (tcpStats.totalSuccessfulProbes != 0 || tcpStats.totalUnsuccessfulProbes != 0) {
-		// Prevent exit if application has been running for a while
-		return tcpStats.userInput.ip
-	} else if err != nil {
-		tcpStats.printer.printError("Failed to resolve %s: %s", tcpStats.userInput.hostname, err)
-		os.Exit(1)
-	}
-
+// selectResolvedIP returns a single IPv4 or IPv6 address from the net.IP slice of resolved addresses
+func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
 	var index int
-	var ipList []net.IP
+	var ipList []netip.Addr
+	var ip ipAddress
 
 	switch {
 	case tcpStats.userInput.useIPv4:
 		for _, ip := range ipAddrs {
-			if ip.To4() != nil {
+			if ip.Is4() {
 				ipList = append(ipList, ip)
 			}
 		}
+
 		if len(ipList) == 0 {
 			tcpStats.printer.printError("Failed to find IPv4 address for %s", tcpStats.userInput.hostname)
 			os.Exit(1)
 		}
+
 		if len(ipList) > 1 {
 			index = rand.Intn(len(ipAddrs))
 		} else {
 			index = 0
 		}
+
 		ip, _ = netip.ParseAddr(ipList[index].String())
 
 	case tcpStats.userInput.useIPv6:
 		for _, ip := range ipAddrs {
-			if ip.To16() != nil {
+			if ip.Is6() {
 				ipList = append(ipList, ip)
 			}
 		}
+
 		if len(ipList) == 0 {
 			tcpStats.printer.printError("Failed to find IPv6 address for %s", tcpStats.userInput.hostname)
 			os.Exit(1)
 		}
+
 		if len(ipList) > 1 {
 			index = rand.Intn(len(ipAddrs))
 		} else {
 			index = 0
 		}
+
 		ip, _ = netip.ParseAddr(ipList[index].String())
 
 	default:
@@ -446,14 +439,38 @@ func resolveHostname(tcpStats *stats) ipAddress {
 		} else {
 			index = 0
 		}
+
 		ip, _ = netip.ParseAddr(ipAddrs[index].String())
 	}
 
 	return ip
 }
 
-// retryResolve retries resolving a hostname after certain number of failures
-func retryResolve(tcpStats *stats) {
+// resolveHostname handles hostname resolution with a timeout value of a second
+func resolveHostname(tcpStats *stats) ipAddress {
+	ip, err := netip.ParseAddr(tcpStats.userInput.hostname)
+	if err == nil {
+		return ip
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), dnsTimeout)
+	defer cancel()
+
+	ipAddrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", tcpStats.userInput.hostname)
+
+	// Prevent tcping to exit if it has been running for a while
+	if err != nil && (tcpStats.totalSuccessfulProbes != 0 || tcpStats.totalUnsuccessfulProbes != 0) {
+		return tcpStats.userInput.ip
+	} else if err != nil {
+		tcpStats.printer.printError("Failed to resolve %s: %s", tcpStats.userInput.hostname, err)
+		os.Exit(1)
+	}
+
+	return selectResolvedIP(tcpStats, ipAddrs)
+}
+
+// retryResolveHostname retries resolving a hostname after certain number of failures
+func retryResolveHostname(tcpStats *stats) {
 	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.userInput.retryHostnameLookupAfter {
 		tcpStats.printer.printRetryingToResolve(tcpStats.userInput.hostname)
 		tcpStats.userInput.ip = resolveHostname(tcpStats)
@@ -652,7 +669,7 @@ func main() {
 	var probeCount uint = 0
 	for {
 		if tcpStats.userInput.shouldRetryResolve {
-			retryResolve(tcpStats)
+			retryResolveHostname(tcpStats)
 		}
 
 		tcping(tcpStats)
