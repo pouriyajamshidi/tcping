@@ -37,14 +37,14 @@ jobs:
       - name: Extract Version
         id: version_step
         run: |
-          echo "##[set-output name=version;]VERSION=${GITHUB_REF#$"refs/tags/v"}"
-          echo "##[set-output name=version_tag;]$GITHUB_REPOSITORY:${GITHUB_REF#$"refs/tags/v"}"
-          echo "##[set-output name=latest_tag;]$GITHUB_REPOSITORY:latest"
+          echo "version=${GITHUB_REF#"refs/tags/v"}" >> $GITHUB_ENV
+          echo "version_tag=${GITHUB_REPOSITORY}:${GITHUB_REF#"refs/tags/v"}" >> $GITHUB_ENV
+          echo "latest_tag=${GITHUB_REPOSITORY}:latest" >> $GITHUB_ENV
       - name: Print Version
         run: |
-          echo ${{steps.version_step.outputs.version}}
-          echo ${{steps.version_step.outputs.version_tag}}
-          echo ${{steps.version_step.outputs.latest_tag}}
+          echo ${{ env.version }}
+          echo ${{ env.version_tag }}
+          echo ${{ env.latest_tag }}
 
       - name: Checkout repository
         uses: actions/checkout@v3
