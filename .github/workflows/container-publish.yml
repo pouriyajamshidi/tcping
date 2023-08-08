@@ -42,9 +42,9 @@ jobs:
           echo "latest_tag=${GITHUB_REPOSITORY}:latest" >> $GITHUB_ENV
       - name: Print Version
         run: |
-          echo ${{steps.version_step.outputs.version}}
-          echo ${{steps.version_step.outputs.version_tag}}
-          echo ${{steps.version_step.outputs.latest_tag}}
+          echo ${{ env.version }}
+          echo ${{ env.version_tag }}
+          echo ${{ env.latest_tag }}
 
       - name: Checkout repository
         uses: actions/checkout@v3
