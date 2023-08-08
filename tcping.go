@@ -103,6 +103,7 @@ type userInput struct {
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
+	intervalBetweenProbes    time.Duration
 }
 
 type longestTime struct {
@@ -170,9 +171,9 @@ func monitorStdin(stdinChan chan bool) {
 // all the necessary calculations beforehand.
 func (tcpStats *stats) printStats() {
 	calcLongestUptime(tcpStats,
-		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
+		time.Duration(tcpStats.ongoingSuccessfulProbes)*tcpStats.userInput.intervalBetweenProbes)
 	calcLongestDowntime(tcpStats,
-		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*tcpStats.userInput.intervalBetweenProbes)
 
 	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
 
@@ -220,6 +221,7 @@ func processUserInput(tcpStats *stats) {
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
+	secondsBetweenProbes := flag.Float64("i", 1, "wait interval seconds between sending each packet. Real number allowed with dot as a decimal separator (regardless locale setup). The default is to wait for one second between each packet")
 
 	flag.CommandLine.Usage = usage
 
@@ -296,6 +298,11 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.userInput.ip = resolveHostname(tcpStats)
 	tcpStats.startTime = time.Now()
 	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
+	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
+	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
+		tcpStats.printer.printError("Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
 
 	// this serves as a default starting value for tracking changes.
 	tcpStats.hostnameChanges = []hostnameChange{
@@ -326,6 +333,8 @@ func permuteArgs(args cliArgs) {
 			optionName := v[1:]
 			switch optionName {
 			case "c":
+				fallthrough
+			case "i":
 				fallthrough
 			case "r":
 				/* out of index */
@@ -577,6 +586,11 @@ func nanoToMillisecond(nano int64) float32 {
 	return float32(nano) / float32(time.Millisecond)
 }
 
+// secondsToDuration returns the corresonding duration from seconds expressed with a float.
+func secondsToDuration(seconds float64) time.Duration {
+	return time.Duration(1000*seconds) * time.Millisecond
+}
+
 // handleConnError processes failed probes
 func (tcpStats *stats) handleConnError(connTime time.Time) {
 	if !tcpStats.wasDown {
@@ -587,7 +601,7 @@ func (tcpStats *stats) handleConnError(connTime time.Time) {
 		tcpStats.wasDown = true
 	}
 
-	tcpStats.totalDowntime += time.Second
+	tcpStats.totalDowntime += tcpStats.userInput.intervalBetweenProbes
 	tcpStats.lastUnsuccessfulProbe = connTime
 	tcpStats.totalUnsuccessfulProbes += 1
 	tcpStats.ongoingUnsuccessfulProbes += 1
@@ -617,7 +631,7 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time) {
 		tcpStats.startOfUptime = connTime
 	}
 
-	tcpStats.totalUptime += time.Second
+	tcpStats.totalUptime += tcpStats.userInput.intervalBetweenProbes
 	tcpStats.lastSuccessfulProbe = connTime
 	tcpStats.totalSuccessfulProbes += 1
 	tcpStats.ongoingSuccessfulProbes += 1
@@ -652,12 +666,11 @@ func tcping(tcpStats *stats) {
 }
 
 func main() {
-	tcpStats := &stats{
-		ticker: time.NewTicker(time.Second),
-	}
+	tcpStats := &stats{}
+	processUserInput(tcpStats)
+	tcpStats.ticker = time.NewTicker(tcpStats.userInput.intervalBetweenProbes)
 	defer tcpStats.ticker.Stop()
 
-	processUserInput(tcpStats)
 	signalHandler(tcpStats)
 
 	tcpStats.printer.printStart(tcpStats.userInput.hostname, tcpStats.userInput.port)
