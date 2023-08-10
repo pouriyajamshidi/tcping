@@ -103,9 +103,9 @@ type userInput struct {
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
-	intervalBetweenProbes    time.Duration
 	timeout                  time.Duration
 	networkInterface         networkInterface
+	intervalBetweenProbes    time.Duration
 }
 
 type networkInterface struct {
@@ -183,7 +183,6 @@ func (tcpStats *stats) printStats() {
 	} else {
 		calcLongestUptime(tcpStats, time.Since(tcpStats.startOfUptime))
 	}
-
 	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
 
 	tcpStats.printer.printStatistics(*tcpStats)
@@ -325,6 +324,11 @@ func processUserInput(tcpStats *stats) {
 		os.Exit(1)
 	}
 	tcpStats.userInput.timeout = secondsToDuration(*timeout)
+	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
+	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
+		tcpStats.printer.printError("Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
 
 	// this serves as a default starting value for tracking changes.
 	tcpStats.hostnameChanges = []hostnameChange{
@@ -365,13 +369,13 @@ func permuteArgs(args cliArgs) {
 			switch optionName {
 			case "c":
 				fallthrough
-			case "i":
-				fallthrough
 			case "t":
 				fallthrough
 			case "db":
 				fallthrough
 			case "I":
+				fallthrough
+			case "i":
 				fallthrough
 			case "r":
 				/* out of index */
