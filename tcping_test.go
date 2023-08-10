@@ -18,8 +18,9 @@ func createTestStats(t *testing.T) *stats {
 	s := stats{
 		printer: &dummyPrinter{},
 		userInput: userInput{
-			ip:   addr,
-			port: 12345,
+			ip:                    addr,
+			port:                  12345,
+			intervalBetweenProbes: time.Second,
 		},
 		ticker: time.NewTicker(time.Second),
 	}
@@ -202,4 +203,38 @@ func TestSelectResolvedIPv6(t *testing.T) {
 			t.Errorf("Expected an IP but got invalid address")
 		}
 	})
+}
+
+func TestSecondsToDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		seconds  float64
+		duration time.Duration
+	}{
+		{
+			name:     "positive integer",
+			seconds:  2,
+			duration: 2 * time.Second,
+		},
+		{
+			name:     "positive float",
+			seconds:  1.5, // 1.5 = 3 / 2
+			duration: time.Second * 3 / 2,
+		},
+		{
+			name:     "negative integer",
+			seconds:  -3,
+			duration: -3 * time.Second,
+		},
+		{
+			name:     "negative float",
+			seconds:  -2.5, // -2.5 = -5 / 2
+			duration: time.Second * -5 / 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.duration, secondsToDuration(tt.seconds))
+		})
+	}
 }
