@@ -17,8 +17,8 @@
 - refactor: Enter key detection logic
 - refactor: name resolution handling. The maximum allowed time to wait for DNS response is now 2 seconds
 - refactor: and unify exit points thanks to @ravsii
-- tests: feature: add more test special thanks to @ravsii
-- enhancement:add dependabot
+- tests: add more test special thanks to @ravsii
+- enhancement: add dependabot
 - docs: improve documentation
 
 ## v1.22.1 - 2023-5-14
