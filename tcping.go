@@ -92,6 +92,7 @@ type stats struct {
 	rttResults                rttResult
 	wasDown                   bool // wasDown is used to determine the duration of a downtime
 	isIP                      bool // isIP suppresses printing the IP information twice when hostname is not provided
+	isInterface               bool
 }
 
 type userInput struct {
@@ -103,6 +104,7 @@ type userInput struct {
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
+	interfaceName            string
 }
 
 type longestTime struct {
@@ -220,8 +222,8 @@ func processUserInput(tcpStats *stats) {
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
-
 	flag.CommandLine.Usage = usage
+	interfaceN := flag.String("i", "no-interface", "interface to dial the tcp connection")
 
 	permuteArgs(os.Args[1:])
 	flag.Parse()
@@ -308,6 +310,11 @@ func processUserInput(tcpStats *stats) {
 
 	if tcpStats.userInput.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
 		tcpStats.userInput.shouldRetryResolve = true
+	}
+
+	if *interfaceN != "no-interface" {
+		tcpStats.userInput.interfaceName = *interfaceN
+		tcpStats.isInterface = true
 	}
 }
 
@@ -632,9 +639,36 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time) {
 	)
 }
 
+func getInterfaceAddr(tcpStats *stats) (addr string) {
+	var ipAddr net.IP
+	ief, err := net.InterfaceByName(tcpStats.userInput.interfaceName)
+	if err != nil {
+		tcpStats.printer.printError("Interface name %s not allowed", tcpStats.userInput.interfaceName)
+	}
+	addrs, err := ief.Addrs()
+	if err != nil {
+		tcpStats.printer.printError("Unable to get Interface address")
+	}
+	for _, addr := range addrs {
+		if ipAddr = addr.(*net.IPNet).IP; ipAddr != nil {
+			break
+		}
+	}
+	if ipAddr == nil {
+		tcpStats.printer.printError("Unable to generate Interface's IP Address")
+	}
+	return ipAddr.String()
+}
+
 // tcping pings a host, TCP style
 func tcping(tcpStats *stats) {
-	IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
+	var IPAndPort netip.AddrPort
+	if tcpStats.isInterface {
+		IPAdress, _ := netip.ParseAddr(getInterfaceAddr(tcpStats))
+		IPAndPort = netip.AddrPortFrom(IPAdress, tcpStats.userInput.port)
+	} else {
+		IPAndPort = netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
+	}
 
 	connStart := time.Now()
 	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
