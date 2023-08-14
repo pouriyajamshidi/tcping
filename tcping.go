@@ -171,10 +171,11 @@ func monitorStdin(stdinChan chan bool) {
 // This should be used instead, as it makes
 // all the necessary calculations beforehand.
 func (tcpStats *stats) printStats() {
-	calcLongestUptime(tcpStats,
-		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
-	calcLongestDowntime(tcpStats,
-		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+	if tcpStats.wasDown {
+		calcLongestDowntime(tcpStats, time.Since(tcpStats.startOfDowntime))
+	} else {
+		calcLongestUptime(tcpStats, time.Since(tcpStats.startOfUptime))
+	}
 
 	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
 
@@ -706,8 +707,6 @@ func main() {
 func maxDuration(a, b time.Duration) time.Duration {
 	if a > b {
 		return a
-	} else {
-		return b
 	}
-
+	return b
 }
