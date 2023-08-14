@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	dbLocation = "tcping.db"
-
-	tableSchema = `CREATE TABLE %s (
+	dbLocation  = "tcping.db"
+	tableSchema = `
+CREATE TABLE %s (
     id INTEGER PRIMARY KEY,
     type TEXT NOT NULL,
     message TEXT,
@@ -49,7 +49,7 @@ const (
     total_downtime REAL
 );
 
-
+-- Host name change table
 CREATE TABLE %s (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip TEXT,
@@ -79,16 +79,14 @@ func (s saveDb) saveHostNameChange(h hostnameChange) {
 
 func newDb(args []string, dbPath string) saveDb {
 	tableName, hostnameChangeTable := newTableNames(args)
-
-	// for the db
-	schema := fmt.Sprintf(tableSchema, tableName, hostnameChangeTable)
+	tableSchema := fmt.Sprintf(tableSchema, tableName, hostnameChangeTable)
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec(schema)
+	_, err = db.Exec(tableSchema)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,8 +148,9 @@ func (s saveDb) printTotalDownTime(downtime time.Duration) {
 }
 
 func (s saveDb) printStatistics(stat stats) {
-	// this is hard to read i know.
-	schema := `INSERT INTO %s (type, message, ip, hostname, port,
+	// this is hard to read i know. I tried to made these readlable by separating them into new lines
+	schema := `INSERT INTO %s (type, message,
+		ip, hostname, port,
         total_successful_probes, total_unsuccessful_probes,
         last_successful_probe, last_unsuccessful_probe,
         latency_min, latency_avg, latency_max,
@@ -164,7 +163,8 @@ func (s saveDb) printStatistics(stat stats) {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	s.saveToDb(schema,
-		statisticsEvent, fmt.Sprintf("stats for %s", stat.userInput.hostname), stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port,
+		statisticsEvent, fmt.Sprintf("stats for %s", stat.userInput.hostname),
+		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port,
 		stat.totalSuccessfulProbes, stat.totalUnsuccessfulProbes,
 		stat.lastSuccessfulProbe, stat.lastSuccessfulProbe,
 		stat.rttResults.min, stat.rttResults.average, stat.rttResults.max,

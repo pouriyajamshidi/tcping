@@ -9,14 +9,15 @@ import (
 func TestNewDB(t *testing.T) {
 	arg := []string{"localhost", "8001"}
 	s := newDb(arg, ":memory:")
+	// testing if the table names are
 	rows, err := s.db.Query("SELECT name FROM sqlite_master WHERE type='table';")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	defer rows.Close()
+	defer s.db.Close()
 
-	tableName, hostnameChangeTable := newTableNames(arg)
 	var tNames []string
 	for rows.Next() {
 		var tblName string
@@ -35,6 +36,7 @@ func TestNewDB(t *testing.T) {
 		t.Errorf("expected 2 tables; got %d", len(tNames))
 	}
 
+	tableName, hostnameChangeTable := s.tableName, s.hostnameChangeTable
 	if tNames[0] != tableName {
 		t.Errorf("expected %s; got %s", tableName, tNames[0])
 	}
@@ -120,13 +122,6 @@ func TestDbPrintProbeSuccess(t *testing.T) {
 	}
 }
 
-func TestDbPrintStatistics(t *testing.T) {
-	arg := []string{"localhost", "8001"}
-	s := newDb(arg, ":memory:")
-
-	s.printStatistics(*createTestStats(t))
-}
-
 func TestDbHostnameSave(t *testing.T) {
 	arg := []string{"localhost", "8001"}
 	s := newDb(arg, ":memory:")
@@ -135,8 +130,7 @@ func TestDbHostnameSave(t *testing.T) {
 		"192.168.1.1",
 		"10.0.0.1",
 		"172.16.0.1",
-		"2001:0db8:85a3:0000:0000:8a2e:0370:7334", // IPv6 address
-		// Add more IP addresses as needed
+		"2001:0db8:85a3:0000:0000:8a2e:0370:7334",
 	}
 
 	var hostNames []hostnameChange
@@ -178,4 +172,11 @@ func TestDbHostnameSave(t *testing.T) {
 		}
 	}
 
+}
+
+func TestDbPrintStatistics(t *testing.T) {
+	arg := []string{"localhost", "8001"}
+	s := newDb(arg, ":memory:")
+
+	s.printStatistics(*createTestStats(t))
 }
