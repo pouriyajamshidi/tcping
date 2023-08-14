@@ -1,13 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/netip"
-	"strings"
 	"testing"
 	"time"
-	"unicode"
 )
 
 func TestNewDB(t *testing.T) {
@@ -20,40 +16,31 @@ func TestNewDB(t *testing.T) {
 	}
 	defer rows.Close()
 
-	var tableNames []string
+	tableName, hostnameChangeTable := newTableNames(arg)
+	var tNames []string
 	for rows.Next() {
-		var tbl string
-		if err := rows.Scan(&tbl); err != nil {
-			log.Fatal(err)
+		var tblName string
+		if err := rows.Scan(&tblName); err != nil {
+			t.Error(err)
+			return
 		}
-		tableNames = append(tableNames, tbl)
+		// this is automatically created by SQLite
+		if tblName == "sqlite_sequence" {
+			continue
+		}
+		tNames = append(tNames, tblName)
 	}
 
-	tableName := fmt.Sprintf("%s_%s_%s", strings.ReplaceAll(arg[0], ".", "_"), arg[1], time.Now().Format("15_04_05_01_02_2006"))
-	if unicode.IsNumber(rune(tableName[0])) {
-		tableName = "_" + tableName
-	}
-	hostnameChangeTable := fmt.Sprintf("hostname_changes_%s", strings.TrimPrefix(tableName, "_"))
-	exptectedTableNames := []string{tableName, hostnameChangeTable}
-
-	found := make([]bool, len(exptectedTableNames))
-	fountIdx := 0
-
-	for _, et := range exptectedTableNames {
-	secondary:
-		for _, g := range tableNames {
-			if et == g {
-				found[fountIdx] = true
-				fountIdx++
-				break secondary
-			}
-		}
+	if len(tNames) != 2 {
+		t.Errorf("expected 2 tables; got %d", len(tNames))
 	}
 
-	for _, f := range found {
-		if !f {
-			t.Errorf("expected %v; got %v", exptectedTableNames, tableNames)
-		}
+	if tNames[0] != tableName {
+		t.Errorf("expected %s; got %s", tableName, tNames[0])
+	}
+
+	if tNames[1] != hostnameChangeTable {
+		t.Errorf("expected %s; got %s", hostnameChangeTable, tNames[1])
 	}
 }
 
