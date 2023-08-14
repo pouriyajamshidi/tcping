@@ -48,6 +48,58 @@ func TestNewDB(t *testing.T) {
 	}
 }
 
+func TestDbHostnameSave(t *testing.T) {
+	arg := []string{"localhost", "8001"}
+	s := newDb(arg, ":memory:")
+
+	ipAddresses := []string{
+		"192.168.1.1",
+		"10.0.0.1",
+		"172.16.0.1",
+		"2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+	}
+
+	var hostNames []hostnameChange
+	for _, ip := range ipAddresses {
+		host := hostnameChange{
+			Addr: netip.MustParseAddr(ip),
+			When: time.Now(),
+		}
+		hostNames = append(hostNames, host)
+	}
+
+	for _, host := range hostNames {
+		s.saveHostNameChange(host)
+	}
+
+	var dbIp []string
+
+	rows, err := s.db.Query("SELECT ip FROM " + s.hostnameChangeTable)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for rows.Next() {
+		var ip string
+
+		err = rows.Scan(&ip)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		dbIp = append(dbIp, ip)
+	}
+
+	for i, ip := range hostNames {
+		if dbIp[i] != ip.Addr.String() {
+			t.Errorf("expected %q; got %q", ip.Addr.String(), dbIp[i])
+			return
+		}
+	}
+
+}
+
 func TestDbPrintStart(t *testing.T) {
 	arg := []string{"localhost", "8001"}
 	s := newDb(arg, ":memory:")
@@ -122,58 +174,6 @@ func TestDbPrintProbeSuccess(t *testing.T) {
 	} else if timeStamp.IsZero() {
 		t.Error("timeStamp is empty")
 	}
-}
-
-func TestDbHostnameSave(t *testing.T) {
-	arg := []string{"localhost", "8001"}
-	s := newDb(arg, ":memory:")
-
-	ipAddresses := []string{
-		"192.168.1.1",
-		"10.0.0.1",
-		"172.16.0.1",
-		"2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-	}
-
-	var hostNames []hostnameChange
-	for _, ip := range ipAddresses {
-		host := hostnameChange{
-			Addr: netip.MustParseAddr(ip),
-			When: time.Now(),
-		}
-		hostNames = append(hostNames, host)
-	}
-
-	for _, host := range hostNames {
-		s.saveHostNameChange(host)
-	}
-
-	var dbIp []string
-
-	rows, err := s.db.Query("SELECT ip FROM " + s.hostnameChangeTable)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	for rows.Next() {
-		var ip string
-
-		err = rows.Scan(&ip)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		dbIp = append(dbIp, ip)
-	}
-
-	for i, ip := range hostNames {
-		if dbIp[i] != ip.Addr.String() {
-			t.Errorf("expected %q; got %q", ip.Addr.String(), dbIp[i])
-			return
-		}
-	}
-
 }
 
 func TestDbPrintStatistics(t *testing.T) {
