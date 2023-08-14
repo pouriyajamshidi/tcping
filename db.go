@@ -27,10 +27,10 @@ CREATE TABLE %s (
     port INTEGER,
     success INTEGER,
     latency REAL,
-    latency_min TEXT,
-    latency_avg TEXT,
-    latency_max TEXT,
-    total_duration TEXT,
+    latency_min REAL,
+    latency_avg REAL,
+    latency_max REAL,
+	total_duration TEXT,
     start_timestamp DATETIME,
     end_timestamp DATETIME,
     last_successful_probe DATETIME,
@@ -41,17 +41,17 @@ CREATE TABLE %s (
     longest_downtime TEXT,
     longest_downtime_start DATETIME,
     longest_downtime_end DATETIME,
-    total_packet_loss TEXT,
+    total_packet_loss REAL,
     total_packets INTEGER,
     total_successful_probes INTEGER,
     total_unsuccessful_probes INTEGER,
-    total_uptime REAL,
-    total_downtime REAL
+    total_uptime TEXT,
+    total_downtime TEXT
 );
 
 -- Host name change table
 CREATE TABLE %s (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     ip TEXT,
     time DATETIME
 );`
@@ -155,13 +155,14 @@ func (s saveDb) printStatistics(stat stats) {
         last_successful_probe, last_unsuccessful_probe,
         latency_min, latency_avg, latency_max,
         start_timestamp, end_timestamp,
-        total_uptime, total_downtime,
+        total_duration, total_uptime, total_downtime,
 		longest_uptime, longest_uptime_start, longest_uptime_end,
      	longest_downtime, longest_downtime_start, longest_downtime_end,
         total_packets,
 		timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
+	totalDuration := stat.totalUptime + stat.totalDowntime
 	s.saveToDb(schema,
 		statisticsEvent, fmt.Sprintf("stats for %s", stat.userInput.hostname),
 		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port,
@@ -169,9 +170,9 @@ func (s saveDb) printStatistics(stat stats) {
 		stat.lastSuccessfulProbe, stat.lastSuccessfulProbe,
 		stat.rttResults.min, stat.rttResults.average, stat.rttResults.max,
 		stat.startTime, stat.endTime,
-		stat.totalUptime, stat.totalDowntime,
-		stat.longestUptime.duration, stat.longestUptime.start, stat.longestUptime.end,
-		stat.longestDowntime.duration, stat.longestDowntime.start, stat.longestUptime.end,
+		totalDuration.String(),stat.totalUptime.String(), stat.totalDowntime.String(),
+		stat.longestUptime.duration.String(), stat.longestUptime.start, stat.longestUptime.end,
+		stat.longestDowntime.duration.String(), stat.longestDowntime.start, stat.longestDowntime.end,
 		stat.totalSuccessfulProbes+stat.totalUnsuccessfulProbes,
 		time.Now(),
 	)
