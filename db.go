@@ -145,6 +145,8 @@ func (s saveDb) printStatistics(stat stats) {
 	)
 
 	s.saveHostNameChange(stat.hostnameChanges)
+
+	colorYellow("\noutput has been written to %q\nIn the table %q\n", dbLocation, s.tableName)
 }
 
 func (s saveDb) printStart(hostname string, port uint16)                                      {}
