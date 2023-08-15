@@ -85,13 +85,19 @@ func newTableNames(args []string) string {
 	if len(args) < 2 {
 		usage()
 	}
+
+	// table name can't have '.'
+	// formating the table name "example_com_hour_minute_sec_day_month_year"
 	tableName := fmt.Sprintf("%s_%s_%s", strings.ReplaceAll(args[0], ".", "_"), args[1], time.Now().Format("15_04_05_01_02_2006"))
+
+	// table name can't start with numbers
 	if unicode.IsNumber(rune(tableName[0])) {
 		tableName = "_" + tableName
 	}
 	return tableName
 }
 
+// it's a helper function for saving to db
 func (s saveDb) saveToDb(query string, arg ...any) {
 	statement := fmt.Sprintf(query, s.tableName)
 	if _, err := s.db.Exec(statement, arg...); err != nil {
@@ -100,14 +106,14 @@ func (s saveDb) saveToDb(query string, arg ...any) {
 }
 
 func (s saveDb) saveHostNameChange(h []hostnameChange) {
+	schema := `INSERT INTO %s
+	(event_type, hostname_changed_to, hostname_change_time)
+	VALUES (?, ?, ?)`
+
 	for _, host := range h {
 		if host.Addr.String() == "" {
 			continue
 		}
-		schema := `INSERT INTO %s
-	(event_type, hostname_changed_to, hostname_change_time)
-	VALUES (?, ?, ?)`
-
 		s.saveToDb(schema, eventTypeHostnameChange, host.Addr.String(), host.When)
 	}
 }
@@ -127,6 +133,7 @@ func (s saveDb) printStatistics(stat stats) {
 
 	totalPackets := stat.totalSuccessfulProbes + stat.totalUnsuccessfulProbes
 	packetLoss := (float32(stat.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
+
 	if math.IsNaN(float64(packetLoss)) {
 		packetLoss = 0
 	}
@@ -149,6 +156,7 @@ func (s saveDb) printStatistics(stat stats) {
 	colorYellow("\noutput has been written to %q\nIn the table %q\n", dbLocation, s.tableName)
 }
 
+// they are only here to satisfy the "printer" interface.
 func (s saveDb) printStart(hostname string, port uint16)                                      {}
 func (s saveDb) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
 func (s saveDb) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
