@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"math"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -18,15 +18,14 @@ type saveDb struct {
 }
 
 const (
-	dbLocation              = "tcping.db"
+	dbLocation              = "./tcping.db"
 	eventTypeStatistics     = "statistics"
 	eventTypeHostnameChange = "hostname change"
 	tableSchema             = `
 CREATE TABLE %s (
     id INTEGER PRIMARY KEY,
-    event_type TEXT NOT NULL, -- for the data type
+    event_type TEXT NOT NULL, -- for the data type eg. statistics, hostname change
     timestamp DATETIME,
-
     addr TEXT,
     hostname TEXT,
     port INTEGER,
@@ -70,17 +69,20 @@ func newDb(args []string, dbPath string) saveDb {
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		log.Fatal(err)
+		colorRed("\nsometing unexpedted happened while creating db\nerr: %s\n", err)
+		os.Exit(1)
 	}
 
 	_, err = db.Exec(tableSchema)
 	if err != nil {
-		log.Fatal(err)
+		colorRed("\nsometing unexpedted happened while creating db\nerr: %s\n", err)
+		os.Exit(1)
 	}
 
 	return saveDb{db, tableName}
 }
 
+// this will return correctly formatted table name
 func newTableNames(args []string) string {
 	if len(args) < 2 {
 		usage()
@@ -94,18 +96,25 @@ func newTableNames(args []string) string {
 	if unicode.IsNumber(rune(tableName[0])) {
 		tableName = "_" + tableName
 	}
+
 	return tableName
 }
 
 // it's a helper function for saving to db
-func (s saveDb) saveToDb(query string, arg ...any) {
+func (s saveDb) saveToDb(query string, arg ...any) error {
+	// inserting the table name
 	statement := fmt.Sprintf(query, s.tableName)
-	if _, err := s.db.Exec(statement, arg...); err != nil {
-		log.Fatal(err)
-	}
+
+	// saving to the db
+	_, err := s.db.Exec(statement, arg...)
+
+	return err
 }
 
-func (s saveDb) saveHostNameChange(h []hostnameChange) {
+// save the hostname changes as it's an array
+// it will be saved after statistics within multiple rows
+func (s saveDb) saveHostNameChange(h []hostnameChange) error {
+	// %s will be replaced by the table name
 	schema := `INSERT INTO %s
 	(event_type, hostname_changed_to, hostname_change_time)
 	VALUES (?, ?, ?)`
@@ -114,11 +123,16 @@ func (s saveDb) saveHostNameChange(h []hostnameChange) {
 		if host.Addr.String() == "" {
 			continue
 		}
-		s.saveToDb(schema, eventTypeHostnameChange, host.Addr.String(), host.When)
+		err := s.saveToDb(schema, eventTypeHostnameChange, host.Addr.String(), host.When)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (s saveDb) printStatistics(stat stats) {
+func (s saveDb) saveStats(stat stats) error {
+	// %s will be replaced by the table name
 	schema := `INSERT INTO %s (event_type, timestamp,
 		addr, hostname, port, hostname_resolve_tries,
 		total_successful_probes, total_unsuccessful_probes,
@@ -133,12 +147,11 @@ func (s saveDb) printStatistics(stat stats) {
 
 	totalPackets := stat.totalSuccessfulProbes + stat.totalUnsuccessfulProbes
 	packetLoss := (float32(stat.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
-
 	if math.IsNaN(float64(packetLoss)) {
 		packetLoss = 0
 	}
 
-	s.saveToDb(schema,
+	err := s.saveToDb(schema,
 		eventTypeStatistics, time.Now(),
 		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port, stat.retriedHostnameLookups,
 		stat.totalSuccessfulProbes, stat.totalUnsuccessfulProbes,
@@ -151,13 +164,29 @@ func (s saveDb) printStatistics(stat stats) {
 		stat.startTime, stat.endTime, stat.endTime.Sub(stat.startTime).String(),
 	)
 
-	s.saveHostNameChange(stat.hostnameChanges)
+	return err
+}
 
-	colorYellow("\noutput has been written to %q\nIn the table %q\n", dbLocation, s.tableName)
+// it will let the user know the program is running
+func (s saveDb) printStart(hostname string, port uint16) {
+	colorCyan("TCPinging %s on port %d\n", hostname, port)
+}
+
+func (s saveDb) printStatistics(stat stats) {
+	err := s.saveStats(stat)
+	if err != nil {
+		colorRed("\nsometing unexpedted happened while writing to the db\nerr: %s\n", err)
+		os.Exit(1)
+	}
+	err = s.saveHostNameChange(stat.hostnameChanges)
+	if err != nil {
+		colorRed("\nsometing unexpedted happened while writing to the db\nerr: %s\n", err)
+		os.Exit(1)
+	}
+	colorYellow("\nstatistics saved to %q in the table named %q\n", dbLocation, s.tableName)
 }
 
 // they are only here to satisfy the "printer" interface.
-func (s saveDb) printStart(hostname string, port uint16)                                      {}
 func (s saveDb) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
 func (s saveDb) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
 func (s saveDb) printRetryingToResolve(hostname string)                                       {}

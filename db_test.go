@@ -29,14 +29,15 @@ func TestNewDB(t *testing.T) {
 	Equals(t, tblName, s.tableName)
 }
 
-func TestDbPrintStatistics(t *testing.T) {
+func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
 	s := newDb(arg, ":memory:")
 	defer s.db.Close()
 
 	stat := mockStats()
-	s.printStatistics(stat)
+	err := s.saveStats(stat)
+	Nil(t, err)
 
 	query := `SELECT
 		addr, hostname, port, hostname_resolve_tries,
@@ -116,12 +117,23 @@ func TestDbPrintStatistics(t *testing.T) {
 	Equals(t, longestDowntimeStart.Format(dbTimeFormat), stat.longestDowntime.start.Format(dbTimeFormat))
 	Equals(t, longestDowntimeEnd.Format(dbTimeFormat), stat.longestDowntime.end.Format(dbTimeFormat))
 
+}
+
+func TestSaveHostname(t *testing.T) {
+	// There are many fields, so many things could go wrong; that's why this elaborate test.
+	arg := []string{"localhost", "8001"}
+	s := newDb(arg, ":memory:")
+	defer s.db.Close()
+	stat := mockStats()
+
+	err := s.saveHostNameChange(stat.hostnameChanges)
+	Nil(t, err)
 	// testing the host names if they are properly written
-	query = `SELECT
+	query := `SELECT
 	hostname_changed_to, hostname_change_time
 	FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", s.tableName, eventTypeHostnameChange)
 
-	rows, err = s.db.Query(query)
+	rows, err := s.db.Query(query)
 	Nil(t, err)
 
 	idx := 0
