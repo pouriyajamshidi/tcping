@@ -218,7 +218,7 @@ func processUserInput(tcpStats *stats) {
 	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
 	outputJson := flag.Bool("j", false, "output in JSON format.")
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
-	dbOutput := flag.Bool("db", false, "output in JSON format.")
+	dbOutput := flag.Bool("db", false, "save output into a sqlite3 db")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 
