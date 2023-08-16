@@ -111,8 +111,9 @@ func (s saveDb) saveToDb(query string, arg ...any) error {
 	return err
 }
 
-// save the hostname changes as it's an array
-// it will be saved after statistics within multiple rows
+// As hostname changes as it's an array,
+// it will be saved after statistics within multiple
+// with event_type = eventTypeHostnameChange
 func (s saveDb) saveHostNameChange(h []hostnameChange) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s

@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-const dbTimeFormat = "2006-01-02 15:04:05.999999999 -0700 -07"
-
 func TestNewDB(t *testing.T) {
 	arg := []string{"localhost", "8001"}
 	s := newDb(arg, ":memory:")
@@ -100,8 +98,8 @@ func TestDbSaveStats(t *testing.T) {
 	Equals(t, lMin, stat.rttResults.min)
 	Equals(t, lAvg, stat.rttResults.average)
 	Equals(t, lMax, stat.rttResults.max)
-	Equals(t, startTimestamp.Format(dbTimeFormat), stat.startTime.Format(dbTimeFormat))
-	Equals(t, endTimestamp.Format(dbTimeFormat), stat.endTime.Format(dbTimeFormat))
+	Equals(t, startTimestamp.Format(timeFormat), stat.startTime.Format(timeFormat))
+	Equals(t, endTimestamp.Format(timeFormat), stat.endTime.Format(timeFormat))
 
 	actualDuration := stat.endTime.Sub(stat.startTime).String()
 	Equals(t, totalDuration, actualDuration)
@@ -110,12 +108,12 @@ func TestDbSaveStats(t *testing.T) {
 	Equals(t, totalPackets, stat.totalSuccessfulProbes+stat.totalUnsuccessfulProbes)
 
 	Equals(t, longestUptime, stat.longestUptime.duration.String())
-	Equals(t, longestUptimeStart.Format(dbTimeFormat), stat.longestUptime.start.Format(dbTimeFormat))
-	Equals(t, longestUptimeEnd.Format(dbTimeFormat), stat.longestUptime.end.Format(dbTimeFormat))
+	Equals(t, longestUptimeStart.Format(timeFormat), stat.longestUptime.start.Format(timeFormat))
+	Equals(t, longestUptimeEnd.Format(timeFormat), stat.longestUptime.end.Format(timeFormat))
 
 	Equals(t, longestDowntime, stat.longestDowntime.duration.String())
-	Equals(t, longestDowntimeStart.Format(dbTimeFormat), stat.longestDowntime.start.Format(dbTimeFormat))
-	Equals(t, longestDowntimeEnd.Format(dbTimeFormat), stat.longestDowntime.end.Format(dbTimeFormat))
+	Equals(t, longestDowntimeStart.Format(timeFormat), stat.longestDowntime.start.Format(timeFormat))
+	Equals(t, longestDowntimeEnd.Format(timeFormat), stat.longestDowntime.end.Format(timeFormat))
 
 }
 
@@ -146,29 +144,10 @@ func TestSaveHostname(t *testing.T) {
 		actualHost := stat.hostnameChanges[idx]
 		idx++
 		Equals(t, hostName, actualHost.Addr.String())
-		Equals(t, cTime.Format(dbTimeFormat), actualHost.When.Format(dbTimeFormat))
+		Equals(t, cTime.Format(timeFormat), actualHost.When.Format(timeFormat))
 	}
 	Equals(t, idx, len(stat.hostnameChanges))
 	rows.Close()
-}
-
-// Equals compares two values
-func Equals[T comparable](t *testing.T, value, want T) {
-	t.Helper()
-	if want != value {
-		t.Errorf("wanted %v; got %v", want, value)
-		t.FailNow()
-	}
-}
-
-// Nil compares a value to nil, in some cases you may need to do `Equals(t, value, nil)`
-func Nil(t *testing.T, value any) {
-	t.Helper()
-
-	if value != nil {
-		t.Logf("expected '%v' to be nil", value)
-		t.FailNow()
-	}
 }
 
 func hostNameChange() []hostnameChange {
@@ -179,10 +158,10 @@ func hostNameChange() []hostnameChange {
 		"2001:0db8:85a3:0000:0000:8a2e:0370:7334",
 	}
 	var hostNames []hostnameChange
-	for _, ip := range ipAddresses {
+	for i, ip := range ipAddresses {
 		host := hostnameChange{
 			Addr: netip.MustParseAddr(ip),
-			When: time.Now(),
+			When: time.Now().Add(time.Duration(i) * time.Minute),
 		}
 		hostNames = append(hostNames, host)
 	}
@@ -225,4 +204,24 @@ func mockStats() stats {
 	}
 
 	return stat
+}
+
+// Equals compares two values.
+// This is for avoiding code duplications.
+func Equals[T comparable](t *testing.T, value, want T) {
+	t.Helper()
+	if want != value {
+		t.Errorf("wanted %v; got %v", want, value)
+		t.FailNow()
+	}
+}
+
+// Nil compares a value to nil, in some cases you may need to do `Equals(t, value, nil)`
+func Nil(t *testing.T, value any) {
+	t.Helper()
+
+	if value != nil {
+		t.Logf("expected '%v' to be nil", value)
+		t.FailNow()
+	}
 }
