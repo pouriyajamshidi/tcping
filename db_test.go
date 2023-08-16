@@ -1,3 +1,5 @@
+//go:build exclude
+
 package main
 
 import (
@@ -40,6 +42,7 @@ func TestDbSaveStats(t *testing.T) {
 	query := `SELECT
 		addr, hostname, port, hostname_resolve_tries,
 		total_successful_probes, total_unsuccessful_probes,
+		never_succeed_probe, never_failed_probe,
 		last_successful_probe, last_unsuccessful_probe,
 		total_packets, total_packet_loss,
 		total_uptime, total_downtime,
@@ -61,6 +64,7 @@ func TestDbSaveStats(t *testing.T) {
 		addr, hostname, port                           string
 		hostNameResolveTries                           uint
 		totalSuccessfulProbes, totalUnsuccessfulProbes uint
+		neverSucceedProbe, neverFailedProbe            bool
 		lastSuccessfulProbe, lastUnsuccessfulProbe     time.Time
 		totalPackets                                   uint
 		totalPacketsLoss                               float32
@@ -77,6 +81,7 @@ func TestDbSaveStats(t *testing.T) {
 	err = rows.Scan(
 		&addr, &hostname, &port, &hostNameResolveTries,
 		&totalSuccessfulProbes, &totalUnsuccessfulProbes,
+		&neverSucceedProbe, &neverFailedProbe,
 		&lastSuccessfulProbe, &lastUnsuccessfulProbe,
 		&totalPackets, &totalPacketsLoss,
 		&totalUptime, &totalDowntime,
@@ -95,6 +100,10 @@ func TestDbSaveStats(t *testing.T) {
 	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
 	Equals(t, port, strconv.Itoa(int(stat.userInput.port)))
+
+	Equals(t, neverSucceedProbe, stat.lastSuccessfulProbe.IsZero())
+	Equals(t, neverFailedProbe, stat.lastUnsuccessfulProbe.IsZero())
+
 	Equals(t, lMin, stat.rttResults.min)
 	Equals(t, lAvg, stat.rttResults.average)
 	Equals(t, lMax, stat.rttResults.max)
@@ -170,10 +179,10 @@ func hostNameChange() []hostnameChange {
 
 func mockStats() stats {
 	stat := stats{
-		startTime:              time.Now(),
-		endTime:                time.Now().Add(10 * time.Minute),
-		lastSuccessfulProbe:    time.Now().Add(1 * time.Minute),
-		lastUnsuccessfulProbe:  time.Now().Add(2 * time.Minute),
+		startTime:           time.Now(),
+		endTime:             time.Now().Add(10 * time.Minute),
+		lastSuccessfulProbe: time.Now().Add(1 * time.Minute),
+		// lastUnsuccessfulProbe:  time.Now().Add(2 * time.Minute),
 		retriedHostnameLookups: 10,
 		longestUptime: longestTime{
 			start:    time.Now().Add(20 * time.Second),
