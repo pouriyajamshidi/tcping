@@ -6,3 +6,4 @@ tcping
 .vscode
 *.code-workspace
 patches/
+*.db
