@@ -616,7 +616,7 @@ func secondsToDuration(seconds float64) time.Duration {
 func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
 	if tcpStats.wasDown {
 		tcpStats.startOfUptime = connTime
-		downtime := time.Since(tcpStats.startOfDowntime).Truncate(time.Second)
+		downtime := connTime.Sub(tcpStats.startOfDowntime).Truncate(time.Second)
 		calcLongestDowntime(tcpStats, downtime)
 		tcpStats.printer.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
