@@ -602,7 +602,7 @@ func maxDuration(x, y time.Duration) time.Duration {
 func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = connTime
-		uptime := time.Since(tcpStats.startOfUptime).Truncate(time.Second)
+		uptime := time.Since(tcpStats.startOfUptime)
 		calcLongestUptime(tcpStats, uptime)
 		tcpStats.startOfUptime = time.Time{}
 		tcpStats.wasDown = true
@@ -625,7 +625,7 @@ func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration
 func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
 	if tcpStats.wasDown {
 		tcpStats.startOfUptime = connTime
-		downtime := connTime.Sub(tcpStats.startOfDowntime).Truncate(time.Second)
+		downtime := connTime.Sub(tcpStats.startOfDowntime)
 		calcLongestDowntime(tcpStats, downtime)
 		tcpStats.printer.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
