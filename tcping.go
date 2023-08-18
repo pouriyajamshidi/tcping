@@ -584,6 +584,20 @@ func nanoToMillisecond(nano int64) float32 {
 	return float32(nano) / float32(time.Millisecond)
 }
 
+// secondsToDuration returns the corresonding duration from seconds expressed with a float.
+func secondsToDuration(seconds float64) time.Duration {
+	return time.Duration(1000*seconds) * time.Millisecond
+}
+
+// this is the implementation of the math.Max function for time.Duration types.
+// returns the longest duration of x or y.
+func maxDuration(x, y time.Duration) time.Duration {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 // handleConnError processes failed probes
 func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration) {
 	if !tcpStats.wasDown {
@@ -605,11 +619,6 @@ func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration
 		tcpStats.userInput.port,
 		tcpStats.ongoingUnsuccessfulProbes,
 	)
-}
-
-// secondsToDuration returns the corresonding duration from seconds expressed with a float.
-func secondsToDuration(seconds float64) time.Duration {
-	return time.Duration(1000*seconds) * time.Millisecond
 }
 
 // handleConnSuccess processes successful probes
@@ -702,11 +711,4 @@ func main() {
 			}
 		}
 	}
-}
-
-func maxDuration(a, b time.Duration) time.Duration {
-	if a > b {
-		return a
-	}
-	return b
 }
