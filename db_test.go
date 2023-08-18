@@ -39,7 +39,7 @@ func TestDbSaveStats(t *testing.T) {
 	isNil(t, err)
 
 	query := `SELECT
-		addr, hostname, port, hostname_resolve_tries,
+		addr, hostname, port, hostname_resolve_retries,
 		total_successful_probes, total_unsuccessful_probes,
 		never_succeed_probe, never_failed_probe,
 		last_successful_probe, last_unsuccessful_probe,
@@ -48,7 +48,7 @@ func TestDbSaveStats(t *testing.T) {
 		longest_uptime, longest_uptime_end, longest_uptime_start,
 		longest_downtime, longest_downtime_start, longest_downtime_end,
 		latency_min, latency_avg, latency_max,
-		start_timestamp, end_timestamp, total_duration
+		start_time, end_time, total_duration
 	FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", s.tableName, eventTypeStatistics)
 
 	rows, err := s.db.Query(query)

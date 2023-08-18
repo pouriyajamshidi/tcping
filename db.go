@@ -14,7 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type saveDb struct {
+type database struct {
 	db        *sql.DB
 	dbPath    string
 	tableName string
@@ -32,7 +32,7 @@ CREATE TABLE %s (
     addr TEXT,
     hostname TEXT,
     port INTEGER,
-    hostname_resolve_tries INTEGER,
+    hostname_resolve_retries INTEGER,
 
     hostname_changed_to TEXT,
     hostname_change_time DATETIME,
@@ -42,8 +42,8 @@ CREATE TABLE %s (
     latency_max REAL,
 
 	total_duration TEXT,
-    start_timestamp DATETIME,
-    end_timestamp DATETIME,
+    start_time DATETIME,
+    end_time DATETIME,
 
 	never_succeed_probe INTEGER, -- value will be 1 if a probe never succeeded
 	never_failed_probe INTEGER, -- value will be 1 if a probe never failed
@@ -51,8 +51,8 @@ CREATE TABLE %s (
     last_unsuccessful_probe DATETIME,
 
     longest_uptime TEXT,
-    longest_uptime_end DATETIME,
     longest_uptime_start DATETIME,
+    longest_uptime_end DATETIME,
 
     longest_downtime TEXT,
     longest_downtime_start DATETIME,
@@ -68,24 +68,24 @@ CREATE TABLE %s (
 );`
 )
 
-// newDb creates a newDb with the given path and returns `saveDb` struct
-func newDb(args []string, dbPath string) saveDb {
+// newDb creates a newDb with the given path and returns `database` struct
+func newDb(args []string, dbPath string) database {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		colorRed("\nwhile creating the database %q: %s\n", dbPath, err)
+		colorRed("\nError while creating the database %q: %s\n", dbPath, err)
 		os.Exit(1)
 	}
 
 	_, err = db.Exec(tableSchema)
 	if err != nil {
-		colorRed("\nwhile writing to the detabase %q \nerr: %s\n", dbPath, err)
+		colorRed("\nError while writing to the database %q \nerr: %s\n", dbPath, err)
 		os.Exit(1)
 	}
 
-	return saveDb{db, dbPath, tableName}
+	return database{db, dbPath, tableName}
 }
 
 // newTableName will return correctly formatted table name
@@ -103,7 +103,7 @@ func newTableName(args []string) string {
 
 // save will insert the table name and
 // saves the args to the database
-func (s saveDb) save(query string, args ...any) error {
+func (s database) save(query string, args ...any) error {
 	// inserting the table name
 	statement := fmt.Sprintf(query, s.tableName)
 
@@ -114,10 +114,10 @@ func (s saveDb) save(query string, args ...any) error {
 }
 
 // saveStats saves stats to the dedbase with proper fomatting
-func (s saveDb) saveStats(stat stats) error {
+func (s database) saveStats(stat stats) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s (event_type, timestamp,
-		addr, hostname, port, hostname_resolve_tries,
+		addr, hostname, port, hostname_resolve_retries,
 		total_successful_probes, total_unsuccessful_probes,
 		never_succeed_probe, never_failed_probe,
 		last_successful_probe, last_unsuccessful_probe,
@@ -126,7 +126,7 @@ func (s saveDb) saveStats(stat stats) error {
 		longest_uptime, longest_uptime_end, longest_uptime_start,
 		longest_downtime, longest_downtime_start, longest_downtime_end,
 		latency_min, latency_avg, latency_max,
-		start_timestamp, end_timestamp, total_duration)
+		start_time, end_time, total_duration)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	totalPackets := stat.totalSuccessfulProbes + stat.totalUnsuccessfulProbes
@@ -169,7 +169,7 @@ func (s saveDb) saveStats(stat stats) error {
 
 // saveHostNameChang saves the hostname changes
 // in multiple rows with event_type = eventTypeHostnameChange
-func (s saveDb) saveHostNameChange(h []hostnameChange) error {
+func (s database) saveHostNameChange(h []hostnameChange) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s
 	(event_type, hostname_changed_to, hostname_change_time)
@@ -190,38 +190,38 @@ func (s saveDb) saveHostNameChange(h []hostnameChange) error {
 
 // printStart will let the user know the program is running by
 // printing a msg with the hostname, and port number to stdout
-func (s saveDb) printStart(hostname string, port uint16) {
+func (s database) printStart(hostname string, port uint16) {
 	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
 }
 
 // printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
 // and coloes the db
-func (s saveDb) printStatistics(stat stats) {
+func (s database) printStatistics(stat stats) {
 	defer s.db.Close()
 
 	err := s.saveStats(stat)
 	if err != nil {
-		s.printError("\nwhile writing stats to the database %q\nerr: %s", s.dbPath, err)
+		s.printError("\nError while writing stats to the database %q\nerr: %s", s.dbPath, err)
 	}
 	err = s.saveHostNameChange(stat.hostnameChanges)
 	if err != nil {
-		s.printError("\nwhile writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
+		s.printError("\nError while writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
 	}
 
 	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, s.dbPath, s.tableName)
 }
 
 // printError prints the err to the stderr and exits with status code 1
-func (s saveDb) printError(format string, args ...any) {
+func (s database) printError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 	os.Exit(1)
 }
 
 // Satisfying the "printer" interface.
-func (s saveDb) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
-func (s saveDb) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
-func (s saveDb) printRetryingToResolve(hostname string)                                       {}
-func (s saveDb) printTotalDownTime(downtime time.Duration)                                    {}
-func (s saveDb) printVersion()                                                                {}
-func (s saveDb) printInfo(format string, args ...any)                                         {}
+func (s database) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
+func (s database) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
+func (s database) printRetryingToResolve(hostname string)                                       {}
+func (s database) printTotalDownTime(downtime time.Duration)                                    {}
+func (s database) printVersion()                                                                {}
+func (s database) printInfo(format string, args ...any)                                         {}
