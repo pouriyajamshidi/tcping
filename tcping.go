@@ -663,10 +663,11 @@ func tcping(tcpStats *stats) {
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
+	elapsed := maxDuration(connDuration, tcpStats.intervalBetweenProbes)
 	if err != nil {
-		tcpStats.handleConnError(connStart, maxDuration(connDuration, tcpStats.intervalBetweenProbes))
+		tcpStats.handleConnError(connStart, elapsed)
 	} else {
-		tcpStats.handleConnSuccess(rtt, connStart, maxDuration(connDuration, tcpStats.intervalBetweenProbes))
+		tcpStats.handleConnSuccess(rtt, connStart, elapsed)
 		conn.Close()
 	}
 	<-tcpStats.ticker.C
