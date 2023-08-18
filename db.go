@@ -45,8 +45,8 @@ CREATE TABLE %s (
     start_timestamp DATETIME,
     end_timestamp DATETIME,
 
-	never_succeed_probe INTEGER, -- value will be 1 if a prove never succeeded
-	never_failed_probe INTEGER, -- value will be 1 if a prove never failed
+	never_succeed_probe INTEGER, -- value will be 1 if a probe never succeeded
+	never_failed_probe INTEGER, -- value will be 1 if a probe never failed
     last_successful_probe DATETIME,
     last_unsuccessful_probe DATETIME,
 
@@ -68,7 +68,7 @@ CREATE TABLE %s (
 );`
 )
 
-// newDb creas a newDb to the given path and returns `saveDb` struct
+// newDb creates a newDb with the given path and returns `saveDb` struct
 func newDb(args []string, dbPath string) saveDb {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
@@ -89,12 +89,11 @@ func newDb(args []string, dbPath string) saveDb {
 }
 
 // newTableName will return correctly formatted table name
+// formatting the table name as "example_com_port_hour_minute_sec_day_month_year"
+// table name can't have '.' and can't start with numbers
 func newTableName(args []string) string {
-	// table name can't have '.'
-	// formating the table name "example_com_hour_minute_sec_day_month_year"
 	tableName := fmt.Sprintf("%s_%s_%s", strings.ReplaceAll(args[0], ".", "_"), args[1], time.Now().Format("15_04_05_01_02_2006"))
 
-	// table name can't start with numbers
 	if unicode.IsNumber(rune(tableName[0])) {
 		tableName = "_" + tableName
 	}
@@ -102,8 +101,8 @@ func newTableName(args []string) string {
 	return tableName
 }
 
-// this will insert the table name and
-// save the ags to the database
+// save will insert the table name and
+// saves the args to the database
 func (s saveDb) save(query string, args ...any) error {
 	// inserting the table name
 	statement := fmt.Sprintf(query, s.tableName)
@@ -114,7 +113,7 @@ func (s saveDb) save(query string, args ...any) error {
 	return err
 }
 
-// saves stats to the dedbase with proper fomatting
+// saveStats saves stats to the dedbase with proper fomatting
 func (s saveDb) saveStats(stat stats) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s (event_type, timestamp,
@@ -136,8 +135,9 @@ func (s saveDb) saveStats(stat stats) error {
 		packetLoss = 0
 	}
 
-	// if the time is zero that means never failsed
-	// then the time should be emty not be "0001-01-01 00:00:00"
+	// If the time is zero, that means it never failed.
+	// In this case, the time should be empty instead of "0001-01-01 00:00:00".
+	// Rather, it should be left empty.
 	lastSuccessfulProbe := stat.lastSuccessfulProbe.Format(timeFormat)
 	var neverSucceedProbe, neverFailedProbe bool
 	if stat.lastSuccessfulProbe.IsZero() {
@@ -167,9 +167,8 @@ func (s saveDb) saveStats(stat stats) error {
 	return err
 }
 
-// As hostname changes as it's an array,
-// it will be saved after statistics within multiple
-// with event_type = eventTypeHostnameChange
+// saveHostNameChang saves the hostname changes
+// in multiple rows with event_type = eventTypeHostnameChange
 func (s saveDb) saveHostNameChange(h []hostnameChange) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s
@@ -189,15 +188,18 @@ func (s saveDb) saveHostNameChange(h []hostnameChange) error {
 	return nil
 }
 
-// it will let the user know the program is running by
+// printStart will let the user know the program is running by
 // printing a msg with the hostname, and port number to stdout
 func (s saveDb) printStart(hostname string, port uint16) {
 	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
 }
 
-// saves the statistics to the given database
+// printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
+// and coloes the db
 func (s saveDb) printStatistics(stat stats) {
+	defer s.db.Close()
+
 	err := s.saveStats(stat)
 	if err != nil {
 		s.printError("\nwhile writing stats to the database %q\nerr: %s", s.dbPath, err)
@@ -207,16 +209,16 @@ func (s saveDb) printStatistics(stat stats) {
 		s.printError("\nwhile writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
 	}
 
-	fmt.Printf("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, s.dbPath, s.tableName)
+	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, s.dbPath, s.tableName)
 }
 
-// prints the err to the stderr and exits with status code 1
+// printError prints the err to the stderr and exits with status code 1
 func (s saveDb) printError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 	os.Exit(1)
 }
 
-// they are only here to satisfy the "printer" interface.
+// Satisfying the "printer" interface.
 func (s saveDb) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
 func (s saveDb) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
 func (s saveDb) printRetryingToResolve(hostname string)                                       {}

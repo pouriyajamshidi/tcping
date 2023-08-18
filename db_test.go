@@ -13,7 +13,6 @@ import (
 func TestNewDB(t *testing.T) {
 	arg := []string{"localhost", "8001"}
 	s := newDb(arg, ":memory:")
-	// testing if the table names are
 	rows, err := s.db.Query("SELECT name FROM sqlite_master WHERE type='table';")
 	if err != nil {
 		t.Error(err)
@@ -25,7 +24,7 @@ func TestNewDB(t *testing.T) {
 	rows.Next()
 	var tblName string
 	err = rows.Scan(&tblName)
-	Nil(t, err)
+	isNil(t, err)
 	Equals(t, tblName, s.tableName)
 }
 
@@ -37,7 +36,7 @@ func TestDbSaveStats(t *testing.T) {
 
 	stat := mockStats()
 	err := s.saveStats(stat)
-	Nil(t, err)
+	isNil(t, err)
 
 	query := `SELECT
 		addr, hostname, port, hostname_resolve_tries,
@@ -53,7 +52,7 @@ func TestDbSaveStats(t *testing.T) {
 	FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", s.tableName, eventTypeStatistics)
 
 	rows, err := s.db.Query(query)
-	Nil(t, err)
+	isNil(t, err)
 
 	if !rows.Next() {
 		t.Error("rows are empty; expted 1 row")
@@ -91,7 +90,7 @@ func TestDbSaveStats(t *testing.T) {
 		&startTimestamp, &endTimestamp, &totalDuration,
 	)
 
-	Nil(t, err)
+	isNil(t, err)
 	rows.Close()
 
 	t.Log("the line number will tell you where the error happend")
@@ -134,21 +133,21 @@ func TestSaveHostname(t *testing.T) {
 	stat := mockStats()
 
 	err := s.saveHostNameChange(stat.hostnameChanges)
-	Nil(t, err)
+	isNil(t, err)
 	// testing the host names if they are properly written
 	query := `SELECT
 	hostname_changed_to, hostname_change_time
 	FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", s.tableName, eventTypeHostnameChange)
 
 	rows, err := s.db.Query(query)
-	Nil(t, err)
+	isNil(t, err)
 
 	idx := 0
 	for rows.Next() {
 		var hostName string
 		var cTime time.Time
 		err = rows.Scan(&hostName, &cTime)
-		Nil(t, err)
+		isNil(t, err)
 
 		actualHost := stat.hostnameChanges[idx]
 		idx++
@@ -182,7 +181,7 @@ func mockStats() stats {
 		startTime:           time.Now(),
 		endTime:             time.Now().Add(10 * time.Minute),
 		lastSuccessfulProbe: time.Now().Add(1 * time.Minute),
-		// lastUnsuccessfulProbe:  time.Now().Add(2 * time.Minute),
+		// lastUnsuccessfulProbe is left with the default value "0" to simulate no probe failed
 		retriedHostnameLookups: 10,
 		longestUptime: longestTime{
 			start:    time.Now().Add(20 * time.Second),
@@ -225,12 +224,12 @@ func Equals[T comparable](t *testing.T, value, want T) {
 	}
 }
 
-// Nil compares a value to nil, in some cases you may need to do `Equals(t, value, nil)`
-func Nil(t *testing.T, value any) {
+// isNil compares a value to nil, in some cases you may need to do `Equals(t, value, nil)`
+func isNil(t *testing.T, value any) {
 	t.Helper()
 
 	if value != nil {
-		t.Logf("expected '%v' to be nil", value)
+		t.Logf(`expected "%v" to be nil`, value)
 		t.FailNow()
 	}
 }
