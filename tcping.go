@@ -92,7 +92,6 @@ type stats struct {
 	rttResults                rttResult
 	wasDown                   bool // wasDown is used to determine the duration of a downtime
 	isIP                      bool // isIP suppresses printing the IP information twice when hostname is not provided
-	intervalBetweenProbes     time.Duration
 }
 
 type userInput struct {
@@ -663,7 +662,7 @@ func tcping(tcpStats *stats) {
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
-	elapsed := maxDuration(connDuration, tcpStats.intervalBetweenProbes)
+	elapsed := maxDuration(connDuration, time.Second)
 	if err != nil {
 		tcpStats.handleConnError(connStart, elapsed)
 	} else {
@@ -676,9 +675,8 @@ func tcping(tcpStats *stats) {
 
 func main() {
 	tcpStats := &stats{
-		intervalBetweenProbes: time.Second,
+		ticker: time.NewTicker(time.Second),
 	}
-	tcpStats.ticker = time.NewTicker(tcpStats.intervalBetweenProbes)
 	defer tcpStats.ticker.Stop()
 
 	processUserInput(tcpStats)

@@ -22,8 +22,7 @@ func createTestStats(t *testing.T) *stats {
 			port:    12345,
 			timeout: time.Second,
 		},
-		intervalBetweenProbes: time.Second,
-		ticker:                time.NewTicker(time.Second),
+		ticker: time.NewTicker(time.Second),
 	}
 	if err != nil {
 		t.Errorf("ip parse: %v", err)
