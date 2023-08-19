@@ -589,7 +589,7 @@ func secondsToDuration(seconds float64) time.Duration {
 	return time.Duration(1000*seconds) * time.Millisecond
 }
 
-// this is the implementation of the math.Max function for time.Duration types.
+// maxDuration is the implementation of the math.Max function for time.Duration types.
 // returns the longest duration of x or y.
 func maxDuration(x, y time.Duration) time.Duration {
 	if x > y {
