@@ -103,6 +103,7 @@ type userInput struct {
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
+	timeout                  time.Duration
 }
 
 type longestTime struct {
@@ -169,10 +170,11 @@ func monitorStdin(stdinChan chan bool) {
 // This should be used instead, as it makes
 // all the necessary calculations beforehand.
 func (tcpStats *stats) printStats() {
-	calcLongestUptime(tcpStats,
-		time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
-	calcLongestDowntime(tcpStats,
-		time.Duration(tcpStats.ongoingUnsuccessfulProbes)*time.Second)
+	if tcpStats.wasDown {
+		calcLongestDowntime(tcpStats, time.Since(tcpStats.startOfDowntime))
+	} else {
+		calcLongestUptime(tcpStats, time.Since(tcpStats.startOfUptime))
+	}
 
 	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
 
@@ -220,6 +222,7 @@ func processUserInput(tcpStats *stats) {
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
+	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 
 	flag.CommandLine.Usage = usage
 
@@ -296,6 +299,7 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.userInput.ip = resolveHostname(tcpStats)
 	tcpStats.startTime = time.Now()
 	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
+	tcpStats.userInput.timeout = secondsToDuration(*timeout)
 
 	// this serves as a default starting value for tracking changes.
 	tcpStats.hostnameChanges = []hostnameChange{
@@ -326,6 +330,8 @@ func permuteArgs(args cliArgs) {
 			optionName := v[1:]
 			switch optionName {
 			case "c":
+				fallthrough
+			case "t":
 				fallthrough
 			case "r":
 				/* out of index */
@@ -577,17 +583,31 @@ func nanoToMillisecond(nano int64) float32 {
 	return float32(nano) / float32(time.Millisecond)
 }
 
+// secondsToDuration returns the corresonding duration from seconds expressed with a float.
+func secondsToDuration(seconds float64) time.Duration {
+	return time.Duration(1000*seconds) * time.Millisecond
+}
+
+// maxDuration is the implementation of the math.Max function for time.Duration types.
+// returns the longest duration of x or y.
+func maxDuration(x, y time.Duration) time.Duration {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 // handleConnError processes failed probes
-func (tcpStats *stats) handleConnError(connTime time.Time) {
+func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = connTime
-		calcLongestUptime(tcpStats,
-			time.Duration(tcpStats.ongoingSuccessfulProbes)*time.Second)
+		uptime := time.Since(tcpStats.startOfUptime)
+		calcLongestUptime(tcpStats, uptime)
 		tcpStats.startOfUptime = time.Time{}
 		tcpStats.wasDown = true
 	}
 
-	tcpStats.totalDowntime += time.Second
+	tcpStats.totalDowntime += elapsed
 	tcpStats.lastUnsuccessfulProbe = connTime
 	tcpStats.totalUnsuccessfulProbes += 1
 	tcpStats.ongoingUnsuccessfulProbes += 1
@@ -601,10 +621,10 @@ func (tcpStats *stats) handleConnError(connTime time.Time) {
 }
 
 // handleConnSuccess processes successful probes
-func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time) {
+func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
 	if tcpStats.wasDown {
 		tcpStats.startOfUptime = connTime
-		downtime := time.Since(tcpStats.startOfDowntime).Truncate(time.Second)
+		downtime := connTime.Sub(tcpStats.startOfDowntime)
 		calcLongestDowntime(tcpStats, downtime)
 		tcpStats.printer.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
@@ -617,7 +637,7 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time) {
 		tcpStats.startOfUptime = connTime
 	}
 
-	tcpStats.totalUptime += time.Second
+	tcpStats.totalUptime += elapsed
 	tcpStats.lastSuccessfulProbe = connTime
 	tcpStats.totalSuccessfulProbes += 1
 	tcpStats.ongoingSuccessfulProbes += 1
@@ -637,18 +657,20 @@ func tcping(tcpStats *stats) {
 	IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
 
 	connStart := time.Now()
-	conn, err := net.DialTimeout("tcp", IPAndPort.String(), time.Second)
-	connEnd := time.Since(connStart)
-	rtt := nanoToMillisecond(connEnd.Nanoseconds())
+	// if timeout = 0, there is no timeout, see net.Dial
+	conn, err := net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
+	connDuration := time.Since(connStart)
+	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
+	elapsed := maxDuration(connDuration, time.Second)
 	if err != nil {
-		tcpStats.handleConnError(connStart)
+		tcpStats.handleConnError(connStart, elapsed)
 	} else {
-		tcpStats.handleConnSuccess(rtt, connStart)
+		tcpStats.handleConnSuccess(rtt, connStart, elapsed)
 		conn.Close()
 	}
-
 	<-tcpStats.ticker.C
+
 }
 
 func main() {
