@@ -223,6 +223,7 @@ func processUserInput(tcpStats *stats) {
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
+	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 
 	flag.CommandLine.Usage = usage
 
@@ -237,6 +238,8 @@ func processUserInput(tcpStats *stats) {
 	// errors reporting and other output.
 	if *outputJson {
 		tcpStats.printer = newJsonPrinter(*prettyJson)
+	} else if *outputDb != "" {
+		tcpStats.printer = newDb(args, *outputDb)
 	} else {
 		tcpStats.printer = &planePrinter{}
 	}
@@ -327,11 +330,18 @@ func permuteArgs(args cliArgs) {
 	for i := 0; i < len(args); i++ {
 		v := args[i]
 		if v[0] == '-' {
-			optionName := v[1:]
+			var optionName string
+			if v[1] == '-' {
+				optionName = v[2:]
+			} else {
+				optionName = v[1:]
+			}
 			switch optionName {
 			case "c":
 				fallthrough
 			case "t":
+				fallthrough
+			case "db":
 				fallthrough
 			case "r":
 				/* out of index */
