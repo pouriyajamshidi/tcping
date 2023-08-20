@@ -238,12 +238,10 @@ func processUserInput(tcpStats *stats) {
 	// errors reporting and other output.
 	if *outputJson {
 		tcpStats.printer = newJsonPrinter(*prettyJson)
+	} else if *outputDb != "" {
+		tcpStats.printer = newDb(args, *outputDb)
 	} else {
-		if *outputDb != "" {
-			tcpStats.printer = newDb(args, *outputDb)
-		} else {
-			tcpStats.printer = &planePrinter{}
-		}
+		tcpStats.printer = &planePrinter{}
 	}
 
 	// -u works on its own
