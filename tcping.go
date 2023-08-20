@@ -332,7 +332,12 @@ func permuteArgs(args cliArgs) {
 	for i := 0; i < len(args); i++ {
 		v := args[i]
 		if v[0] == '-' {
-			optionName := v[1:]
+			var optionName string
+			if v[1] == '-' {
+				optionName = v[2:]
+			} else {
+				optionName = v[1:]
+			}
 			switch optionName {
 			case "c":
 				fallthrough
