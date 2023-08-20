@@ -223,7 +223,7 @@ func processUserInput(tcpStats *stats) {
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDb := flag.String("db", "", "sqlite file for storing tcping output.")
+	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 
 	flag.CommandLine.Usage = usage
 
