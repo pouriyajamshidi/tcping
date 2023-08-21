@@ -148,6 +148,14 @@ func (s database) saveStats(stat stats) error {
 		neverFailedProbe = true
 	}
 
+	var totalDuration string
+	if stat.endTime.IsZero() {
+		totalDuration = time.Since(stat.startTime).String()
+	} else {
+		totalDuration = stat.endTime.Sub(stat.startTime).String()
+	}
+	fmt.Println(stat.rttResults, "dur", stat.startTime, stat.endTime, totalDuration)
+
 	err := s.save(schema,
 		eventTypeStatistics, time.Now().Format(timeFormat),
 		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port, stat.retriedHostnameLookups,
@@ -159,7 +167,7 @@ func (s database) saveStats(stat stats) error {
 		stat.longestUptime.duration.String(), stat.longestUptime.start.Format(timeFormat), stat.longestUptime.end.Format(timeFormat),
 		stat.longestDowntime.duration.String(), stat.longestDowntime.start.Format(timeFormat), stat.longestDowntime.end.Format(timeFormat),
 		stat.rttResults.min, stat.rttResults.average, stat.rttResults.max,
-		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), stat.endTime.Sub(stat.startTime).String(),
+		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), totalDuration,
 	)
 
 	return err
@@ -199,9 +207,15 @@ func (s database) printStatistics(stat stats) {
 	if err != nil {
 		s.printError("\nError while writing stats to the database %q\nerr: %s", s.dbPath, err)
 	}
-	err = s.saveHostNameChange(stat.hostnameChanges)
-	if err != nil {
-		s.printError("\nError while writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
+
+	// Hostname changes should be written during the final call.
+	// If the endtime is 0, it indicates that this is not the last call.
+	if !stat.endTime.IsZero() {
+		err = s.saveHostNameChange(stat.hostnameChanges)
+		if err != nil {
+			s.printError("\nError while writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
+		}
+
 	}
 
 	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, s.dbPath, s.tableName)
