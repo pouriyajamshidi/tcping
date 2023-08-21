@@ -187,6 +187,13 @@ func shutdown(tcpStats *stats) {
 	totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
 	tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
 	tcpStats.printStats()
+
+	// if the printer type is `database`, then close the db before
+	// exiting to prevent any memory leaks
+	if db, ok := tcpStats.printer.(database); ok {
+		db.db.Close()
+	}
+
 	os.Exit(0)
 }
 

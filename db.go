@@ -148,6 +148,35 @@ func (s database) saveStats(stat stats) error {
 		neverFailedProbe = true
 	}
 
+	// if the longest uptime is emtpy, then the column should also be empty
+	var longestUptimeDuration, longestUptimeStart, longestUptimeEnd string
+	var longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd string
+	if stat.longestUptime.start.IsZero() {
+		longestUptimeDuration = "0s"
+		longestUptimeStart = ""
+		longestUptimeEnd = ""
+	} else {
+		longestUptimeDuration = stat.longestUptime.duration.String()
+		longestUptimeStart = stat.longestUptime.start.Format(timeFormat)
+		longestUptimeEnd = stat.longestUptime.end.Format(timeFormat)
+	}
+	if stat.longestDowntime.start.IsZero() {
+		longestDowntimeDuration = "0s"
+		longestDowntimeStart = ""
+		longestDowntimeEnd = ""
+	} else {
+		longestDowntimeDuration = stat.longestDowntime.duration.String()
+		longestDowntimeStart = stat.longestDowntime.start.Format(timeFormat)
+		longestDowntimeEnd = stat.longestDowntime.end.Format(timeFormat)
+	}
+
+	var totalDuration string
+	if stat.endTime.IsZero() {
+		totalDuration = time.Since(stat.startTime).String()
+	} else {
+		totalDuration = stat.endTime.Sub(stat.startTime).String()
+	}
+
 	err := s.save(schema,
 		eventTypeStatistics, time.Now().Format(timeFormat),
 		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port, stat.retriedHostnameLookups,
@@ -156,10 +185,10 @@ func (s database) saveStats(stat stats) error {
 		lastSuccessfulProbe, lastUnsuccessfulProbe,
 		totalPackets, packetLoss,
 		stat.totalUptime.String(), stat.totalDowntime.String(),
-		stat.longestUptime.duration.String(), stat.longestUptime.start.Format(timeFormat), stat.longestUptime.end.Format(timeFormat),
-		stat.longestDowntime.duration.String(), stat.longestDowntime.start.Format(timeFormat), stat.longestDowntime.end.Format(timeFormat),
+		longestUptimeDuration, longestUptimeStart, longestUptimeEnd,
+		longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd,
 		stat.rttResults.min, stat.rttResults.average, stat.rttResults.max,
-		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), stat.endTime.Sub(stat.startTime).String(),
+		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), totalDuration,
 	)
 
 	return err
@@ -194,17 +223,20 @@ func (s database) printStart(hostname string, port uint16) {
 
 // printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
-// and coloes the db
 func (s database) printStatistics(stat stats) {
-	defer s.db.Close()
-
 	err := s.saveStats(stat)
 	if err != nil {
 		s.printError("\nError while writing stats to the database %q\nerr: %s", s.dbPath, err)
 	}
-	err = s.saveHostNameChange(stat.hostnameChanges)
-	if err != nil {
-		s.printError("\nError while writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
+
+	// Hostname changes should be written during the final call.
+	// If the endtime is 0, it indicates that this is not the last call.
+	if !stat.endTime.IsZero() {
+		err = s.saveHostNameChange(stat.hostnameChanges)
+		if err != nil {
+			s.printError("\nError while writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
+		}
+
 	}
 
 	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, s.dbPath, s.tableName)
