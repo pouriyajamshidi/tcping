@@ -148,6 +148,28 @@ func (s database) saveStats(stat stats) error {
 		neverFailedProbe = true
 	}
 
+	// if the longest uptime is emtpy then the column should also be emty
+	var longestUptimeDuration, longestUptimeStart, longestUptimeEnd string
+	var longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd string
+	if stat.longestUptime.start.IsZero() {
+		longestUptimeDuration = ""
+		longestUptimeStart = ""
+		longestUptimeEnd = ""
+	} else {
+		longestUptimeDuration = stat.longestUptime.duration.String()
+		longestUptimeStart = stat.longestUptime.start.Format(timeFormat)
+		longestUptimeEnd = stat.longestUptime.end.Format(timeFormat)
+	}
+	if stat.longestDowntime.start.IsZero() {
+		longestDowntimeDuration = ""
+		longestDowntimeStart = ""
+		longestDowntimeEnd = ""
+	} else {
+		longestDowntimeDuration = stat.longestDowntime.duration.String()
+		longestDowntimeStart = stat.longestDowntime.start.Format(timeFormat)
+		longestDowntimeEnd = stat.longestDowntime.end.Format(timeFormat)
+	}
+
 	var totalDuration string
 	if stat.endTime.IsZero() {
 		totalDuration = time.Since(stat.startTime).String()
@@ -163,8 +185,8 @@ func (s database) saveStats(stat stats) error {
 		lastSuccessfulProbe, lastUnsuccessfulProbe,
 		totalPackets, packetLoss,
 		stat.totalUptime.String(), stat.totalDowntime.String(),
-		stat.longestUptime.duration.String(), stat.longestUptime.start.Format(timeFormat), stat.longestUptime.end.Format(timeFormat),
-		stat.longestDowntime.duration.String(), stat.longestDowntime.start.Format(timeFormat), stat.longestDowntime.end.Format(timeFormat),
+		longestUptimeDuration, longestUptimeStart, longestUptimeEnd,
+		longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd,
 		stat.rttResults.min, stat.rttResults.average, stat.rttResults.max,
 		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), totalDuration,
 	)
