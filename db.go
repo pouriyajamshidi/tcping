@@ -194,10 +194,7 @@ func (s database) printStart(hostname string, port uint16) {
 
 // printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
-// and coloes the db
 func (s database) printStatistics(stat stats) {
-	defer s.db.Close()
-
 	err := s.saveStats(stat)
 	if err != nil {
 		s.printError("\nError while writing stats to the database %q\nerr: %s", s.dbPath, err)
