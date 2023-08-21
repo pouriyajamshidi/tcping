@@ -154,7 +154,6 @@ func (s database) saveStats(stat stats) error {
 	} else {
 		totalDuration = stat.endTime.Sub(stat.startTime).String()
 	}
-	fmt.Println(stat.rttResults, "dur", stat.startTime, stat.endTime, totalDuration)
 
 	err := s.save(schema,
 		eventTypeStatistics, time.Now().Format(timeFormat),
