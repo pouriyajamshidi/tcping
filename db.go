@@ -152,7 +152,7 @@ func (s database) saveStats(stat stats) error {
 	var longestUptimeDuration, longestUptimeStart, longestUptimeEnd string
 	var longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd string
 	if stat.longestUptime.start.IsZero() {
-		longestUptimeDuration = ""
+		longestUptimeDuration = "0s"
 		longestUptimeStart = ""
 		longestUptimeEnd = ""
 	} else {
@@ -161,7 +161,7 @@ func (s database) saveStats(stat stats) error {
 		longestUptimeEnd = stat.longestUptime.end.Format(timeFormat)
 	}
 	if stat.longestDowntime.start.IsZero() {
-		longestDowntimeDuration = ""
+		longestDowntimeDuration = "0s"
 		longestDowntimeStart = ""
 		longestDowntimeEnd = ""
 	} else {
