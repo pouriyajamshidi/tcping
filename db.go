@@ -148,7 +148,7 @@ func (s database) saveStats(stat stats) error {
 		neverFailedProbe = true
 	}
 
-	// if the longest uptime is emtpy then the column should also be emty
+	// if the longest uptime is emtpy, then the column should also be emty
 	var longestUptimeDuration, longestUptimeStart, longestUptimeEnd string
 	var longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd string
 	if stat.longestUptime.start.IsZero() {
