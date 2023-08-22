@@ -232,7 +232,8 @@ The following flags are available to control the behavior of application:
 | `-6`       | Only use IPv6 addresses                                                                                           |
 | `-r`       | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
 | `-c`       | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
-| `--db`     | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                           |
+| `--db`     | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db` (available from next rerlease) |
+| `-t`       | time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.  (available from next rerlease) |
 | `-j`       | Output in `JSON` format                                                                                           |
 | `--pretty` | Prettify the `JSON` output                                                                                        |
 | `-v`       | Print version                                                                                                     |
