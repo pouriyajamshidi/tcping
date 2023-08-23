@@ -717,7 +717,7 @@ func tcping(tcpStats *stats) {
 func newNetworkInterface(tcpStats *stats, interfaceName string) networkInterface {
 	ief, err := net.InterfaceByName(interfaceName)
 	if err != nil {
-		tcpStats.printer.printError("Interface name %s not allowed", interfaceName)
+		tcpStats.printer.printError("Interface %s not found", interfaceName)
 		os.Exit(1)
 	}
 
