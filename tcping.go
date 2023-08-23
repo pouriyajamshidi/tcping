@@ -723,7 +723,7 @@ func newNetworkInterface(tcpStats *stats, interfaceName string) networkInterface
 
 	addrs, err := ief.Addrs()
 	if err != nil {
-		tcpStats.printer.printError("Unable to get Interface address")
+		tcpStats.printer.printError("Unable to get Interface addresses")
 		os.Exit(1)
 	}
 
