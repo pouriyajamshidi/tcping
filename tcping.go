@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"flag"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -104,6 +105,13 @@ type userInput struct {
 	useIPv6                  bool
 	shouldRetryResolve       bool
 	timeout                  time.Duration
+	networkInterface         networkInterface
+}
+
+type networkInterface struct {
+	use    bool
+	dailer net.Dialer
+	raddr  *net.TCPAddr // remote address
 }
 
 type longestTime struct {
@@ -231,6 +239,7 @@ func processUserInput(tcpStats *stats) {
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
+	interfaceName := flag.String("i", "", "interface name or address")
 
 	flag.CommandLine.Usage = usage
 
@@ -323,6 +332,10 @@ func processUserInput(tcpStats *stats) {
 	if tcpStats.userInput.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
 		tcpStats.userInput.shouldRetryResolve = true
 	}
+
+	if *interfaceName != "" {
+		tcpStats.userInput.networkInterface = newNetworkInterface(tcpStats, *interfaceName)
+	}
 }
 
 /*
@@ -349,6 +362,8 @@ func permuteArgs(args cliArgs) {
 			case "t":
 				fallthrough
 			case "db":
+				fallthrough
+			case "i":
 				fallthrough
 			case "r":
 				/* out of index */
@@ -671,15 +686,23 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapse
 
 // tcping pings a host, TCP style
 func tcping(tcpStats *stats) {
-	IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
-
+	var err error
+	var conn net.Conn
 	connStart := time.Now()
-	// if timeout = 0, there is no timeout, see net.Dial
-	conn, err := net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
+
+	if tcpStats.userInput.networkInterface.use {
+		conn, err = tcpStats.userInput.networkInterface.dailer.Dial("tcp", tcpStats.userInput.networkInterface.raddr.String())
+		fmt.Println(conn, err)
+	} else {
+		IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
+		conn, err = net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
+	}
+
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
 	elapsed := maxDuration(connDuration, time.Second)
+
 	if err != nil {
 		tcpStats.handleConnError(connStart, elapsed)
 	} else {
@@ -688,6 +711,55 @@ func tcping(tcpStats *stats) {
 	}
 	<-tcpStats.ticker.C
 
+}
+
+// newNetworkInterface uses the 1st ip address of the interface
+// if any err occurs it calls `tcpStats.printer.printError` and exits with statuscode 1.
+// or return `networkInterface`
+func newNetworkInterface(tcpStats *stats, interfaceName string) networkInterface {
+	ief, err := net.InterfaceByName(interfaceName)
+	if err != nil {
+		tcpStats.printer.printError("Interface name %s not allowed", interfaceName)
+		os.Exit(1)
+	}
+
+	addrs, err := ief.Addrs()
+	if err != nil {
+		tcpStats.printer.printError("Unable to get Interface address")
+		os.Exit(1)
+	}
+
+	var ipAddr net.IP
+	for _, addr := range addrs {
+		if ipAddr = addr.(*net.IPNet).IP; ipAddr != nil {
+			break
+		}
+	}
+
+	if ipAddr == nil {
+		tcpStats.printer.printError("Unable to get Interface's IP Address")
+		os.Exit(1)
+	}
+
+	var ni networkInterface
+	ni.use = true
+
+	ni.raddr = &net.TCPAddr{
+		IP:   net.ParseIP(tcpStats.userInput.ip.String()),
+		Port: int(tcpStats.userInput.port),
+	}
+
+	// local address
+	laddr := &net.TCPAddr{
+		IP: net.ParseIP(ipAddr.String()),
+	}
+
+	ni.dailer = net.Dialer{
+		LocalAddr: laddr,
+		Timeout:   tcpStats.userInput.timeout, // Set the timeout duration
+	}
+
+	return ni
 }
 
 func main() {
