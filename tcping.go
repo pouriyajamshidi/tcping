@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"fmt"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -460,7 +459,6 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		Timeout:   tcpStats.userInput.timeout, // Set the timeout duration
 	}
 
-	fmt.Printf("interface %q", interfaceAddress.String())
 	return ni
 }
 
