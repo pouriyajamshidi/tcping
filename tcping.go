@@ -444,7 +444,7 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		use: true,
 	}
 
-	// remtoe address
+	// remote address
 	ni.raddr = &net.TCPAddr{
 		IP:   net.ParseIP(tcpStats.userInput.ip.String()),
 		Port: int(tcpStats.userInput.port),
