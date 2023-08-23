@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"fmt"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -692,7 +691,6 @@ func tcping(tcpStats *stats) {
 
 	if tcpStats.userInput.networkInterface.use {
 		conn, err = tcpStats.userInput.networkInterface.dailer.Dial("tcp", tcpStats.userInput.networkInterface.raddr.String())
-		fmt.Println(conn, err)
 	} else {
 		IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
 		conn, err = net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
