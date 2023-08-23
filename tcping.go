@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"fmt"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -422,12 +421,11 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 					// ipv4
 					interfaceAddress = ip
 					break
-				} else if ip.To4() == nil && tcpStats.userInput.useIPv6 {
+				} else if ip.To4() == nil && !tcpStats.userInput.useIPv4 {
 					// ipv6
 					interfaceAddress = ip
 					break
 				}
-
 			}
 		}
 
@@ -458,7 +456,6 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		Timeout:   tcpStats.userInput.timeout, // Set the timeout duration
 	}
 
-	fmt.Printf("Useing interface %q\n", interfaceAddress.String())
 	return ni
 }
 
