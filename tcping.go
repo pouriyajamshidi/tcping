@@ -417,12 +417,17 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		// Iterating through the available addresses to identify valid IP configurations
 		for _, addr := range addrs {
 			if ip := addr.(*net.IPNet).IP; ip != nil {
-				// check if the ip is v4
-				// if not then continue
-				if ip.To4() != nil {
+				// default is ipv4
+				if ip.To4() != nil && !tcpStats.userInput.useIPv6 {
+					// ipv4
+					interfaceAddress = ip
+					break
+				} else if ip.To4() == nil && tcpStats.userInput.useIPv6 {
+					// ipv6
 					interfaceAddress = ip
 					break
 				}
+
 			}
 		}
 
