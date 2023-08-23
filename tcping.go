@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"flag"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -416,13 +417,16 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		// Iterating through the available addresses to identify valid IP configurations
 		for _, addr := range addrs {
 			if ip := addr.(*net.IPNet).IP; ip != nil {
-				// default is ipv4
-				if ip.To4() != nil && !tcpStats.userInput.useIPv6 {
-					// ipv4
+				// netip.Addr
+				nipAddr, err := netip.ParseAddr(ip.String())
+				if err != nil {
+					continue
+				}
+
+				if nipAddr.Is4() && !tcpStats.userInput.useIPv6 {
 					interfaceAddress = ip
 					break
-				} else if ip.To4() == nil && !tcpStats.userInput.useIPv4 {
-					// ipv6
+				} else if nipAddr.Is6() && !tcpStats.userInput.useIPv4 {
 					interfaceAddress = ip
 					break
 				}
@@ -448,7 +452,7 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 
 	// local address
 	laddr := &net.TCPAddr{
-		IP: net.ParseIP(interfaceAddress.String()),
+		IP: interfaceAddress,
 	}
 
 	ni.dialer = net.Dialer{
@@ -456,6 +460,7 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		Timeout:   tcpStats.userInput.timeout, // Set the timeout duration
 	}
 
+	fmt.Printf("interface %q", interfaceAddress.String())
 	return ni
 }
 
