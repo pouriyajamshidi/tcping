@@ -425,7 +425,7 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 				if nipAddr.Is4() && !tcpStats.userInput.useIPv6 {
 					interfaceAddress = ip
 					break
-				} else if nipAddr.Is6() && tcpStats.userInput.useIPv6 {
+				} else if nipAddr.Is6() && !tcpStats.userInput.useIPv4 {
 					interfaceAddress = ip
 					break
 				}
