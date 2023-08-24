@@ -104,6 +104,13 @@ type userInput struct {
 	useIPv6                  bool
 	shouldRetryResolve       bool
 	timeout                  time.Duration
+	networkInterface         networkInterface
+}
+
+type networkInterface struct {
+	use    bool
+	dialer net.Dialer
+	raddr  *net.TCPAddr // remote address
 }
 
 type longestTime struct {
@@ -231,6 +238,7 @@ func processUserInput(tcpStats *stats) {
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
+	interfaceName := flag.String("I", "", "interface name or address")
 
 	flag.CommandLine.Usage = usage
 
@@ -323,6 +331,10 @@ func processUserInput(tcpStats *stats) {
 	if tcpStats.userInput.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
 		tcpStats.userInput.shouldRetryResolve = true
 	}
+
+	if *interfaceName != "" {
+		tcpStats.userInput.networkInterface = newNetworkInterface(tcpStats, *interfaceName)
+	}
 }
 
 /*
@@ -350,6 +362,8 @@ func permuteArgs(args cliArgs) {
 				fallthrough
 			case "db":
 				fallthrough
+			case "I":
+				fallthrough
 			case "r":
 				/* out of index */
 				if len(args) <= i+1 {
@@ -375,6 +389,80 @@ func permuteArgs(args cliArgs) {
 	for i := 0; i < len(args); i++ {
 		args[i] = permutedArgs[i]
 	}
+}
+
+// newNetworkInterface uses the 1st ip address of the interface
+// if any err occurs it calls `tcpStats.printer.printError` and exits with statuscode 1.
+// or return `networkInterface`
+func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface {
+	var interfaceAddress net.IP
+
+	// if netinterface is the addres `interfaceAddress` var will not be `nil`
+	interfaceAddress = net.ParseIP(netInterface)
+
+	if interfaceAddress == nil {
+		ief, err := net.InterfaceByName(netInterface)
+		if err != nil {
+			tcpStats.printer.printError("Interface %s not found", netInterface)
+			os.Exit(1)
+		}
+
+		addrs, err := ief.Addrs()
+		if err != nil {
+			tcpStats.printer.printError("Unable to get Interface addresses")
+			os.Exit(1)
+		}
+
+		// Iterating through the available addresses to identify valid IP configurations
+		for _, addr := range addrs {
+			if ip := addr.(*net.IPNet).IP; ip != nil {
+				// netip.Addr
+				nipAddr, err := netip.ParseAddr(ip.String())
+				if err != nil {
+					continue
+				}
+
+				if nipAddr.Is4() && !tcpStats.userInput.useIPv6 {
+					interfaceAddress = ip
+					break
+				} else if nipAddr.Is6() && !tcpStats.userInput.useIPv4 {
+					if nipAddr.IsLinkLocalUnicast() {
+						continue
+					}
+					interfaceAddress = ip
+					break
+				}
+			}
+		}
+
+		if interfaceAddress == nil {
+			tcpStats.printer.printError("Unable to get Interface's IP Address")
+			os.Exit(1)
+		}
+	}
+
+	// Initializing a networkInterface struct and setting the 'use' field to true
+	ni := networkInterface{
+		use: true,
+	}
+
+	// remote address
+	ni.raddr = &net.TCPAddr{
+		IP:   net.ParseIP(tcpStats.userInput.ip.String()),
+		Port: int(tcpStats.userInput.port),
+	}
+
+	// local address
+	laddr := &net.TCPAddr{
+		IP: interfaceAddress,
+	}
+
+	ni.dialer = net.Dialer{
+		LocalAddr: laddr,
+		Timeout:   tcpStats.userInput.timeout, // Set the timeout duration
+	}
+
+	return ni
 }
 
 // checkLatestVersion checks for updates and print a message
@@ -671,15 +759,23 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapse
 
 // tcping pings a host, TCP style
 func tcping(tcpStats *stats) {
-	IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
-
+	var err error
+	var conn net.Conn
 	connStart := time.Now()
-	// if timeout = 0, there is no timeout, see net.Dial
-	conn, err := net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
+
+	if tcpStats.userInput.networkInterface.use {
+		// dialer already contains the timeout value
+		conn, err = tcpStats.userInput.networkInterface.dialer.Dial("tcp", tcpStats.userInput.networkInterface.raddr.String())
+	} else {
+		IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
+		conn, err = net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
+	}
+
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
 	elapsed := maxDuration(connDuration, time.Second)
+
 	if err != nil {
 		tcpStats.handleConnError(connStart, elapsed)
 	} else {
