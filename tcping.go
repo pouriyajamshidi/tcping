@@ -237,7 +237,7 @@ func processUserInput(tcpStats *stats) {
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
-	secondsBetweenProbes := flag.Float64("i", 1, "wait interval seconds between sending each packet. Real number allowed with dot as a decimal separator (regardless locale setup). The default is to wait for one second between each packet")
+	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address")
