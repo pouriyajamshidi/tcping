@@ -191,8 +191,7 @@ func (tcpStats *stats) printStats() {
 // shutdown calculates endTime, prints statistics and calls os.Exit(0).
 // This should be used as a main exit-point.
 func shutdown(tcpStats *stats) {
-	totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
-	tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
+	tcpStats.endTime = time.Now()
 	tcpStats.printStats()
 
 	// if the printer type is `database`, then close the db before
@@ -719,7 +718,7 @@ func maxDuration(x, y time.Duration) time.Duration {
 func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = connTime
-		uptime := time.Since(tcpStats.startOfUptime)
+		uptime := tcpStats.startOfDowntime.Sub(tcpStats.startOfUptime)
 		calcLongestUptime(tcpStats, uptime)
 		tcpStats.startOfUptime = time.Time{}
 		tcpStats.wasDown = true
@@ -742,7 +741,7 @@ func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration
 func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
 	if tcpStats.wasDown {
 		tcpStats.startOfUptime = connTime
-		downtime := connTime.Sub(tcpStats.startOfDowntime)
+		downtime := tcpStats.startOfUptime.Sub(tcpStats.startOfDowntime)
 		calcLongestDowntime(tcpStats, downtime)
 		tcpStats.printer.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
@@ -787,7 +786,7 @@ func tcping(tcpStats *stats) {
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
-	elapsed := maxDuration(connDuration, time.Second)
+	elapsed := maxDuration(connDuration, tcpStats.userInput.intervalBetweenProbes)
 
 	if err != nil {
 		tcpStats.handleConnError(connStart, elapsed)
