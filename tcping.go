@@ -317,12 +317,8 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.userInput.ip = resolveHostname(tcpStats)
 	tcpStats.startTime = time.Now()
 	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
-	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
-	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
-		tcpStats.printer.printError("Wait interval should be more than 2 ms")
-		os.Exit(1)
-	}
 	tcpStats.userInput.timeout = secondsToDuration(*timeout)
+	
 	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
 	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
 		tcpStats.printer.printError("Wait interval should be more than 2 ms")
