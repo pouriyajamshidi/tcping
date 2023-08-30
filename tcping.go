@@ -105,6 +105,7 @@ type userInput struct {
 	shouldRetryResolve       bool
 	timeout                  time.Duration
 	networkInterface         networkInterface
+	intervalBetweenProbes    time.Duration
 }
 
 type networkInterface struct {
@@ -182,7 +183,6 @@ func (tcpStats *stats) printStats() {
 	} else {
 		calcLongestUptime(tcpStats, time.Since(tcpStats.startOfUptime))
 	}
-
 	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
 
 	tcpStats.printer.printStatistics(*tcpStats)
@@ -191,8 +191,7 @@ func (tcpStats *stats) printStats() {
 // shutdown calculates endTime, prints statistics and calls os.Exit(0).
 // This should be used as a main exit-point.
 func shutdown(tcpStats *stats) {
-	totalRuntime := tcpStats.totalUnsuccessfulProbes + tcpStats.totalSuccessfulProbes
-	tcpStats.endTime = tcpStats.startTime.Add(time.Duration(totalRuntime) * time.Second)
+	tcpStats.endTime = time.Now()
 	tcpStats.printStats()
 
 	// if the printer type is `database`, then close the db before
@@ -236,6 +235,7 @@ func processUserInput(tcpStats *stats) {
 	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
+	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address")
@@ -318,6 +318,12 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.startTime = time.Now()
 	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
 	tcpStats.userInput.timeout = secondsToDuration(*timeout)
+	
+	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
+	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
+		tcpStats.printer.printError("Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
 
 	// this serves as a default starting value for tracking changes.
 	tcpStats.hostnameChanges = []hostnameChange{
@@ -363,6 +369,8 @@ func permuteArgs(args cliArgs) {
 			case "db":
 				fallthrough
 			case "I":
+				fallthrough
+			case "i":
 				fallthrough
 			case "r":
 				/* out of index */
@@ -706,7 +714,7 @@ func maxDuration(x, y time.Duration) time.Duration {
 func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration) {
 	if !tcpStats.wasDown {
 		tcpStats.startOfDowntime = connTime
-		uptime := time.Since(tcpStats.startOfUptime)
+		uptime := tcpStats.startOfDowntime.Sub(tcpStats.startOfUptime)
 		calcLongestUptime(tcpStats, uptime)
 		tcpStats.startOfUptime = time.Time{}
 		tcpStats.wasDown = true
@@ -729,7 +737,7 @@ func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration
 func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
 	if tcpStats.wasDown {
 		tcpStats.startOfUptime = connTime
-		downtime := connTime.Sub(tcpStats.startOfDowntime)
+		downtime := tcpStats.startOfUptime.Sub(tcpStats.startOfDowntime)
 		calcLongestDowntime(tcpStats, downtime)
 		tcpStats.printer.printTotalDownTime(downtime)
 		tcpStats.startOfDowntime = time.Time{}
@@ -774,7 +782,7 @@ func tcping(tcpStats *stats) {
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
-	elapsed := maxDuration(connDuration, time.Second)
+	elapsed := maxDuration(connDuration, tcpStats.userInput.intervalBetweenProbes)
 
 	if err != nil {
 		tcpStats.handleConnError(connStart, elapsed)
@@ -787,12 +795,11 @@ func tcping(tcpStats *stats) {
 }
 
 func main() {
-	tcpStats := &stats{
-		ticker: time.NewTicker(time.Second),
-	}
+	tcpStats := &stats{}
+	processUserInput(tcpStats)
+	tcpStats.ticker = time.NewTicker(tcpStats.userInput.intervalBetweenProbes)
 	defer tcpStats.ticker.Stop()
 
-	processUserInput(tcpStats)
 	signalHandler(tcpStats)
 
 	tcpStats.printer.printStart(tcpStats.userInput.hostname, tcpStats.userInput.port)

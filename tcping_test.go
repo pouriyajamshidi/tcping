@@ -18,9 +18,10 @@ func createTestStats(t *testing.T) *stats {
 	s := stats{
 		printer: &dummyPrinter{},
 		userInput: userInput{
-			ip:      addr,
-			port:    12345,
-			timeout: time.Second,
+			ip:                    addr,
+			port:                  12345,
+			intervalBetweenProbes: time.Second,
+			timeout:               time.Second,
 		},
 		ticker: time.NewTicker(time.Second),
 	}
