@@ -57,7 +57,6 @@ build: clean update tidyup format vet test
 	@echo "Priority: optional" >> $(CONTROL_FILE)
 	@echo "Architecture: amd64" >> $(CONTROL_FILE)
 	@echo "Essential: no" >> $(CONTROL_FILE)
-	@echo "Installed-Size: 2048" >> $(CONTROL_FILE)
 	@echo "Maintainer: $(MAINTAINER)" >> $(CONTROL_FILE)
 	@echo "Description: $(DESCRIPTION)" >> $(CONTROL_FILE)
 
