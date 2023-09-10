@@ -1,7 +1,6 @@
 EXEC_DIR = executables/
 TAPE_DIR = Images/tapes/
 GIFS_DIR = Images/gifs/
-SOURCE_FILES = $(tcping.go statsprinter.go)
 PACKAGE_NAME = tcping
 VERSION = 2.0.0
 ARCHITECTURE = amd64
@@ -29,7 +28,7 @@ build: clean update tidyup format vet test
 	@mkdir -p $(TARGET_EXECUTABLE_PATH)
 	
 	@echo "[+] Building the Linux version"
-	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
 	@echo "[+] Packaging the Linux version"
 	@tar -czvf $(EXEC_DIR)tcping_Linux.tar.gz -C $(EXEC_DIR) tcping > /dev/null
@@ -40,7 +39,7 @@ build: clean update tidyup format vet test
 
 	@echo
 	@echo "[+] Building the static Linux version"
-	@env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+	@env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
 	@echo "[+] Packaging the static Linux version"
 	@tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
@@ -71,7 +70,7 @@ build: clean update tidyup format vet test
 
 	@echo
 	@echo "[+] Building the Windows version"
-	@env GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping.exe $(SOURCE_FILES)
+	@env GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping.exe
 
 	@echo "[+] Packaging the Windows version"
 	@zip -j $(EXEC_DIR)tcping_Windows.zip $(EXEC_DIR)tcping.exe > /dev/null
@@ -82,7 +81,7 @@ build: clean update tidyup format vet test
 
 	@echo
 	@echo "[+] Building the MacOS version"
-	@env GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+	@env GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
 	@echo "[+] Packaging the MacOS version"
 	@tar -czvf $(EXEC_DIR)tcping_MacOS.tar.gz -C $(EXEC_DIR) tcping > /dev/null
@@ -93,7 +92,7 @@ build: clean update tidyup format vet test
 
 	@echo
 	@echo "[+] Building the MacOS ARM version"
-	@env GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+	@env GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 	
 	@echo "[+] Packaging the MacOS ARM version"
 	@tar -czvf $(EXEC_DIR)tcping_MacOS_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
@@ -104,7 +103,7 @@ build: clean update tidyup format vet test
 
 	@echo
 	@echo "[+] Building the FreeBSD version"
-	@env GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping $(SOURCE_FILES)
+	@env GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
 	@echo "[+] Packaging the FreeBSD AMD64 version"
 	@tar -czvf $(EXEC_DIR)tcping_FreeBSD.tar.gz -C $(EXEC_DIR) tcping > /dev/null
