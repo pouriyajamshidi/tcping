@@ -111,7 +111,7 @@ func (s database) save(query string, args ...any) error {
 	return err
 }
 
-// saveStats saves stats to the dedbase with proper fomatting
+// saveStats saves stats to the database with proper formatting
 func (s database) saveStats(stat stats) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s (event_type, timestamp,
@@ -230,7 +230,7 @@ func (s database) printStatistics(stat stats) {
 	}
 
 	// Hostname changes should be written during the final call.
-	// If the endtime is 0, it indicates that this is not the last call.
+	// If the endTime is 0, it indicates that this is not the last call.
 	if !stat.endTime.IsZero() {
 		err = s.saveHostNameChange(stat.hostnameChanges)
 		if err != nil {
