@@ -104,21 +104,21 @@ type stats struct {
 type userInput struct {
 	ip                       netip.Addr
 	hostname                 string
+	networkInterface         networkInterface
 	retryHostnameLookupAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	probesBeforeQuit         uint
+	timeout                  time.Duration
+	intervalBetweenProbes    time.Duration
 	port                     uint16
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
-	timeout                  time.Duration
-	networkInterface         networkInterface
-	intervalBetweenProbes    time.Duration
 }
 
 type networkInterface struct {
-	use    bool
+	raddr  *net.TCPAddr
 	dialer net.Dialer
-	raddr  *net.TCPAddr // remote address
+	use    bool
 }
 
 type longestTime struct {
