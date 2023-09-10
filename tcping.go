@@ -221,8 +221,8 @@ func processUserInput(tcpStats *stats) {
 	useIPv6 := flag.Bool("6", false, "only use IPv6.")
 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
 	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
-	outputJson := flag.Bool("j", false, "output in JSON format.")
-	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
+	outputJSON := flag.Bool("j", false, "output in JSON format.")
+	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -241,8 +241,8 @@ func processUserInput(tcpStats *stats) {
 
 	// we need to set printers first, because they're used for
 	// errors reporting and other output.
-	if *outputJson {
-		tcpStats.printer = newJsonPrinter(*prettyJson)
+	if *outputJSON {
+		tcpStats.printer = newJsonPrinter(*prettyJSON)
 	} else if *outputDb != "" {
 		tcpStats.printer = newDb(args, *outputDb)
 	} else {
@@ -268,7 +268,7 @@ func processUserInput(tcpStats *stats) {
 		usage()
 	}
 
-	if *prettyJson && !*outputJson {
+	if *prettyJSON && !*outputJSON {
 		tcpStats.printer.printError("--pretty has no effect without the -j flag.")
 		usage()
 	}
