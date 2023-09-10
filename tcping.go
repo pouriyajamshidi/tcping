@@ -143,7 +143,7 @@ type (
 )
 
 const (
-	version    = "2.0.0"
+	version    = "2.4.0"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
@@ -318,7 +318,7 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.startTime = time.Now()
 	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
 	tcpStats.userInput.timeout = secondsToDuration(*timeout)
-	
+
 	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
 	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
 		tcpStats.printer.printError("Wait interval should be more than 2 ms")
