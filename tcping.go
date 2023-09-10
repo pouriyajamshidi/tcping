@@ -95,7 +95,7 @@ type stats struct {
 }
 
 type userInput struct {
-	ip                       ipAddress
+	ip                       netip.Addr
 	hostname                 string
 	retryHostnameLookupAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	probesBeforeQuit         uint
@@ -136,11 +136,6 @@ type hostnameChange struct {
 	Addr netip.Addr `json:"addr,omitempty"`
 	When time.Time  `json:"when,omitempty"`
 }
-
-type (
-	ipAddress = netip.Addr
-	cliArgs   = []string
-)
 
 const (
 	version    = "2.4.0"
@@ -348,7 +343,7 @@ permuteArgs permute args for flag parsing stops just before the first non-flag a
 
 see: https://pkg.go.dev/flag
 */
-func permuteArgs(args cliArgs) {
+func permuteArgs(args []string) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
@@ -506,10 +501,10 @@ func checkLatestVersion(p printer) {
 }
 
 // selectResolvedIP returns a single IPv4 or IPv6 address from the net.IP slice of resolved addresses
-func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
+func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
 	var index int
 	var ipList []netip.Addr
-	var ip ipAddress
+	var ip netip.Addr
 
 	switch {
 	case tcpStats.userInput.useIPv4:
@@ -566,7 +561,7 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
 }
 
 // resolveHostname handles hostname resolution with a timeout value of a second
-func resolveHostname(tcpStats *stats) ipAddress {
+func resolveHostname(tcpStats *stats) netip.Addr {
 	ip, err := netip.ParseAddr(tcpStats.userInput.hostname)
 	if err == nil {
 		return ip
