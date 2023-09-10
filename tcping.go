@@ -17,6 +17,13 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
+const (
+	version    = "2.4.0"
+	owner      = "pouriyajamshidi"
+	repo       = "tcping"
+	dnsTimeout = 2 * time.Second
+)
+
 // printer is a set of methods for printers to implement.
 //
 // Printers should NOT modify any existing data nor do any calculations.
@@ -127,22 +134,10 @@ type rttResult struct {
 	hasResults bool
 }
 
-type replyMsg struct {
-	msg string
-	rtt float32
-}
-
 type hostnameChange struct {
 	Addr netip.Addr `json:"addr,omitempty"`
 	When time.Time  `json:"when,omitempty"`
 }
-
-const (
-	version    = "2.4.0"
-	owner      = "pouriyajamshidi"
-	repo       = "tcping"
-	dnsTimeout = 2 * time.Second
-)
 
 // signalHandler catches SIGINT and SIGTERM then prints tcping stats
 func signalHandler(tcpStats *stats) {
