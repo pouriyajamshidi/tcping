@@ -203,7 +203,7 @@ type jsonPrinter struct {
 	e *json.Encoder
 }
 
-func newJsonPrinter(withIndent bool) *jsonPrinter {
+func newJSONPrinter(withIndent bool) *jsonPrinter {
 	encoder := json.NewEncoder(os.Stdout)
 	if withIndent {
 		encoder.SetIndent("", "\t")

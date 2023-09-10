@@ -242,7 +242,7 @@ func processUserInput(tcpStats *stats) {
 	// we need to set printers first, because they're used for
 	// errors reporting and other output.
 	if *outputJSON {
-		tcpStats.printer = newJsonPrinter(*prettyJSON)
+		tcpStats.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
 		tcpStats.printer = newDb(args, *outputDb)
 	} else {
