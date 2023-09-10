@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.4.0 - 2023-09-10
+
+- new feature: add `-i` to specify the interval between sending probes. Thanks to @luca-patrignani
+- new feature: add `-I` to specify the source interface to use for sending probes. Thanks to @wizsk
+- new feature: add `-t` to specify a custom timeout for probes. Thanks to @luca-patrignani
+- new feature: add `--db` to specify the path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Thanks to @wizsk
+- fix: add `rtt` to JSON output
+- fix: CI warning thanks to @wizsk
+- refactor: remove unnecessary custom types
+- refactor: memory align `structs`
+- refactor: Debian packaging instructions
+
 ## v2.0.0 - 2023-08-05
 
 - new feature: add `-c` or count flag to exit **TCPING** after a certain amount of probes specified by user thanks to @ravsii

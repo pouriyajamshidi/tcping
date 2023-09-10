@@ -17,6 +17,13 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
+const (
+	version    = "2.4.0"
+	owner      = "pouriyajamshidi"
+	repo       = "tcping"
+	dnsTimeout = 2 * time.Second
+)
+
 // printer is a set of methods for printers to implement.
 //
 // Printers should NOT modify any existing data nor do any calculations.
@@ -95,23 +102,23 @@ type stats struct {
 }
 
 type userInput struct {
-	ip                       ipAddress
+	ip                       netip.Addr
 	hostname                 string
+	networkInterface         networkInterface
 	retryHostnameLookupAfter uint // Retry resolving target's hostname after a certain number of failed requests
 	probesBeforeQuit         uint
+	timeout                  time.Duration
+	intervalBetweenProbes    time.Duration
 	port                     uint16
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
-	timeout                  time.Duration
-	networkInterface         networkInterface
-	intervalBetweenProbes    time.Duration
 }
 
 type networkInterface struct {
-	use    bool
+	raddr  *net.TCPAddr
 	dialer net.Dialer
-	raddr  *net.TCPAddr // remote address
+	use    bool
 }
 
 type longestTime struct {
@@ -127,27 +134,10 @@ type rttResult struct {
 	hasResults bool
 }
 
-type replyMsg struct {
-	msg string
-	rtt float32
-}
-
 type hostnameChange struct {
 	Addr netip.Addr `json:"addr,omitempty"`
 	When time.Time  `json:"when,omitempty"`
 }
-
-type (
-	ipAddress = netip.Addr
-	cliArgs   = []string
-)
-
-const (
-	version    = "2.0.0"
-	owner      = "pouriyajamshidi"
-	repo       = "tcping"
-	dnsTimeout = 2 * time.Second
-)
 
 // signalHandler catches SIGINT and SIGTERM then prints tcping stats
 func signalHandler(tcpStats *stats) {
@@ -231,8 +221,8 @@ func processUserInput(tcpStats *stats) {
 	useIPv6 := flag.Bool("6", false, "only use IPv6.")
 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
 	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
-	outputJson := flag.Bool("j", false, "output in JSON format.")
-	prettyJson := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
+	outputJSON := flag.Bool("j", false, "output in JSON format.")
+	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showVersion := flag.Bool("v", false, "show version.")
 	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -251,8 +241,8 @@ func processUserInput(tcpStats *stats) {
 
 	// we need to set printers first, because they're used for
 	// errors reporting and other output.
-	if *outputJson {
-		tcpStats.printer = newJsonPrinter(*prettyJson)
+	if *outputJSON {
+		tcpStats.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
 		tcpStats.printer = newDb(args, *outputDb)
 	} else {
@@ -278,7 +268,7 @@ func processUserInput(tcpStats *stats) {
 		usage()
 	}
 
-	if *prettyJson && !*outputJson {
+	if *prettyJSON && !*outputJSON {
 		tcpStats.printer.printError("--pretty has no effect without the -j flag.")
 		usage()
 	}
@@ -318,7 +308,7 @@ func processUserInput(tcpStats *stats) {
 	tcpStats.startTime = time.Now()
 	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
 	tcpStats.userInput.timeout = secondsToDuration(*timeout)
-	
+
 	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
 	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
 		tcpStats.printer.printError("Wait interval should be more than 2 ms")
@@ -348,7 +338,7 @@ permuteArgs permute args for flag parsing stops just before the first non-flag a
 
 see: https://pkg.go.dev/flag
 */
-func permuteArgs(args cliArgs) {
+func permuteArgs(args []string) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
@@ -506,10 +496,10 @@ func checkLatestVersion(p printer) {
 }
 
 // selectResolvedIP returns a single IPv4 or IPv6 address from the net.IP slice of resolved addresses
-func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
+func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
 	var index int
 	var ipList []netip.Addr
-	var ip ipAddress
+	var ip netip.Addr
 
 	switch {
 	case tcpStats.userInput.useIPv4:
@@ -566,7 +556,7 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) ipAddress {
 }
 
 // resolveHostname handles hostname resolution with a timeout value of a second
-func resolveHostname(tcpStats *stats) ipAddress {
+func resolveHostname(tcpStats *stats) netip.Addr {
 	ip, err := netip.ParseAddr(tcpStats.userInput.hostname)
 	if err == nil {
 		return ip

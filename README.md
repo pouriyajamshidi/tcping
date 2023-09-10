@@ -232,16 +232,16 @@ The following flags are available to control the behavior of application:
 | `-6`       | Only use IPv6 addresses                                                                                           |
 | `-r`       | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
 | `-c`       | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
-| `--db`     | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db` (available in the next release) |
-| `-t`       | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout  (available in the next release) |
-| `-i`       | Interval between sending probes (available in the next release)                                                   |
-| `-I`       | Interface name to use for sending probes (available in the next release)                                          |
+| `--db`     | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
+| `-t`       | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
+| `-i`       | Interval between sending probes                                                                                   |
+| `-I`       | Interface name to use for sending probes                                                                          |
 | `-j`       | Output in `JSON` format                                                                                           |
 | `--pretty` | Prettify the `JSON` output                                                                                        |
 | `-v`       | Print version                                                                                                     |
 | `-u`       | Check for updates                                                                                                 |
 
-> Without specifying the `-4` and `-6` flags, tcping will use one randomly based on DNS lookups.
+> Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 
 ---
 

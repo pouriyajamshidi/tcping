@@ -203,7 +203,7 @@ type jsonPrinter struct {
 	e *json.Encoder
 }
 
-func newJsonPrinter(withIndent bool) *jsonPrinter {
+func newJSONPrinter(withIndent bool) *jsonPrinter {
 	encoder := json.NewEncoder(os.Stdout)
 	if withIndent {
 		encoder.SetIndent("", "\t")
@@ -262,6 +262,7 @@ type JSONData struct {
 	HostnameChanges      []hostnameChange `json:"hostname_changes,omitempty"`
 	IsIP                 *bool            `json:"is_ip,omitempty"`
 	Port                 uint16           `json:"port,omitempty"`
+	Rtt                  float32          `json:"time,omitempty"`
 
 	// Success is a special field from probe messages, containing information
 	// whether request was successful or not.
@@ -357,6 +358,7 @@ func (p *jsonPrinter) printProbeSuccess(
 			Hostname:              hostname,
 			Addr:                  ip,
 			Port:                  port,
+			Rtt:                   rtt,
 			IsIP:                  &t,
 			Success:               &t,
 			TotalSuccessfulProbes: streak,
@@ -365,11 +367,11 @@ func (p *jsonPrinter) printProbeSuccess(
 
 	if hostname != "" {
 		data.IsIP = &f
-		data.Message = fmt.Sprintf("Reply from %s (%s) on port %d",
-			hostname, ip, port)
+		data.Message = fmt.Sprintf("Reply from %s (%s) on port %d time=%.3f",
+			hostname, ip, port, rtt)
 	} else {
-		data.Message = fmt.Sprintf("Reply from %s on port %d",
-			ip, port)
+		data.Message = fmt.Sprintf("Reply from %s on port %d time=%.3f",
+			ip, port, rtt)
 	}
 
 	p.print(data)
