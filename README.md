@@ -208,6 +208,8 @@ tcping www.example.com 443
 tcping www.example.com 443 -r 10
 ```
 
+> TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official documentation from Go [here](https://go.dev/doc/faq#virus).
+
 ### Docker
 
 The Docker image can be used like:
