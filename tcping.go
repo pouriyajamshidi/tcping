@@ -215,7 +215,7 @@ func usage() {
 	os.Exit(1)
 }
 
-func checkSetPrinters(tcpst *stats, outputtoJSON ,prettyJSON *bool ,outputDb *string, args []string){
+func checkSetPrinters(tcpst *stats, outputtoJSON, prettyJSON *bool, outputDb *string, args []string) {
 	// check if prettyjson an outputtojson are true, if so printError and exit
 	if *prettyJSON && !*outputtoJSON {
 		colorRed("--pretty has no effect without the -j flag.")
@@ -230,9 +230,9 @@ func checkSetPrinters(tcpst *stats, outputtoJSON ,prettyJSON *bool ,outputDb *st
 	}
 }
 
-func checkUpdateVersion(update,version *bool, args []string, nflags int, tcpstats *stats){
+func checkUpdateVersion(update, version *bool, args []string, nflags int, tcpstats *stats) {
 	// -u works on its own
-	if *update{
+	if *update {
 		if len(args) == 0 && nflags == 1 {
 			checkLatestVersion(tcpstats.printer)
 		} else {
@@ -246,7 +246,7 @@ func checkUpdateVersion(update,version *bool, args []string, nflags int, tcpstat
 	}
 }
 
-func checkSetIPFlags(tcpstats *stats, ip4,ip6 *bool){
+func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
 	// check if ip4 or ip6 are true, if so printError and exit
 	if *ip4 && *ip6 {
 		tcpstats.printer.printError("Only one IP version can be specified")
@@ -255,11 +255,11 @@ func checkSetIPFlags(tcpstats *stats, ip4,ip6 *bool){
 		tcpstats.userInput.useIPv4 = true
 	} else if *ip6 {
 		tcpstats.userInput.useIPv6 = true
-	}	
+	}
 
 }
 
-func checkUpdatePort(tcpstats *stats, args []string){
+func checkUpdatePort(tcpstats *stats, args []string) {
 	// the non-flag command-line arguments
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
@@ -276,8 +276,8 @@ func checkUpdatePort(tcpstats *stats, args []string){
 }
 
 func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesbfrquit *uint, timeout, secbtwprobes *float64, intName *string) {
-	if *retryResolve> 0 {
-		tcpstats.userInput.retryHostnameLookupAfter= *retryResolve
+	if *retryResolve > 0 {
+		tcpstats.userInput.retryHostnameLookupAfter = *retryResolve
 	}
 
 	tcpstats.userInput.hostname = args[0]
@@ -305,7 +305,7 @@ func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesbfrquit 
 		tcpstats.userInput.shouldRetryResolve = true
 	}
 
-	if *intName!= "" {
+	if *intName != "" {
 		tcpstats.userInput.networkInterface = newNetworkInterface(tcpstats, *intName)
 	}
 }
@@ -336,9 +336,9 @@ func processUserInput(tcpStats *stats) {
 
 	// we need to set printers first, because they're used for
 	// errors reporting and other output.
-	checkSetPrinters(tcpStats,outputJSON, prettyJSON, outputDb, args)
+	checkSetPrinters(tcpStats, outputJSON, prettyJSON, outputDb, args)
 	// Check if admin command passed in an render respons.
-	checkUpdateVersion(shouldCheckUpdates,showVersion, args, nFlag, tcpStats)
+	checkUpdateVersion(shouldCheckUpdates, showVersion, args, nFlag, tcpStats)
 
 	// host and port must be specified
 	if len(args) != 2 {
@@ -346,12 +346,12 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
-	checkSetIPFlags(tcpStats,useIPv4,useIPv6)
+	checkSetIPFlags(tcpStats, useIPv4, useIPv6)
 	// Check if the port is valid and set it.
 	checkUpdatePort(tcpStats, args)
 	// set generic args
-	setGenericArgs(tcpStats, args, retryHostnameResolveAfter, 
-		probesBeforeQuit, timeout, secondsBetweenProbes, 
+	setGenericArgs(tcpStats, args, retryHostnameResolveAfter,
+		probesBeforeQuit, timeout, secondsBetweenProbes,
 		interfaceName)
 }
 
