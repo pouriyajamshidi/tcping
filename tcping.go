@@ -215,6 +215,101 @@ func usage() {
 	os.Exit(1)
 }
 
+func checkSetPrinters(tcpst *stats, outputtoJSON ,prettyJSON *bool ,outputDb *string, args []string){
+	// check if prettyjson an outputtojson are true, if so printError and exit
+	if *prettyJSON && !*outputtoJSON {
+		colorRed("--pretty has no effect without the -j flag.")
+		usage()
+	}
+	if *outputtoJSON {
+		tcpst.printer = newJSONPrinter(*prettyJSON)
+	} else if *outputDb != "" {
+		tcpst.printer = newDb(args, *outputDb)
+	} else {
+		tcpst.printer = &planePrinter{}
+	}
+}
+
+func checkUpdateVersion(update,version *bool, args []string, nflags int, tcpstats *stats){
+	// -u works on its own
+	if *update{
+		if len(args) == 0 && nflags == 1 {
+			checkLatestVersion(tcpstats.printer)
+		} else {
+			usage()
+		}
+	}
+
+	if *version {
+		tcpstats.printer.printVersion()
+		os.Exit(0)
+	}
+}
+
+func checkSetIPFlags(tcpstats *stats, ip4,ip6 *bool){
+	// check if ip4 or ip6 are true, if so printError and exit
+	if *ip4 && *ip6 {
+		tcpstats.printer.printError("Only one IP version can be specified")
+		usage()
+	} else if *ip4 {
+		tcpstats.userInput.useIPv4 = true
+	} else if *ip6 {
+		tcpstats.userInput.useIPv6 = true
+	}	
+
+}
+
+func checkUpdatePort(tcpstats *stats, args []string){
+	// the non-flag command-line arguments
+	port, err := strconv.ParseUint(args[1], 10, 16)
+	if err != nil {
+		tcpstats.printer.printError("Invalid port number: %s", args[1])
+		os.Exit(1)
+	}
+
+	if port < 1 || port > 65535 {
+		tcpstats.printer.printError("Port should be in 1..65535 range")
+		os.Exit(1)
+	}
+	tcpstats.userInput.port = uint16(port)
+
+}
+
+func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesbfrquit *uint, timeout, secbtwprobes *float64, intName *string) {
+	if *retryResolve> 0 {
+		tcpstats.userInput.retryHostnameLookupAfter= *retryResolve
+	}
+
+	tcpstats.userInput.hostname = args[0]
+	tcpstats.userInput.ip = resolveHostname(tcpstats)
+	tcpstats.startTime = time.Now()
+	tcpstats.userInput.probesBeforeQuit = *probesbfrquit
+	tcpstats.userInput.timeout = secondsToDuration(*timeout)
+
+	tcpstats.userInput.intervalBetweenProbes = secondsToDuration(*secbtwprobes)
+	if tcpstats.userInput.intervalBetweenProbes < 2*time.Millisecond {
+		tcpstats.printer.printError("Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
+
+	// this serves as a default starting value for tracking changes.
+	tcpstats.hostnameChanges = []hostnameChange{
+		{tcpstats.userInput.ip, time.Now()},
+	}
+
+	if tcpstats.userInput.hostname == tcpstats.userInput.ip.String() {
+		tcpstats.isIP = true
+	}
+
+	if tcpstats.userInput.retryHostnameLookupAfter > 0 && !tcpstats.isIP {
+		tcpstats.userInput.shouldRetryResolve = true
+	}
+
+	if *intName!= "" {
+		tcpstats.userInput.networkInterface = newNetworkInterface(tcpstats, *intName)
+	}
+}
+
 // processUserInput gets and validate user input
 func processUserInput(tcpStats *stats) {
 	useIPv4 := flag.Bool("4", false, "only use IPv4.")
@@ -241,96 +336,23 @@ func processUserInput(tcpStats *stats) {
 
 	// we need to set printers first, because they're used for
 	// errors reporting and other output.
-	if *outputJSON {
-		tcpStats.printer = newJSONPrinter(*prettyJSON)
-	} else if *outputDb != "" {
-		tcpStats.printer = newDb(args, *outputDb)
-	} else {
-		tcpStats.printer = &planePrinter{}
-	}
-
-	// -u works on its own
-	if *shouldCheckUpdates {
-		if len(args) == 0 && nFlag == 1 {
-			checkLatestVersion(tcpStats.printer)
-		} else {
-			usage()
-		}
-	}
-
-	if *showVersion {
-		tcpStats.printer.printVersion()
-		os.Exit(0)
-	}
+	checkSetPrinters(tcpStats,outputJSON, prettyJSON, outputDb, args)
+	// Check if admin command passed in an render respons.
+	checkUpdateVersion(shouldCheckUpdates,showVersion, args, nFlag, tcpStats)
 
 	// host and port must be specified
 	if len(args) != 2 {
 		usage()
 	}
 
-	if *prettyJSON && !*outputJSON {
-		tcpStats.printer.printError("--pretty has no effect without the -j flag.")
-		usage()
-	}
-
-	if *useIPv4 && *useIPv6 {
-		tcpStats.printer.printError("Only one IP version can be specified")
-		usage()
-	}
-
-	if *retryHostnameResolveAfter > 0 {
-		tcpStats.userInput.retryHostnameLookupAfter = *retryHostnameResolveAfter
-	}
-
-	if *useIPv4 {
-		tcpStats.userInput.useIPv4 = true
-	}
-
-	if *useIPv6 {
-		tcpStats.userInput.useIPv6 = true
-	}
-
-	// the non-flag command-line arguments
-	port, err := strconv.ParseUint(args[1], 10, 16)
-	if err != nil {
-		tcpStats.printer.printError("Invalid port number: %s", args[1])
-		os.Exit(1)
-	}
-
-	if port < 1 || port > 65535 {
-		tcpStats.printer.printError("Port should be in 1..65535 range")
-		os.Exit(1)
-	}
-
-	tcpStats.userInput.hostname = args[0]
-	tcpStats.userInput.port = uint16(port)
-	tcpStats.userInput.ip = resolveHostname(tcpStats)
-	tcpStats.startTime = time.Now()
-	tcpStats.userInput.probesBeforeQuit = *probesBeforeQuit
-	tcpStats.userInput.timeout = secondsToDuration(*timeout)
-
-	tcpStats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
-	if tcpStats.userInput.intervalBetweenProbes < 2*time.Millisecond {
-		tcpStats.printer.printError("Wait interval should be more than 2 ms")
-		os.Exit(1)
-	}
-
-	// this serves as a default starting value for tracking changes.
-	tcpStats.hostnameChanges = []hostnameChange{
-		{tcpStats.userInput.ip, time.Now()},
-	}
-
-	if tcpStats.userInput.hostname == tcpStats.userInput.ip.String() {
-		tcpStats.isIP = true
-	}
-
-	if tcpStats.userInput.retryHostnameLookupAfter > 0 && !tcpStats.isIP {
-		tcpStats.userInput.shouldRetryResolve = true
-	}
-
-	if *interfaceName != "" {
-		tcpStats.userInput.networkInterface = newNetworkInterface(tcpStats, *interfaceName)
-	}
+	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
+	checkSetIPFlags(tcpStats,useIPv4,useIPv6)
+	// Check if the port is valid and set it.
+	checkUpdatePort(tcpStats, args)
+	// set generic args
+	setGenericArgs(tcpStats, args, retryHostnameResolveAfter, 
+		probesBeforeQuit, timeout, secondsBetweenProbes, 
+		interfaceName)
 }
 
 /*
