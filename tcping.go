@@ -215,18 +215,18 @@ func usage() {
 	os.Exit(1)
 }
 
-func checkSetPrinters(tcpst *stats, outputtoJSON, prettyJSON *bool, outputDb *string, args []string) {
+func checkSetPrinters(tcpstats *stats, outputtoJSON, prettyJSON *bool, outputDb *string, args []string) {
 	// check if prettyjson an outputtojson are true, if so printError and exit
 	if *prettyJSON && !*outputtoJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
 	if *outputtoJSON {
-		tcpst.printer = newJSONPrinter(*prettyJSON)
+		tcpstats.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
-		tcpst.printer = newDb(args, *outputDb)
+		tcpstats.printer = newDb(args, *outputDb)
 	} else {
-		tcpst.printer = &planePrinter{}
+		tcpstats.printer = &planePrinter{}
 	}
 }
 
