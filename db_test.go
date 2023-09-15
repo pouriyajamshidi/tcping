@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/netip"
 	"strconv"
 	"testing"
@@ -90,6 +91,10 @@ func TestDbSaveStats(t *testing.T) {
 
 	isNil(t, err)
 	rows.Close()
+
+	stat.rttResults.min = toFixedFloat(stat.rttResults.min, 3)
+	stat.rttResults.average = toFixedFloat(stat.rttResults.average, 3)
+	stat.rttResults.max = toFixedFloat(stat.rttResults.max, 3)
 
 	t.Log("the line number will tell you where the error happend")
 	Equals(t, addr, stat.userInput.ip.String())
@@ -230,4 +235,19 @@ func isNil(t *testing.T, value any) {
 		t.Logf(`expected "%v" to be nil`, value)
 		t.FailNow()
 	}
+}
+
+// toFixedFloat takes in a float and the precision number
+// and will round it to that specified precision
+// works for small numbers
+//
+// example: toFixedFloat(3.14159, 3) -> 3.142
+func toFixedFloat(input float32, precision int) float32 {
+	num := float64(input)
+	round := func(num float64) int {
+		return int(num + math.Copysign(0.5, num))
+	}
+
+	output := math.Pow(10, float64(precision))
+	return float32(float64(round(num*output)) / output)
 }

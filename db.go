@@ -187,7 +187,7 @@ func (s database) saveStats(stat stats) error {
 		stat.totalUptime.String(), stat.totalDowntime.String(),
 		longestUptimeDuration, longestUptimeStart, longestUptimeEnd,
 		longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd,
-		stat.rttResults.min, stat.rttResults.average, stat.rttResults.max,
+		fmt.Sprintf("%.3f", stat.rttResults.min), fmt.Sprintf("%.3f", stat.rttResults.average), fmt.Sprintf("%.3f", stat.rttResults.max),
 		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), totalDuration,
 	)
 
