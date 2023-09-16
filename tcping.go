@@ -251,15 +251,17 @@ func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
 	if *ip4 && *ip6 {
 		tcpstats.printer.printError("Only one IP version can be specified")
 		usage()
-	} else if *ip4 {
+	} 
+	if *ip4 {
 		tcpstats.userInput.useIPv4 = true
-	} else if *ip6 {
+	} 
+	if *ip6 {
 		tcpstats.userInput.useIPv6 = true
 	}
 
 }
 
-func checkUpdatePort(tcpstats *stats, args []string) {
+func checkPort(tcpstats *stats, args []string) {
 	// the non-flag command-line arguments
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
