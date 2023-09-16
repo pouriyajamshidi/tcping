@@ -350,7 +350,7 @@ func processUserInput(tcpStats *stats) {
 	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
 	checkSetIPFlags(tcpStats, useIPv4, useIPv6)
 	// Check if the port is valid and set it.
-	checkUpdatePort(tcpStats, args)
+	checkPort(tcpStats, args)
 	// set generic args
 	setGenericArgs(tcpStats, args, retryHostnameResolveAfter,
 		probesBeforeQuit, timeout, secondsBetweenProbes,
