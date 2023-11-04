@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setting Go version
-        uses: actions/setup-go@v3.3.1
+        uses: actions/setup-go@v4.1.0
         with:
           go-version-file: "go.mod"
           check-latest: true
