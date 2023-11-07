@@ -68,34 +68,34 @@ CREATE TABLE %s (
 
 	// %s will be replaced by the table name
 	statSaveSchema = `INSERT INTO %s (
-event_type,
-timestamp,
-addr,
-hostname,
-port,
-hostname_resolve_retries,
-total_successful_probes,
-total_unsuccessful_probes,
-never_succeed_probe,
-never_failed_probe,
-last_successful_probe,
-last_unsuccessful_probe,
-total_packets,
-total_packet_loss,
-total_uptime,
-total_downtime,
-longest_uptime,
-longest_uptime_start,
-longest_uptime_end,
-longest_downtime,
-longest_downtime_start,
-longest_downtime_end,
-latency_min,
-latency_avg,
-latency_max,
-start_time,
-end_time,
-total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	event_type,
+	timestamp,
+	addr,
+	hostname,
+	port,
+	hostname_resolve_retries,
+	total_successful_probes,
+	total_unsuccessful_probes,
+	never_succeed_probe,
+	never_failed_probe,
+	last_successful_probe,
+	last_unsuccessful_probe,
+	total_packets,
+	total_packet_loss,
+	total_uptime,
+	total_downtime,
+	longest_uptime,
+	longest_uptime_start,
+	longest_uptime_end,
+	longest_downtime,
+	longest_downtime_start,
+	longest_downtime_end,
+	latency_min,
+	latency_avg,
+	latency_max,
+	start_time,
+	end_time,
+	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // newDb creates a newDb with the given path and returns `database` struct
@@ -157,21 +157,16 @@ func (db *database) saveStats(stat stats) error {
 	// if the longest uptime is empty, then the column should also be empty
 	var longestUptimeDuration, longestUptimeStart, longestUptimeEnd string
 	var longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd string
-	if stat.longestUptime.start.IsZero() {
-		longestUptimeDuration = "0s"
-		longestUptimeStart = ""
-		longestUptimeEnd = ""
-	} else {
+	longestUptimeDuration = "0s"
+	longestDowntimeDuration = "0s"
+
+	if !stat.longestUptime.start.IsZero() {
 		longestUptimeDuration = stat.longestUptime.duration.String()
 		longestUptimeStart = stat.longestUptime.start.Format(timeFormat)
 		longestUptimeEnd = stat.longestUptime.end.Format(timeFormat)
 	}
 
-	if stat.longestDowntime.start.IsZero() {
-		longestDowntimeDuration = "0s"
-		longestDowntimeStart = ""
-		longestDowntimeEnd = ""
-	} else {
+	if !stat.longestDowntime.start.IsZero() {
 		longestDowntimeDuration = stat.longestDowntime.duration.String()
 		longestDowntimeStart = stat.longestDowntime.start.Format(timeFormat)
 		longestDowntimeEnd = stat.longestDowntime.end.Format(timeFormat)

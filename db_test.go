@@ -32,7 +32,7 @@ func TestNewDBTableCreation(t *testing.T) {
 func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	db := newDb(arg, "/tmp/foo.db")
+	db := newDb(arg, ":memory:")
 	t.Log(db.tableName)
 	defer db.conn.Close()
 
@@ -74,7 +74,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 		hostNameResolveTries                           int
 		totalSuccessfulProbes, totalUnsuccessfulProbes uint
 		neverSucceedProbe, neverFailedProbe            bool
-		lastSuccessfulProbe, lastUnsuccessfulProbe     time.Time
+		lastSuccessfulProbe                            time.Time
 		totalPackets                                   uint
 		totalPacketsLoss                               float32
 		totalUptime, totalDowntime                     string
@@ -86,11 +86,6 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 		startTimestamp, endTimestamp                   time.Time
 		totalDuration                                  string
 	)
-
-	_ = hostNameResolveTries
-	_ = lastSuccessfulProbe
-	_ = lastUnsuccessfulProbe
-	_ = totalPacketsLoss
 
 	resFunc := func(stmt *sqlite.Stmt) error {
 		Equals(t, stmt.ColumnCount(), 26)
@@ -113,10 +108,10 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 		// never_failed_probe
 		neverFailedProbe = stmt.ColumnBool(7)
 		// last_successful_probe
-		// lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(8))
-		// isNil(t, err)
+		lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(8))
+		isNil(t, err)
 		// last_unsuccessful_probe
-		// lastUnsuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(9))
+		Equals(t, "", stmt.ColumnText(9)) // simulating never failed
 		// isNil(t, err)
 		// total_packets
 		totalPackets = uint(stmt.ColumnInt(10))
@@ -167,12 +162,18 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	t.Log("the line number will tell you where the error happend")
 	Equals(t, addr, stat.userInput.ip.String())
 	Equals(t, hostname, stat.userInput.hostname)
-	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
+	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)
 	Equals(t, port, strconv.Itoa(int(stat.userInput.port)))
+
+	Equals(t, hostNameResolveTries, int(stat.retriedHostnameLookups))
+	packetLoss := (float32(stat.totalUnsuccessfulProbes) / float32(stat.totalSuccessfulProbes+stat.totalUnsuccessfulProbes)) * 100
+	Equals(t, totalPacketsLoss, packetLoss)
 
 	Equals(t, neverSucceedProbe, stat.lastSuccessfulProbe.IsZero())
 	Equals(t, neverFailedProbe, stat.lastUnsuccessfulProbe.IsZero())
+
+	Equals(t, lastSuccessfulProbe.Format(timeFormat), stat.lastSuccessfulProbe.Format(timeFormat))
 
 	Equals(t, lMin, stat.rttResults.min)
 	Equals(t, lAvg, stat.rttResults.average)
