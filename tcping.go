@@ -186,9 +186,10 @@ func shutdown(tcpStats *stats) {
 
 	// if the printer type is `database`, then close the db before
 	// exiting to prevent any memory leaks
-	if db, ok := tcpStats.printer.(database); ok {
-		db.db.Close()
-	}
+	// TODO: close conn
+	// if db, ok := tcpStats.printer.(database); ok {
+	// 	db.db.Close()
+	// }
 
 	os.Exit(0)
 }
@@ -251,10 +252,10 @@ func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
 	if *ip4 && *ip6 {
 		tcpstats.printer.printError("Only one IP version can be specified")
 		usage()
-	} 
+	}
 	if *ip4 {
 		tcpstats.userInput.useIPv4 = true
-	} 
+	}
 	if *ip6 {
 		tcpstats.userInput.useIPv6 = true
 	}

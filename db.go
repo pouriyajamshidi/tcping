@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"math"
 	"os"
@@ -9,11 +8,12 @@ import (
 	"time"
 	"unicode"
 
-	_ "github.com/mattn/go-sqlite3"
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
 )
 
 type database struct {
-	db        *sql.DB
+	conn      *sqlite.Conn
 	dbPath    string
 	tableName string
 }
@@ -21,7 +21,8 @@ type database struct {
 const (
 	eventTypeStatistics     = "statistics"
 	eventTypeHostnameChange = "hostname change"
-	tableSchema             = `
+
+	tableSchema = `
 -- Organized row names together for better readability
 CREATE TABLE %s (
     id INTEGER PRIMARY KEY,
@@ -64,26 +65,62 @@ CREATE TABLE %s (
     total_uptime TEXT,
     total_downtime TEXT
 );`
+
+	// %s will be replaced by the table name
+	statSaveSchema = `INSERT INTO %s (
+	event_type,
+	timestamp,
+	addr,
+	hostname,
+	port,
+	hostname_resolve_retries,
+	total_successful_probes,
+	total_unsuccessful_probes,
+	never_succeed_probe,
+	never_failed_probe,
+	last_successful_probe,
+	last_unsuccessful_probe,
+	total_packets,
+	total_packet_loss,
+	total_uptime,
+	total_downtime,
+	longest_uptime,
+	longest_uptime_end,
+	longest_uptime_start,
+	longest_downtime,
+	longest_downtime_start,
+	longest_downtime_end,
+	latency_min,
+	latency_avg,
+	latency_max,
+	start_time,
+	end_time,
+	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // newDb creates a newDb with the given path and returns `database` struct
-func newDb(args []string, dbPath string) database {
+func newDb(args []string, dbPath string) *database {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
 
-	db, err := sql.Open("sqlite3", dbPath)
+	conn, err := sqlite.OpenConn(dbPath, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
 		colorRed("\nError while creating the database %q: %s\n", dbPath, err)
 		os.Exit(1)
 	}
 
-	_, err = db.Exec(tableSchema)
+	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
+	// if err != nil {
+	// 	// TODO: add better err messege
+	// 	colorRed("\nError while preparing the database %q \nerr: %s\n", dbPath, err)
+	// 	os.Exit(1)
+	// }
 	if err != nil {
+		// 	// TODO: add better err messege
 		colorRed("\nError while writing to the database %q \nerr: %s\n", dbPath, err)
 		os.Exit(1)
 	}
-
-	return database{db, dbPath, tableName}
+	return &database{conn, dbPath, tableName}
 }
 
 // newTableName will return correctly formatted table name
@@ -99,34 +136,8 @@ func newTableName(args []string) string {
 	return tableName
 }
 
-// save will insert the table name and
-// saves the args to the database
-func (s database) save(query string, args ...any) error {
-	// inserting the table name
-	statement := fmt.Sprintf(query, s.tableName)
-
-	// saving to the db
-	_, err := s.db.Exec(statement, args...)
-
-	return err
-}
-
 // saveStats saves stats to the database with proper formatting
-func (s database) saveStats(stat stats) error {
-	// %s will be replaced by the table name
-	schema := `INSERT INTO %s (event_type, timestamp,
-		addr, hostname, port, hostname_resolve_retries,
-		total_successful_probes, total_unsuccessful_probes,
-		never_succeed_probe, never_failed_probe,
-		last_successful_probe, last_unsuccessful_probe,
-		total_packets, total_packet_loss,
-		total_uptime, total_downtime,
-		longest_uptime, longest_uptime_end, longest_uptime_start,
-		longest_downtime, longest_downtime_start, longest_downtime_end,
-		latency_min, latency_avg, latency_max,
-		start_time, end_time, total_duration)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
+func (db *database) saveStats(stat stats) error {
 	totalPackets := stat.totalSuccessfulProbes + stat.totalUnsuccessfulProbes
 	packetLoss := (float32(stat.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 	if math.IsNaN(float64(packetLoss)) {
@@ -177,7 +188,7 @@ func (s database) saveStats(stat stats) error {
 		totalDuration = stat.endTime.Sub(stat.startTime).String()
 	}
 
-	err := s.save(schema,
+	args := []interface{}{
 		eventTypeStatistics, time.Now().Format(timeFormat),
 		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port, stat.retriedHostnameLookups,
 		stat.totalSuccessfulProbes, stat.totalUnsuccessfulProbes,
@@ -189,14 +200,18 @@ func (s database) saveStats(stat stats) error {
 		longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd,
 		fmt.Sprintf("%.3f", stat.rttResults.min), fmt.Sprintf("%.3f", stat.rttResults.average), fmt.Sprintf("%.3f", stat.rttResults.max),
 		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), totalDuration,
-	)
+	}
 
-	return err
+	return sqlitex.Execute(
+		db.conn,
+		fmt.Sprintf(statSaveSchema, db.tableName),
+		&sqlitex.ExecOptions{Args: args},
+	)
 }
 
 // saveHostNameChang saves the hostname changes
 // in multiple rows with event_type = eventTypeHostnameChange
-func (s database) saveHostNameChange(h []hostnameChange) error {
+func (db *database) saveHostNameChange(h []hostnameChange) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s
 	(event_type, hostname_changed_to, hostname_change_time)
@@ -206,7 +221,8 @@ func (s database) saveHostNameChange(h []hostnameChange) error {
 		if host.Addr.String() == "" {
 			continue
 		}
-		err := s.save(schema, eventTypeHostnameChange, host.Addr.String(), host.When.Format(timeFormat))
+		err := sqlitex.Execute(db.conn, fmt.Sprintf(schema, db.tableName), &sqlitex.ExecOptions{
+			Args: []interface{}{host.Addr.String(), host.When.Format(timeFormat)}})
 		if err != nil {
 			return err
 		}
@@ -217,29 +233,29 @@ func (s database) saveHostNameChange(h []hostnameChange) error {
 
 // printStart will let the user know the program is running by
 // printing a msg with the hostname, and port number to stdout
-func (s database) printStart(hostname string, port uint16) {
+func (db *database) printStart(hostname string, port uint16) {
 	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
 }
 
 // printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
-func (s database) printStatistics(stat stats) {
-	err := s.saveStats(stat)
+func (db *database) printStatistics(stat stats) {
+	err := db.saveStats(stat)
 	if err != nil {
-		s.printError("\nError while writing stats to the database %q\nerr: %s", s.dbPath, err)
+		db.printError("\nError while writing stats to the database %q\nerr: %s", db.dbPath, err)
 	}
 
 	// Hostname changes should be written during the final call.
 	// If the endTime is 0, it indicates that this is not the last call.
 	if !stat.endTime.IsZero() {
-		err = s.saveHostNameChange(stat.hostnameChanges)
+		err = db.saveHostNameChange(stat.hostnameChanges)
 		if err != nil {
-			s.printError("\nError while writing hostname changes to the database %q\nerr: %s", s.dbPath, err)
+			db.printError("\nError while writing hostname changes to the database %q\nerr: %s", db.dbPath, err)
 		}
 
 	}
 
-	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, s.dbPath, s.tableName)
+	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, db.dbPath, db.tableName)
 }
 
 // printError prints the err to the stderr and exits with status code 1
