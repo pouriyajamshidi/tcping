@@ -68,34 +68,34 @@ CREATE TABLE %s (
 
 	// %s will be replaced by the table name
 	statSaveSchema = `INSERT INTO %s (
-	event_type,
-	timestamp,
-	addr,
-	hostname,
-	port,
-	hostname_resolve_retries,
-	total_successful_probes,
-	total_unsuccessful_probes,
-	never_succeed_probe,
-	never_failed_probe,
-	last_successful_probe,
-	last_unsuccessful_probe,
-	total_packets,
-	total_packet_loss,
-	total_uptime,
-	total_downtime,
-	longest_uptime,
-	longest_uptime_end,
-	longest_uptime_start,
-	longest_downtime,
-	longest_downtime_start,
-	longest_downtime_end,
-	latency_min,
-	latency_avg,
-	latency_max,
-	start_time,
-	end_time,
-	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+event_type,
+timestamp,
+addr,
+hostname,
+port,
+hostname_resolve_retries,
+total_successful_probes,
+total_unsuccessful_probes,
+never_succeed_probe,
+never_failed_probe,
+last_successful_probe,
+last_unsuccessful_probe,
+total_packets,
+total_packet_loss,
+total_uptime,
+total_downtime,
+longest_uptime,
+longest_uptime_start,
+longest_uptime_end,
+longest_downtime,
+longest_downtime_start,
+longest_downtime_end,
+latency_min,
+latency_avg,
+latency_max,
+start_time,
+end_time,
+total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // newDb creates a newDb with the given path and returns `database` struct
@@ -110,11 +110,6 @@ func newDb(args []string, dbPath string) *database {
 	}
 
 	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
-	// if err != nil {
-	// 	// TODO: add better err messege
-	// 	colorRed("\nError while preparing the database %q \nerr: %s\n", dbPath, err)
-	// 	os.Exit(1)
-	// }
 	if err != nil {
 		// 	// TODO: add better err messege
 		colorRed("\nError while writing to the database %q \nerr: %s\n", dbPath, err)
@@ -171,6 +166,7 @@ func (db *database) saveStats(stat stats) error {
 		longestUptimeStart = stat.longestUptime.start.Format(timeFormat)
 		longestUptimeEnd = stat.longestUptime.end.Format(timeFormat)
 	}
+
 	if stat.longestDowntime.start.IsZero() {
 		longestDowntimeDuration = "0s"
 		longestDowntimeStart = ""
@@ -188,18 +184,36 @@ func (db *database) saveStats(stat stats) error {
 		totalDuration = stat.endTime.Sub(stat.startTime).String()
 	}
 
+	// datas
 	args := []interface{}{
-		eventTypeStatistics, time.Now().Format(timeFormat),
-		stat.userInput.ip.String(), stat.userInput.hostname, stat.userInput.port, stat.retriedHostnameLookups,
-		stat.totalSuccessfulProbes, stat.totalUnsuccessfulProbes,
-		neverSucceedProbe, neverFailedProbe,
-		lastSuccessfulProbe, lastUnsuccessfulProbe,
-		totalPackets, packetLoss,
-		stat.totalUptime.String(), stat.totalDowntime.String(),
-		longestUptimeDuration, longestUptimeStart, longestUptimeEnd,
-		longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd,
-		fmt.Sprintf("%.3f", stat.rttResults.min), fmt.Sprintf("%.3f", stat.rttResults.average), fmt.Sprintf("%.3f", stat.rttResults.max),
-		stat.startTime.Format(timeFormat), stat.endTime.Format(timeFormat), totalDuration,
+		eventTypeStatistics,
+		time.Now().Format(timeFormat),
+		stat.userInput.ip.String(),
+		stat.userInput.hostname,
+		stat.userInput.port,
+		stat.retriedHostnameLookups,
+		stat.totalSuccessfulProbes,
+		stat.totalUnsuccessfulProbes,
+		neverSucceedProbe,
+		neverFailedProbe,
+		lastSuccessfulProbe,
+		lastUnsuccessfulProbe,
+		totalPackets,
+		packetLoss,
+		stat.totalUptime.String(),
+		stat.totalDowntime.String(),
+		longestUptimeDuration,
+		longestUptimeStart,
+		longestUptimeEnd,
+		longestDowntimeDuration,
+		longestDowntimeStart,
+		longestDowntimeEnd,
+		fmt.Sprintf("%.3f", stat.rttResults.min),
+		fmt.Sprintf("%.3f", stat.rttResults.average),
+		fmt.Sprintf("%.3f", stat.rttResults.max),
+		stat.startTime.Format(timeFormat),
+		stat.endTime.Format(timeFormat),
+		totalDuration,
 	}
 
 	return sqlitex.Execute(
@@ -222,7 +236,7 @@ func (db *database) saveHostNameChange(h []hostnameChange) error {
 			continue
 		}
 		err := sqlitex.Execute(db.conn, fmt.Sprintf(schema, db.tableName), &sqlitex.ExecOptions{
-			Args: []interface{}{host.Addr.String(), host.When.Format(timeFormat)}})
+			Args: []interface{}{eventTypeHostnameChange, host.Addr.String(), host.When.Format(timeFormat)}})
 		if err != nil {
 			return err
 		}
@@ -259,15 +273,15 @@ func (db *database) printStatistics(stat stats) {
 }
 
 // printError prints the err to the stderr and exits with status code 1
-func (s database) printError(format string, args ...any) {
+func (db *database) printError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 	os.Exit(1)
 }
 
 // Satisfying the "printer" interface.
-func (s database) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
-func (s database) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
-func (s database) printRetryingToResolve(hostname string)                                       {}
-func (s database) printTotalDownTime(downtime time.Duration)                                    {}
-func (s database) printVersion()                                                                {}
-func (s database) printInfo(format string, args ...any)                                         {}
+func (db *database) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
+func (db *database) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
+func (db *database) printRetryingToResolve(hostname string)                                       {}
+func (db *database) printTotalDownTime(downtime time.Duration)                                    {}
+func (db *database) printVersion()                                                                {}
+func (db *database) printInfo(format string, args ...any)                                         {}

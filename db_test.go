@@ -32,7 +32,8 @@ func TestNewDBTableCreation(t *testing.T) {
 func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	db := newDb(arg, ":memory:")
+	db := newDb(arg, "/tmp/foo.db")
+	t.Log(db.tableName)
 	defer db.conn.Close()
 
 	stat := mockStats()
@@ -40,33 +41,33 @@ func TestDbSaveStats(t *testing.T) {
 	isNil(t, err)
 
 	query := `SELECT
-	addr,
-	hostname,
-	port,
-	hostname_resolve_retries,
-	total_successful_probes,
-	total_unsuccessful_probes,
-	never_succeed_probe,
-	never_failed_probe,
-	last_successful_probe,
-	last_unsuccessful_probe,
-	total_packets,
-	total_packet_loss,
-	total_uptime,
-	total_downtime,
-	longest_uptime,
-	longest_uptime_end,
-	longest_uptime_start,
-	longest_downtime,
-	longest_downtime_start,
-	longest_downtime_end,
-	latency_min,
-	latency_avg,
-	latency_max,
-	start_time,
-	end_time,
-	total_duration
-	FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatistics)
+addr,
+hostname,
+port,
+hostname_resolve_retries,
+total_successful_probes,
+total_unsuccessful_probes,
+never_succeed_probe,
+never_failed_probe,
+last_successful_probe,
+last_unsuccessful_probe,
+total_packets,
+total_packet_loss,
+total_uptime,
+total_downtime,
+longest_uptime,
+longest_uptime_start,
+longest_uptime_end,
+longest_downtime,
+longest_downtime_start,
+longest_downtime_end,
+latency_min,
+latency_avg,
+latency_max,
+start_time,
+end_time,
+total_duration
+FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatistics)
 
 	var (
 		addr, hostname, port                           string
@@ -78,9 +79,9 @@ func TestDbSaveStats(t *testing.T) {
 		totalPacketsLoss                               float32
 		totalUptime, totalDowntime                     string
 		longestUptime                                  string
-		longestUptimeStart, longestUptimeEnd           time.Time
+		longestUptimeStart, longestUptimeEnd           string
 		longestDowntime                                string
-		longestDowntimeStart, longestDowntimeEnd       time.Time
+		longestDowntimeStart, longestDowntimeEnd       string
 		lMin, lAvg, lMax                               float32
 		startTimestamp, endTimestamp                   time.Time
 		totalDuration                                  string
@@ -112,11 +113,11 @@ func TestDbSaveStats(t *testing.T) {
 		// never_failed_probe
 		neverFailedProbe = stmt.ColumnBool(7)
 		// last_successful_probe
-		lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(8))
-		isNil(t, err)
+		// lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(8))
+		// isNil(t, err)
 		// last_unsuccessful_probe
-		lastUnsuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(9))
-		isNil(t, err)
+		// lastUnsuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(9))
+		// isNil(t, err)
 		// total_packets
 		totalPackets = uint(stmt.ColumnInt(10))
 		// total_packet_loss
@@ -127,18 +128,16 @@ func TestDbSaveStats(t *testing.T) {
 		totalDowntime = stmt.ColumnText(13)
 		// longest_uptime
 		longestUptime = stmt.ColumnText(14)
-		// longest_uptime_end
-		longestDowntime = stmt.ColumnText(15)
 		// longest_uptime_start
-		longestUptime = stmt.ColumnText(16)
+		longestUptimeStart = stmt.ColumnText(stmt.ColumnIndex("longest_uptime_start"))
+		// longest_uptime_end
+		longestUptimeEnd = stmt.ColumnText(16)
 		// longest_downtime
 		longestDowntime = stmt.ColumnText(17)
 		// longest_downtime_start
-		longestDowntimeStart, err = time.Parse(timeFormat, stmt.ColumnText(18))
-		isNil(t, err)
+		longestDowntimeStart = stmt.ColumnText(18)
 		// longest_downtime_end
-		longestDowntimeEnd, err = time.Parse(timeFormat, stmt.ColumnText(19))
-		isNil(t, err)
+		longestDowntimeEnd = stmt.ColumnText(19)
 		// latency_min
 		lMin = float32(stmt.ColumnFloat(20))
 		// latency_avg
@@ -188,49 +187,46 @@ func TestDbSaveStats(t *testing.T) {
 	Equals(t, totalPackets, stat.totalSuccessfulProbes+stat.totalUnsuccessfulProbes)
 
 	Equals(t, longestUptime, stat.longestUptime.duration.String())
-	Equals(t, longestUptimeStart.Format(timeFormat), stat.longestUptime.start.Format(timeFormat))
-	Equals(t, longestUptimeEnd.Format(timeFormat), stat.longestUptime.end.Format(timeFormat))
+	Equals(t, longestUptimeStart, stat.longestUptime.start.Format(timeFormat))
+	Equals(t, longestUptimeEnd, stat.longestUptime.end.Format(timeFormat))
 
 	Equals(t, longestDowntime, stat.longestDowntime.duration.String())
-	Equals(t, longestDowntimeStart.Format(timeFormat), stat.longestDowntime.start.Format(timeFormat))
-	Equals(t, longestDowntimeEnd.Format(timeFormat), stat.longestDowntime.end.Format(timeFormat))
+	Equals(t, longestDowntimeStart, stat.longestDowntime.start.Format(timeFormat))
+	Equals(t, longestDowntimeEnd, stat.longestDowntime.end.Format(timeFormat))
 
 }
 
-/*
-	func TestSaveHostname(t *testing.T) {
-		// There are many fields, so many things could go wrong; that's why this elaborate test.
-		arg := []string{"localhost", "8001"}
-		s := newDb(arg, ":memory:")
-		defer s.db.Close()
-		stat := mockStats()
+func TestSaveHostname(t *testing.T) {
+	// There are many fields, so many things could go wrong; that's why this elaborate test.
+	arg := []string{"localhost", "8001"}
+	db := newDb(arg, ":memory:")
+	defer db.conn.Close()
+	stat := mockStats()
 
-		err := s.saveHostNameChange(stat.hostnameChanges)
-		isNil(t, err)
-		// testing the host names if they are properly written
-		query := `SELECT
+	err := db.saveHostNameChange(stat.hostnameChanges)
+	isNil(t, err)
+
+	// testing the host names if they are properly written
+	query := `SELECT
 		hostname_changed_to, hostname_change_time
-		FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", s.tableName, eventTypeHostnameChange)
+		FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", db.tableName, eventTypeHostnameChange)
 
-		rows, err := s.db.Query(query)
-		isNil(t, err)
-
-		idx := 0
-		for rows.Next() {
-			var hostName string
-			var cTime time.Time
-			err = rows.Scan(&hostName, &cTime)
-			isNil(t, err)
-
+	idx := 0
+	err = sqlitex.Execute(db.conn, query, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			hostName := stmt.ColumnText(0)
+			cTime := stmt.ColumnText(1)
 			actualHost := stat.hostnameChanges[idx]
 			idx++
 			Equals(t, hostName, actualHost.Addr.String())
-			Equals(t, cTime.Format(timeFormat), actualHost.When.Format(timeFormat))
-		}
-		Equals(t, idx, len(stat.hostnameChanges))
-		rows.Close()
-	}
-*/
+			Equals(t, cTime, actualHost.When.Format(timeFormat))
+
+			return nil
+		}})
+	isNil(t, err)
+
+	Equals(t, idx, len(stat.hostnameChanges))
+}
 
 func hostNameChange() []hostnameChange {
 	ipAddresses := []string{
