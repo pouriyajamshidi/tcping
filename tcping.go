@@ -186,10 +186,9 @@ func shutdown(tcpStats *stats) {
 
 	// if the printer type is `database`, then close the db before
 	// exiting to prevent any memory leaks
-	// TODO: close conn
-	// if db, ok := tcpStats.printer.(database); ok {
-	// 	db.db.Close()
-	// }
+	if db, ok := tcpStats.printer.(*database); ok {
+		db.conn.Close()
+	}
 
 	os.Exit(0)
 }
