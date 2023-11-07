@@ -124,7 +124,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 		// longest_uptime
 		longestUptime = stmt.ColumnText(14)
 		// longest_uptime_start
-		longestUptimeStart = stmt.ColumnText(stmt.ColumnIndex("longest_uptime_start"))
+		longestUptimeStart = stmt.ColumnText(15)
 		// longest_uptime_end
 		longestUptimeEnd = stmt.ColumnText(16)
 		// longest_downtime
