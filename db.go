@@ -98,7 +98,7 @@ CREATE TABLE %s (
 	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-// newDb creates a newDb with the given path and returns `database` struct
+// newDb creates a newDb with the given path and returns a pointer to the `database` struct
 func newDb(args []string, dbPath string) *database {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
