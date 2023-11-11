@@ -179,7 +179,7 @@ func (db *database) saveStats(stat stats) error {
 		totalDuration = stat.endTime.Sub(stat.startTime).String()
 	}
 
-	// datas
+	// data
 	args := []interface{}{
 		eventTypeStatistics,
 		time.Now().Format(timeFormat),
