@@ -7,90 +7,153 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-func TestNewDB(t *testing.T) {
+func TestNewDBTableCreation(t *testing.T) {
 	arg := []string{"localhost", "8001"}
-	s := newDb(arg, ":memory:")
-	rows, err := s.db.Query("SELECT name FROM sqlite_master WHERE type='table';")
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer rows.Close()
-	defer s.db.Close()
+	db := newDb(arg, ":memory:")
+	defer db.conn.Close()
 
-	rows.Next()
-	var tblName string
-	err = rows.Scan(&tblName)
+	query := "SELECT name FROM sqlite_master WHERE type='table';"
+	err := sqlitex.Execute(db.conn, query, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			Equals(t, stmt.ColumnCount(), 1)
+			Equals(t, stmt.ColumnText(0), db.tableName)
+			return nil
+		},
+	})
+
 	isNil(t, err)
-	Equals(t, tblName, s.tableName)
 }
 
 func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	s := newDb(arg, ":memory:")
-	defer s.db.Close()
+	db := newDb(arg, ":memory:")
+	t.Log(db.tableName)
+	defer db.conn.Close()
 
 	stat := mockStats()
-	err := s.saveStats(stat)
+	err := db.saveStats(stat)
 	isNil(t, err)
 
 	query := `SELECT
-		addr, hostname, port, hostname_resolve_retries,
-		total_successful_probes, total_unsuccessful_probes,
-		never_succeed_probe, never_failed_probe,
-		last_successful_probe, last_unsuccessful_probe,
-		total_packets, total_packet_loss,
-		total_uptime, total_downtime,
-		longest_uptime, longest_uptime_end, longest_uptime_start,
-		longest_downtime, longest_downtime_start, longest_downtime_end,
-		latency_min, latency_avg, latency_max,
-		start_time, end_time, total_duration
-	FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", s.tableName, eventTypeStatistics)
-
-	rows, err := s.db.Query(query)
-	isNil(t, err)
-
-	if !rows.Next() {
-		t.Error("rows are empty; expted 1 row")
-		return
-	}
+addr,
+hostname,
+port,
+hostname_resolve_retries,
+total_successful_probes,
+total_unsuccessful_probes,
+never_succeed_probe,
+never_failed_probe,
+last_successful_probe,
+last_unsuccessful_probe,
+total_packets,
+total_packet_loss,
+total_uptime,
+total_downtime,
+longest_uptime,
+longest_uptime_start,
+longest_uptime_end,
+longest_downtime,
+longest_downtime_start,
+longest_downtime_end,
+latency_min,
+latency_avg,
+latency_max,
+start_time,
+end_time,
+total_duration
+FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatistics)
 
 	var (
 		addr, hostname, port                           string
-		hostNameResolveTries                           uint
+		hostNameResolveTries                           int
 		totalSuccessfulProbes, totalUnsuccessfulProbes uint
 		neverSucceedProbe, neverFailedProbe            bool
-		lastSuccessfulProbe, lastUnsuccessfulProbe     time.Time
+		lastSuccessfulProbe                            time.Time
 		totalPackets                                   uint
 		totalPacketsLoss                               float32
 		totalUptime, totalDowntime                     string
 		longestUptime                                  string
-		longestUptimeStart, longestUptimeEnd           time.Time
+		longestUptimeStart, longestUptimeEnd           string
 		longestDowntime                                string
-		longestDowntimeStart, longestDowntimeEnd       time.Time
+		longestDowntimeStart, longestDowntimeEnd       string
 		lMin, lAvg, lMax                               float32
 		startTimestamp, endTimestamp                   time.Time
 		totalDuration                                  string
 	)
 
-	err = rows.Scan(
-		&addr, &hostname, &port, &hostNameResolveTries,
-		&totalSuccessfulProbes, &totalUnsuccessfulProbes,
-		&neverSucceedProbe, &neverFailedProbe,
-		&lastSuccessfulProbe, &lastUnsuccessfulProbe,
-		&totalPackets, &totalPacketsLoss,
-		&totalUptime, &totalDowntime,
-		&longestUptime, &longestUptimeStart, &longestUptimeEnd,
-		&longestDowntime, &longestDowntimeStart, &longestDowntimeEnd,
-		&lMin, &lAvg, &lMax,
-		&startTimestamp, &endTimestamp, &totalDuration,
-	)
+	resFunc := func(stmt *sqlite.Stmt) error {
+		Equals(t, stmt.ColumnCount(), 26)
+		var err error
 
+		// addr
+		addr = stmt.ColumnText(0)
+		// hostname
+		hostname = stmt.ColumnText(1)
+		// port
+		port = stmt.ColumnText(2)
+		// hostname_resolve_retries
+		hostNameResolveTries = stmt.ColumnInt(3)
+		// total_successful_probes
+		totalSuccessfulProbes = uint(stmt.ColumnInt(4))
+		// total_unsuccessful_probes
+		totalUnsuccessfulProbes = uint(stmt.ColumnInt(5))
+		// never_succeed_probe
+		neverSucceedProbe = stmt.ColumnBool(6)
+		// never_failed_probe
+		neverFailedProbe = stmt.ColumnBool(7)
+		// last_successful_probe
+		lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(8))
+		isNil(t, err)
+		// last_unsuccessful_probe
+		Equals(t, "", stmt.ColumnText(9)) // simulating never failed
+		// isNil(t, err)
+		// total_packets
+		totalPackets = uint(stmt.ColumnInt(10))
+		// total_packet_loss
+		totalPacketsLoss = float32(stmt.ColumnFloat(11))
+		// total_uptime
+		totalUptime = stmt.ColumnText(12)
+		// total_downtime
+		totalDowntime = stmt.ColumnText(13)
+		// longest_uptime
+		longestUptime = stmt.ColumnText(14)
+		// longest_uptime_start
+		longestUptimeStart = stmt.ColumnText(15)
+		// longest_uptime_end
+		longestUptimeEnd = stmt.ColumnText(16)
+		// longest_downtime
+		longestDowntime = stmt.ColumnText(17)
+		// longest_downtime_start
+		longestDowntimeStart = stmt.ColumnText(18)
+		// longest_downtime_end
+		longestDowntimeEnd = stmt.ColumnText(19)
+		// latency_min
+		lMin = float32(stmt.ColumnFloat(20))
+		// latency_avg
+		lAvg = float32(stmt.ColumnFloat(21))
+		// latency_max
+		lMax = float32(stmt.ColumnFloat(22))
+		// start_time
+		startTimestamp, err = time.Parse(timeFormat, stmt.ColumnText(23))
+		isNil(t, err)
+		// end_time
+		endTimestamp, err = time.Parse(timeFormat, stmt.ColumnText(24))
+		isNil(t, err)
+		// total_duration
+		totalDuration = stmt.ColumnText(25)
+		return nil
+	}
+
+	err = sqlitex.Execute(db.conn, query, &sqlitex.ExecOptions{
+		ResultFunc: resFunc,
+	})
 	isNil(t, err)
-	rows.Close()
 
 	stat.rttResults.min = toFixedFloat(stat.rttResults.min, 3)
 	stat.rttResults.average = toFixedFloat(stat.rttResults.average, 3)
@@ -99,12 +162,18 @@ func TestDbSaveStats(t *testing.T) {
 	t.Log("the line number will tell you where the error happend")
 	Equals(t, addr, stat.userInput.ip.String())
 	Equals(t, hostname, stat.userInput.hostname)
-	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
+	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)
 	Equals(t, port, strconv.Itoa(int(stat.userInput.port)))
+
+	Equals(t, hostNameResolveTries, int(stat.retriedHostnameLookups))
+	packetLoss := (float32(stat.totalUnsuccessfulProbes) / float32(stat.totalSuccessfulProbes+stat.totalUnsuccessfulProbes)) * 100
+	Equals(t, totalPacketsLoss, packetLoss)
 
 	Equals(t, neverSucceedProbe, stat.lastSuccessfulProbe.IsZero())
 	Equals(t, neverFailedProbe, stat.lastUnsuccessfulProbe.IsZero())
+
+	Equals(t, lastSuccessfulProbe.Format(timeFormat), stat.lastSuccessfulProbe.Format(timeFormat))
 
 	Equals(t, lMin, stat.rttResults.min)
 	Equals(t, lAvg, stat.rttResults.average)
@@ -119,46 +188,45 @@ func TestDbSaveStats(t *testing.T) {
 	Equals(t, totalPackets, stat.totalSuccessfulProbes+stat.totalUnsuccessfulProbes)
 
 	Equals(t, longestUptime, stat.longestUptime.duration.String())
-	Equals(t, longestUptimeStart.Format(timeFormat), stat.longestUptime.start.Format(timeFormat))
-	Equals(t, longestUptimeEnd.Format(timeFormat), stat.longestUptime.end.Format(timeFormat))
+	Equals(t, longestUptimeStart, stat.longestUptime.start.Format(timeFormat))
+	Equals(t, longestUptimeEnd, stat.longestUptime.end.Format(timeFormat))
 
 	Equals(t, longestDowntime, stat.longestDowntime.duration.String())
-	Equals(t, longestDowntimeStart.Format(timeFormat), stat.longestDowntime.start.Format(timeFormat))
-	Equals(t, longestDowntimeEnd.Format(timeFormat), stat.longestDowntime.end.Format(timeFormat))
+	Equals(t, longestDowntimeStart, stat.longestDowntime.start.Format(timeFormat))
+	Equals(t, longestDowntimeEnd, stat.longestDowntime.end.Format(timeFormat))
 
 }
 
 func TestSaveHostname(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	s := newDb(arg, ":memory:")
-	defer s.db.Close()
+	db := newDb(arg, ":memory:")
+	defer db.conn.Close()
 	stat := mockStats()
 
-	err := s.saveHostNameChange(stat.hostnameChanges)
+	err := db.saveHostNameChange(stat.hostnameChanges)
 	isNil(t, err)
+
 	// testing the host names if they are properly written
 	query := `SELECT
-	hostname_changed_to, hostname_change_time
-	FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", s.tableName, eventTypeHostnameChange)
-
-	rows, err := s.db.Query(query)
-	isNil(t, err)
+		hostname_changed_to, hostname_change_time
+		FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", db.tableName, eventTypeHostnameChange)
 
 	idx := 0
-	for rows.Next() {
-		var hostName string
-		var cTime time.Time
-		err = rows.Scan(&hostName, &cTime)
-		isNil(t, err)
+	err = sqlitex.Execute(db.conn, query, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			hostName := stmt.ColumnText(0)
+			cTime := stmt.ColumnText(1)
+			actualHost := stat.hostnameChanges[idx]
+			idx++
+			Equals(t, hostName, actualHost.Addr.String())
+			Equals(t, cTime, actualHost.When.Format(timeFormat))
 
-		actualHost := stat.hostnameChanges[idx]
-		idx++
-		Equals(t, hostName, actualHost.Addr.String())
-		Equals(t, cTime.Format(timeFormat), actualHost.When.Format(timeFormat))
-	}
+			return nil
+		}})
+	isNil(t, err)
+
 	Equals(t, idx, len(stat.hostnameChanges))
-	rows.Close()
 }
 
 func hostNameChange() []hostnameChange {
