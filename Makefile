@@ -65,11 +65,8 @@ build: clean update tidyup format vet test
 	@echo "[+] Renaming the Debian package"
 	@mv $(DEB_PACKAGE_DIR).deb $(EXEC_DIR)/$(PACKAGE)
 
-	# @echo "[+] Removing the static Linux binary"
-	# @rm $(EXEC_DIR)tcping
-
-	@echo "[+] Removing the Linux binary"
-	@rm $(EXEC_DIR)tcping
+	 @echo "[+] Removing the static Linux binary"
+	 @rm $(EXEC_DIR)tcping
 
 	@echo
 	@echo "[+] Building the Windows version"
