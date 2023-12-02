@@ -545,6 +545,8 @@ func durationToString(duration time.Duration) string {
 	// Seconds
 	case seconds == 1:
 		return fmt.Sprintf("%.0f second", seconds)
+	case seconds < 1:
+		return fmt.Sprintf("%.1f seconds", seconds)
 	default:
 		return fmt.Sprintf("%.0f seconds", seconds)
 
