@@ -34,13 +34,16 @@ build: clean update tidyup format vet test
 	@tar -czvf $(EXEC_DIR)tcping_Linux.tar.gz -C $(EXEC_DIR) tcping > /dev/null
 	@sha256sum $(EXEC_DIR)tcping_Linux.tar.gz
 
-	# @echo
-	# @echo "[+] Building the static Linux version"
-	# @env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
+	@echo "[+] Removing the Linux binary"
+	@rm $(EXEC_DIR)tcping
 
-	# @echo "[+] Packaging the static Linux version"
-	# @tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	# @sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
+	 @echo
+	 @echo "[+] Building the static Linux version"
+	 @env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
+
+	 @echo "[+] Packaging the static Linux version"
+	 @tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	 @sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
 
 	@echo
 	@echo "[+] Building the Debian package"
