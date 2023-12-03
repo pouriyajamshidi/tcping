@@ -69,6 +69,17 @@ build: clean update tidyup format vet test
 	 @rm $(EXEC_DIR)tcping
 
 	@echo
+	@echo "[+] Building the Linux ARM version"
+	@env GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
+
+	@echo "[+] Packaging the Linux ARM version"
+	@tar -czvf $(EXEC_DIR)tcping_Linux_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_Linux_ARM.tar.gz
+
+	@echo "[+] Removing the Linux ARM binary"
+	@rm $(EXEC_DIR)tcping
+
+	@echo
 	@echo "[+] Building the Windows version"
 	@env GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping.exe
 
