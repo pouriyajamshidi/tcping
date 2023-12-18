@@ -5,8 +5,8 @@ go 1.21
 require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/gookit/color v1.5.4
-	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/stretchr/testify v1.8.4
+	zombiezen.com/go/sqlite v0.13.1
 )
 
 require (
@@ -25,5 +25,4 @@ require (
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/sqlite v1.21.1 // indirect
-	zombiezen.com/go/sqlite v0.13.1 // indirect
 )
