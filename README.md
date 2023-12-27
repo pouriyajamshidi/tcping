@@ -49,11 +49,11 @@ Here are some of the features of **TCPING**:
     - [Docker](#docker)
   - [Flags](#flags)
   - [Tips](#tips)
-  - [Notes](#notes)
+  - [Check for Updates](#check-for-updates)
   - [Contributing](#contributing)
   - [Feature Requests and Issues](#feature-requests-and-issues)
   - [Tested on](#tested-on)
-  - [Sponsor The Project](#sponsor-the-project)
+  - [Help The Project](#help-the-project)
   - [License](#license)
 
 ---
@@ -253,7 +253,7 @@ The following flags are available to control the behavior of application:
 
 ---
 
-## Notes
+## Check for Updates
 
 `TCPING` is constantly being improved, adding numerous new features and fixing bugs. Be sure to look for updated versions.
 
@@ -263,29 +263,35 @@ tcping -u
 
 ## Contributing
 
-Pull requests are welcome to solve bugs, add new features and also to help me with the open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues)
+Pull requests are welcome to solve bugs, add new features and also to help with the open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues)
+
+1. Pick any issue that you feel comfortable with.
+1. Fork the repository.
+1. Create a branch.
+1. Commit your work.
+1. Add tests if possible.
+1. Run the tests `go test` or `make test` and ensure they are successful.
+1. Create a pull request
 
 Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
 
-1. Pick any issue that you feel comfortable with.
-2. Fork the repository.
-3. Create a branch.
-4. Commit your work.
-5. Add tests if possible.
-6. Run the tests `go test` or `make test`.
-7. Create a pull request
-
-Please make sure that your pull request **only covers one specific issue** and doesn't handle two or more tickets. This makes it simpler for us to examine your pull request and helps keep the git history clean.
+Please make sure that your pull request **only covers one specific issue/feature** and doesn't handle two or more tickets. This makes it simpler for us to examine your pull request and helps keeping a clean git history.
 
 ## Feature Requests and Issues
 
 Should you need a new feature or find a bug, please feel free to [open a pull request](#contributing) or submit an issue.
 
+> For larger features/contributions, please make sure to first communicate it on an `issue` before starting your work.
+
 ## Tested on
 
 Windows, Linux and macOS.
 
-## Sponsor The Project
+## Help The Project
+
+If tcping proves to be useful for you, consider giving it a ⭐ to extend its reach and help other people to also benefit from it.
+
+Furthermore, you can support the project using the links below.
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)  
 [![sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)  
