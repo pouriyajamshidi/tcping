@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version    = "2.4.0"
+	version    = "2.4.1"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
@@ -113,6 +113,7 @@ type userInput struct {
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
+	showFailuresOnly         bool
 }
 
 type networkInterface struct {
@@ -215,13 +216,13 @@ func usage() {
 	os.Exit(1)
 }
 
-func checkSetPrinters(tcpstats *stats, outputtoJSON, prettyJSON *bool, outputDb *string, args []string) {
-	// check if prettyjson an outputtojson are true, if so printError and exit
-	if *prettyJSON && !*outputtoJSON {
+// checkSetPrinters ensures that the correct printer is selected
+func checkSetPrinters(tcpstats *stats, outputJSON, prettyJSON *bool, outputDb *string, args []string) {
+	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
-	if *outputtoJSON {
+	if *outputJSON {
 		tcpstats.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
 		tcpstats.printer = newDb(args, *outputDb)
@@ -230,6 +231,7 @@ func checkSetPrinters(tcpstats *stats, outputtoJSON, prettyJSON *bool, outputDb 
 	}
 }
 
+// checkUpdateVersion checks for newer versions of tcping
 func checkUpdateVersion(update, version *bool, args []string, nflags int, tcpstats *stats) {
 	// -u works on its own
 	if *update {
@@ -246,8 +248,8 @@ func checkUpdateVersion(update, version *bool, args []string, nflags int, tcpsta
 	}
 }
 
+// checkSetIPFlags ensures that only IPv4 or IPv6 is specified by the user and not both
 func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
-	// check if ip4 or ip6 are true, if so printError and exit
 	if *ip4 && *ip6 {
 		tcpstats.printer.printError("Only one IP version can be specified")
 		usage()
@@ -261,8 +263,8 @@ func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
 
 }
 
+// checkPort validates the TCP/UDP port range
 func checkPort(tcpstats *stats, args []string) {
-	// the non-flag command-line arguments
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
 		tcpstats.printer.printError("Invalid port number: %s", args[1])
@@ -277,6 +279,7 @@ func checkPort(tcpstats *stats, args []string) {
 
 }
 
+// setGenericArgs assigns the generic flags
 func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesbfrquit *uint, timeout, secbtwprobes *float64, intName *string) {
 	if *retryResolve > 0 {
 		tcpstats.userInput.retryHostnameLookupAfter = *retryResolve
