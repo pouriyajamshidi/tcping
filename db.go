@@ -98,8 +98,8 @@ CREATE TABLE %s (
 	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-// newDb creates a newDb with the given path and returns a pointer to the `database` struct
-func newDb(args []string, dbPath string) *database {
+// newDB creates a newDB with the given path and returns a pointer to the `database` struct
+func newDB(dbPath string, args []string) *database {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
 

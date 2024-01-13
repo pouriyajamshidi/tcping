@@ -151,8 +151,8 @@ func signalHandler(tcpStats *stats) {
 	}()
 }
 
-// monitorStdin checks stdin to see whether the 'Enter' key was pressed
-func monitorStdin(stdinChan chan bool) {
+// monitorSTDIN checks stdin to see whether the 'Enter' key was pressed
+func monitorSTDIN(stdinChan chan bool) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _ := reader.ReadString('\n')
@@ -185,8 +185,7 @@ func shutdown(tcpStats *stats) {
 	tcpStats.endTime = time.Now()
 	tcpStats.printStats()
 
-	// if the printer type is `database`, then close the db before
-	// exiting to prevent any memory leaks
+	// if the printer type is `database`, close the it before exiting
 	if db, ok := tcpStats.printer.(*database); ok {
 		db.conn.Close()
 	}
@@ -225,7 +224,7 @@ func setPrinter(tcpstats *stats, outputJSON, prettyJSON *bool, outputDb *string,
 	if *outputJSON {
 		tcpstats.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
-		tcpstats.printer = newDb(args, *outputDb)
+		tcpstats.printer = newDB(*outputDb, args)
 	} else {
 		tcpstats.printer = &planePrinter{}
 	}
@@ -242,7 +241,7 @@ func checkForUpdates(update *bool, tcpstats *stats) {
 func showVersion(showVer *bool, tcpstats *stats) {
 	if *showVer {
 		tcpstats.printer.printVersion()
-		shutdown(tcpstats)
+		os.Exit(0)
 	}
 }
 
@@ -323,7 +322,7 @@ func processUserInput(tcpStats *stats) {
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
+	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address")
 
 	flag.CommandLine.Usage = usage
@@ -337,7 +336,7 @@ func processUserInput(tcpStats *stats) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcpStats, outputJSON, prettyJSON, outputDb, args)
+	setPrinter(tcpStats, outputJSON, prettyJSON, outputDB, args)
 
 	checkForUpdates(checkUpdates, tcpStats)
 	showVersion(showVer, tcpStats)
@@ -805,7 +804,6 @@ func tcping(tcpStats *stats) {
 		conn.Close()
 	}
 	<-tcpStats.ticker.C
-
 }
 
 func main() {
@@ -818,10 +816,10 @@ func main() {
 
 	tcpStats.printer.printStart(tcpStats.userInput.hostname, tcpStats.userInput.port)
 
-	stdinChan := make(chan bool)
-	go monitorStdin(stdinChan)
+	stdinchan := make(chan bool)
+	go monitorSTDIN(stdinchan)
 
-	var probeCount uint = 0
+	var probeCount uint
 	for {
 		if tcpStats.userInput.shouldRetryResolve {
 			retryResolveHostname(tcpStats)
@@ -830,7 +828,7 @@ func main() {
 		tcping(tcpStats)
 
 		select {
-		case pressedEnter := <-stdinChan:
+		case pressedEnter := <-stdinchan:
 			if pressedEnter {
 				tcpStats.printStats()
 			}
