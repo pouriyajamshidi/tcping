@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.5.0 - 2024-01-13
+
+- new feature: add `-show-failures-only` flag to omit printing successful probes
+- new feature: re-add **static** Linux binary. Thanks to @daniql
+- new feature: add support for Linux `arm64` in Makefile. Thanks to @ChrisClarke246
+- fix: extra precision for seconds calculation when the value is under a second. Thanks to @daniql
+- refactor: migrate to a pure-Go `sqlite` package. Thanks to @wizsk
+- refactor: user flag handlers
+- cleanup: user input functions. Thanks to @friday963
+- chore: fix typos
+
 ## v2.4.0 - 2023-09-10
 
 - new feature: add `-i` to specify the interval between sending probes. Thanks to @luca-patrignani
