@@ -159,7 +159,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	stat.rttResults.average = toFixedFloat(stat.rttResults.average, 3)
 	stat.rttResults.max = toFixedFloat(stat.rttResults.max, 3)
 
-	t.Log("the line number will tell you where the error happend")
+	t.Log("the line number will tell you where the error happened")
 	Equals(t, addr, stat.userInput.ip.String())
 	Equals(t, hostname, stat.userInput.hostname)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
