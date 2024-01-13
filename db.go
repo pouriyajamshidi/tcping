@@ -98,8 +98,8 @@ CREATE TABLE %s (
 	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-// newDb creates a newDb with the given path and returns a pointer to the `database` struct
-func newDb(args []string, dbPath string) *database {
+// newDB creates a newDB with the given path and returns a pointer to the `database` struct
+func newDB(dbPath string, args []string) *database {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
 
@@ -111,8 +111,7 @@ func newDb(args []string, dbPath string) *database {
 
 	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
 	if err != nil {
-		// 	// TODO: add better err messege
-		colorRed("\nError while writing to the database %q \nerr: %s\n", dbPath, err)
+		colorRed("\nError writing to the database %q \nerr: %s\n", dbPath, err)
 		os.Exit(1)
 	}
 	return &database{conn, dbPath, tableName}

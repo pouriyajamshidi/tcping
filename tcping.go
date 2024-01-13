@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version    = "2.4.0"
+	version    = "2.4.1"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
@@ -113,6 +113,7 @@ type userInput struct {
 	useIPv4                  bool
 	useIPv6                  bool
 	shouldRetryResolve       bool
+	showFailuresOnly         bool
 }
 
 type networkInterface struct {
@@ -150,8 +151,8 @@ func signalHandler(tcpStats *stats) {
 	}()
 }
 
-// monitorStdin checks stdin to see whether the 'Enter' key was pressed
-func monitorStdin(stdinChan chan bool) {
+// monitorSTDIN checks stdin to see whether the 'Enter' key was pressed
+func monitorSTDIN(stdinChan chan bool) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _ := reader.ReadString('\n')
@@ -179,13 +180,12 @@ func (tcpStats *stats) printStats() {
 }
 
 // shutdown calculates endTime, prints statistics and calls os.Exit(0).
-// This should be used as a main exit-point.
+// This should be used as the main exit-point.
 func shutdown(tcpStats *stats) {
 	tcpStats.endTime = time.Now()
 	tcpStats.printStats()
 
-	// if the printer type is `database`, then close the db before
-	// exiting to prevent any memory leaks
+	// if the printer type is `database`, close the it before exiting
 	if db, ok := tcpStats.printer.(*database); ok {
 		db.conn.Close()
 	}
@@ -215,39 +215,38 @@ func usage() {
 	os.Exit(1)
 }
 
-func checkSetPrinters(tcpstats *stats, outputtoJSON, prettyJSON *bool, outputDb *string, args []string) {
-	// check if prettyjson an outputtojson are true, if so printError and exit
-	if *prettyJSON && !*outputtoJSON {
+// setPrinter selects the printer
+func setPrinter(tcpstats *stats, outputJSON, prettyJSON *bool, outputDb *string, args []string) {
+	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
-	if *outputtoJSON {
+	if *outputJSON {
 		tcpstats.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
-		tcpstats.printer = newDb(args, *outputDb)
+		tcpstats.printer = newDB(*outputDb, args)
 	} else {
 		tcpstats.printer = &planePrinter{}
 	}
 }
 
-func checkUpdateVersion(update, version *bool, args []string, nflags int, tcpstats *stats) {
-	// -u works on its own
+// checkForUpdates checks for newer versions of tcping
+func checkForUpdates(update *bool, tcpstats *stats) {
 	if *update {
-		if len(args) == 0 && nflags == 1 {
-			checkLatestVersion(tcpstats.printer)
-		} else {
-			usage()
-		}
+		checkLatestVersion(tcpstats.printer)
 	}
+}
 
-	if *version {
+// showVersion displays the version and exits
+func showVersion(showVer *bool, tcpstats *stats) {
+	if *showVer {
 		tcpstats.printer.printVersion()
 		os.Exit(0)
 	}
 }
 
-func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
-	// check if ip4 or ip6 are true, if so printError and exit
+// setIPFlags ensures that either IPv4 or IPv6 is specified by the user and not both and sets it
+func setIPFlags(tcpstats *stats, ip4, ip6 *bool) {
 	if *ip4 && *ip6 {
 		tcpstats.printer.printError("Only one IP version can be specified")
 		usage()
@@ -258,11 +257,10 @@ func checkSetIPFlags(tcpstats *stats, ip4, ip6 *bool) {
 	if *ip6 {
 		tcpstats.userInput.useIPv6 = true
 	}
-
 }
 
-func checkPort(tcpstats *stats, args []string) {
-	// the non-flag command-line arguments
+// setPort validates and sets the TCP/UDP port range
+func setPort(tcpstats *stats, args []string) {
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
 		tcpstats.printer.printError("Invalid port number: %s", args[1])
@@ -274,10 +272,10 @@ func checkPort(tcpstats *stats, args []string) {
 		os.Exit(1)
 	}
 	tcpstats.userInput.port = uint16(port)
-
 }
 
-func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesbfrquit *uint, timeout, secbtwprobes *float64, intName *string) {
+// setGenericArgs assigns the generic flags
+func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesBeforeQuit *uint, timeout, secondsBetweenProbes *float64, intName *string) {
 	if *retryResolve > 0 {
 		tcpstats.userInput.retryHostnameLookupAfter = *retryResolve
 	}
@@ -285,10 +283,10 @@ func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesbfrquit 
 	tcpstats.userInput.hostname = args[0]
 	tcpstats.userInput.ip = resolveHostname(tcpstats)
 	tcpstats.startTime = time.Now()
-	tcpstats.userInput.probesBeforeQuit = *probesbfrquit
+	tcpstats.userInput.probesBeforeQuit = *probesBeforeQuit
 	tcpstats.userInput.timeout = secondsToDuration(*timeout)
 
-	tcpstats.userInput.intervalBetweenProbes = secondsToDuration(*secbtwprobes)
+	tcpstats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
 	if tcpstats.userInput.intervalBetweenProbes < 2*time.Millisecond {
 		tcpstats.printer.printError("Wait interval should be more than 2 ms")
 		os.Exit(1)
@@ -320,11 +318,11 @@ func processUserInput(tcpStats *stats) {
 	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
 	outputJSON := flag.Bool("j", false, "output in JSON format.")
 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
-	showVersion := flag.Bool("v", false, "show version.")
-	shouldCheckUpdates := flag.Bool("u", false, "check for updates.")
+	showVer := flag.Bool("v", false, "show version.")
+	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDb := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
+	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address")
 
 	flag.CommandLine.Usage = usage
@@ -334,13 +332,14 @@ func processUserInput(tcpStats *stats) {
 
 	// validation for flag and args
 	args := flag.Args()
-	nFlag := flag.NFlag()
+	// nFlag := flag.NFlag()
 
 	// we need to set printers first, because they're used for
-	// errors reporting and other output.
-	checkSetPrinters(tcpStats, outputJSON, prettyJSON, outputDb, args)
-	// Check if admin command passed in an render respons.
-	checkUpdateVersion(shouldCheckUpdates, showVersion, args, nFlag, tcpStats)
+	// error reporting and other output.
+	setPrinter(tcpStats, outputJSON, prettyJSON, outputDB, args)
+
+	checkForUpdates(checkUpdates, tcpStats)
+	showVersion(showVer, tcpStats)
 
 	// host and port must be specified
 	if len(args) != 2 {
@@ -348,9 +347,9 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
-	checkSetIPFlags(tcpStats, useIPv4, useIPv6)
+	setIPFlags(tcpStats, useIPv4, useIPv6)
 	// Check if the port is valid and set it.
-	checkPort(tcpStats, args)
+	setPort(tcpStats, args)
 	// set generic args
 	setGenericArgs(tcpStats, args, retryHostnameResolveAfter,
 		probesBeforeQuit, timeout, secondsBetweenProbes,
@@ -414,12 +413,12 @@ func permuteArgs(args []string) {
 }
 
 // newNetworkInterface uses the 1st ip address of the interface
-// if any err occurs it calls `tcpStats.printer.printError` and exits with statuscode 1.
+// if any err occurs it calls `tcpStats.printer.printError` and exits with status code 1.
 // or return `networkInterface`
 func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface {
 	var interfaceAddress net.IP
 
-	// if netinterface is the addres `interfaceAddress` var will not be `nil`
+	// if netinterface is the address `interfaceAddress` var will not be `nil`
 	interfaceAddress = net.ParseIP(netInterface)
 
 	if interfaceAddress == nil {
@@ -710,7 +709,7 @@ func nanoToMillisecond(nano int64) float32 {
 	return float32(nano) / float32(time.Millisecond)
 }
 
-// secondsToDuration returns the corresonding duration from seconds expressed with a float.
+// secondsToDuration returns the corresponding duration from seconds expressed with a float.
 func secondsToDuration(seconds float64) time.Duration {
 	return time.Duration(1000*seconds) * time.Millisecond
 }
@@ -805,7 +804,6 @@ func tcping(tcpStats *stats) {
 		conn.Close()
 	}
 	<-tcpStats.ticker.C
-
 }
 
 func main() {
@@ -818,10 +816,10 @@ func main() {
 
 	tcpStats.printer.printStart(tcpStats.userInput.hostname, tcpStats.userInput.port)
 
-	stdinChan := make(chan bool)
-	go monitorStdin(stdinChan)
+	stdinchan := make(chan bool)
+	go monitorSTDIN(stdinchan)
 
-	var probeCount uint = 0
+	var probeCount uint
 	for {
 		if tcpStats.userInput.shouldRetryResolve {
 			retryResolveHostname(tcpStats)
@@ -830,7 +828,7 @@ func main() {
 		tcping(tcpStats)
 
 		select {
-		case pressedEnter := <-stdinChan:
+		case pressedEnter := <-stdinchan:
 			if pressedEnter {
 				tcpStats.printStats()
 			}

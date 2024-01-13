@@ -14,7 +14,7 @@ import (
 
 func TestNewDBTableCreation(t *testing.T) {
 	arg := []string{"localhost", "8001"}
-	db := newDb(arg, ":memory:")
+	db := newDB(":memory:", arg)
 	defer db.conn.Close()
 
 	query := "SELECT name FROM sqlite_master WHERE type='table';"
@@ -32,7 +32,7 @@ func TestNewDBTableCreation(t *testing.T) {
 func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	db := newDb(arg, ":memory:")
+	db := newDB(":memory:", arg)
 	t.Log(db.tableName)
 	defer db.conn.Close()
 
@@ -159,7 +159,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	stat.rttResults.average = toFixedFloat(stat.rttResults.average, 3)
 	stat.rttResults.max = toFixedFloat(stat.rttResults.max, 3)
 
-	t.Log("the line number will tell you where the error happend")
+	t.Log("the line number will tell you where the error happened")
 	Equals(t, addr, stat.userInput.ip.String())
 	Equals(t, hostname, stat.userInput.hostname)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
@@ -200,7 +200,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 func TestSaveHostname(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	db := newDb(arg, ":memory:")
+	db := newDB(":memory:", arg)
 	defer db.conn.Close()
 	stat := mockStats()
 
