@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version    = "2.4.1"
+	version    = "2.5.0"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
@@ -275,7 +275,7 @@ func setPort(tcpstats *stats, args []string) {
 }
 
 // setGenericArgs assigns the generic flags
-func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesBeforeQuit *uint, timeout, secondsBetweenProbes *float64, intName *string) {
+func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesBeforeQuit *uint, timeout, secondsBetweenProbes *float64, intName *string, showFailuresOnly *bool) {
 	if *retryResolve > 0 {
 		tcpstats.userInput.retryHostnameLookupAfter = *retryResolve
 	}
@@ -308,6 +308,8 @@ func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesBeforeQu
 	if *intName != "" {
 		tcpstats.userInput.networkInterface = newNetworkInterface(tcpstats, *intName)
 	}
+
+	tcpstats.userInput.showFailuresOnly = *showFailuresOnly
 }
 
 // processUserInput gets and validate user input
@@ -323,7 +325,8 @@ func processUserInput(tcpStats *stats) {
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
-	interfaceName := flag.String("I", "", "interface name or address")
+	interfaceName := flag.String("I", "", "interface name or address.")
+	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 
 	flag.CommandLine.Usage = usage
 
@@ -353,7 +356,7 @@ func processUserInput(tcpStats *stats) {
 	// set generic args
 	setGenericArgs(tcpStats, args, retryHostnameResolveAfter,
 		probesBeforeQuit, timeout, secondsBetweenProbes,
-		interfaceName)
+		interfaceName, showFailuresOnly)
 }
 
 /*
@@ -769,13 +772,15 @@ func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapse
 	tcpStats.ongoingSuccessfulProbes += 1
 	tcpStats.rtt = append(tcpStats.rtt, rtt)
 
-	tcpStats.printer.printProbeSuccess(
-		tcpStats.userInput.hostname,
-		tcpStats.userInput.ip.String(),
-		tcpStats.userInput.port,
-		tcpStats.ongoingSuccessfulProbes,
-		rtt,
-	)
+	if !tcpStats.userInput.showFailuresOnly {
+		tcpStats.printer.printProbeSuccess(
+			tcpStats.userInput.hostname,
+			tcpStats.userInput.ip.String(),
+			tcpStats.userInput.port,
+			tcpStats.ongoingSuccessfulProbes,
+			rtt,
+		)
+	}
 }
 
 // tcping pings a host, TCP style
