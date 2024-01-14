@@ -13,20 +13,29 @@ PACKAGE = $(PACKAGE_NAME)_$(ARCHITECTURE).deb
 MAINTAINER = https://github.com/pouriyajamshidi
 DESCRIPTION = Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
-.PHONY: all build update clean format test vet gitHubActions container
+.PHONY: all build update clean format test vet gitHubActions container \
+		create_dirs build_linux_amd64 build_debian_package build_linux_static build_linux_arm \
+		build_windows build_macos build_macos_arm  build_freebsd
+
 all: build
 check: format vet test
 
-build: clean update tidyup format vet test
+build: 	clean update tidyup format vet test \
+		create_dirs build_linux_amd64 build_linux_static build_linux_arm \
+		build_windows build_macos build_macos_arm build_freebsd
+	@echo
+	@echo "[+] Done"
+
+create_dirs:
 	@echo
 	@echo "[+] Version: $(VERSION)"
 	@echo
-
 	@mkdir -p $(EXEC_DIR)
 	@mkdir -p $(DEB_PACKAGE_DIR)
 	@mkdir -p $(DEBIAN_DIR)
 	@mkdir -p $(TARGET_EXECUTABLE_PATH)
-	
+
+build_linux_amd64:
 	@echo "[+] Building the Linux version"
 	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
@@ -37,14 +46,22 @@ build: clean update tidyup format vet test
 	@echo "[+] Removing the Linux binary"
 	@rm $(EXEC_DIR)tcping
 
-	 @echo
-	 @echo "[+] Building the static Linux version"
-	 @env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
-	 @echo "[+] Packaging the static Linux version"
-	 @tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	 @sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
+build_linux_static:
+	@echo
+	@echo "[+] Building the static Linux version"
+	@env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
 
+	@echo "[+] Packaging the static Linux version"
+	@tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
+	@sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
+
+	@$(MAKE) build_debian_package
+
+	@echo "[+] Removing the static Linux binary"
+	@rm $(EXEC_DIR)tcping
+
+build_debian_package:
 	@echo
 	@echo "[+] Building the Debian package"
 	@cp $(EXECUTABLE_PATH) $(TARGET_EXECUTABLE_PATH)
@@ -65,9 +82,7 @@ build: clean update tidyup format vet test
 	@echo "[+] Renaming the Debian package"
 	@mv $(DEB_PACKAGE_DIR).deb $(EXEC_DIR)/$(PACKAGE)
 
-	 @echo "[+] Removing the static Linux binary"
-	 @rm $(EXEC_DIR)tcping
-
+build_linux_arm:
 	@echo
 	@echo "[+] Building the Linux ARM version"
 	@env GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
@@ -79,6 +94,7 @@ build: clean update tidyup format vet test
 	@echo "[+] Removing the Linux ARM binary"
 	@rm $(EXEC_DIR)tcping
 
+build_windows:
 	@echo
 	@echo "[+] Building the Windows version"
 	@env GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping.exe
@@ -90,6 +106,7 @@ build: clean update tidyup format vet test
 	@echo "[+] Removing the Windows binary"
 	@rm $(EXEC_DIR)tcping.exe
 
+build_macos:
 	@echo
 	@echo "[+] Building the MacOS version"
 	@env GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
@@ -101,10 +118,11 @@ build: clean update tidyup format vet test
 	@echo "[+] Removing the MacOS binary"
 	@rm $(EXEC_DIR)tcping
 
+build_macos_arm:
 	@echo
 	@echo "[+] Building the MacOS ARM version"
 	@env GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
-	
+
 	@echo "[+] Packaging the MacOS ARM version"
 	@tar -czvf $(EXEC_DIR)tcping_MacOS_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
 	@sha256sum $(EXEC_DIR)tcping_MacOS_ARM.tar.gz
@@ -112,6 +130,7 @@ build: clean update tidyup format vet test
 	@echo "[+] Removing the MacOS ARM binary"
 	@rm $(EXEC_DIR)tcping
 
+build_freebsd:
 	@echo
 	@echo "[+] Building the FreeBSD version"
 	@env GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
@@ -122,9 +141,6 @@ build: clean update tidyup format vet test
 
 	@echo "[+] Removing the FreeBSD binary"
 	@rm $(EXEC_DIR)tcping
-
-	@echo
-	@echo "[+] Done"
 
 update:
 	@echo "[+] Updating Go dependencies"
