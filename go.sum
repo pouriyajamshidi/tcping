@@ -45,5 +45,5 @@ modernc.org/memory v1.7.2 h1:Klh90S215mmH8c9gO98QxQFsY+W451E8AnzjoE2ee1E=
 modernc.org/memory v1.7.2/go.mod h1:NO4NVCQy0N7ln+T9ngWqOQfi7ley4vpwvARR+Hjw95E=
 modernc.org/sqlite v1.28.0 h1:Zx+LyDDmXczNnEQdvPuEfcFVA2ZPyaD7UCZDjef3BHQ=
 modernc.org/sqlite v1.28.0/go.mod h1:Qxpazz0zH8Z1xCFyi5GSL3FzbtZ3fvbjmywNogldEW0=
-zombiezen.com/go/sqlite v1.1.0 h1:2BIABTFCE221++xR90rV0mE6T5gFF8o0MUcKDNUrIVc=
-zombiezen.com/go/sqlite v1.1.0/go.mod h1:rZEFEJSoeXeiwuAb6HugOJLhtDabl+EekT92DCEKOb0=
+zombiezen.com/go/sqlite v1.1.1 h1:Zhqg3qZJUsAat5aY2NizmcTQ411DtRsJ7q59Hn77MTo=
+zombiezen.com/go/sqlite v1.1.1/go.mod h1:rZEFEJSoeXeiwuAb6HugOJLhtDabl+EekT92DCEKOb0=
