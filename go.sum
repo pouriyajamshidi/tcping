@@ -67,5 +67,5 @@ modernc.org/strutil v1.2.0 h1:agBi9dp1I+eOnxXeiZawM8F4LawKv4NzGWSaLfyeNZA=
 modernc.org/strutil v1.2.0/go.mod h1:/mdcBmfOibveCTBxUl5B5l6W+TTH1FXPLHZE6bTosX0=
 modernc.org/token v1.1.0 h1:Xl7Ap9dKaEs5kLoOQeQmPWevfnk/DM5qcLcYlA8ys6Y=
 modernc.org/token v1.1.0/go.mod h1:UGzOrNV1mAFSEB63lOFHIpNRUVMvYTc6yu1SMY/XTDM=
-zombiezen.com/go/sqlite v1.2.0 h1:jja0Ubpzpl6bjr/bSaPyvafHO+extoDJJXIaqXT7VOU=
-zombiezen.com/go/sqlite v1.2.0/go.mod h1:yRl27//s/9aXU3RWs8uFQwjkTG9gYNGEls6+6SvrclY=
+zombiezen.com/go/sqlite v1.3.0 h1:98g1gnCm+CNz6AuQHu0gqyw7gR2WU3O3PJufDOStpUs=
+zombiezen.com/go/sqlite v1.3.0/go.mod h1:yRl27//s/9aXU3RWs8uFQwjkTG9gYNGEls6+6SvrclY=
