@@ -327,11 +327,17 @@ func processUserInput(tcpStats *stats) {
 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
+	showHelp := flag.Bool("h", false, "show help message.")
 
 	flag.CommandLine.Usage = usage
 
 	permuteArgs(os.Args[1:])
 	flag.Parse()
+
+	// Handle -h flag
+	if *showHelp {
+		usage()
+	}
 
 	// validation for flag and args
 	args := flag.Args()
