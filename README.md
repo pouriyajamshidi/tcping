@@ -230,6 +230,7 @@ The following flags are available to control the behavior of application:
 
 | Flag                   | Description                                                                                                       |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `-h`                   | Show help                                                                                                         |
 | `-4`                   | Only use IPv4 addresses                                                                                           |
 | `-6`                   | Only use IPv6 addresses                                                                                           |
 | `-r`                   | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
