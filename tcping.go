@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -114,6 +115,16 @@ type userInput struct {
 	useIPv6                  bool
 	shouldRetryResolve       bool
 	showFailuresOnly         bool
+}
+
+type genericUserInputArgs struct {
+	retryResolve         *uint
+	probesBeforeQuit     *uint
+	timeout              *float64
+	secondsBetweenProbes *float64
+	intName              *string
+	showFailuresOnly     *bool
+	args                 []string
 }
 
 type networkInterface struct {
@@ -230,19 +241,10 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, outputDb *string, 
 	}
 }
 
-// checkForUpdates checks for newer versions of tcping
-func checkForUpdates(update *bool, tcping *tcping) {
-	if *update {
-		checkLatestVersion(tcping.printer)
-	}
-}
-
 // showVersion displays the version and exits
-func showVersion(showVer *bool, tcping *tcping) {
-	if *showVer {
-		tcping.printVersion()
-		os.Exit(0)
-	}
+func showVersion(tcping *tcping) {
+	tcping.printVersion()
+	os.Exit(0)
 }
 
 // setIPFlags ensures that either IPv4 or IPv6 is specified by the user and not both and sets it
@@ -274,25 +276,25 @@ func setPort(tcping *tcping, args []string) {
 	tcping.userInput.port = uint16(port)
 }
 
-// setGenericArgs assigns the generic flags
-func setGenericArgs(tcping *tcping, args []string, retryResolve, probesBeforeQuit *uint, timeout, secondsBetweenProbes *float64, intName *string, showFailuresOnly *bool) {
-	if *retryResolve > 0 {
-		tcping.userInput.retryHostnameLookupAfter = *retryResolve
+// setGenericArgs assigns the generic flags after sanity checks
+func setGenericArgs(tcping *tcping, genericArgs genericUserInputArgs) {
+	if *genericArgs.retryResolve > 0 {
+		tcping.userInput.retryHostnameLookupAfter = *genericArgs.retryResolve
 	}
 
-	tcping.userInput.hostname = args[0]
+	tcping.userInput.hostname = genericArgs.args[0]
 	tcping.userInput.ip = resolveHostname(tcping)
 	tcping.startTime = time.Now()
-	tcping.userInput.probesBeforeQuit = *probesBeforeQuit
-	tcping.userInput.timeout = secondsToDuration(*timeout)
+	tcping.userInput.probesBeforeQuit = *genericArgs.probesBeforeQuit
+	tcping.userInput.timeout = secondsToDuration(*genericArgs.timeout)
 
-	tcping.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
+	tcping.userInput.intervalBetweenProbes = secondsToDuration(*genericArgs.secondsBetweenProbes)
 	if tcping.userInput.intervalBetweenProbes < 2*time.Millisecond {
 		tcping.printError("Wait interval should be more than 2 ms")
 		os.Exit(1)
 	}
 
-	// this serves as a default starting value for tracking changes.
+	// this serves as a default starting value for tracking IP changes.
 	tcping.hostnameChanges = []hostnameChange{
 		{tcping.userInput.ip, time.Now()},
 	}
@@ -305,11 +307,11 @@ func setGenericArgs(tcping *tcping, args []string, retryResolve, probesBeforeQui
 		tcping.userInput.shouldRetryResolve = true
 	}
 
-	if *intName != "" {
-		tcping.userInput.networkInterface = newNetworkInterface(tcping, *intName)
+	if *genericArgs.intName != "" {
+		tcping.userInput.networkInterface = newNetworkInterface(tcping, *genericArgs.intName)
 	}
 
-	tcping.userInput.showFailuresOnly = *showFailuresOnly
+	tcping.userInput.showFailuresOnly = *genericArgs.showFailuresOnly
 }
 
 // processUserInput gets and validate user input
@@ -334,21 +336,27 @@ func processUserInput(tcping *tcping) {
 	permuteArgs(os.Args[1:])
 	flag.Parse()
 
-	// Handle -h flag
-	if *showHelp {
-		usage()
-	}
-
 	// validation for flag and args
 	args := flag.Args()
-	// nFlag := flag.NFlag()
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
 	setPrinter(tcping, outputJSON, prettyJSON, outputDB, args)
 
-	checkForUpdates(checkUpdates, tcping)
-	showVersion(showVer, tcping)
+	// Handle -v flag
+	if *showVer {
+		showVersion(tcping)
+	}
+
+	// Handle -h flag
+	if *showHelp {
+		usage()
+	}
+
+	// Handle -u flag
+	if *checkUpdates {
+		checkForUpdates(tcping)
+	}
 
 	// host and port must be specified
 	if len(args) != 2 {
@@ -357,12 +365,22 @@ func processUserInput(tcping *tcping) {
 
 	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
 	setIPFlags(tcping, useIPv4, useIPv6)
+
 	// Check if the port is valid and set it.
 	setPort(tcping, args)
+
 	// set generic args
-	setGenericArgs(tcping, args, retryHostnameResolveAfter,
-		probesBeforeQuit, timeout, secondsBetweenProbes,
-		interfaceName, showFailuresOnly)
+	genericArgs := genericUserInputArgs{
+		retryResolve:         retryHostnameResolveAfter,
+		probesBeforeQuit:     probesBeforeQuit,
+		timeout:              timeout,
+		secondsBetweenProbes: secondsBetweenProbes,
+		intName:              interfaceName,
+		showFailuresOnly:     showFailuresOnly,
+		args:                 args,
+	}
+
+	setGenericArgs(tcping, genericArgs)
 }
 
 /*
@@ -492,14 +510,43 @@ func newNetworkInterface(tcping *tcping, netInterface string) networkInterface {
 	return ni
 }
 
-// checkLatestVersion checks for updates and print a message
-func checkLatestVersion(p printer) {
+// compareVersions is used to compare tcping versions
+func compareVersions(v1, v2 string) int {
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+
+	for i := 0; i < len(parts1) && i < len(parts2); i++ {
+		n1, _ := strconv.Atoi(parts1[i])
+		n2, _ := strconv.Atoi(parts2[i])
+
+		if n1 < n2 {
+			return -1
+		}
+		if n1 > n2 {
+			return 1
+		}
+	}
+
+	// for cases in which version numbers differ in length
+	if len(parts1) < len(parts2) {
+		return -1
+	}
+
+	if len(parts1) > len(parts2) {
+		return 1
+	}
+
+	return 0
+}
+
+// checkForUpdates checks for newer versions of tcping
+func checkForUpdates(tcping *tcping) {
 	c := github.NewClient(nil)
 
 	/* unauthenticated requests from the same IP are limited to 60 per hour. */
 	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
 	if err != nil {
-		p.printError("Failed to check for updates %s", err.Error())
+		tcping.printError("Failed to check for updates %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -508,19 +555,24 @@ func checkLatestVersion(p printer) {
 	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
 
 	if len(latestVersion) == 0 {
-		p.printError("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
+		tcping.printError("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
 		os.Exit(1)
 	}
 
-	if latestVersion[1] != version {
-		p.printInfo("Found newer version %s", latestVersion[1])
-		p.printInfo("Please update TCPING from the URL below:")
-		p.printInfo("https://github.com/%s/%s/releases/tag/%s",
+	comparison := compareVersions(version, latestVersion[1])
+
+	if comparison < 0 {
+		tcping.printInfo("Found newer version %s", latestVersion[1])
+		tcping.printInfo("Please update TCPING from the URL below:")
+		tcping.printInfo("https://github.com/%s/%s/releases/tag/%s",
 			owner, repo, latestTagName)
+	} else if comparison > 0 {
+		tcping.printInfo("Current version %s is newer than the latest release %s",
+			version, latestVersion[1])
 	} else {
-		p.printInfo("Newer version not found. %s is the latest version.",
-			version)
+		tcping.printInfo("You have the latest version: %s", version)
 	}
+
 	os.Exit(0)
 }
 
