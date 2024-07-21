@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version    = "2.5.0"
+	version    = "2.5.4"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
@@ -59,7 +59,7 @@ type printer interface {
 	// helpful statistics information.
 	//
 	// This is being called on exit and when user hits "Enter".
-	printStatistics(s stats)
+	printStatistics(s tcping)
 
 	// printVersion should print the current version.
 	printVersion()
@@ -75,14 +75,14 @@ type printer interface {
 	printError(format string, args ...any)
 }
 
-type stats struct {
+type tcping struct {
+	printer                   // printer holds the chosen printer implementation for outputting information and data.
 	startTime                 time.Time
 	endTime                   time.Time
 	startOfUptime             time.Time
 	startOfDowntime           time.Time
 	lastSuccessfulProbe       time.Time
 	lastUnsuccessfulProbe     time.Time
-	printer                   printer      // printer holds the chosen printer implementation for outputting information and data.
 	ticker                    *time.Ticker // ticker is used to handle time between probes.
 	longestUptime             longestTime
 	longestDowntime           longestTime
@@ -97,8 +97,8 @@ type stats struct {
 	totalUnsuccessfulProbes   uint
 	retriedHostnameLookups    uint
 	rttResults                rttResult
-	wasDown                   bool // wasDown is used to determine the duration of a downtime
-	isIP                      bool // isIP suppresses printing the IP information twice when hostname is not provided
+	destWasDown               bool // destWasDown is used to determine the duration of a downtime
+	destIsIP                  bool // destIsIP suppresses printing the IP information twice when hostname is not provided
 }
 
 type userInput struct {
@@ -117,9 +117,9 @@ type userInput struct {
 }
 
 type networkInterface struct {
-	raddr  *net.TCPAddr
-	dialer net.Dialer
-	use    bool
+	remoteAddr *net.TCPAddr
+	dialer     net.Dialer
+	use        bool
 }
 
 type longestTime struct {
@@ -141,13 +141,13 @@ type hostnameChange struct {
 }
 
 // signalHandler catches SIGINT and SIGTERM then prints tcping stats
-func signalHandler(tcpStats *stats) {
+func signalHandler(tcping *tcping) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-sigChan
-		shutdown(tcpStats)
+		shutdown(tcping)
 	}()
 }
 
@@ -168,25 +168,25 @@ func monitorSTDIN(stdinChan chan bool) {
 //
 // This should be used instead, as it makes
 // all the necessary calculations beforehand.
-func (tcpStats *stats) printStats() {
-	if tcpStats.wasDown {
-		calcLongestDowntime(tcpStats, time.Since(tcpStats.startOfDowntime))
+func (t *tcping) printStats() {
+	if t.destWasDown {
+		calcLongestDowntime(t, time.Since(t.startOfDowntime))
 	} else {
-		calcLongestUptime(tcpStats, time.Since(tcpStats.startOfUptime))
+		calcLongestUptime(t, time.Since(t.startOfUptime))
 	}
-	tcpStats.rttResults = calcMinAvgMaxRttTime(tcpStats.rtt)
+	t.rttResults = calcMinAvgMaxRttTime(t.rtt)
 
-	tcpStats.printer.printStatistics(*tcpStats)
+	t.printStatistics(*t)
 }
 
 // shutdown calculates endTime, prints statistics and calls os.Exit(0).
 // This should be used as the main exit-point.
-func shutdown(tcpStats *stats) {
-	tcpStats.endTime = time.Now()
-	tcpStats.printStats()
+func shutdown(tcping *tcping) {
+	tcping.endTime = time.Now()
+	tcping.printStats()
 
 	// if the printer type is `database`, close the it before exiting
-	if db, ok := tcpStats.printer.(*database); ok {
+	if db, ok := tcping.printer.(*database); ok {
 		db.conn.Close()
 	}
 
@@ -216,104 +216,104 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcpstats *stats, outputJSON, prettyJSON *bool, outputDb *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, outputDb *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
 	if *outputJSON {
-		tcpstats.printer = newJSONPrinter(*prettyJSON)
+		tcping.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
-		tcpstats.printer = newDB(*outputDb, args)
+		tcping.printer = newDB(*outputDb, args)
 	} else {
-		tcpstats.printer = &planePrinter{}
+		tcping.printer = &planePrinter{}
 	}
 }
 
 // checkForUpdates checks for newer versions of tcping
-func checkForUpdates(update *bool, tcpstats *stats) {
+func checkForUpdates(update *bool, tcping *tcping) {
 	if *update {
-		checkLatestVersion(tcpstats.printer)
+		checkLatestVersion(tcping.printer)
 	}
 }
 
 // showVersion displays the version and exits
-func showVersion(showVer *bool, tcpstats *stats) {
+func showVersion(showVer *bool, tcping *tcping) {
 	if *showVer {
-		tcpstats.printer.printVersion()
+		tcping.printVersion()
 		os.Exit(0)
 	}
 }
 
 // setIPFlags ensures that either IPv4 or IPv6 is specified by the user and not both and sets it
-func setIPFlags(tcpstats *stats, ip4, ip6 *bool) {
+func setIPFlags(tcping *tcping, ip4, ip6 *bool) {
 	if *ip4 && *ip6 {
-		tcpstats.printer.printError("Only one IP version can be specified")
+		tcping.printError("Only one IP version can be specified")
 		usage()
 	}
 	if *ip4 {
-		tcpstats.userInput.useIPv4 = true
+		tcping.userInput.useIPv4 = true
 	}
 	if *ip6 {
-		tcpstats.userInput.useIPv6 = true
+		tcping.userInput.useIPv6 = true
 	}
 }
 
 // setPort validates and sets the TCP/UDP port range
-func setPort(tcpstats *stats, args []string) {
+func setPort(tcping *tcping, args []string) {
 	port, err := strconv.ParseUint(args[1], 10, 16)
 	if err != nil {
-		tcpstats.printer.printError("Invalid port number: %s", args[1])
+		tcping.printError("Invalid port number: %s", args[1])
 		os.Exit(1)
 	}
 
 	if port < 1 || port > 65535 {
-		tcpstats.printer.printError("Port should be in 1..65535 range")
+		tcping.printError("Port should be in 1..65535 range")
 		os.Exit(1)
 	}
-	tcpstats.userInput.port = uint16(port)
+	tcping.userInput.port = uint16(port)
 }
 
 // setGenericArgs assigns the generic flags
-func setGenericArgs(tcpstats *stats, args []string, retryResolve, probesBeforeQuit *uint, timeout, secondsBetweenProbes *float64, intName *string, showFailuresOnly *bool) {
+func setGenericArgs(tcping *tcping, args []string, retryResolve, probesBeforeQuit *uint, timeout, secondsBetweenProbes *float64, intName *string, showFailuresOnly *bool) {
 	if *retryResolve > 0 {
-		tcpstats.userInput.retryHostnameLookupAfter = *retryResolve
+		tcping.userInput.retryHostnameLookupAfter = *retryResolve
 	}
 
-	tcpstats.userInput.hostname = args[0]
-	tcpstats.userInput.ip = resolveHostname(tcpstats)
-	tcpstats.startTime = time.Now()
-	tcpstats.userInput.probesBeforeQuit = *probesBeforeQuit
-	tcpstats.userInput.timeout = secondsToDuration(*timeout)
+	tcping.userInput.hostname = args[0]
+	tcping.userInput.ip = resolveHostname(tcping)
+	tcping.startTime = time.Now()
+	tcping.userInput.probesBeforeQuit = *probesBeforeQuit
+	tcping.userInput.timeout = secondsToDuration(*timeout)
 
-	tcpstats.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
-	if tcpstats.userInput.intervalBetweenProbes < 2*time.Millisecond {
-		tcpstats.printer.printError("Wait interval should be more than 2 ms")
+	tcping.userInput.intervalBetweenProbes = secondsToDuration(*secondsBetweenProbes)
+	if tcping.userInput.intervalBetweenProbes < 2*time.Millisecond {
+		tcping.printError("Wait interval should be more than 2 ms")
 		os.Exit(1)
 	}
 
 	// this serves as a default starting value for tracking changes.
-	tcpstats.hostnameChanges = []hostnameChange{
-		{tcpstats.userInput.ip, time.Now()},
+	tcping.hostnameChanges = []hostnameChange{
+		{tcping.userInput.ip, time.Now()},
 	}
 
-	if tcpstats.userInput.hostname == tcpstats.userInput.ip.String() {
-		tcpstats.isIP = true
+	if tcping.userInput.hostname == tcping.userInput.ip.String() {
+		tcping.destIsIP = true
 	}
 
-	if tcpstats.userInput.retryHostnameLookupAfter > 0 && !tcpstats.isIP {
-		tcpstats.userInput.shouldRetryResolve = true
+	if tcping.userInput.retryHostnameLookupAfter > 0 && !tcping.destIsIP {
+		tcping.userInput.shouldRetryResolve = true
 	}
 
 	if *intName != "" {
-		tcpstats.userInput.networkInterface = newNetworkInterface(tcpstats, *intName)
+		tcping.userInput.networkInterface = newNetworkInterface(tcping, *intName)
 	}
 
-	tcpstats.userInput.showFailuresOnly = *showFailuresOnly
+	tcping.userInput.showFailuresOnly = *showFailuresOnly
 }
 
 // processUserInput gets and validate user input
-func processUserInput(tcpStats *stats) {
+func processUserInput(tcping *tcping) {
 	useIPv4 := flag.Bool("4", false, "only use IPv4.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6.")
 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
@@ -345,10 +345,10 @@ func processUserInput(tcpStats *stats) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcpStats, outputJSON, prettyJSON, outputDB, args)
+	setPrinter(tcping, outputJSON, prettyJSON, outputDB, args)
 
-	checkForUpdates(checkUpdates, tcpStats)
-	showVersion(showVer, tcpStats)
+	checkForUpdates(checkUpdates, tcping)
+	showVersion(showVer, tcping)
 
 	// host and port must be specified
 	if len(args) != 2 {
@@ -356,11 +356,11 @@ func processUserInput(tcpStats *stats) {
 	}
 
 	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
-	setIPFlags(tcpStats, useIPv4, useIPv6)
+	setIPFlags(tcping, useIPv4, useIPv6)
 	// Check if the port is valid and set it.
-	setPort(tcpStats, args)
+	setPort(tcping, args)
 	// set generic args
-	setGenericArgs(tcpStats, args, retryHostnameResolveAfter,
+	setGenericArgs(tcping, args, retryHostnameResolveAfter,
 		probesBeforeQuit, timeout, secondsBetweenProbes,
 		interfaceName, showFailuresOnly)
 }
@@ -422,24 +422,23 @@ func permuteArgs(args []string) {
 }
 
 // newNetworkInterface uses the 1st ip address of the interface
-// if any err occurs it calls `tcpStats.printer.printError` and exits with status code 1.
+// if any err occurs it calls `tcpStats.printError` and exits with status code 1.
 // or return `networkInterface`
-func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface {
+func newNetworkInterface(tcping *tcping, netInterface string) networkInterface {
 	var interfaceAddress net.IP
 
-	// if netinterface is the address `interfaceAddress` var will not be `nil`
 	interfaceAddress = net.ParseIP(netInterface)
 
 	if interfaceAddress == nil {
 		ief, err := net.InterfaceByName(netInterface)
 		if err != nil {
-			tcpStats.printer.printError("Interface %s not found", netInterface)
+			tcping.printError("Interface %s not found", netInterface)
 			os.Exit(1)
 		}
 
 		addrs, err := ief.Addrs()
 		if err != nil {
-			tcpStats.printer.printError("Unable to get Interface addresses")
+			tcping.printError("Unable to get Interface addresses")
 			os.Exit(1)
 		}
 
@@ -452,10 +451,10 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 					continue
 				}
 
-				if nipAddr.Is4() && !tcpStats.userInput.useIPv6 {
+				if nipAddr.Is4() && !tcping.userInput.useIPv6 {
 					interfaceAddress = ip
 					break
-				} else if nipAddr.Is6() && !tcpStats.userInput.useIPv4 {
+				} else if nipAddr.Is6() && !tcping.userInput.useIPv4 {
 					if nipAddr.IsLinkLocalUnicast() {
 						continue
 					}
@@ -466,7 +465,7 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		}
 
 		if interfaceAddress == nil {
-			tcpStats.printer.printError("Unable to get Interface's IP Address")
+			tcping.printError("Unable to get Interface's IP Address")
 			os.Exit(1)
 		}
 	}
@@ -476,20 +475,18 @@ func newNetworkInterface(tcpStats *stats, netInterface string) networkInterface 
 		use: true,
 	}
 
-	// remote address
-	ni.raddr = &net.TCPAddr{
-		IP:   net.ParseIP(tcpStats.userInput.ip.String()),
-		Port: int(tcpStats.userInput.port),
+	ni.remoteAddr = &net.TCPAddr{
+		IP:   net.ParseIP(tcping.userInput.ip.String()),
+		Port: int(tcping.userInput.port),
 	}
 
-	// local address
-	laddr := &net.TCPAddr{
+	localAddr := &net.TCPAddr{
 		IP: interfaceAddress,
 	}
 
 	ni.dialer = net.Dialer{
-		LocalAddr: laddr,
-		Timeout:   tcpStats.userInput.timeout, // Set the timeout duration
+		LocalAddr: localAddr,
+		Timeout:   tcping.userInput.timeout, // Set the timeout duration
 	}
 
 	return ni
@@ -528,13 +525,13 @@ func checkLatestVersion(p printer) {
 }
 
 // selectResolvedIP returns a single IPv4 or IPv6 address from the net.IP slice of resolved addresses
-func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
+func selectResolvedIP(tcping *tcping, ipAddrs []netip.Addr) netip.Addr {
 	var index int
 	var ipList []netip.Addr
 	var ip netip.Addr
 
 	switch {
-	case tcpStats.userInput.useIPv4:
+	case tcping.userInput.useIPv4:
 		for _, ip := range ipAddrs {
 			if ip.Is4() {
 				ipList = append(ipList, ip)
@@ -542,7 +539,7 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
 		}
 
 		if len(ipList) == 0 {
-			tcpStats.printer.printError("Failed to find IPv4 address for %s", tcpStats.userInput.hostname)
+			tcping.printError("Failed to find IPv4 address for %s", tcping.userInput.hostname)
 			os.Exit(1)
 		}
 
@@ -554,7 +551,7 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
 
 		ip, _ = netip.ParseAddr(ipList[index].Unmap().String())
 
-	case tcpStats.userInput.useIPv6:
+	case tcping.userInput.useIPv6:
 		for _, ip := range ipAddrs {
 			if ip.Is6() {
 				ipList = append(ipList, ip)
@@ -562,7 +559,7 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
 		}
 
 		if len(ipList) == 0 {
-			tcpStats.printer.printError("Failed to find IPv6 address for %s", tcpStats.userInput.hostname)
+			tcping.printError("Failed to find IPv6 address for %s", tcping.userInput.hostname)
 			os.Exit(1)
 		}
 
@@ -588,8 +585,8 @@ func selectResolvedIP(tcpStats *stats, ipAddrs []netip.Addr) netip.Addr {
 }
 
 // resolveHostname handles hostname resolution with a timeout value of a second
-func resolveHostname(tcpStats *stats) netip.Addr {
-	ip, err := netip.ParseAddr(tcpStats.userInput.hostname)
+func resolveHostname(tcping *tcping) netip.Addr {
+	ip, err := netip.ParseAddr(tcping.userInput.hostname)
 	if err == nil {
 		return ip
 	}
@@ -597,36 +594,36 @@ func resolveHostname(tcpStats *stats) netip.Addr {
 	ctx, cancel := context.WithTimeout(context.Background(), dnsTimeout)
 	defer cancel()
 
-	ipAddrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", tcpStats.userInput.hostname)
+	ipAddrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", tcping.userInput.hostname)
 
 	// Prevent tcping to exit if it has been running for a while
-	if err != nil && (tcpStats.totalSuccessfulProbes != 0 || tcpStats.totalUnsuccessfulProbes != 0) {
-		return tcpStats.userInput.ip
+	if err != nil && (tcping.totalSuccessfulProbes != 0 || tcping.totalUnsuccessfulProbes != 0) {
+		return tcping.userInput.ip
 	} else if err != nil {
-		tcpStats.printer.printError("Failed to resolve %s: %s", tcpStats.userInput.hostname, err)
+		tcping.printError("Failed to resolve %s: %s", tcping.userInput.hostname, err)
 		os.Exit(1)
 	}
 
-	return selectResolvedIP(tcpStats, ipAddrs)
+	return selectResolvedIP(tcping, ipAddrs)
 }
 
 // retryResolveHostname retries resolving a hostname after certain number of failures
-func retryResolveHostname(tcpStats *stats) {
-	if tcpStats.ongoingUnsuccessfulProbes >= tcpStats.userInput.retryHostnameLookupAfter {
-		tcpStats.printer.printRetryingToResolve(tcpStats.userInput.hostname)
-		tcpStats.userInput.ip = resolveHostname(tcpStats)
-		tcpStats.ongoingUnsuccessfulProbes = 0
-		tcpStats.retriedHostnameLookups += 1
+func retryResolveHostname(tcping *tcping) {
+	if tcping.ongoingUnsuccessfulProbes >= tcping.userInput.retryHostnameLookupAfter {
+		tcping.printRetryingToResolve(tcping.userInput.hostname)
+		tcping.userInput.ip = resolveHostname(tcping)
+		tcping.ongoingUnsuccessfulProbes = 0
+		tcping.retriedHostnameLookups += 1
 
 		// At this point hostnameChanges should have len > 0, but just in case
-		if len(tcpStats.hostnameChanges) == 0 {
+		if len(tcping.hostnameChanges) == 0 {
 			return
 		}
 
-		lastAddr := tcpStats.hostnameChanges[len(tcpStats.hostnameChanges)-1].Addr
-		if lastAddr != tcpStats.userInput.ip {
-			tcpStats.hostnameChanges = append(tcpStats.hostnameChanges, hostnameChange{
-				Addr: tcpStats.userInput.ip,
+		lastAddr := tcping.hostnameChanges[len(tcping.hostnameChanges)-1].Addr
+		if lastAddr != tcping.userInput.ip {
+			tcping.hostnameChanges = append(tcping.hostnameChanges, hostnameChange{
+				Addr: tcping.userInput.ip,
 				When: time.Now(),
 			})
 		}
@@ -674,40 +671,40 @@ func calcMinAvgMaxRttTime(timeArr []float32) rttResult {
 }
 
 // calcLongestUptime calculates the longest uptime and sets it to tcpStats.
-func calcLongestUptime(tcpStats *stats, duration time.Duration) {
-	if tcpStats.startOfUptime.IsZero() || duration == 0 {
+func calcLongestUptime(tcping *tcping, duration time.Duration) {
+	if tcping.startOfUptime.IsZero() || duration == 0 {
 		return
 	}
 
-	longestUptime := newLongestTime(tcpStats.startOfUptime, duration)
+	longestUptime := newLongestTime(tcping.startOfUptime, duration)
 
 	// It means it is the first time we're calling this function
-	if tcpStats.longestUptime.end.IsZero() {
-		tcpStats.longestUptime = longestUptime
+	if tcping.longestUptime.end.IsZero() {
+		tcping.longestUptime = longestUptime
 		return
 	}
 
-	if longestUptime.duration >= tcpStats.longestUptime.duration {
-		tcpStats.longestUptime = longestUptime
+	if longestUptime.duration >= tcping.longestUptime.duration {
+		tcping.longestUptime = longestUptime
 	}
 }
 
 // calcLongestDowntime calculates the longest downtime and sets it to tcpStats.
-func calcLongestDowntime(tcpStats *stats, duration time.Duration) {
-	if tcpStats.startOfDowntime.IsZero() || duration == 0 {
+func calcLongestDowntime(tcping *tcping, duration time.Duration) {
+	if tcping.startOfDowntime.IsZero() || duration == 0 {
 		return
 	}
 
-	longestDowntime := newLongestTime(tcpStats.startOfDowntime, duration)
+	longestDowntime := newLongestTime(tcping.startOfDowntime, duration)
 
 	// It means it is the first time we're calling this function
-	if tcpStats.longestDowntime.end.IsZero() {
-		tcpStats.longestDowntime = longestDowntime
+	if tcping.longestDowntime.end.IsZero() {
+		tcping.longestDowntime = longestDowntime
 		return
 	}
 
-	if longestDowntime.duration >= tcpStats.longestDowntime.duration {
-		tcpStats.longestDowntime = longestDowntime
+	if longestDowntime.duration >= tcping.longestDowntime.duration {
+		tcping.longestDowntime = longestDowntime
 	}
 }
 
@@ -733,123 +730,123 @@ func maxDuration(x, y time.Duration) time.Duration {
 }
 
 // handleConnError processes failed probes
-func (tcpStats *stats) handleConnError(connTime time.Time, elapsed time.Duration) {
-	if !tcpStats.wasDown {
-		tcpStats.startOfDowntime = connTime
-		uptime := tcpStats.startOfDowntime.Sub(tcpStats.startOfUptime)
-		calcLongestUptime(tcpStats, uptime)
-		tcpStats.startOfUptime = time.Time{}
-		tcpStats.wasDown = true
+func (t *tcping) handleConnError(connTime time.Time, elapsed time.Duration) {
+	if !t.destWasDown {
+		t.startOfDowntime = connTime
+		uptime := t.startOfDowntime.Sub(t.startOfUptime)
+		calcLongestUptime(t, uptime)
+		t.startOfUptime = time.Time{}
+		t.destWasDown = true
 	}
 
-	tcpStats.totalDowntime += elapsed
-	tcpStats.lastUnsuccessfulProbe = connTime
-	tcpStats.totalUnsuccessfulProbes += 1
-	tcpStats.ongoingUnsuccessfulProbes += 1
+	t.totalDowntime += elapsed
+	t.lastUnsuccessfulProbe = connTime
+	t.totalUnsuccessfulProbes += 1
+	t.ongoingUnsuccessfulProbes += 1
 
-	tcpStats.printer.printProbeFail(
-		tcpStats.userInput.hostname,
-		tcpStats.userInput.ip.String(),
-		tcpStats.userInput.port,
-		tcpStats.ongoingUnsuccessfulProbes,
+	t.printProbeFail(
+		t.userInput.hostname,
+		t.userInput.ip.String(),
+		t.userInput.port,
+		t.ongoingUnsuccessfulProbes,
 	)
 }
 
 // handleConnSuccess processes successful probes
-func (tcpStats *stats) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
-	if tcpStats.wasDown {
-		tcpStats.startOfUptime = connTime
-		downtime := tcpStats.startOfUptime.Sub(tcpStats.startOfDowntime)
-		calcLongestDowntime(tcpStats, downtime)
-		tcpStats.printer.printTotalDownTime(downtime)
-		tcpStats.startOfDowntime = time.Time{}
-		tcpStats.wasDown = false
-		tcpStats.ongoingUnsuccessfulProbes = 0
-		tcpStats.ongoingSuccessfulProbes = 0
+func (t *tcping) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
+	if t.destWasDown {
+		t.startOfUptime = connTime
+		downtime := t.startOfUptime.Sub(t.startOfDowntime)
+		calcLongestDowntime(t, downtime)
+		t.printTotalDownTime(downtime)
+		t.startOfDowntime = time.Time{}
+		t.destWasDown = false
+		t.ongoingUnsuccessfulProbes = 0
+		t.ongoingSuccessfulProbes = 0
 	}
 
-	if tcpStats.startOfUptime.IsZero() {
-		tcpStats.startOfUptime = connTime
+	if t.startOfUptime.IsZero() {
+		t.startOfUptime = connTime
 	}
 
-	tcpStats.totalUptime += elapsed
-	tcpStats.lastSuccessfulProbe = connTime
-	tcpStats.totalSuccessfulProbes += 1
-	tcpStats.ongoingSuccessfulProbes += 1
-	tcpStats.rtt = append(tcpStats.rtt, rtt)
+	t.totalUptime += elapsed
+	t.lastSuccessfulProbe = connTime
+	t.totalSuccessfulProbes += 1
+	t.ongoingSuccessfulProbes += 1
+	t.rtt = append(t.rtt, rtt)
 
-	if !tcpStats.userInput.showFailuresOnly {
-		tcpStats.printer.printProbeSuccess(
-			tcpStats.userInput.hostname,
-			tcpStats.userInput.ip.String(),
-			tcpStats.userInput.port,
-			tcpStats.ongoingSuccessfulProbes,
+	if !t.userInput.showFailuresOnly {
+		t.printProbeSuccess(
+			t.userInput.hostname,
+			t.userInput.ip.String(),
+			t.userInput.port,
+			t.ongoingSuccessfulProbes,
 			rtt,
 		)
 	}
 }
 
-// tcping pings a host, TCP style
-func tcping(tcpStats *stats) {
+// tcpProbe pings a host, TCP style
+func tcpProbe(tcping *tcping) {
 	var err error
 	var conn net.Conn
 	connStart := time.Now()
 
-	if tcpStats.userInput.networkInterface.use {
+	if tcping.userInput.networkInterface.use {
 		// dialer already contains the timeout value
-		conn, err = tcpStats.userInput.networkInterface.dialer.Dial("tcp", tcpStats.userInput.networkInterface.raddr.String())
+		conn, err = tcping.userInput.networkInterface.dialer.Dial("tcp", tcping.userInput.networkInterface.remoteAddr.String())
 	} else {
-		IPAndPort := netip.AddrPortFrom(tcpStats.userInput.ip, tcpStats.userInput.port)
-		conn, err = net.DialTimeout("tcp", IPAndPort.String(), tcpStats.userInput.timeout)
+		IPAndPort := netip.AddrPortFrom(tcping.userInput.ip, tcping.userInput.port)
+		conn, err = net.DialTimeout("tcp", IPAndPort.String(), tcping.userInput.timeout)
 	}
 
 	connDuration := time.Since(connStart)
 	rtt := nanoToMillisecond(connDuration.Nanoseconds())
 
-	elapsed := maxDuration(connDuration, tcpStats.userInput.intervalBetweenProbes)
+	elapsed := maxDuration(connDuration, tcping.userInput.intervalBetweenProbes)
 
 	if err != nil {
-		tcpStats.handleConnError(connStart, elapsed)
+		tcping.handleConnError(connStart, elapsed)
 	} else {
-		tcpStats.handleConnSuccess(rtt, connStart, elapsed)
+		tcping.handleConnSuccess(rtt, connStart, elapsed)
 		conn.Close()
 	}
-	<-tcpStats.ticker.C
+	<-tcping.ticker.C
 }
 
 func main() {
-	tcpStats := &stats{}
-	processUserInput(tcpStats)
-	tcpStats.ticker = time.NewTicker(tcpStats.userInput.intervalBetweenProbes)
-	defer tcpStats.ticker.Stop()
+	tcping := &tcping{}
+	processUserInput(tcping)
+	tcping.ticker = time.NewTicker(tcping.userInput.intervalBetweenProbes)
+	defer tcping.ticker.Stop()
 
-	signalHandler(tcpStats)
+	signalHandler(tcping)
 
-	tcpStats.printer.printStart(tcpStats.userInput.hostname, tcpStats.userInput.port)
+	tcping.printStart(tcping.userInput.hostname, tcping.userInput.port)
 
 	stdinchan := make(chan bool)
 	go monitorSTDIN(stdinchan)
 
 	var probeCount uint
 	for {
-		if tcpStats.userInput.shouldRetryResolve {
-			retryResolveHostname(tcpStats)
+		if tcping.userInput.shouldRetryResolve {
+			retryResolveHostname(tcping)
 		}
 
-		tcping(tcpStats)
+		tcpProbe(tcping)
 
 		select {
 		case pressedEnter := <-stdinchan:
 			if pressedEnter {
-				tcpStats.printStats()
+				tcping.printStats()
 			}
 		default:
 		}
 
-		if tcpStats.userInput.probesBeforeQuit != 0 {
+		if tcping.userInput.probesBeforeQuit != 0 {
 			probeCount++
-			if probeCount == tcpStats.userInput.probesBeforeQuit {
-				shutdown(tcpStats)
+			if probeCount == tcping.userInput.probesBeforeQuit {
+				shutdown(tcping)
 			}
 		}
 	}

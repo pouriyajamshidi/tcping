@@ -13,7 +13,7 @@ func (fp *dummyPrinter) printStart(_ string, _ uint16)                          
 func (fp *dummyPrinter) printProbeFail(_, _ string, _ uint16, _ uint)               {}
 func (fp *dummyPrinter) printRetryingToResolve(_ string)                            {}
 func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                         {}
-func (fp *dummyPrinter) printStatistics(_ stats)                                    {}
+func (fp *dummyPrinter) printStatistics(_ tcping)                                   {}
 func (fp *dummyPrinter) printVersion()                                              {}
 func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                       {}
 func (fp *dummyPrinter) printError(_ string, _ ...interface{})                      {}
