@@ -131,9 +131,9 @@ func newTableName(args []string) string {
 }
 
 // saveStats saves stats to the database with proper formatting
-func (db *database) saveStats(stat stats) error {
-	totalPackets := stat.totalSuccessfulProbes + stat.totalUnsuccessfulProbes
-	packetLoss := (float32(stat.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
+func (db *database) saveStats(tcping tcping) error {
+	totalPackets := tcping.totalSuccessfulProbes + tcping.totalUnsuccessfulProbes
+	packetLoss := (float32(tcping.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 	if math.IsNaN(float64(packetLoss)) {
 		packetLoss = 0
 	}
@@ -141,14 +141,14 @@ func (db *database) saveStats(stat stats) error {
 	// If the time is zero, that means it never failed.
 	// In this case, the time should be empty instead of "0001-01-01 00:00:00".
 	// Rather, it should be left empty.
-	lastSuccessfulProbe := stat.lastSuccessfulProbe.Format(timeFormat)
+	lastSuccessfulProbe := tcping.lastSuccessfulProbe.Format(timeFormat)
 	var neverSucceedProbe, neverFailedProbe bool
-	if stat.lastSuccessfulProbe.IsZero() {
+	if tcping.lastSuccessfulProbe.IsZero() {
 		lastSuccessfulProbe = ""
 		neverSucceedProbe = true
 	}
-	lastUnsuccessfulProbe := stat.lastUnsuccessfulProbe.Format(timeFormat)
-	if stat.lastUnsuccessfulProbe.IsZero() {
+	lastUnsuccessfulProbe := tcping.lastUnsuccessfulProbe.Format(timeFormat)
+	if tcping.lastUnsuccessfulProbe.IsZero() {
 		lastUnsuccessfulProbe = ""
 		neverFailedProbe = true
 	}
@@ -159,54 +159,54 @@ func (db *database) saveStats(stat stats) error {
 	longestUptimeDuration = "0s"
 	longestDowntimeDuration = "0s"
 
-	if !stat.longestUptime.start.IsZero() {
-		longestUptimeDuration = stat.longestUptime.duration.String()
-		longestUptimeStart = stat.longestUptime.start.Format(timeFormat)
-		longestUptimeEnd = stat.longestUptime.end.Format(timeFormat)
+	if !tcping.longestUptime.start.IsZero() {
+		longestUptimeDuration = tcping.longestUptime.duration.String()
+		longestUptimeStart = tcping.longestUptime.start.Format(timeFormat)
+		longestUptimeEnd = tcping.longestUptime.end.Format(timeFormat)
 	}
 
-	if !stat.longestDowntime.start.IsZero() {
-		longestDowntimeDuration = stat.longestDowntime.duration.String()
-		longestDowntimeStart = stat.longestDowntime.start.Format(timeFormat)
-		longestDowntimeEnd = stat.longestDowntime.end.Format(timeFormat)
+	if !tcping.longestDowntime.start.IsZero() {
+		longestDowntimeDuration = tcping.longestDowntime.duration.String()
+		longestDowntimeStart = tcping.longestDowntime.start.Format(timeFormat)
+		longestDowntimeEnd = tcping.longestDowntime.end.Format(timeFormat)
 	}
 
 	var totalDuration string
-	if stat.endTime.IsZero() {
-		totalDuration = time.Since(stat.startTime).String()
+	if tcping.endTime.IsZero() {
+		totalDuration = time.Since(tcping.startTime).String()
 	} else {
-		totalDuration = stat.endTime.Sub(stat.startTime).String()
+		totalDuration = tcping.endTime.Sub(tcping.startTime).String()
 	}
 
 	// data
 	args := []interface{}{
 		eventTypeStatistics,
 		time.Now().Format(timeFormat),
-		stat.userInput.ip.String(),
-		stat.userInput.hostname,
-		stat.userInput.port,
-		stat.retriedHostnameLookups,
-		stat.totalSuccessfulProbes,
-		stat.totalUnsuccessfulProbes,
+		tcping.userInput.ip.String(),
+		tcping.userInput.hostname,
+		tcping.userInput.port,
+		tcping.retriedHostnameLookups,
+		tcping.totalSuccessfulProbes,
+		tcping.totalUnsuccessfulProbes,
 		neverSucceedProbe,
 		neverFailedProbe,
 		lastSuccessfulProbe,
 		lastUnsuccessfulProbe,
 		totalPackets,
 		packetLoss,
-		stat.totalUptime.String(),
-		stat.totalDowntime.String(),
+		tcping.totalUptime.String(),
+		tcping.totalDowntime.String(),
 		longestUptimeDuration,
 		longestUptimeStart,
 		longestUptimeEnd,
 		longestDowntimeDuration,
 		longestDowntimeStart,
 		longestDowntimeEnd,
-		fmt.Sprintf("%.3f", stat.rttResults.min),
-		fmt.Sprintf("%.3f", stat.rttResults.average),
-		fmt.Sprintf("%.3f", stat.rttResults.max),
-		stat.startTime.Format(timeFormat),
-		stat.endTime.Format(timeFormat),
+		fmt.Sprintf("%.3f", tcping.rttResults.min),
+		fmt.Sprintf("%.3f", tcping.rttResults.average),
+		fmt.Sprintf("%.3f", tcping.rttResults.max),
+		tcping.startTime.Format(timeFormat),
+		tcping.endTime.Format(timeFormat),
 		totalDuration,
 	}
 
@@ -247,23 +247,23 @@ func (db *database) printStart(hostname string, port uint16) {
 
 // printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
-func (db *database) printStatistics(stat stats) {
-	err := db.saveStats(stat)
+func (db *database) printStatistics(tcping tcping) {
+	err := db.saveStats(tcping)
 	if err != nil {
 		db.printError("\nError while writing stats to the database %q\nerr: %s", db.dbPath, err)
 	}
 
 	// Hostname changes should be written during the final call.
 	// If the endTime is 0, it indicates that this is not the last call.
-	if !stat.endTime.IsZero() {
-		err = db.saveHostNameChange(stat.hostnameChanges)
+	if !tcping.endTime.IsZero() {
+		err = db.saveHostNameChange(tcping.hostnameChanges)
 		if err != nil {
 			db.printError("\nError while writing hostname changes to the database %q\nerr: %s", db.dbPath, err)
 		}
 
 	}
 
-	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", stat.userInput.hostname, db.dbPath, db.tableName)
+	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", tcping.userInput.hostname, db.dbPath, db.tableName)
 }
 
 // printError prints the err to the stderr and exits with status code 1

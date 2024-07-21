@@ -247,8 +247,8 @@ func hostNameChange() []hostnameChange {
 	return hostNames
 }
 
-func mockStats() stats {
-	stat := stats{
+func mockStats() tcping {
+	stat := tcping{
 		startTime:           time.Now(),
 		endTime:             time.Now().Add(10 * time.Minute),
 		lastSuccessfulProbe: time.Now().Add(1 * time.Minute),
