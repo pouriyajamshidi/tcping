@@ -13,9 +13,9 @@ import (
 // it uses "127.0.0.1:12345" as default values, because
 // [testServerListen] use the same values.
 // It'll call t.Errorf if netip.ParseAddr has failed.
-func createTestStats(t *testing.T) *stats {
+func createTestStats(t *testing.T) *tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
-	s := stats{
+	s := tcping{
 		printer: &dummyPrinter{},
 		userInput: userInput{
 			ip:                    addr,
@@ -72,14 +72,36 @@ func TestProbeSuccess(t *testing.T) {
 	expectedSuccessful := 100
 
 	for i := 0; i < expectedSuccessful; i++ {
-		tcping(stats)
+		tcpProbe(stats)
 	}
 
 	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessful))
 	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessful))
 
-	// TODO: change when custom ping intervals will be introduced
 	assert.Equal(t, stats.totalUptime, 100*time.Second)
+}
+
+func TestProbeSuccessInterval(t *testing.T) {
+	stats := createTestStats(t)
+	stats.userInput.intervalBetweenProbes = 10 * time.Second
+	stats.ticker = time.NewTicker(time.Nanosecond)
+	srv := testServerListen(t)
+	t.Cleanup(func() {
+		if err := srv.Close(); err != nil {
+			t.Errorf("srv close: %v", err)
+		}
+	})
+
+	expectedSuccessful := 100
+
+	for i := 0; i < expectedSuccessful; i++ {
+		tcpProbe(stats)
+	}
+
+	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessful))
+	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessful))
+
+	assert.Equal(t, stats.totalUptime, 16*time.Minute+40*time.Second)
 }
 
 func TestProbeFail(t *testing.T) {
@@ -89,14 +111,30 @@ func TestProbeFail(t *testing.T) {
 	expectedFailed := 100
 
 	for i := 0; i < expectedFailed; i++ {
-		tcping(stats)
+		tcpProbe(stats)
 	}
 
 	assert.Equal(t, stats.totalUnsuccessfulProbes, uint(expectedFailed))
 	assert.Equal(t, stats.ongoingUnsuccessfulProbes, uint(expectedFailed))
 
-	// TODO: change when custom ping intervals will be introduced
 	assert.Equal(t, stats.totalDowntime, 100*time.Second)
+}
+
+func TestProbeFailInterval(t *testing.T) {
+	stats := createTestStats(t)
+	stats.userInput.intervalBetweenProbes = 10 * time.Second
+	stats.ticker = time.NewTicker(time.Nanosecond)
+
+	expectedFailed := 100
+
+	for i := 0; i < expectedFailed; i++ {
+		tcpProbe(stats)
+	}
+
+	assert.Equal(t, stats.totalUnsuccessfulProbes, uint(expectedFailed))
+	assert.Equal(t, stats.ongoingUnsuccessfulProbes, uint(expectedFailed))
+
+	assert.Equal(t, stats.totalDowntime, 16*time.Minute+40*time.Second)
 }
 
 func TestPermuteArgs(t *testing.T) {
