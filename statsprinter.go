@@ -10,9 +10,19 @@ import (
 	"github.com/gookit/color"
 )
 
+type Color string
+
 const (
-	timeFormat = "2006-01-02 15:04:05"
-	hourFormat = "15:04:05"
+	timeFormat        = "2006-01-02 15:04:05"
+	hourFormat        = "15:04:05"
+	Yellow      Color = "yellow"
+	Cyan        Color = "cyan"
+	Green       Color = "green"
+	Red         Color = "red"
+	LightYellow Color = "light_yellow"
+	LightGreen  Color = "light_green"
+	LightCyan   Color = "light_cyan"
+	LightBlue   Color = "light_blue"
 )
 
 var (
@@ -28,8 +38,34 @@ var (
 
 type planePrinter struct{}
 
+func printReply(color Color, message string) {
+	t := time.Now().Format(timeFormat)
+	messageWithTimestamp := fmt.Sprintf("%s %s", t, message)
+
+	switch color {
+	case Yellow:
+		colorYellow(messageWithTimestamp)
+	case Cyan:
+		colorCyan(messageWithTimestamp)
+	case Green:
+		colorGreen(messageWithTimestamp)
+	case Red:
+		colorRed(messageWithTimestamp)
+	case LightYellow:
+		colorLightYellow(messageWithTimestamp)
+	case LightGreen:
+		colorLightGreen(messageWithTimestamp)
+	case LightCyan:
+		colorLightCyan(messageWithTimestamp)
+	case LightBlue:
+		colorLightBlue(messageWithTimestamp)
+	default:
+		colorYellow(messageWithTimestamp)
+	}
+}
+
 func (p *planePrinter) printStart(hostname string, port uint16) {
-	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
+	printReply(LightCyan, fmt.Sprintf("TCPinging %s on port %d\n", hostname, port))
 }
 
 func (p *planePrinter) printStatistics(t tcping) {
@@ -160,43 +196,43 @@ func (p *planePrinter) printStatistics(t tcping) {
 
 func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
 	if hostname == "" {
-		colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
-			ip, port, streak, rtt)
+		printReply(LightGreen, fmt.Sprintf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			ip, port, streak, rtt))
 		return
 	}
 
-	colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-		hostname, ip, port, streak, rtt)
+	printReply(Green, fmt.Sprintf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+		hostname, ip, port, streak, rtt))
 }
 
 func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
 	if hostname == "" {
-		colorRed("No reply from %s on port %d TCP_conn=%d\n",
-			ip, port, streak)
+		printReply(Red, fmt.Sprintf("No reply from %s on port %d TCP_conn=%d\n",
+			ip, port, streak))
 		return
 	}
-	colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n",
-		hostname, ip, port, streak)
+	printReply(Red, fmt.Sprintf("No reply from %s (%s) on port %d TCP_conn=%d\n",
+		hostname, ip, port, streak))
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
-	colorYellow("No response received for %s\n", durationToString(downtime))
+	printReply(Yellow, fmt.Sprintf("No response received for %s\n", durationToString(downtime)))
 }
 
 func (p *planePrinter) printRetryingToResolve(hostname string) {
-	colorLightYellow("retrying to resolve %s\n", hostname)
+	printReply(LightYellow, fmt.Sprintf("retrying to resolve %s\n", hostname))
 }
 
 func (p *planePrinter) printInfo(format string, args ...any) {
-	colorLightBlue(format+"\n", args...)
+	printReply(LightCyan, fmt.Sprintf(format+"\n", args...))
 }
 
 func (p *planePrinter) printError(format string, args ...any) {
-	colorRed(format+"\n", args...)
+	printReply(Red, fmt.Sprintf(format+"\n", args...))
 }
 
 func (p *planePrinter) printVersion() {
-	colorGreen("TCPING version %s\n", version)
+	printReply(LightYellow, fmt.Sprintf("TCPING version %s\n", version))
 }
 
 type jsonPrinter struct {
