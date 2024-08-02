@@ -867,10 +867,8 @@ func tcpProbe(tcping *tcping) {
 }
 
 func main() {
-
 	tcping := &tcping{}
 	processUserInput(tcping)
-
 	tcping.ticker = time.NewTicker(tcping.userInput.intervalBetweenProbes)
 	defer tcping.ticker.Stop()
 
@@ -880,6 +878,7 @@ func main() {
 
 	stdinchan := make(chan bool)
 	go monitorSTDIN(stdinchan)
+
 	var probeCount uint
 	for {
 		if tcping.userInput.shouldRetryResolve {
