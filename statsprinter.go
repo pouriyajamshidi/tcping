@@ -36,36 +36,54 @@ var (
 	colorLightCyan   = color.LightCyan.Printf
 )
 
-type planePrinter struct{}
+type planePrinter struct {
+	ShowTimestamp *bool
+}
 
-func printReply(color Color, message string) {
-	t := time.Now().Format(timeFormat)
-	messageWithTimestamp := fmt.Sprintf("%s %s", t, message)
+type PrintOptions struct {
+	Color         Color
+	Message       string
+	ShowTimestamp *bool
+}
 
-	switch color {
+func printReply(options *PrintOptions) {
+	if *options.ShowTimestamp {
+		t := time.Now().Format(timeFormat)
+		options.Message = fmt.Sprintf("%s %s", t, options.Message)
+	}
+	switch options.Color {
 	case Yellow:
-		colorYellow(messageWithTimestamp)
+		colorYellow(options.Message)
 	case Cyan:
-		colorCyan(messageWithTimestamp)
+		colorCyan(options.Message)
 	case Green:
-		colorGreen(messageWithTimestamp)
+		colorGreen(options.Message)
 	case Red:
-		colorRed(messageWithTimestamp)
+		colorRed(options.Message)
 	case LightYellow:
-		colorLightYellow(messageWithTimestamp)
+		colorLightYellow(options.Message)
 	case LightGreen:
-		colorLightGreen(messageWithTimestamp)
+		colorLightGreen(options.Message)
 	case LightCyan:
-		colorLightCyan(messageWithTimestamp)
+		colorLightCyan(options.Message)
 	case LightBlue:
-		colorLightBlue(messageWithTimestamp)
+		colorLightBlue(options.Message)
 	default:
-		colorYellow(messageWithTimestamp)
+		colorYellow(options.Message)
 	}
 }
 
+func newPlanePrinter(showTimestamp *bool) *planePrinter {
+	return &planePrinter{ShowTimestamp: showTimestamp}
+}
+
 func (p *planePrinter) printStart(hostname string, port uint16) {
-	printReply(LightCyan, fmt.Sprintf("TCPinging %s on port %d\n", hostname, port))
+	options := &PrintOptions{
+		Color:         LightCyan,
+		Message:       fmt.Sprintf("TCPinging %s on port %d\n", hostname, port),
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printStatistics(t tcping) {
@@ -195,44 +213,83 @@ func (p *planePrinter) printStatistics(t tcping) {
 }
 
 func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+	var message string
 	if hostname == "" {
-		printReply(LightGreen, fmt.Sprintf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
-			ip, port, streak, rtt))
-		return
+		message = fmt.Sprintf("Reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+	} else {
+		message = fmt.Sprintf("Reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
 	}
-
-	printReply(Green, fmt.Sprintf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-		hostname, ip, port, streak, rtt))
+	options := &PrintOptions{
+		Color:         Green,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+	var message string
 	if hostname == "" {
-		printReply(Red, fmt.Sprintf("No reply from %s on port %d TCP_conn=%d\n",
-			ip, port, streak))
-		return
+		message = fmt.Sprintf("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+	} else {
+		message = fmt.Sprintf("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
 	}
-	printReply(Red, fmt.Sprintf("No reply from %s (%s) on port %d TCP_conn=%d\n",
-		hostname, ip, port, streak))
+	options := &PrintOptions{
+		Color:         Red,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
-	printReply(Yellow, fmt.Sprintf("No response received for %s\n", durationToString(downtime)))
+	message := fmt.Sprintf("No response received for %s\n", durationToString(downtime))
+	options := &PrintOptions{
+		Color:         Yellow,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printRetryingToResolve(hostname string) {
-	printReply(LightYellow, fmt.Sprintf("retrying to resolve %s\n", hostname))
+	message := fmt.Sprintf("retrying to resolve %s\n", hostname)
+	options := &PrintOptions{
+		Color:         LightYellow,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printInfo(format string, args ...any) {
-	printReply(LightCyan, fmt.Sprintf(format+"\n", args...))
+	message := fmt.Sprintf(format+"\n", args...)
+	options := &PrintOptions{
+		Color:         LightCyan,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printError(format string, args ...any) {
-	printReply(Red, fmt.Sprintf(format+"\n", args...))
+	message := fmt.Sprintf(format+"\n", args...)
+	options := &PrintOptions{
+		Color:         Red,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 func (p *planePrinter) printVersion() {
-	printReply(LightYellow, fmt.Sprintf("TCPING version %s\n", version))
+	message := fmt.Sprintf("TCPING version %s\n", version)
+	options := &PrintOptions{
+		Color:         LightYellow,
+		Message:       message,
+		ShowTimestamp: p.ShowTimestamp,
+	}
+	printReply(options)
 }
 
 type jsonPrinter struct {
