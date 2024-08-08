@@ -274,9 +274,8 @@ func (p *planePrinter) printInfo(format string, args ...any) {
 func (p *planePrinter) printError(format string, args ...any) {
 	message := fmt.Sprintf(format+"\n", args...)
 	options := &PrintOptions{
-		color:         Red,
-		message:       message,
-		showTimestamp: p.showTimestamp,
+		color:   Red,
+		message: message,
 	}
 	printReply(options)
 }
