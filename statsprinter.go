@@ -255,9 +255,8 @@ func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
 func (p *planePrinter) printRetryingToResolve(hostname string) {
 	message := fmt.Sprintf("retrying to resolve %s\n", hostname)
 	options := &PrintOptions{
-		color:         LightYellow,
-		message:       message,
-		showTimestamp: p.showTimestamp,
+		color:   LightYellow,
+		message: message,
 	}
 	printReply(options)
 }
