@@ -8,3 +8,4 @@ tcping.exe
 *.code-workspace
 patches/
 *.db
+.tool-versions
