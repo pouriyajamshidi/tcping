@@ -282,7 +282,7 @@ func (p *planePrinter) printError(format string, args ...any) {
 func (p *planePrinter) printVersion() {
 	message := fmt.Sprintf("TCPING version %s\n", version)
 	options := &PrintOptions{
-		color:   LightYellow,
+		color:   Green,
 		message: message,
 	}
 	printReply(options)
