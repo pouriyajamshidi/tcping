@@ -78,11 +78,7 @@ func newPlanePrinter(showTimestamp *bool) *planePrinter {
 }
 
 func (p *planePrinter) printStart(hostname string, port uint16) {
-	options := &PrintOptions{
-		color:   LightCyan,
-		message: fmt.Sprintf("TCPinging %s on port %d\n", hostname, port),
-	}
-	printReply(options)
+	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
 }
 
 func (p *planePrinter) printStatistics(t tcping) {
@@ -244,48 +240,23 @@ func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak u
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
-	message := fmt.Sprintf("No response received for %s\n", durationToString(downtime))
-	options := &PrintOptions{
-		color:   Yellow,
-		message: message,
-	}
-	printReply(options)
+	colorYellow("No response received for %s\n", durationToString(downtime))
 }
 
 func (p *planePrinter) printRetryingToResolve(hostname string) {
-	message := fmt.Sprintf("retrying to resolve %s\n", hostname)
-	options := &PrintOptions{
-		color:   LightYellow,
-		message: message,
-	}
-	printReply(options)
+	colorLightYellow("retrying to resolve %s\n", hostname)
 }
 
 func (p *planePrinter) printInfo(format string, args ...any) {
-	message := fmt.Sprintf(format+"\n", args...)
-	options := &PrintOptions{
-		color:   LightCyan,
-		message: message,
-	}
-	printReply(options)
+	colorLightBlue(format+"\n", args...)
 }
 
 func (p *planePrinter) printError(format string, args ...any) {
-	message := fmt.Sprintf(format+"\n", args...)
-	options := &PrintOptions{
-		color:   Red,
-		message: message,
-	}
-	printReply(options)
+	colorRed(format+"\n", args...)
 }
 
 func (p *planePrinter) printVersion() {
-	message := fmt.Sprintf("TCPING version %s\n", version)
-	options := &PrintOptions{
-		color:   Green,
-		message: message,
-	}
-	printReply(options)
+	colorGreen("TCPING version %s\n", version)
 }
 
 type jsonPrinter struct {
