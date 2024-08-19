@@ -10,8 +10,6 @@ import (
 	"github.com/gookit/color"
 )
 
-type Color string
-
 const (
 	timeFormat = "2006-01-02 15:04:05"
 	hourFormat = "15:04:05"
