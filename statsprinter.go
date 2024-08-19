@@ -13,16 +13,8 @@ import (
 type Color string
 
 const (
-	timeFormat        = "2006-01-02 15:04:05"
-	hourFormat        = "15:04:05"
-	Yellow      Color = "yellow"
-	Cyan        Color = "cyan"
-	Green       Color = "green"
-	Red         Color = "red"
-	LightYellow Color = "light_yellow"
-	LightGreen  Color = "light_green"
-	LightCyan   Color = "light_cyan"
-	LightBlue   Color = "light_blue"
+	timeFormat = "2006-01-02 15:04:05"
+	hourFormat = "15:04:05"
 )
 
 var (
@@ -38,39 +30,6 @@ var (
 
 type planePrinter struct {
 	showTimestamp *bool
-}
-
-type PrintOptions struct {
-	color         Color
-	message       string
-	showTimestamp *bool
-}
-
-func printReply(options *PrintOptions) {
-	if options.showTimestamp != nil && *options.showTimestamp {
-		t := time.Now().Format(timeFormat)
-		options.message = fmt.Sprintf("%s %s", t, options.message)
-	}
-	switch options.color {
-	case Yellow:
-		colorYellow(options.message)
-	case Cyan:
-		colorCyan(options.message)
-	case Green:
-		colorGreen(options.message)
-	case Red:
-		colorRed(options.message)
-	case LightYellow:
-		colorLightYellow(options.message)
-	case LightGreen:
-		colorLightGreen(options.message)
-	case LightCyan:
-		colorLightCyan(options.message)
-	case LightBlue:
-		colorLightBlue(options.message)
-	default:
-		colorYellow(options.message)
-	}
 }
 
 func newPlanePrinter(showTimestamp *bool) *planePrinter {
@@ -208,35 +167,43 @@ func (p *planePrinter) printStatistics(t tcping) {
 }
 
 func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
-	var message string
+	t := ""
+	if *p.showTimestamp {
+		t = time.Now().Format(timeFormat)
+	}
 	if hostname == "" {
-		message = fmt.Sprintf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
-			ip, port, streak, rtt)
+		if t == "" {
+			colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", ip, port, streak, rtt)
+		} else {
+			colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", t, ip, port, streak, rtt)
+		}
 	} else {
-		message = fmt.Sprintf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-			hostname, ip, port, streak, rtt)
+		if t == "" {
+			colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", hostname, ip, port, streak, rtt)
+		} else {
+			colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", t, hostname, ip, port, streak, rtt)
+		}
 	}
-	options := &PrintOptions{
-		color:         LightGreen,
-		message:       message,
-		showTimestamp: p.showTimestamp,
-	}
-	printReply(options)
 }
 
 func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
-	var message string
+	t := ""
+	if *p.showTimestamp {
+		t = time.Now().Format(timeFormat)
+	}
 	if hostname == "" {
-		message = fmt.Sprintf("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+		if t == "" {
+			colorRed("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+		} else {
+			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", t, ip, port, streak)
+		}
 	} else {
-		message = fmt.Sprintf("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
+		if t == "" {
+			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
+		} else {
+			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", t, hostname, ip, port, streak)
+		}
 	}
-	options := &PrintOptions{
-		color:         Red,
-		message:       message,
-		showTimestamp: p.showTimestamp,
-	}
-	printReply(options)
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
