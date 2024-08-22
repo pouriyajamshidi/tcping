@@ -165,41 +165,41 @@ func (p *planePrinter) printStatistics(t tcping) {
 }
 
 func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
-	t := ""
+	timestamp := ""
 	if *p.showTimestamp {
-		t = time.Now().Format(timeFormat)
+		timestamp = time.Now().Format(timeFormat)
 	}
 	if hostname == "" {
-		if t == "" {
+		if timestamp == "" {
 			colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", ip, port, streak, rtt)
 		} else {
-			colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", t, ip, port, streak, rtt)
+			colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, ip, port, streak, rtt)
 		}
 	} else {
-		if t == "" {
+		if timestamp == "" {
 			colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", hostname, ip, port, streak, rtt)
 		} else {
-			colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", t, hostname, ip, port, streak, rtt)
+			colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, hostname, ip, port, streak, rtt)
 		}
 	}
 }
 
 func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
-	t := ""
+	timestamp := ""
 	if *p.showTimestamp {
-		t = time.Now().Format(timeFormat)
+		timestamp = time.Now().Format(timeFormat)
 	}
 	if hostname == "" {
-		if t == "" {
+		if timestamp == "" {
 			colorRed("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
 		} else {
-			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", t, ip, port, streak)
+			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, ip, port, streak)
 		}
 	} else {
-		if t == "" {
+		if timestamp == "" {
 			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
 		} else {
-			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", t, hostname, ip, port, streak)
+			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, hostname, ip, port, streak)
 		}
 	}
 }
