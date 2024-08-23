@@ -227,7 +227,7 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, outputDb *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, outputDb *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
@@ -237,7 +237,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, outputDb *string, 
 	} else if *outputDb != "" {
 		tcping.printer = newDB(*outputDb, args)
 	} else {
-		tcping.printer = &planePrinter{}
+		tcping.printer = newPlanePrinter(timeStamp)
 	}
 }
 
@@ -322,6 +322,7 @@ func processUserInput(tcping *tcping) {
 	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
 	outputJSON := flag.Bool("j", false, "output in JSON format.")
 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
+	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
 	showVer := flag.Bool("v", false, "show version.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -341,7 +342,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, outputDB, args)
+	setPrinter(tcping, outputJSON, prettyJSON, showTimestamp, outputDB, args)
 
 	// Handle -v flag
 	if *showVer {
