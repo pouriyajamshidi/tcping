@@ -26,7 +26,13 @@ var (
 	colorLightCyan   = color.LightCyan.Printf
 )
 
-type planePrinter struct{}
+type planePrinter struct {
+	showTimestamp *bool
+}
+
+func newPlanePrinter(showTimestamp *bool) *planePrinter {
+	return &planePrinter{showTimestamp: showTimestamp}
+}
 
 func (p *planePrinter) printStart(hostname string, port uint16) {
 	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
@@ -159,24 +165,43 @@ func (p *planePrinter) printStatistics(t tcping) {
 }
 
 func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
-	if hostname == "" {
-		colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
-			ip, port, streak, rtt)
-		return
+	timestamp := ""
+	if *p.showTimestamp {
+		timestamp = time.Now().Format(timeFormat)
 	}
-
-	colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-		hostname, ip, port, streak, rtt)
+	if hostname == "" {
+		if timestamp == "" {
+			colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", ip, port, streak, rtt)
+		} else {
+			colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, ip, port, streak, rtt)
+		}
+	} else {
+		if timestamp == "" {
+			colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", hostname, ip, port, streak, rtt)
+		} else {
+			colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, hostname, ip, port, streak, rtt)
+		}
+	}
 }
 
 func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
-	if hostname == "" {
-		colorRed("No reply from %s on port %d TCP_conn=%d\n",
-			ip, port, streak)
-		return
+	timestamp := ""
+	if *p.showTimestamp {
+		timestamp = time.Now().Format(timeFormat)
 	}
-	colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n",
-		hostname, ip, port, streak)
+	if hostname == "" {
+		if timestamp == "" {
+			colorRed("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+		} else {
+			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, ip, port, streak)
+		}
+	} else {
+		if timestamp == "" {
+			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
+		} else {
+			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, hostname, ip, port, streak)
+		}
+	}
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
