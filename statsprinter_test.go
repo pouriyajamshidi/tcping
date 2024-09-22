@@ -78,9 +78,9 @@ func TestDurationToString(t *testing.T) {
 			want:     "59 hours 10 minutes 5 seconds",
 		},
 		{
-			name:     "0.5 milliseconds",
+			name:     "0.5 seconds",
 			duration: time.Duration(500 * time.Millisecond),
-			want:     "0.5 milliseconds",
+			want:     "0.5 seconds",
 		},
 	}
 	for _, tt := range tests {
