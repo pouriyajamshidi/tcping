@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	version    = "2.5.4"
+	version    = "2.6.0_beta"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
