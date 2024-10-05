@@ -235,12 +235,13 @@ The following flags are available to control the behavior of application:
 | `-6`                   | Only use IPv6 addresses                                                                                           |
 | `-r`                   | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
 | `-c`                   | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
-| `--db`                 | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
 | `-t`                   | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
+| `-D`                   | Display date and time in probe output. Similar to Linux's ping utility but human-readable                         |
 | `-i`                   | Interval between sending probes                                                                                   |
 | `-I`                   | Interface name to use for sending probes                                                                          |
 | `-j`                   | Output in `JSON` format                                                                                           |
 | `--pretty`             | Prettify the `JSON` output                                                                                        |
+| `--db`                 | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
 | `-v`                   | Print version                                                                                                     |
 | `-u`                   | Check for updates                                                                                                 |
 | `--show-failures-only` | Only show probe failures and omit printing probe success messages                                                 |
