@@ -116,25 +116,25 @@ func TestPrintProbeSuccess(t *testing.T) {
 			name:           "With hostname, no timestamp",
 			showTimestamp:  false,
 			useHostname:    true,
-			expectedOutput: "\x1b[92mReply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n\x1b[0m",
+			expectedOutput: "Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
 			name:           "With hostname, with timestamp",
 			showTimestamp:  true,
 			useHostname:    true,
-			expectedOutput: "\x1b[92m%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n\x1b[0m",
+			expectedOutput: "%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
 			name:           "Without hostname, with timestamp",
 			showTimestamp:  true,
 			useHostname:    false,
-			expectedOutput: "\x1b[92m%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n\x1b[0m",
+			expectedOutput: "%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
 			name:           "Without hostname, no timestamp",
 			showTimestamp:  false,
 			useHostname:    false,
-			expectedOutput: "\x1b[92mReply from %s on port %d TCP_conn=%d time=%.3f ms\n\x1b[0m",
+			expectedOutput: "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 	}
 
@@ -145,6 +145,7 @@ func TestPrintProbeSuccess(t *testing.T) {
 			read, write, _ := os.Pipe()
 			os.Stdout = write
 			color.SetOutput(write)
+			color.Disable()
 
 			hostname := stats.userInput.hostname
 			if !tc.useHostname {
@@ -166,13 +167,13 @@ func TestPrintProbeSuccess(t *testing.T) {
 			if tc.showTimestamp {
 				timestamp := time.Now().Format("2006-01-02 15:04:05")
 				if tc.useHostname {
-					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
+					expected = fmt.Sprintf(tc.expectedOutput, timestamp, hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				}
 			} else {
 				if tc.useHostname {
-					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
+					expected = fmt.Sprintf(tc.expectedOutput, hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				}
@@ -199,25 +200,25 @@ func TestPrintProbeFail(t *testing.T) {
 			name:           "With hostname, no timestamp",
 			showTimestamp:  false,
 			useHostname:    true,
-			expectedOutput: "\x1b[31mNo reply from %s (%s) on port %d TCP_conn=%d\n\x1b[0m",
+			expectedOutput: "No reply from %s (%s) on port %d TCP_conn=%d\n",
 		},
 		{
 			name:           "With hostname, with timestamp",
 			showTimestamp:  true,
 			useHostname:    true,
-			expectedOutput: "\x1b[31m%s No reply from %s (%s) on port %d TCP_conn=%d\n\x1b[0m",
+			expectedOutput: "%s No reply from %s (%s) on port %d TCP_conn=%d\n",
 		},
 		{
 			name:           "Without hostname, with timestamp",
 			showTimestamp:  true,
 			useHostname:    false,
-			expectedOutput: "\x1b[31m%s No reply from %s on port %d TCP_conn=%d\n\x1b[0m",
+			expectedOutput: "%s No reply from %s on port %d TCP_conn=%d\n",
 		},
 		{
 			name:           "Without hostname, no timestamp",
 			showTimestamp:  false,
 			useHostname:    false,
-			expectedOutput: "\x1b[31mNo reply from %s on port %d TCP_conn=%d\n\x1b[0m",
+			expectedOutput: "No reply from %s on port %d TCP_conn=%d\n",
 		},
 	}
 
@@ -228,6 +229,7 @@ func TestPrintProbeFail(t *testing.T) {
 			read, write, _ := os.Pipe()
 			os.Stdout = write
 			color.SetOutput(write)
+			color.Disable()
 
 			hostname := stats.userInput.hostname
 			if !tc.useHostname {
