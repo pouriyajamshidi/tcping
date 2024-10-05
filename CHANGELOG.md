@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.6.0 - 2024-10-05
+
+- new feature: add `-D` flag to display date and time in probe output by @SYSHIL
+- new feature: add `-h` flag to show available flags by @karimalzalek
+- fix: display `second` instead of `seconds` on probe failures that convert to a value more than 1 and less than 1.1 second
+- refactor: Makefile: Split build section into smaller, distinct targets by @iskiy
+
 ## v2.5.0 - 2024-01-13
 
 - new feature: add `-show-failures-only` flag to omit printing successful probes
