@@ -1,155 +1,67 @@
-EXEC_DIR = executables/
-TAPE_DIR = Images/tapes/
-GIFS_DIR = Images/gifs/
-PACKAGE_NAME = tcping
-VERSION = 2.6.0
-ARCHITECTURE = amd64
-DEB_PACKAGE_DIR = $(EXEC_DIR)debian
-DEBIAN_DIR = $(DEB_PACKAGE_DIR)/DEBIAN
-CONTROL_FILE = $(DEBIAN_DIR)/control
-EXECUTABLE_PATH = $(EXEC_DIR)/tcping
-TARGET_EXECUTABLE_PATH = $(DEB_PACKAGE_DIR)/usr/bin/
-PACKAGE = $(PACKAGE_NAME)_$(ARCHITECTURE).deb
-MAINTAINER = https://github.com/pouriyajamshidi
-DESCRIPTION = Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
+# ==================================================
+# Constants
+# ==================================================
 
-.PHONY: all build update clean format test vet gitHubActions container \
-		create_dirs build_linux_amd64 build_debian_package build_linux_static build_linux_arm \
-		build_windows build_macos build_macos_arm  build_freebsd
+# Meta
+VERSION := 2.6.0
+MAINTAINER := https://github.com/pouriyajamshidi
+DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
-all: build
-check: format vet test
+# IO directories
+TARGET_DIR := target
+OUTPUT_DIR := output
+TAPES_DIR := Images/tapes
+GIFS_DIR := Images/gifs
 
-build: 	clean update tidyup format vet test \
-		create_dirs build_linux_amd64 build_linux_static build_linux_arm \
-		build_windows build_macos build_macos_arm build_freebsd
-	@echo
-	@echo "[+] Done"
+# Release outputs
+RELEASE_ARTIFACTS := \
+	$(OUTPUT_DIR)/tcping-freebsd-amd64-static.tar.gz \
+	$(OUTPUT_DIR)/tcping-freebsd-amd64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-freebsd-arm64-static.tar.gz \
+	$(OUTPUT_DIR)/tcping-freebsd-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-linux-amd64-static.tar.gz \
+	$(OUTPUT_DIR)/tcping-linux-amd64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-linux-arm64-static.tar.gz \
+	$(OUTPUT_DIR)/tcping-linux-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-darwin-amd64-static.tar.gz \
+	$(OUTPUT_DIR)/tcping-darwin-amd64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-darwin-arm64-static.tar.gz \
+	$(OUTPUT_DIR)/tcping-darwin-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-windows-amd64-static.zip \
+	$(OUTPUT_DIR)/tcping-windows-amd64-dynamic.zip \
+	$(OUTPUT_DIR)/tcping-windows-arm64-static.zip \
+	$(OUTPUT_DIR)/tcping-windows-arm64-dynamic.zip \
+	$(OUTPUT_DIR)/tcping-amd64.deb \
+	$(OUTPUT_DIR)/tcping-arm64.deb
 
-create_dirs:
-	@echo
-	@echo "[+] Version: $(VERSION)"
-	@echo
-	@mkdir -p $(EXEC_DIR)
-	@mkdir -p $(DEB_PACKAGE_DIR)
-	@mkdir -p $(DEBIAN_DIR)
-	@mkdir -p $(TARGET_EXECUTABLE_PATH)
+# Conditionals
+ifeq ($(OS),Windows_NT)
+BIN_NAME := tcping.exe
+else
+BIN_NAME := tcping
+endif
 
-build_linux_amd64:
-	@echo "[+] Building the Linux version"
-	@go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
+# ==================================================
+# Phony targets
+# ==================================================
 
-	@echo "[+] Packaging the Linux version"
-	@tar -czvf $(EXEC_DIR)tcping_Linux.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_Linux.tar.gz
+.PHONY: all build release clean update format vet test tidyup
 
-	@echo "[+] Removing the Linux binary"
-	@rm $(EXEC_DIR)tcping
+all: release
 
+# Build for current platform
+build: $(TARGET_DIR)/$(BIN_NAME)
 
-build_linux_static:
-	@echo
-	@echo "[+] Building the static Linux version"
-	@env GOOS=linux CGO_ENABLED=0 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
+# Build all release artifacts
+release: $(RELEASE_ARTIFACTS)
 
-	@echo "[+] Packaging the static Linux version"
-	@tar -czvf $(EXEC_DIR)tcping_Linux_static.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_Linux_static.tar.gz
-
-	@$(MAKE) build_debian_package
-
-	@echo "[+] Removing the static Linux binary"
-	@rm $(EXEC_DIR)tcping
-
-build_debian_package:
-	@echo
-	@echo "[+] Building the Debian package"
-	@cp $(EXECUTABLE_PATH) $(TARGET_EXECUTABLE_PATH)
-
-	@echo "[+] Creating the Debian control file"
-	@echo "Package: $(PACKAGE_NAME)" > $(CONTROL_FILE)
-	@echo "Version: $(VERSION)" >> $(CONTROL_FILE)
-	@echo "Section: custom" >> $(CONTROL_FILE)
-	@echo "Priority: optional" >> $(CONTROL_FILE)
-	@echo "Architecture: amd64" >> $(CONTROL_FILE)
-	@echo "Essential: no" >> $(CONTROL_FILE)
-	@echo "Maintainer: $(MAINTAINER)" >> $(CONTROL_FILE)
-	@echo "Description: $(DESCRIPTION)" >> $(CONTROL_FILE)
-
-	@echo "[+] Running dpkg-deb build"
-	@dpkg-deb --build $(DEB_PACKAGE_DIR)
-
-	@echo "[+] Renaming the Debian package"
-	@mv $(DEB_PACKAGE_DIR).deb $(EXEC_DIR)/$(PACKAGE)
-
-build_linux_arm:
-	@echo
-	@echo "[+] Building the Linux ARM version"
-	@env GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
-
-	@echo "[+] Packaging the Linux ARM version"
-	@tar -czvf $(EXEC_DIR)tcping_Linux_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_Linux_ARM.tar.gz
-
-	@echo "[+] Removing the Linux ARM binary"
-	@rm $(EXEC_DIR)tcping
-
-build_windows:
-	@echo
-	@echo "[+] Building the Windows version"
-	@env GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping.exe
-
-	@echo "[+] Packaging the Windows version"
-	@zip -j $(EXEC_DIR)tcping_Windows.zip $(EXEC_DIR)tcping.exe > /dev/null
-	@sha256sum  $(EXEC_DIR)tcping_Windows.zip
-
-	@echo "[+] Removing the Windows binary"
-	@rm $(EXEC_DIR)tcping.exe
-
-build_macos:
-	@echo
-	@echo "[+] Building the MacOS version"
-	@env GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
-
-	@echo "[+] Packaging the MacOS version"
-	@tar -czvf $(EXEC_DIR)tcping_MacOS.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_MacOS.tar.gz
-
-	@echo "[+] Removing the MacOS binary"
-	@rm $(EXEC_DIR)tcping
-
-build_macos_arm:
-	@echo
-	@echo "[+] Building the MacOS ARM version"
-	@env GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
-
-	@echo "[+] Packaging the MacOS ARM version"
-	@tar -czvf $(EXEC_DIR)tcping_MacOS_ARM.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_MacOS_ARM.tar.gz
-
-	@echo "[+] Removing the MacOS ARM binary"
-	@rm $(EXEC_DIR)tcping
-
-build_freebsd:
-	@echo
-	@echo "[+] Building the FreeBSD version"
-	@env GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o $(EXEC_DIR)tcping
-
-	@echo "[+] Packaging the FreeBSD AMD64 version"
-	@tar -czvf $(EXEC_DIR)tcping_FreeBSD.tar.gz -C $(EXEC_DIR) tcping > /dev/null
-	@sha256sum $(EXEC_DIR)tcping_FreeBSD.tar.gz
-
-	@echo "[+] Removing the FreeBSD binary"
-	@rm $(EXEC_DIR)tcping
+# Remove all build artifacts
+clean:
+	rm -rf $(TARGET_DIR)/ $(OUTPUT_DIR)/
 
 update:
 	@echo "[+] Updating Go dependencies"
 	@go get -u
-	@echo "[+] Done"
-
-clean:
-	@echo "[+] Cleaning files"
-	@rm -rf $(EXEC_DIR)
 	@echo "[+] Done"
 
 format:
@@ -169,27 +81,83 @@ tidyup:
 	@go get -u ./...
 	@go mod tidy
 
-container:
-	@echo "[+] Building container image"
-	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o $(EXEC_DIR)tcpingDocker $(SOURCE_FILES)
-	@docker build -t tcping:latest .
-	@rm $(EXEC_DIR)tcpingDocker
-	@echo "[+] Done"
+# ==================================================
+# Raw binaries
+# ==================================================
 
-gitHubActions:
-	@echo "[+] Building container image - GitHub Actions"
-	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o tcpingDocker $(SOURCE_FILES)
-	@echo "[+] Done"
+# Output directory
+.PRECIOUS: $(TARGET_DIR)/
+$(TARGET_DIR)/:
+	@mkdir -p $@
 
-gifs:
-	@echo "[+] Making tcping.gif"
-	@vhs $(TAPE_DIR)tcping.tape -o $(GIFS_DIR)tcping.gif
-	@echo "[+] Done"
+# Binary for current platform
+.PRECIOUS: $(TARGET_DIR)/$(BIN_NAME)
+$(TARGET_DIR)/$(BIN_NAME): $(TARGET_DIR)/
+	@echo "[+] Building binary for current platform: $@"
+	@go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
 
-	@echo "[+] Making tcping_resolve.gif"
-	@vhs $(TAPE_DIR)tcping_resolve.tape -o $(GIFS_DIR)tcping_resolve.gif
-	@echo "[+] Done"
+# Per-target output directory
+.PRECIOUS: $(TARGET_DIR)/%/
+$(TARGET_DIR)/%/:
+	@mkdir -p $@
 
-	@echo "[+] Making tcping_json_pretty.gif"
-	@vhs $(TAPE_DIR)tcping_json_pretty.tape -o $(GIFS_DIR)tcping_json_pretty.gif
-	@echo "[+] Done"
+# Per-target tcping binary
+.PRECIOUS: $(TARGET_DIR)/%/tcping
+$(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
+	@echo "[+] Building binary: $@"
+	@export GOOS=$(word 1, $(subst -, ,$*)); \
+	export GOARCH=$(word 2, $(subst -, ,$*)); \
+	[ $(word 3, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
+	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+
+# Per-target tcping.exe binary (Windows)
+.PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
+$(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
+	@echo "[+] Building binary: $@"
+	@export GOARCH=$(word 1, $(subst -, ,$*)); \
+	[ $(word 2, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
+	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+
+# ==================================================
+# Release outputs
+# ==================================================
+
+# Output directory
+$(OUTPUT_DIR)/:
+	@mkdir -p $@
+
+# .tar.gz archive
+$(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(OUTPUT_DIR)/
+	@echo "[+] Compressing binary: $@"
+	@tar -C $$(dirname $<) -czvf $@ tcping >/dev/null
+	@sha256sum $@
+
+# .zip archive (Windows)
+$(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(OUTPUT_DIR)/
+	@echo "[+] Compressing binary: $@"
+	@zip -j $@ $< >/dev/null
+	@sha256sum $@
+
+# .deb package (Linux)
+$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
+	@echo "[+] Creating debian package: $@"
+	@PKG_DIR=$$(mktemp -dt make-tcping.XXXXX); \
+	\
+	install -Dm 755 -t $$PKG_DIR/usr/bin/ $<; \
+	\
+	mkdir $$PKG_DIR/DEBIAN; pushd $$PKG_DIR/DEBIAN >/dev/null; \
+	echo "Package: tcping" >>control; \
+	echo "Version: $(VERSION)" >>control; \
+	echo "Section: custom" >>control; \
+	echo "Priority: optional" >>control; \
+	echo "Architecture: $*" >>control; \
+	echo "Essential: no" >>control; \
+	echo "Maintainer: $(MAINTAINER)" >>control; \
+	echo "Description: $(DESCRIPTION)" >>control; \
+	popd >/dev/null; \
+	\
+	dpkg-deb --build $$PKG_DIR $@
+
+# ==================================================
+# Miscellaneous outputs
+# ==================================================

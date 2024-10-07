@@ -1,5 +1,4 @@
 *.sh
-executables/
 .idea/
 tcping
 tcping.exe
@@ -9,3 +8,5 @@ tcping.exe
 patches/
 *.db
 .tool-versions
+/target/
+/output/
