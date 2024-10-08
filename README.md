@@ -80,15 +80,8 @@ Here are some of the features of **TCPING**:
 
 ## Download
 
-- ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
-
-- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - Also available through `brew` and [.deb package](#linux---debian-and-ubuntu)
-
-- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.tar.gz) - Also available through `brew`
-
-- ### [macOS M1 - ARM](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS_ARM.tar.gz) - Also available through `brew`
-
-- ### [FreeBSD](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_FreeBSD.tar.gz)
+We offer prebuilt binaries for various OSes and architectures. You can find them on 
+[the release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
 When the download is complete, head to the [usage](#usage) section.
 
@@ -124,7 +117,7 @@ When the download is complete, head to the [usage](#usage) section.
   make build
   ```
 
-  This will give you a compressed file with executables for all the supported operating systems inside the `executables` folder.
+  This will produce an executable under `target/` folder.
 
 ---
 
