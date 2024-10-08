@@ -13,7 +13,7 @@ OUTPUT_DIR := output
 TAPES_DIR := Images/tapes
 GIFS_DIR := Images/gifs
 
-# Release outputs
+# File lists
 RELEASE_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-freebsd-amd64-static.tar.gz \
 	$(OUTPUT_DIR)/tcping-freebsd-amd64-dynamic.tar.gz \
@@ -33,6 +33,10 @@ RELEASE_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-windows-arm64-dynamic.zip \
 	$(OUTPUT_DIR)/tcping-amd64.deb \
 	$(OUTPUT_DIR)/tcping-arm64.deb
+GIF_ARTIFACTS := \
+	$(GIFS_DIR)/tcping.gif \
+	$(GIFS_DIR)/tcping_resolve.gif \
+	$(GIFS_DIR)/tcping_json_pretty.gif
 
 # Conditionals
 ifeq ($(OS),Windows_NT)
@@ -45,7 +49,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release clean update format vet test tidyup
+.PHONY: all build release clean update format vet test tidyup gifs
 
 all: build
 
@@ -80,6 +84,8 @@ tidyup:
 	@echo "[+] Running go mod tidy"
 	@go get -u ./...
 	@go mod tidy
+
+gifs: $(GIF_ARTIFACTS)
 
 # ==================================================
 # Raw binaries
@@ -161,3 +167,16 @@ $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
 # ==================================================
 # Miscellaneous outputs
 # ==================================================
+
+# GIF generation
+$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape FORCE
+	@echo "[+] Generating GIF: $@"
+	@vhs $< -o $@
+
+# ==================================================
+# Helpers
+# ==================================================
+
+# Force target
+# See https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
+FORCE:
