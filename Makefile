@@ -47,7 +47,7 @@ endif
 
 .PHONY: all build release clean update format vet test tidyup
 
-all: release
+all: build
 
 # Build for current platform
 build: $(TARGET_DIR)/$(BIN_NAME)
