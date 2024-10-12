@@ -5,8 +5,7 @@ FROM docker.io/golang:1.23-alpine3.20 AS build
 WORKDIR /build
 
 # Install dependencies
-RUN apk update
-RUN apk add bash make
+RUN apk --no-cache add bash make
 
 # Cache libraries
 COPY go.mod go.sum ./
