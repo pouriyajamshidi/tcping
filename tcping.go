@@ -18,8 +18,9 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
+var version = "" // set at compile time 
+
 const (
-	version    = "2.6.0"
 	owner      = "pouriyajamshidi"
 	repo       = "tcping"
 	dnsTimeout = 2 * time.Second
