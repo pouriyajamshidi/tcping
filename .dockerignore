@@ -1,0 +1,16 @@
+# gitignore
+*.sh
+.idea/
+tcping
+tcping.exe
+.DS_Store
+.vscode
+*.code-workspace
+patches/
+*.db
+.tool-versions
+/target/
+/output/
+
+# container files
+Dockerfile
