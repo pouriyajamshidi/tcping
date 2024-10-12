@@ -31,7 +31,7 @@ Here are some of the features of **TCPING**:
 - Monitor and audit your peers network (SLA).
 - Calculate the total uptime or downtime of your network when conducting a maintenance.
 
-This document is also available in [Chinese | 中国人](README.cn.md).
+This document is also available in [Chinese | 中文](README.cn.md).
 
 ---
 
