@@ -82,7 +82,7 @@ This document is also available in [Chinese | 中国人](README.cn.md).
 
 ## Download
 
-We offer prebuilt binaries for various OSes and architectures. You can find them on 
+We offer prebuilt binaries for various OSes and architectures (Windows, Linux and macOS). You can find them on 
 [the release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
 When the download is complete, head to the [usage](#usage) section.
