@@ -50,7 +50,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release clean update format vet test tidyup container githubActions gifs
+.PHONY: all build release clean update format vet test tidyup container gifs
 
 all: build
 
@@ -88,15 +88,9 @@ tidyup:
 	@go get -u ./...
 	@go mod tidy
 
-container: create_dirs
+container:
 	@echo "[+] Building container image"
-	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o tcpingDocker
 	@docker build -t tcping:latest .
-	@rm tcpingDocker
-
-gitHubActions:
-	@echo "[+] Building container image - GitHub Actions"
-	@env GOOS=linux CGO_ENABLED=0 go build --ldflags '-s -w -extldflags "-static"' -o tcpingDocker
 
 gifs: $(GIF_ARTIFACTS)
 
