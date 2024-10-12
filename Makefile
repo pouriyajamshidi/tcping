@@ -60,6 +60,8 @@ build: $(TARGET_DIR)/$(BIN_NAME)
 # Build all release artifacts
 release: $(RELEASE_ARTIFACTS)
 
+check: format vet test
+
 # Remove all build artifacts
 clean:
 	rm -rf $(TARGET_DIR)/ $(OUTPUT_DIR)/
