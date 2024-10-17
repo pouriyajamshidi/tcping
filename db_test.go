@@ -199,12 +199,26 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 
 func TestSaveHostname(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
-	arg := []string{"localhost", "8001"}
+	arg := []string{"local-.host", "8001"}
 	db := newDB(":memory:", arg)
 	defer db.conn.Close()
+
+	// Test if hostName is sanitized correctly
+	expectedTableName := fmt.Sprintf("%s_%s_%s", "local__host", "8001", time.Now().Format("15_04_05_01_02_2006"))
+	Equals(t, db.tableName, expectedTableName)
+
+	// Ensure the table is created correctly
+	dropQuery := fmt.Sprintf("DROP TABLE IF EXISTS %s;", db.tableName)
+	err := sqlitex.Execute(db.conn, dropQuery, nil)
+	isNil(t, err)
+
+	createQuery := fmt.Sprintf("CREATE TABLE %s (id INTEGER PRIMARY KEY, event_type TEXT NOT NULL, hostname_changed_to TEXT, hostname_change_time TEXT);", db.tableName)
+	err = sqlitex.Execute(db.conn, createQuery, nil)
+	isNil(t, err)
+
 	stat := mockStats()
 
-	err := db.saveHostNameChange(stat.hostnameChanges)
+	err = db.saveHostNameChange(stat.hostnameChanges)
 	isNil(t, err)
 
 	// testing the host names if they are properly written
