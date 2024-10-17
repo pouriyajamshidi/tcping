@@ -119,9 +119,11 @@ func newDB(dbPath string, args []string) *database {
 
 // newTableName will return correctly formatted table name
 // formatting the table name as "example_com_port_hour_minute_sec_day_month_year"
-// table name can't have '.' and can't start with numbers
+// table name can't have '.','-' and can't start with numbers
 func newTableName(args []string) string {
-	tableName := fmt.Sprintf("%s_%s_%s", strings.ReplaceAll(args[0], ".", "_"), args[1], time.Now().Format("15_04_05_01_02_2006"))
+	sanitizedHost := strings.ReplaceAll(args[0], ".", "_")
+	sanitizedHost = strings.ReplaceAll(sanitizedHost, "-", "_")
+	tableName := fmt.Sprintf("%s_%s_%s", sanitizedHost, args[1], time.Now().Format("15_04_05_01_02_2006"))
 
 	if unicode.IsNumber(rune(tableName[0])) {
 		tableName = "_" + tableName
