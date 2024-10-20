@@ -18,7 +18,7 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
-var version = "" // set at compile time 
+var version = "" // set at compile time
 
 const (
 	owner      = "pouriyajamshidi"
@@ -228,7 +228,7 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, outputDb *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, outputDb, outputCSV *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
@@ -237,6 +237,13 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, o
 		tcping.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
 		tcping.printer = newDB(*outputDb, args)
+	} else if *outputCSV != "" {
+		var err error
+		tcping.printer, err = newCSVPrinter(*outputCSV, args)
+		if err != nil {
+			tcping.printError("Failed to create CSV file: %s", err)
+			os.Exit(1)
+		}
 	} else {
 		tcping.printer = newPlanePrinter(timeStamp)
 	}
@@ -324,6 +331,7 @@ func processUserInput(tcping *tcping) {
 	outputJSON := flag.Bool("j", false, "output in JSON format.")
 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
+	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file.")
 	showVer := flag.Bool("v", false, "show version.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -343,7 +351,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, showTimestamp, outputDB, args)
+	setPrinter(tcping, outputJSON, prettyJSON, showTimestamp, outputDB, saveToCSV, args)
 
 	// Handle -v flag
 	if *showVer {
