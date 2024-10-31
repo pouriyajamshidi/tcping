@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// setupTempCSVFile creates a temporary CSV file and returns a csvPrinter and a cleanup function
 func setupTempCSVFile(t *testing.T) (*csvPrinter, func()) {
 	t.Helper()
 	tempFile, err := os.CreateTemp("", "test_csv_*.csv")
