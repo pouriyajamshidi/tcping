@@ -9,6 +9,27 @@ import (
 	"time"
 )
 
+// setupTempCSVFile creates a temporary CSV file and returns a csvPrinter and a cleanup function
+func setupTempCSVFile(t *testing.T) (*csvPrinter, func()) {
+	t.Helper()
+	tempFile, err := os.CreateTemp("", "test_csv_*.csv")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+
+	cp := &csvPrinter{
+		file:   tempFile,
+		writer: csv.NewWriter(tempFile),
+	}
+
+	cleanup := func() {
+		tempFile.Close()
+		os.Remove(tempFile.Name())
+	}
+
+	return cp, cleanup
+}
+
 func TestNewCSVPrinter(t *testing.T) {
 	args := []string{"localhost", "8001"}
 	filename := "test.csv"
@@ -40,22 +61,13 @@ func TestNewCSVPrinter(t *testing.T) {
 	if cp.writer == nil {
 		t.Errorf("CSV writer was not initialized")
 	}
-
 }
 
 func TestCSVPrinterWriteHeader(t *testing.T) {
-	tempFile, err := os.CreateTemp("", "test_csv_*.csv")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer os.Remove(tempFile.Name())
+	cp, cleanup := setupTempCSVFile(t)
+	defer cleanup()
 
-	cp := &csvPrinter{
-		file:   tempFile,
-		writer: csv.NewWriter(tempFile),
-	}
-
-	err = cp.writeHeader()
+	err := cp.writeHeader()
 	if err != nil {
 		t.Fatalf("writeHeader() failed: %v", err)
 	}
@@ -65,8 +77,8 @@ func TestCSVPrinterWriteHeader(t *testing.T) {
 		t.Fatalf("Error flushing CSV writer: %v", err)
 	}
 
-	tempFile.Seek(0, 0)
-	reader := csv.NewReader(tempFile)
+	cp.file.Seek(0, 0)
+	reader := csv.NewReader(cp.file)
 	header, err := reader.Read()
 	if err != nil {
 		t.Fatalf("Failed to read CSV header: %v", err)
@@ -89,18 +101,8 @@ func TestCSVPrinterWriteHeader(t *testing.T) {
 }
 
 func TestCSVPrinterSaveStats(t *testing.T) {
-	tempFile, err := os.CreateTemp("", "test_csv_*.csv")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer os.Remove(tempFile.Name())
-	defer tempFile.Close()
-
-	cp := &csvPrinter{
-		file:       tempFile,
-		writer:     csv.NewWriter(tempFile),
-		headerDone: false,
-	}
+	cp, cleanup := setupTempCSVFile(t)
+	defer cleanup()
 
 	now := time.Now()
 	sampleTcping := tcping{
@@ -123,7 +125,7 @@ func TestCSVPrinterSaveStats(t *testing.T) {
 		rttResults:              rttResult{min: 10.5, max: 20.1, average: 15.3, hasResults: true},
 	}
 
-	err = cp.saveStats(sampleTcping)
+	err := cp.saveStats(sampleTcping)
 	if err != nil {
 		t.Fatalf("saveStats() failed: %v", err)
 	}
@@ -133,8 +135,8 @@ func TestCSVPrinterSaveStats(t *testing.T) {
 		t.Fatalf("Error flushing CSV writer: %v", err)
 	}
 
-	tempFile.Seek(0, 0)
-	reader := csv.NewReader(tempFile)
+	cp.file.Seek(0, 0)
+	reader := csv.NewReader(cp.file)
 
 	header, err := reader.Read()
 	if err != nil {
@@ -178,14 +180,9 @@ func TestCSVPrinterSaveStats(t *testing.T) {
 		t.Errorf("Expected 5 unsuccessful probes, got '%s'", row[7])
 	}
 }
-
 func TestCSVPrinterSaveHostNameChange(t *testing.T) {
-	tempFile, err := os.CreateTemp("", "test_csv_*.csv")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer os.Remove(tempFile.Name())
-	defer tempFile.Close()
+	cp, cleanup := setupTempCSVFile(t)
+	defer cleanup()
 
 	testCases := []struct {
 		name     string
@@ -219,13 +216,8 @@ func TestCSVPrinterSaveHostNameChange(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Reset file for each test case
-			tempFile.Truncate(0)
-			tempFile.Seek(0, 0)
-
-			cp := &csvPrinter{
-				file:   tempFile,
-				writer: csv.NewWriter(tempFile),
-			}
+			cp.file.Truncate(0)
+			cp.file.Seek(0, 0)
 
 			err := cp.saveHostNameChange(tc.changes)
 			if err != nil {
@@ -233,9 +225,9 @@ func TestCSVPrinterSaveHostNameChange(t *testing.T) {
 			}
 
 			cp.writer.Flush()
-			tempFile.Seek(0, 0)
+			cp.file.Seek(0, 0)
 
-			reader := csv.NewReader(tempFile)
+			reader := csv.NewReader(cp.file)
 			rows, err := reader.ReadAll()
 			if err != nil {
 				t.Fatalf("Failed to read CSV: %v", err)
@@ -249,8 +241,8 @@ func TestCSVPrinterSaveHostNameChange(t *testing.T) {
 				if row[0] != "hostname change" {
 					t.Errorf("Expected 'hostname change', got %s", row[0])
 				}
-				if row[2] == "" {
-					t.Errorf("IP address should not be empty")
+				if row[2] == "invalid IP" {
+					t.Errorf("Invalid IP should not be written to CSV")
 				}
 			}
 		})
