@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type csvPrinter struct {
@@ -116,7 +118,7 @@ func (cp *csvPrinter) saveStats(tcping tcping) error {
 
 func (cp *csvPrinter) saveHostNameChange(h []hostnameChange) error {
 	for _, host := range h {
-		if host.Addr.String() == "" {
+		if !host.Addr.IsValid() {
 			continue
 		}
 		row := []string{
@@ -126,6 +128,7 @@ func (cp *csvPrinter) saveHostNameChange(h []hostnameChange) error {
 			"", // Empty fields for consistency with stats rows
 			"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 		}
+		spew.Dump(row)
 		if err := cp.writer.Write(row); err != nil {
 			return err
 		}
