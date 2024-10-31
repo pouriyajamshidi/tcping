@@ -23,8 +23,16 @@ func setupTempCSVFile(t *testing.T) (*csvPrinter, func()) {
 	}
 
 	cleanup := func() {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
+		cp.writer.Flush()
+		if err := cp.writer.Error(); err != nil {
+			t.Errorf("Error flushing CSV writer: %v", err)
+		}
+		if err := cp.file.Close(); err != nil {
+			t.Errorf("Error closing file: %v", err)
+		}
+		if err := os.Remove(cp.file.Name()); err != nil {
+			t.Errorf("Error removing temp file: %v", err)
+		}
 	}
 
 	return cp, cleanup
