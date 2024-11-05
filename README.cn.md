@@ -118,6 +118,22 @@
   brew install pouriyajamshidi/tap/tcping
   ```
 
+- [x tcping](https://x-cmd.com/pkg/tcping)
+
+在 x-cmd 中，无需安装即可**直接使用 tcping 命令**：
+
+```bash
+x tcping bing.com 80
+```
+
+或者，你也可以选择将 tcping 安装到用户空间，不需 root 特权，亦不影响全局依赖：
+
+```bash
+x env use tcping
+tcping bing.com 80
+```
+
+
 - 或者通过在 `tcping` 目录中运行 `make` 命令来自行编译代码：
 
   ```bash
