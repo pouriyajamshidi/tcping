@@ -115,13 +115,13 @@ When the download is complete, head to the [usage](#usage) section.
 
 - [x tcping](https://x-cmd.com/pkg/tcping):
 
-  Use it without installation in x-cmd.
+  Use it **directly without installation** in x-cmd.
   
   ```bash
   x tcping bing.com 80
   ```
 
-  Or install it in userspace
+  Alternatively, you can install `tcping` locally using x-cmd, without needing root privileges or affecting your global setup.
 
   ```bash
   x env use tcping
