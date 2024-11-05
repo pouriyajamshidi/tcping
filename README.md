@@ -113,6 +113,21 @@ When the download is complete, head to the [usage](#usage) section.
   brew install pouriyajamshidi/tap/tcping
   ```
 
+- [x tcping](https://x-cmd.com/pkg/tcping):
+
+  Use it without installation in x-cmd.
+  
+  ```bash
+  x tcping bing.com 80
+  ```
+
+  Or install it in userspace
+
+  ```bash
+  x env use tcping
+  tcping bing.com 80
+  ```
+
 - Or compile the code yourself by running the `make` command in the `tcping` directory:
 
   ```bash
