@@ -115,7 +115,7 @@ When the download is complete, head to the [usage](#usage) section.
 
 - [x tcping](https://x-cmd.com/pkg/tcping):
 
-  Use it **directly without installation** in x-cmd.
+  Use it **directly without installation** in [x-cmd](https://www.x-cmd.com).
   
   ```bash
   x tcping bing.com 80
