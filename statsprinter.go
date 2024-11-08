@@ -26,19 +26,19 @@ var (
 	colorLightCyan   = color.LightCyan.Printf
 )
 
-type planePrinter struct {
+type colorPrinter struct {
 	showTimestamp *bool
 }
 
-func newPlanePrinter(showTimestamp *bool) *planePrinter {
-	return &planePrinter{showTimestamp: showTimestamp}
+func newColorPrinter(showTimestamp *bool) *colorPrinter {
+	return &colorPrinter{showTimestamp: showTimestamp}
 }
 
-func (p *planePrinter) printStart(hostname string, port uint16) {
+func (p *colorPrinter) printStart(hostname string, port uint16) {
 	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
 }
 
-func (p *planePrinter) printStatistics(t tcping) {
+func (p *colorPrinter) printStatistics(t tcping) {
 	totalPackets := t.totalSuccessfulProbes + t.totalUnsuccessfulProbes
 	packetLoss := (float32(t.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
@@ -164,7 +164,7 @@ func (p *planePrinter) printStatistics(t tcping) {
 	colorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
-func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+func (p *colorPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
@@ -184,7 +184,7 @@ func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, strea
 	}
 }
 
-func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *colorPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
@@ -204,23 +204,23 @@ func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak u
 	}
 }
 
-func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
+func (p *colorPrinter) printTotalDownTime(downtime time.Duration) {
 	colorYellow("No response received for %s\n", durationToString(downtime))
 }
 
-func (p *planePrinter) printRetryingToResolve(hostname string) {
+func (p *colorPrinter) printRetryingToResolve(hostname string) {
 	colorLightYellow("retrying to resolve %s\n", hostname)
 }
 
-func (p *planePrinter) printInfo(format string, args ...any) {
+func (p *colorPrinter) printInfo(format string, args ...any) {
 	colorLightBlue(format+"\n", args...)
 }
 
-func (p *planePrinter) printError(format string, args ...any) {
+func (p *colorPrinter) printError(format string, args ...any) {
 	colorRed(format+"\n", args...)
 }
 
-func (p *planePrinter) printVersion() {
+func (p *colorPrinter) printVersion() {
 	colorGreen("TCPING version %s\n", version)
 }
 
