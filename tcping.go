@@ -18,7 +18,7 @@ import (
 	"github.com/google/go-github/v45/github"
 )
 
-var version = "" // set at compile time 
+var version = "" // set at compile time
 
 const (
 	owner      = "pouriyajamshidi"
@@ -238,7 +238,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, o
 	} else if *outputDb != "" {
 		tcping.printer = newDB(*outputDb, args)
 	} else {
-		tcping.printer = newPlanePrinter(timeStamp)
+		tcping.printer = newColorPrinter(timeStamp)
 	}
 }
 
