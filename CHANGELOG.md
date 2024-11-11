@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.7.0 - Unreleased
+
+- new feature: implement color-less (plane printer) output through `--no-color` flag [#253](https://github.com/pouriyajamshidi/tcping/issues/253)
+- refactor: rename `planePrinter` to `colorPrinter` to match the actual functionality of the function
+- refactor: complete rewrite of the **Makefile** thanks to @cyqsimon
+- refactor: add containerization section in the **Makefile** thanks to @cyqsimon
+- fix: crash on database writes when hostname includes a hyphen thanks to @pro0o
+- tests: add new tests for `printProbeSuccess` and `printProbeFail` thanks to @basil-gray
+- documents: add Chinese translation thanks to @edwinjhlee
+- documents: add link to [X CMD](https://x-cmd.com/pkg/tcping) thanks to @edwinjhlee
+- dependencies: bump:
+  - crypto v0.28.0 => v0.29.0
+  - exp v0.0.0-20241004190924-225e2abe05e6 => v0.0.0-20241108190413-2d47ceb2692f
+  - sys v0.26.0 => v0.27.0
+
 ## v2.6.0 - 2024-10-05
 
 - new feature: add `-D` flag to display date and time in probe output by @SYSHIL
