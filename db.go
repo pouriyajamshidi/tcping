@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"net"
 	"os"
 	"strings"
 	"time"
@@ -280,9 +279,9 @@ func (db *database) printError(format string, args ...any) {
 }
 
 // Satisfying the "printer" interface.
-func (db *database) printProbeSuccess(_ net.Conn, _ userInput, _ uint, _ float32) {}
-func (db *database) printProbeFail(_ userInput, _ uint)                           {}
-func (db *database) printRetryingToResolve(_ string)                              {}
-func (db *database) printTotalDownTime(_ time.Duration)                           {}
-func (db *database) printVersion()                                                {}
-func (db *database) printInfo(_ string, _ ...any)                                 {}
+func (db *database) printProbeSuccess(_ string, _ userInput, _ uint, _ float32) {}
+func (db *database) printProbeFail(_ userInput, _ uint)                         {}
+func (db *database) printRetryingToResolve(_ string)                            {}
+func (db *database) printTotalDownTime(_ time.Duration)                         {}
+func (db *database) printVersion()                                              {}
+func (db *database) printInfo(_ string, _ ...any)                               {}
