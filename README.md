@@ -103,8 +103,10 @@ When the download is complete, head to the [usage](#usage) section.
 
 - Install using `go install`:
 
+  This requires at least go version `1.23.1`
+
   ```bash
-  go install github.com/pouriyajamshidi/tcping@latest
+  go install github.com/pouriyajamshidi/tcping/v2@latest
   ```
 
 - Install using `brew`:
