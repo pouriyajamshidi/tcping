@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"testing"
 	"time"
@@ -17,15 +16,15 @@ import (
 // of a printer that does nothing.
 type dummyPrinter struct{}
 
-func (fp *dummyPrinter) printStart(_ string, _ uint16)                                {}
-func (fp *dummyPrinter) printProbeSuccess(_ net.Conn, _ userInput, _ uint, _ float32) {}
-func (fp *dummyPrinter) printProbeFail(_ userInput, _ uint)                           {}
-func (fp *dummyPrinter) printRetryingToResolve(_ string)                              {}
-func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                           {}
-func (fp *dummyPrinter) printStatistics(_ tcping)                                     {}
-func (fp *dummyPrinter) printVersion()                                                {}
-func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                         {}
-func (fp *dummyPrinter) printError(_ string, _ ...interface{})                        {}
+func (fp *dummyPrinter) printStart(_ string, _ uint16)                              {}
+func (fp *dummyPrinter) printProbeSuccess(_ string, _ userInput, _ uint, _ float32) {}
+func (fp *dummyPrinter) printProbeFail(_ userInput, _ uint)                         {}
+func (fp *dummyPrinter) printRetryingToResolve(_ string)                            {}
+func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                         {}
+func (fp *dummyPrinter) printStatistics(_ tcping)                                   {}
+func (fp *dummyPrinter) printVersion()                                              {}
+func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                       {}
+func (fp *dummyPrinter) printError(_ string, _ ...interface{})                      {}
 
 func TestDurationToString(t *testing.T) {
 	t.Parallel()
@@ -149,6 +148,13 @@ func getProbeSuccessTests() []struct {
 			showLocalAddress: true,
 			expectedOutput:   "Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
 		},
+		{
+			name:             "With hostname, no timestamp, with show local address",
+			showTimestamp:    false,
+			useHostname:      true,
+			showLocalAddress: true,
+			expectedOutput:   "Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+		},
 	}
 }
 
@@ -169,9 +175,15 @@ func TestPrintProbeSuccess(t *testing.T) {
 
 			if !tc.useHostname {
 				stats.userInput.hostname = ""
+			} else {
+				stats.userInput.hostname = "example.com"
 			}
 
-			pp.printProbeSuccess(nil, stats.userInput, streak, rtt)
+			if tc.showLocalAddress {
+				stats.userInput.showLocalAddress = true
+			}
+
+			pp.printProbeSuccess(localAddr, stats.userInput, streak, rtt)
 
 			write.Close()
 
@@ -185,13 +197,21 @@ func TestPrintProbeSuccess(t *testing.T) {
 			var expected string
 			if tc.showTimestamp {
 				timestamp := time.Now().Format("2006-01-02 15:04:05")
-				if tc.useHostname {
+				if tc.showLocalAddress && tc.useHostname {
+					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
+				} else if tc.showLocalAddress {
+					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
+				} else if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				}
 			} else {
-				if tc.useHostname {
+				if tc.showLocalAddress && tc.useHostname {
+					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
+				} else if tc.showLocalAddress {
+					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
+				} else if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.ip, stats.userInput.port, streak, rtt)
