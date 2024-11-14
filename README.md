@@ -256,6 +256,7 @@ The following flags are available to control the behavior of application:
 | `-v`                   | Print version                                                                                                     |
 | `-u`                   | Check for updates                                                                                                 |
 | `--show-failures-only` | Only show probe failures and omit printing probe success messages                                                 |
+| `--show-local_address` | Show the local IP address and port used for probes (unreleased - included in version 2.7.0)                       |
 
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 

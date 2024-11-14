@@ -23,12 +23,12 @@ const (
 	eventTypeHostnameChange = "hostname change"
 
 	tableSchema = `
--- Organized row names together for better readability
 CREATE TABLE %s (
     id INTEGER PRIMARY KEY,
     event_type TEXT NOT NULL, -- for the data type eg. statistics, hostname change
     timestamp DATETIME,
     addr TEXT,
+    localAddr TEXT,
     hostname TEXT,
     port INTEGER,
     hostname_resolve_retries INTEGER,
@@ -71,6 +71,7 @@ CREATE TABLE %s (
 	event_type,
 	timestamp,
 	addr,
+	localAddr,
 	hostname,
 	port,
 	hostname_resolve_retries,
@@ -95,7 +96,7 @@ CREATE TABLE %s (
 	latency_max,
 	start_time,
 	end_time,
-	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // newDB creates a newDB with the given path and returns a pointer to the `database` struct
@@ -180,11 +181,14 @@ func (db *database) saveStats(tcping tcping) error {
 		totalDuration = tcping.endTime.Sub(tcping.startTime).String()
 	}
 
-	// data
+	// TODO: Find a clean way to include local address
+	// other printers utilize printProbeSuccess which takes the net.Conn
+	// whereas DB is having its own way
 	args := []interface{}{
 		eventTypeStatistics,
 		time.Now().Format(timeFormat),
 		tcping.userInput.ip.String(),
+		"local address",
 		tcping.userInput.hostname,
 		tcping.userInput.port,
 		tcping.retriedHostnameLookups,
@@ -275,9 +279,9 @@ func (db *database) printError(format string, args ...any) {
 }
 
 // Satisfying the "printer" interface.
-func (db *database) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
-func (db *database) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
-func (db *database) printRetryingToResolve(hostname string)                                       {}
-func (db *database) printTotalDownTime(downtime time.Duration)                                    {}
-func (db *database) printVersion()                                                                {}
-func (db *database) printInfo(format string, args ...any)                                         {}
+func (db *database) printProbeSuccess(_ string, _ userInput, _ uint, _ float32) {}
+func (db *database) printProbeFail(_ userInput, _ uint)                         {}
+func (db *database) printRetryingToResolve(_ string)                            {}
+func (db *database) printTotalDownTime(_ time.Duration)                         {}
+func (db *database) printVersion()                                              {}
+func (db *database) printInfo(_ string, _ ...any)                               {}

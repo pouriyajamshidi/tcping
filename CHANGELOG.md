@@ -3,13 +3,15 @@
 ## v2.7.0 - Unreleased
 
 - new feature: implement color-less (plane printer) output through `--no-color` flag [#253](https://github.com/pouriyajamshidi/tcping/issues/253)
+- new feature: implement display of local IP address and port used to create TCP connections through `--show-local-address` flag [#249](https://github.com/pouriyajamshidi/tcping/issues/249)
 - refactor: rename `planePrinter` to `colorPrinter` to match the actual functionality of the function
 - refactor: complete rewrite of the **Makefile** thanks to @cyqsimon
 - refactor: add containerization section in the **Makefile** thanks to @cyqsimon
 - fix: crash on database writes when hostname includes a hyphen thanks to @pro0o
-- tests: add new tests for `printProbeSuccess` and `printProbeFail` thanks to @basil-gray
 - documents: add Chinese translation thanks to @edwinjhlee
 - documents: add link to [X CMD](https://x-cmd.com/pkg/tcping) thanks to @edwinjhlee
+- tests: add new tests for `printProbeSuccess` and `printProbeFail` thanks to @basil-gray
+- tests: add tests for `show-local-address` flag
 - dependencies: bump:
   - crypto v0.28.0 => v0.29.0
   - exp v0.0.0-20241004190924-225e2abe05e6 => v0.0.0-20241108190413-2d47ceb2692f

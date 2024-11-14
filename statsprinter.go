@@ -166,42 +166,58 @@ func (p *colorPrinter) printStatistics(t tcping) {
 	colorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
-func (p *colorPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+func (p *colorPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
 	}
-	if hostname == "" {
+	if userInput.hostname == "" {
 		if timestamp == "" {
-			colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		} else {
-			colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		}
 	} else {
 		if timestamp == "" {
-			colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", hostname, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		} else {
-			colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, hostname, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		}
 	}
 }
 
-func (p *colorPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *colorPrinter) printProbeFail(userInput userInput, streak uint) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
 	}
-	if hostname == "" {
+	if userInput.hostname == "" {
 		if timestamp == "" {
-			colorRed("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+			colorRed("No reply from %s on port %d TCP_conn=%d\n", userInput.ip, userInput.port, streak)
 		} else {
-			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, ip, port, streak)
+			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, userInput.ip, userInput.port, streak)
 		}
 	} else {
 		if timestamp == "" {
-			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
+			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", userInput.hostname, userInput.ip, userInput.port, streak)
 		} else {
-			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, hostname, ip, port, streak)
+			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, userInput.hostname, userInput.ip, userInput.port, streak)
 		}
 	}
 }
@@ -333,42 +349,58 @@ func (p *planePrinter) printStatistics(t tcping) {
 	fmt.Printf("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
-func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+func (p *planePrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
 	}
-	if hostname == "" {
+	if userInput.hostname == "" {
 		if timestamp == "" {
-			fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		} else {
-			fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		}
 	} else {
 		if timestamp == "" {
-			fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", hostname, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		} else {
-			fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, hostname, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		}
 	}
 }
 
-func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *planePrinter) printProbeFail(userInput userInput, streak uint) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
 	}
-	if hostname == "" {
+	if userInput.hostname == "" {
 		if timestamp == "" {
-			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n", userInput.ip, userInput.port, streak)
 		} else {
-			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, ip, port, streak)
+			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, userInput.ip, userInput.port, streak)
 		}
 	} else {
 		if timestamp == "" {
-			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
+			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n", userInput.hostname, userInput.ip, userInput.port, streak)
 		} else {
-			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, hostname, ip, port, streak)
+			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, userInput.hostname, userInput.ip, userInput.port, streak)
 		}
 	}
 }
@@ -453,6 +485,7 @@ type JSONData struct {
 	// Optional fields below
 
 	Addr                 string           `json:"addr,omitempty"`
+	LocalAddr            string           `json:"local_address,omitempty"`
 	Hostname             string           `json:"hostname,omitempty"`
 	HostnameResolveTries uint             `json:"hostname_resolve_tries,omitempty"`
 	HostnameChanges      []hostnameChange `json:"hostname_changes,omitempty"`
@@ -539,63 +572,71 @@ func (p *jsonPrinter) printStart(hostname string, port uint16) {
 }
 
 // printReply prints TCP probe replies according to our policies in JSON format.
-func (p *jsonPrinter) printProbeSuccess(
-	hostname, ip string,
-	port uint16,
-	streak uint,
-	rtt float32,
-) {
+func (p *jsonPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	var (
 		// for *bool fields
 		f    = false
 		t    = true
 		data = JSONData{
 			Type:                  probeEvent,
-			Hostname:              hostname,
-			Addr:                  ip,
-			Port:                  port,
+			Hostname:              userInput.hostname,
+			Addr:                  userInput.ip.String(),
+			Port:                  userInput.port,
 			Rtt:                   rtt,
 			DestIsIP:              &t,
 			Success:               &t,
 			TotalSuccessfulProbes: streak,
 		}
 	)
+	if userInput.showLocalAddress {
+		data.LocalAddr = localAddr
+	}
 
-	if hostname != "" {
+	if userInput.hostname != "" {
 		data.DestIsIP = &f
-		data.Message = fmt.Sprintf("Reply from %s (%s) on port %d time=%.3f",
-			hostname, ip, port, rtt)
+		if userInput.showLocalAddress {
+			data.Message = fmt.Sprintf("Reply from %s (%s) on port %d using %s time=%.3f ms",
+				userInput.hostname, userInput.ip.String(), userInput.port, localAddr, rtt)
+		} else {
+			data.Message = fmt.Sprintf("Reply from %s (%s) on port %d time=%.3f ms",
+				userInput.hostname, userInput.ip.String(), userInput.port, rtt)
+		}
 	} else {
-		data.Message = fmt.Sprintf("Reply from %s on port %d time=%.3f",
-			ip, port, rtt)
+		if userInput.showLocalAddress {
+			data.Message = fmt.Sprintf("Reply from %s on port %d using %s time=%.3f ms",
+				userInput.ip.String(), userInput.port, localAddr, rtt)
+		} else {
+			data.Message = fmt.Sprintf("Reply from %s on port %d time=%.3f ms",
+				userInput.ip.String(), userInput.port, rtt)
+		}
 	}
 
 	p.print(data)
 }
 
-func (p *jsonPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *jsonPrinter) printProbeFail(userInput userInput, streak uint) {
 	var (
 		// for *bool fields
 		f    = false
 		t    = true
 		data = JSONData{
 			Type:                    probeEvent,
-			Hostname:                hostname,
-			Addr:                    ip,
-			Port:                    port,
+			Hostname:                userInput.hostname,
+			Addr:                    userInput.ip.String(),
+			Port:                    userInput.port,
 			DestIsIP:                &t,
 			Success:                 &f,
 			TotalUnsuccessfulProbes: streak,
 		}
 	)
 
-	if hostname != "" {
+	if userInput.hostname != "" {
 		data.DestIsIP = &f
 		data.Message = fmt.Sprintf("No reply from %s (%s) on port %d",
-			hostname, ip, port)
+			userInput.hostname, userInput.ip.String(), userInput.port)
 	} else {
 		data.Message = fmt.Sprintf("No reply from %s on port %d",
-			ip, port)
+			userInput.ip.String(), userInput.port)
 	}
 
 	p.print(data)

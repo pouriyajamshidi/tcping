@@ -38,12 +38,12 @@ type printer interface {
 	// printProbeSuccess should print a message after each successful probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecutive probes.
-	printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32)
+	printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32)
 
 	// printProbeFail should print a message after each failed probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecutive probes.
-	printProbeFail(hostname, ip string, port uint16, streak uint)
+	printProbeFail(userInput userInput, streak uint)
 
 	// printRetryingToResolve should print a message with the hostname
 	// it is trying to resolve an ip for.
@@ -116,6 +116,7 @@ type userInput struct {
 	useIPv6                  bool
 	shouldRetryResolve       bool
 	showFailuresOnly         bool
+	showLocalAddress         bool
 }
 
 type genericUserInputArgs struct {
@@ -125,6 +126,7 @@ type genericUserInputArgs struct {
 	secondsBetweenProbes *float64
 	intName              *string
 	showFailuresOnly     *bool
+	showLocalAddress     *bool
 	args                 []string
 }
 
@@ -315,6 +317,8 @@ func setGenericArgs(tcping *tcping, genericArgs genericUserInputArgs) {
 	}
 
 	tcping.userInput.showFailuresOnly = *genericArgs.showFailuresOnly
+
+	tcping.userInput.showLocalAddress = *genericArgs.showLocalAddress
 }
 
 // processUserInput gets and validate user input
@@ -333,6 +337,7 @@ func processUserInput(tcping *tcping) {
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address.")
+	showLocalAddress := flag.Bool("show-local-address", false, "Show source address and port used for probe.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
 
@@ -382,6 +387,7 @@ func processUserInput(tcping *tcping) {
 		secondsBetweenProbes: secondsBetweenProbes,
 		intName:              interfaceName,
 		showFailuresOnly:     showFailuresOnly,
+		showLocalAddress:     showLocalAddress,
 		args:                 args,
 	}
 
@@ -802,15 +808,13 @@ func (t *tcping) handleConnError(connTime time.Time, elapsed time.Duration) {
 	t.ongoingUnsuccessfulProbes += 1
 
 	t.printProbeFail(
-		t.userInput.hostname,
-		t.userInput.ip.String(),
-		t.userInput.port,
+		t.userInput,
 		t.ongoingUnsuccessfulProbes,
 	)
 }
 
 // handleConnSuccess processes successful probes
-func (t *tcping) handleConnSuccess(rtt float32, connTime time.Time, elapsed time.Duration) {
+func (t *tcping) handleConnSuccess(localAddr string, rtt float32, connTime time.Time, elapsed time.Duration) {
 	if t.destWasDown {
 		t.startOfUptime = connTime
 		downtime := t.startOfUptime.Sub(t.startOfDowntime)
@@ -834,9 +838,8 @@ func (t *tcping) handleConnSuccess(rtt float32, connTime time.Time, elapsed time
 
 	if !t.userInput.showFailuresOnly {
 		t.printProbeSuccess(
-			t.userInput.hostname,
-			t.userInput.ip.String(),
-			t.userInput.port,
+			localAddr,
+			t.userInput,
 			t.ongoingSuccessfulProbes,
 			rtt,
 		)
@@ -865,7 +868,7 @@ func tcpProbe(tcping *tcping) {
 	if err != nil {
 		tcping.handleConnError(connStart, elapsed)
 	} else {
-		tcping.handleConnSuccess(rtt, connStart, elapsed)
+		tcping.handleConnSuccess(conn.LocalAddr().String(), rtt, connStart, elapsed)
 		conn.Close()
 	}
 	<-tcping.ticker.C

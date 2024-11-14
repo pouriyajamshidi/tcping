@@ -42,6 +42,7 @@ func TestDbSaveStats(t *testing.T) {
 
 	query := `SELECT
 addr,
+localAddr,
 hostname,
 port,
 hostname_resolve_retries,
@@ -70,7 +71,7 @@ total_duration
 FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatistics)
 
 	var (
-		addr, hostname, port                           string
+		addr, localAddr, hostname, port                string
 		hostNameResolveTries                           int
 		totalSuccessfulProbes, totalUnsuccessfulProbes uint
 		neverSucceedProbe, neverFailedProbe            bool
@@ -88,65 +89,67 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	)
 
 	resFunc := func(stmt *sqlite.Stmt) error {
-		Equals(t, stmt.ColumnCount(), 26)
+		Equals(t, stmt.ColumnCount(), 27)
 		var err error
 
 		// addr
 		addr = stmt.ColumnText(0)
+		// Local address
+		localAddr = stmt.ColumnText(1)
 		// hostname
-		hostname = stmt.ColumnText(1)
+		hostname = stmt.ColumnText(2)
 		// port
-		port = stmt.ColumnText(2)
+		port = stmt.ColumnText(3)
 		// hostname_resolve_retries
-		hostNameResolveTries = stmt.ColumnInt(3)
+		hostNameResolveTries = stmt.ColumnInt(4)
 		// total_successful_probes
-		totalSuccessfulProbes = uint(stmt.ColumnInt(4))
+		totalSuccessfulProbes = uint(stmt.ColumnInt(5))
 		// total_unsuccessful_probes
-		totalUnsuccessfulProbes = uint(stmt.ColumnInt(5))
+		totalUnsuccessfulProbes = uint(stmt.ColumnInt(6))
 		// never_succeed_probe
-		neverSucceedProbe = stmt.ColumnBool(6)
+		neverSucceedProbe = stmt.ColumnBool(7)
 		// never_failed_probe
-		neverFailedProbe = stmt.ColumnBool(7)
+		neverFailedProbe = stmt.ColumnBool(8)
 		// last_successful_probe
-		lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(8))
+		lastSuccessfulProbe, err = time.Parse(timeFormat, stmt.ColumnText(9))
 		isNil(t, err)
 		// last_unsuccessful_probe
-		Equals(t, "", stmt.ColumnText(9)) // simulating never failed
+		Equals(t, "", stmt.ColumnText(10)) // simulating never failed
 		// isNil(t, err)
 		// total_packets
-		totalPackets = uint(stmt.ColumnInt(10))
+		totalPackets = uint(stmt.ColumnInt(11))
 		// total_packet_loss
-		totalPacketsLoss = float32(stmt.ColumnFloat(11))
+		totalPacketsLoss = float32(stmt.ColumnFloat(12))
 		// total_uptime
-		totalUptime = stmt.ColumnText(12)
+		totalUptime = stmt.ColumnText(13)
 		// total_downtime
-		totalDowntime = stmt.ColumnText(13)
+		totalDowntime = stmt.ColumnText(14)
 		// longest_uptime
-		longestUptime = stmt.ColumnText(14)
+		longestUptime = stmt.ColumnText(15)
 		// longest_uptime_start
-		longestUptimeStart = stmt.ColumnText(15)
+		longestUptimeStart = stmt.ColumnText(16)
 		// longest_uptime_end
-		longestUptimeEnd = stmt.ColumnText(16)
+		longestUptimeEnd = stmt.ColumnText(17)
 		// longest_downtime
-		longestDowntime = stmt.ColumnText(17)
+		longestDowntime = stmt.ColumnText(18)
 		// longest_downtime_start
-		longestDowntimeStart = stmt.ColumnText(18)
+		longestDowntimeStart = stmt.ColumnText(19)
 		// longest_downtime_end
-		longestDowntimeEnd = stmt.ColumnText(19)
+		longestDowntimeEnd = stmt.ColumnText(20)
 		// latency_min
-		lMin = float32(stmt.ColumnFloat(20))
+		lMin = float32(stmt.ColumnFloat(21))
 		// latency_avg
-		lAvg = float32(stmt.ColumnFloat(21))
+		lAvg = float32(stmt.ColumnFloat(22))
 		// latency_max
-		lMax = float32(stmt.ColumnFloat(22))
+		lMax = float32(stmt.ColumnFloat(23))
 		// start_time
-		startTimestamp, err = time.Parse(timeFormat, stmt.ColumnText(23))
+		startTimestamp, err = time.Parse(timeFormat, stmt.ColumnText(24))
 		isNil(t, err)
 		// end_time
-		endTimestamp, err = time.Parse(timeFormat, stmt.ColumnText(24))
+		endTimestamp, err = time.Parse(timeFormat, stmt.ColumnText(25))
 		isNil(t, err)
 		// total_duration
-		totalDuration = stmt.ColumnText(25)
+		totalDuration = stmt.ColumnText(26)
 		return nil
 	}
 
@@ -159,8 +162,8 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	stat.rttResults.average = toFixedFloat(stat.rttResults.average, 3)
 	stat.rttResults.max = toFixedFloat(stat.rttResults.max, 3)
 
-	t.Log("the line number will tell you where the error happened")
 	Equals(t, addr, stat.userInput.ip.String())
+	Equals(t, localAddr, "local address")
 	Equals(t, hostname, stat.userInput.hostname)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
 	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)
