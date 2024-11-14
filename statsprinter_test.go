@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"testing"
 	"time"
@@ -16,15 +17,15 @@ import (
 // of a printer that does nothing.
 type dummyPrinter struct{}
 
-func (fp *dummyPrinter) printStart(_ string, _ uint16)                              {}
-func (fp *dummyPrinter) printProbeFail(_, _ string, _ uint16, _ uint)               {}
-func (fp *dummyPrinter) printRetryingToResolve(_ string)                            {}
-func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                         {}
-func (fp *dummyPrinter) printStatistics(_ tcping)                                   {}
-func (fp *dummyPrinter) printVersion()                                              {}
-func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                       {}
-func (fp *dummyPrinter) printError(_ string, _ ...interface{})                      {}
-func (fp *dummyPrinter) printProbeSuccess(_, _ string, _ uint16, _ uint, _ float32) {}
+func (fp *dummyPrinter) printStart(_ string, _ uint16)                                {}
+func (fp *dummyPrinter) printProbeSuccess(_ net.Conn, _ userInput, _ uint, _ float32) {}
+func (fp *dummyPrinter) printProbeFail(_ userInput, _ uint)                           {}
+func (fp *dummyPrinter) printRetryingToResolve(_ string)                              {}
+func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                           {}
+func (fp *dummyPrinter) printStatistics(_ tcping)                                     {}
+func (fp *dummyPrinter) printVersion()                                                {}
+func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                         {}
+func (fp *dummyPrinter) printError(_ string, _ ...interface{})                        {}
 
 func TestDurationToString(t *testing.T) {
 	t.Parallel()
@@ -107,52 +108,54 @@ func TestPrintProbeSuccess(t *testing.T) {
 	rtt := float32(15.123)
 
 	testCases := []struct {
-		name           string
-		showTimestamp  bool
-		useHostname    bool
-		expectedOutput string
+		name             string
+		showTimestamp    bool
+		useHostname      bool
+		showLocalAddress bool
+		expectedOutput   string
 	}{
 		{
-			name:           "With hostname, no timestamp",
-			showTimestamp:  false,
-			useHostname:    true,
-			expectedOutput: "Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+			name:             "With hostname, no timestamp",
+			showTimestamp:    false,
+			useHostname:      true,
+			showLocalAddress: false,
+			expectedOutput:   "Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:           "With hostname, with timestamp",
-			showTimestamp:  true,
-			useHostname:    true,
-			expectedOutput: "%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+			name:             "With hostname, with timestamp",
+			showTimestamp:    true,
+			useHostname:      true,
+			showLocalAddress: false,
+			expectedOutput:   "%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:           "Without hostname, with timestamp",
-			showTimestamp:  true,
-			useHostname:    false,
-			expectedOutput: "%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			name:             "Without hostname, with timestamp",
+			showTimestamp:    true,
+			useHostname:      false,
+			showLocalAddress: false,
+			expectedOutput:   "%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:           "Without hostname, no timestamp",
-			showTimestamp:  false,
-			useHostname:    false,
-			expectedOutput: "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			name:             "Without hostname, no timestamp",
+			showTimestamp:    false,
+			useHostname:      false,
+			showLocalAddress: false,
+			expectedOutput:   "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := newColorPrinter(&tc.showTimestamp)
+			pp := newPlanePrinter(&tc.showTimestamp)
 
 			read, write, _ := os.Pipe()
 			os.Stdout = write
-			color.SetOutput(write)
-			color.Disable()
 
-			hostname := stats.userInput.hostname
 			if !tc.useHostname {
-				hostname = ""
+				stats.userInput.hostname = ""
 			}
 
-			pp.printProbeSuccess(hostname, stats.userInput.ip.String(), stats.userInput.port, streak, rtt)
+			pp.printProbeSuccess(nil, stats.userInput, streak, rtt)
 
 			write.Close()
 
@@ -167,13 +170,13 @@ func TestPrintProbeSuccess(t *testing.T) {
 			if tc.showTimestamp {
 				timestamp := time.Now().Format("2006-01-02 15:04:05")
 				if tc.useHostname {
-					expected = fmt.Sprintf(tc.expectedOutput, timestamp, hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
+					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				}
 			} else {
 				if tc.useHostname {
-					expected = fmt.Sprintf(tc.expectedOutput, hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
+					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				}
@@ -231,12 +234,11 @@ func TestPrintProbeFail(t *testing.T) {
 			color.SetOutput(write)
 			color.Disable()
 
-			hostname := stats.userInput.hostname
 			if !tc.useHostname {
-				hostname = ""
+				stats.userInput.hostname = ""
 			}
 
-			pp.printProbeFail(hostname, stats.userInput.ip.String(), stats.userInput.port, streak)
+			pp.printProbeFail(stats.userInput, streak)
 
 			write.Close()
 
