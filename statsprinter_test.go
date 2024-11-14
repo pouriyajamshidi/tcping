@@ -100,14 +100,14 @@ func TestDurationToString(t *testing.T) {
 	}
 }
 
-func TestPrintProbeSuccess(t *testing.T) {
-	stats := createTestStats(t)
-	stats.userInput.hostname = "example.com"
-
-	streak := uint(5)
-	rtt := float32(15.123)
-
-	testCases := []struct {
+func getProbeSuccessTests() []struct {
+	name             string
+	showTimestamp    bool
+	useHostname      bool
+	showLocalAddress bool
+	expectedOutput   string
+} {
+	return []struct {
 		name             string
 		showTimestamp    bool
 		useHostname      bool
@@ -142,7 +142,23 @@ func TestPrintProbeSuccess(t *testing.T) {
 			showLocalAddress: false,
 			expectedOutput:   "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
+		{
+			name:             "Without hostname, no timestamp, with show local address",
+			showTimestamp:    false,
+			useHostname:      false,
+			showLocalAddress: true,
+			expectedOutput:   "Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+		},
 	}
+}
+
+func TestPrintProbeSuccess(t *testing.T) {
+	testCases := getProbeSuccessTests()
+	stats := createTestStats(t)
+	stats.userInput.hostname = "example.com"
+	streak := uint(5)
+	rtt := float32(15.123)
+	localAddr := "127.0.0.1:4567"
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
