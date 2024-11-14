@@ -109,7 +109,7 @@
 - 使用 `go install` 安装：
 
   ```bash
-  go install github.com/pouriyajamshidi/tcping@latest
+  go install github.com/pouriyajamshidi/tcping/v2@latest
   ```
 
 - 使用 `brew` 安装：
