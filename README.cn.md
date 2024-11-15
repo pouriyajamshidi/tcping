@@ -265,7 +265,7 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 | `-h`                   | 显示帮助                                                                        |
 | `-4`                   | 仅使用 IPv4 地址                                                                |
 | `-6`                   | 仅使用 IPv6 地址                                                                |
-| `-r`                   | 在 `<n>` 次探测失败后重试解析目标主机名。例如，-r 10 表示在 10 次探测失败后重试 |
+| `-r`                   | 在 `<n>` 次探测失败后重试解析目标主机名。例如，-r 10 表示在 10 次探测失败后重试        |
 | `-c`                   | 在 `<n>` 次探测后停止，无论结果如何。默认情况下，不应用限制                     |
 | `-t`                   | 等待响应的时间（以秒为单位）。允许使用实数。0 表示无限超时                      |
 | `-D`                   | 在探测输出中显示日期和时间。类似于 Linux 的 ping 工具，但更易于阅读             |
@@ -273,10 +273,12 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 | `-I`                   | 用于发送探测的接口名称                                                          |
 | `-j`                   | 以 `JSON` 格式输出                                                              |
 | `--pretty`             | 美化 `JSON` 输出                                                                |
+| `--no-color`           | 输出不带颜色   (未发布 - 该功能将在 2.7.0 版本发布)                                |
 | `--db`                 | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--db /tmp/tcping.db`  |
 | `-v`                   | 打印版本                                                                        |
 | `-u`                   | 检查更新                                                                        |
 | `--show-failures-only` | 仅显示探测失败，并省略打印探测成功消息                                          |
+| `--show-local_address` | 显示探测所用的本地IP地址及端口   (未发布 - 该功能将在 2.7.0 版本发布)                  | 
 
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。
 
