@@ -108,6 +108,8 @@
 
 - 使用 `go install` 安装：
 
+  Go 版本最低要求为 `1.23.1`
+
   ```bash
   go install github.com/pouriyajamshidi/tcping/v2@latest
   ```
