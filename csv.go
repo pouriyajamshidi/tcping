@@ -33,13 +33,6 @@ func newCSVPrinter(filename string, args []string) (*csvPrinter, error) {
 	}, nil
 }
 
-func (cp *csvPrinter) writeHeader() error {
-	header := []string{
-		"probe status", "hostname", "ip", "port", "TCP_conn", "time",
-	}
-	return cp.writer.Write(header)
-}
-
 func (cp *csvPrinter) writeRecord(record []string) error {
 	return cp.writer.Write(record)
 }
@@ -49,10 +42,32 @@ func (cp *csvPrinter) close() {
 	cp.file.Close()
 }
 
+func (cp *csvPrinter) printError(format string, args ...any) {
+	colorRed("Error: "+format, args...)
+}
+
+func (cp *csvPrinter) printStart(hostname string, port uint16) {
+	header := []string{
+		"status", "hostname", "ip", "port", "TCP_conn", "time",
+	}
+	cp.writer.Write(header)
+}
+
+func (cp *csvPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+	cp.writeRecord([]string{
+		"reply", hostname, ip, fmt.Sprint(port), fmt.Sprint(streak), fmt.Sprintf("%.3f", rtt),
+	})
+}
+
+func (cp *csvPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+	cp.writeRecord([]string{
+		"no reply", hostname, ip, fmt.Sprint(port), fmt.Sprint(streak), "",
+	})
+}
+
 // Satisfying the "printer" interface.
-func (db *csvPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {}
-func (db *csvPrinter) printProbeFail(hostname, ip string, port uint16, streak uint)                 {}
-func (db *csvPrinter) printRetryingToResolve(hostname string)                                       {}
-func (db *csvPrinter) printTotalDownTime(downtime time.Duration)                                    {}
-func (db *csvPrinter) printVersion()                                                                {}
-func (db *csvPrinter) printInfo(format string, args ...any)                                         {}
+func (cp *csvPrinter) printStatistics(s tcping)                  {}
+func (cp *csvPrinter) printRetryingToResolve(hostname string)    {}
+func (cp *csvPrinter) printTotalDownTime(downtime time.Duration) {}
+func (cp *csvPrinter) printVersion()                             {}
+func (cp *csvPrinter) printInfo(format string, args ...any)      {}
