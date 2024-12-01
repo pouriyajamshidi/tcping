@@ -82,7 +82,7 @@ This document is also available in [Chinese | 中文](README.cn.md).
 
 ## Download
 
-We offer prebuilt binaries for various OSes and architectures (Windows, Linux and macOS). You can find them on 
+We offer prebuilt binaries for various OSes and architectures (Windows, Linux and macOS). You can find them on
 [the release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
 When the download is complete, head to the [usage](#usage) section.
@@ -103,8 +103,10 @@ When the download is complete, head to the [usage](#usage) section.
 
 - Install using `go install`:
 
+  This requires at least go version `1.23.1`
+
   ```bash
-  go install github.com/pouriyajamshidi/tcping@latest
+  go install github.com/pouriyajamshidi/tcping/v2@latest
   ```
 
 - Install using `brew`:
@@ -116,7 +118,7 @@ When the download is complete, head to the [usage](#usage) section.
 - [x tcping](https://x-cmd.com/pkg/tcping):
 
   Use it **directly without installation** in [x-cmd](https://www.x-cmd.com).
-  
+
   ```bash
   x tcping bing.com 80
   ```
@@ -251,10 +253,12 @@ The following flags are available to control the behavior of application:
 | `-I`                   | Interface name to use for sending probes                                                                          |
 | `-j`                   | Output in `JSON` format                                                                                           |
 | `--pretty`             | Prettify the `JSON` output                                                                                        |
+| `--no-color`           | Do not colorize output (unreleased - included in version 2.7.0)                                                   |
 | `--db`                 | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
 | `-v`                   | Print version                                                                                                     |
 | `-u`                   | Check for updates                                                                                                 |
 | `--show-failures-only` | Only show probe failures and omit printing probe success messages                                                 |
+| `--show-local_address` | Show the local IP address and port used for probes (unreleased - included in version 2.7.0)                       |
 
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 

@@ -15,6 +15,8 @@ const (
 	hourFormat = "15:04:05"
 )
 
+// MARK: COLOR PRINTER
+
 var (
 	colorYellow      = color.Yellow.Printf
 	colorGreen       = color.Green.Printf
@@ -26,19 +28,19 @@ var (
 	colorLightCyan   = color.LightCyan.Printf
 )
 
-type planePrinter struct {
+type colorPrinter struct {
 	showTimestamp *bool
 }
 
-func newPlanePrinter(showTimestamp *bool) *planePrinter {
-	return &planePrinter{showTimestamp: showTimestamp}
+func newColorPrinter(showTimestamp *bool) *colorPrinter {
+	return &colorPrinter{showTimestamp: showTimestamp}
 }
 
-func (p *planePrinter) printStart(hostname string, port uint16) {
+func (p *colorPrinter) printStart(hostname string, port uint16) {
 	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
 }
 
-func (p *planePrinter) printStatistics(t tcping) {
+func (p *colorPrinter) printStatistics(t tcping) {
 	totalPackets := t.totalSuccessfulProbes + t.totalUnsuccessfulProbes
 	packetLoss := (float32(t.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
@@ -164,65 +166,266 @@ func (p *planePrinter) printStatistics(t tcping) {
 	colorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
-func (p *planePrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
+func (p *colorPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
 	}
-	if hostname == "" {
+	if userInput.hostname == "" {
 		if timestamp == "" {
-			colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		} else {
-			colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		}
 	} else {
 		if timestamp == "" {
-			colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", hostname, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		} else {
-			colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, hostname, ip, port, streak, rtt)
+			if userInput.showLocalAddress {
+				colorLightGreen("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				colorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
 		}
 	}
 }
 
-func (p *planePrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *colorPrinter) printProbeFail(userInput userInput, streak uint) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
 	}
-	if hostname == "" {
+	if userInput.hostname == "" {
 		if timestamp == "" {
-			colorRed("No reply from %s on port %d TCP_conn=%d\n", ip, port, streak)
+			colorRed("No reply from %s on port %d TCP_conn=%d\n", userInput.ip, userInput.port, streak)
 		} else {
-			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, ip, port, streak)
+			colorRed("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, userInput.ip, userInput.port, streak)
 		}
 	} else {
 		if timestamp == "" {
-			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", hostname, ip, port, streak)
+			colorRed("No reply from %s (%s) on port %d TCP_conn=%d\n", userInput.hostname, userInput.ip, userInput.port, streak)
 		} else {
-			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, hostname, ip, port, streak)
+			colorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, userInput.hostname, userInput.ip, userInput.port, streak)
+		}
+	}
+}
+
+func (p *colorPrinter) printTotalDownTime(downtime time.Duration) {
+	colorYellow("No response received for %s\n", durationToString(downtime))
+}
+
+func (p *colorPrinter) printRetryingToResolve(hostname string) {
+	colorLightYellow("retrying to resolve %s\n", hostname)
+}
+
+func (p *colorPrinter) printInfo(format string, args ...any) {
+	colorLightBlue(format+"\n", args...)
+}
+
+func (p *colorPrinter) printError(format string, args ...any) {
+	colorRed(format+"\n", args...)
+}
+
+func (p *colorPrinter) printVersion() {
+	colorGreen("TCPING version %s\n", version)
+}
+
+// MARK: PLANE PRINTER
+
+type planePrinter struct {
+	showTimestamp *bool
+}
+
+func newPlanePrinter(showTimestamp *bool) *planePrinter {
+	return &planePrinter{showTimestamp: showTimestamp}
+}
+
+func (p *planePrinter) printStart(hostname string, port uint16) {
+	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
+}
+
+func (p *planePrinter) printStatistics(t tcping) {
+	totalPackets := t.totalSuccessfulProbes + t.totalUnsuccessfulProbes
+	packetLoss := (float32(t.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
+
+	if math.IsNaN(float64(packetLoss)) {
+		packetLoss = 0
+	}
+
+	/* general stats */
+	if !t.destIsIP {
+		fmt.Printf("\n--- %s (%s) TCPing statistics ---\n", t.userInput.hostname, t.userInput.ip)
+	} else {
+		fmt.Printf("\n--- %s TCPing statistics ---\n", t.userInput.hostname)
+	}
+	fmt.Printf("%d probes transmitted on port %d | %d received", totalPackets, t.userInput.port, t.totalSuccessfulProbes)
+
+	/* packet loss stats */
+	fmt.Printf("%.2f%% packet loss\n", packetLoss)
+
+	/* successful packet stats */
+	fmt.Printf("successful probes:   %d\n", t.totalSuccessfulProbes)
+
+	/* unsuccessful packet stats */
+	fmt.Printf("unsuccessful probes: %d\n", t.totalUnsuccessfulProbes)
+
+	fmt.Printf("last successful probe:   ")
+	if t.lastSuccessfulProbe.IsZero() {
+		fmt.Printf("Never succeeded\n")
+	} else {
+		fmt.Printf("%v\n", t.lastSuccessfulProbe.Format(timeFormat))
+	}
+
+	fmt.Printf("last unsuccessful probe: ")
+	if t.lastUnsuccessfulProbe.IsZero() {
+		fmt.Printf("Never failed\n")
+	} else {
+		fmt.Printf("%v\n", t.lastUnsuccessfulProbe.Format(timeFormat))
+	}
+
+	/* uptime and downtime stats */
+	fmt.Printf("total uptime: %s\n", durationToString(t.totalUptime))
+	fmt.Printf("total downtime: %s\n", durationToString(t.totalDowntime))
+
+	/* longest uptime stats */
+	if t.longestUptime.duration != 0 {
+		uptime := durationToString(t.longestUptime.duration)
+
+		fmt.Printf("longest consecutive uptime:   ")
+		fmt.Printf("%v ", uptime)
+		fmt.Printf("from %v ", t.longestUptime.start.Format(timeFormat))
+		fmt.Printf("to %v\n", t.longestUptime.end.Format(timeFormat))
+	}
+
+	/* longest downtime stats */
+	if t.longestDowntime.duration != 0 {
+		downtime := durationToString(t.longestDowntime.duration)
+
+		fmt.Printf("longest consecutive downtime: %v ", downtime)
+		fmt.Printf("from %v ", t.longestDowntime.start.Format(timeFormat))
+		fmt.Printf("to %v\n", t.longestDowntime.end.Format(timeFormat))
+	}
+
+	/* resolve retry stats */
+	if !t.destIsIP {
+		fmt.Printf("retried to resolve hostname %d times\n", t.retriedHostnameLookups)
+
+		if len(t.hostnameChanges) >= 2 {
+			fmt.Printf("IP address changes:\n")
+			for i := 0; i < len(t.hostnameChanges)-1; i++ {
+				fmt.Printf("  from %s", t.hostnameChanges[i].Addr.String())
+				fmt.Printf(" to %s", t.hostnameChanges[i+1].Addr.String())
+				fmt.Printf(" at %v\n", t.hostnameChanges[i+1].When.Format(timeFormat))
+			}
+		}
+	}
+
+	if t.rttResults.hasResults {
+		fmt.Printf("rtt min/avg/max: ")
+		fmt.Printf("%.3f/%.3f/%.3f ms\n", t.rttResults.min, t.rttResults.average, t.rttResults.max)
+	}
+
+	fmt.Printf("--------------------------------------\n")
+	fmt.Printf("TCPing started at: %v\n", t.startTime.Format(timeFormat))
+
+	/* If the program was not terminated, no need to show the end time */
+	if !t.endTime.IsZero() {
+		fmt.Printf("TCPing ended at:   %v\n", t.endTime.Format(timeFormat))
+	}
+
+	durationTime := time.Time{}.Add(t.totalDowntime + t.totalUptime)
+	fmt.Printf("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
+}
+
+func (p *planePrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
+	timestamp := ""
+	if *p.showTimestamp {
+		timestamp = time.Now().Format(timeFormat)
+	}
+	if userInput.hostname == "" {
+		if timestamp == "" {
+			if userInput.showLocalAddress {
+				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", userInput.ip.String(), userInput.port, streak, rtt)
+			}
+		} else {
+			if userInput.showLocalAddress {
+				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.ip.String(), userInput.port, streak, rtt)
+			}
+		}
+	} else {
+		if timestamp == "" {
+			if userInput.showLocalAddress {
+				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
+		} else {
+			if userInput.showLocalAddress {
+				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, localAddr, streak, rtt)
+			} else {
+				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.hostname, userInput.ip.String(), userInput.port, streak, rtt)
+			}
+		}
+	}
+}
+
+func (p *planePrinter) printProbeFail(userInput userInput, streak uint) {
+	timestamp := ""
+	if *p.showTimestamp {
+		timestamp = time.Now().Format(timeFormat)
+	}
+	if userInput.hostname == "" {
+		if timestamp == "" {
+			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n", userInput.ip, userInput.port, streak)
+		} else {
+			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, userInput.ip, userInput.port, streak)
+		}
+	} else {
+		if timestamp == "" {
+			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n", userInput.hostname, userInput.ip, userInput.port, streak)
+		} else {
+			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, userInput.hostname, userInput.ip, userInput.port, streak)
 		}
 	}
 }
 
 func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
-	colorYellow("No response received for %s\n", durationToString(downtime))
+	fmt.Printf("No response received for %s\n", durationToString(downtime))
 }
 
 func (p *planePrinter) printRetryingToResolve(hostname string) {
-	colorLightYellow("retrying to resolve %s\n", hostname)
+	fmt.Printf("retrying to resolve %s\n", hostname)
 }
 
 func (p *planePrinter) printInfo(format string, args ...any) {
-	colorLightBlue(format+"\n", args...)
+	fmt.Printf(format+"\n", args...)
 }
 
 func (p *planePrinter) printError(format string, args ...any) {
-	colorRed(format+"\n", args...)
+	fmt.Printf(format+"\n", args...)
 }
 
 func (p *planePrinter) printVersion() {
-	colorGreen("TCPING version %s\n", version)
+	fmt.Printf("TCPING version %s\n", version)
 }
+
+// MARK: JSON PRINTER
 
 type jsonPrinter struct {
 	e *json.Encoder
@@ -282,6 +485,7 @@ type JSONData struct {
 	// Optional fields below
 
 	Addr                 string           `json:"addr,omitempty"`
+	LocalAddr            string           `json:"local_address,omitempty"`
 	Hostname             string           `json:"hostname,omitempty"`
 	HostnameResolveTries uint             `json:"hostname_resolve_tries,omitempty"`
 	HostnameChanges      []hostnameChange `json:"hostname_changes,omitempty"`
@@ -368,63 +572,71 @@ func (p *jsonPrinter) printStart(hostname string, port uint16) {
 }
 
 // printReply prints TCP probe replies according to our policies in JSON format.
-func (p *jsonPrinter) printProbeSuccess(
-	hostname, ip string,
-	port uint16,
-	streak uint,
-	rtt float32,
-) {
+func (p *jsonPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	var (
 		// for *bool fields
 		f    = false
 		t    = true
 		data = JSONData{
 			Type:                  probeEvent,
-			Hostname:              hostname,
-			Addr:                  ip,
-			Port:                  port,
+			Hostname:              userInput.hostname,
+			Addr:                  userInput.ip.String(),
+			Port:                  userInput.port,
 			Rtt:                   rtt,
 			DestIsIP:              &t,
 			Success:               &t,
 			TotalSuccessfulProbes: streak,
 		}
 	)
+	if userInput.showLocalAddress {
+		data.LocalAddr = localAddr
+	}
 
-	if hostname != "" {
+	if userInput.hostname != "" {
 		data.DestIsIP = &f
-		data.Message = fmt.Sprintf("Reply from %s (%s) on port %d time=%.3f",
-			hostname, ip, port, rtt)
+		if userInput.showLocalAddress {
+			data.Message = fmt.Sprintf("Reply from %s (%s) on port %d using %s time=%.3f ms",
+				userInput.hostname, userInput.ip.String(), userInput.port, localAddr, rtt)
+		} else {
+			data.Message = fmt.Sprintf("Reply from %s (%s) on port %d time=%.3f ms",
+				userInput.hostname, userInput.ip.String(), userInput.port, rtt)
+		}
 	} else {
-		data.Message = fmt.Sprintf("Reply from %s on port %d time=%.3f",
-			ip, port, rtt)
+		if userInput.showLocalAddress {
+			data.Message = fmt.Sprintf("Reply from %s on port %d using %s time=%.3f ms",
+				userInput.ip.String(), userInput.port, localAddr, rtt)
+		} else {
+			data.Message = fmt.Sprintf("Reply from %s on port %d time=%.3f ms",
+				userInput.ip.String(), userInput.port, rtt)
+		}
 	}
 
 	p.print(data)
 }
 
-func (p *jsonPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
+func (p *jsonPrinter) printProbeFail(userInput userInput, streak uint) {
 	var (
 		// for *bool fields
 		f    = false
 		t    = true
 		data = JSONData{
 			Type:                    probeEvent,
-			Hostname:                hostname,
-			Addr:                    ip,
-			Port:                    port,
+			Hostname:                userInput.hostname,
+			Addr:                    userInput.ip.String(),
+			Port:                    userInput.port,
 			DestIsIP:                &t,
 			Success:                 &f,
 			TotalUnsuccessfulProbes: streak,
 		}
 	)
 
-	if hostname != "" {
+	if userInput.hostname != "" {
 		data.DestIsIP = &f
 		data.Message = fmt.Sprintf("No reply from %s (%s) on port %d",
-			hostname, ip, port)
+			userInput.hostname, userInput.ip.String(), userInput.port)
 	} else {
 		data.Message = fmt.Sprintf("No reply from %s on port %d",
-			ip, port)
+			userInput.ip.String(), userInput.port)
 	}
 
 	p.print(data)
