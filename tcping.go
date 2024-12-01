@@ -197,9 +197,14 @@ func shutdown(tcping *tcping) {
 	tcping.endTime = time.Now()
 	tcping.printStats()
 
-	// if the printer type is `database`, close the it before exiting
+	// if the printer type is `database`, close it before exiting
 	if db, ok := tcping.printer.(*database); ok {
 		db.conn.Close()
+	}
+
+	// if the printer type is `csvPrinter`, call the cleanup function before exiting
+	if cp, ok := tcping.printer.(*csvPrinter); ok {
+		cp.cleanup()
 	}
 
 	os.Exit(0)
@@ -239,7 +244,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, o
 		tcping.printer = newDB(*outputDb, args)
 	} else if *outputCSV != "" {
 		var err error
-		tcping.printer, err = newCSVPrinter(*outputCSV, args)
+		tcping.printer, err = newCSVPrinter(*outputCSV, *timeStamp)
 		if err != nil {
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
@@ -331,7 +336,7 @@ func processUserInput(tcping *tcping) {
 	outputJSON := flag.Bool("j", false, "output in JSON format.")
 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
-	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file.")
+	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name but _stats appended.")
 	showVer := flag.Bool("v", false, "show version.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -421,6 +426,8 @@ func permuteArgs(args []string) {
 			case "I":
 				fallthrough
 			case "i":
+				fallthrough
+			case "csv":
 				fallthrough
 			case "r":
 				/* out of index */
