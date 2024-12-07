@@ -246,7 +246,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 		tcping.printer = newDB(*outputDb, args)
 	} else if *outputCSV != "" {
 		var err error
-		tcping.printer, err = newCSVPrinter(*outputCSV, *timeStamp)
+		tcping.printer, err = newCSVPrinter(*outputCSV, *timeStamp, tcping.userInput.showLocalAddress)
 		if err != nil {
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
@@ -364,7 +364,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, showTimestamp, outputDB, saveToCSV, args)
+	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, outputDB, saveToCSV, args)
 
 	// Handle -v flag
 	if *showVer {
