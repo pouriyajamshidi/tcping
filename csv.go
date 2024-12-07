@@ -134,7 +134,7 @@ func (cp *csvPrinter) printStart(hostname string, port uint16) {
 
 func (cp *csvPrinter) printProbeSuccess(hostname, ip string, port uint16, streak uint, rtt float32) {
 	record := []string{
-		"Success",
+		"Reply",
 		hostname,
 		ip,
 		fmt.Sprint(port),
@@ -147,14 +147,26 @@ func (cp *csvPrinter) printProbeSuccess(hostname, ip string, port uint16, streak
 	}
 }
 
-func (cp *csvPrinter) printProbeFail(hostname, ip string, port uint16, streak uint) {
-	record := []string{
-		"Failed",
-		hostname,
-		ip,
-		fmt.Sprint(port),
-		fmt.Sprint(streak),
-		"-",
+func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
+	if userInput.hostname == ""{
+		record := []string{
+			"No reply",
+			"-",
+			ip,
+			fmt.Sprint(userInput.port),
+			fmt.Sprint(streak),
+			"-",
+		}
+	}
+	else {
+		record := []string{
+			"No reply",
+			userInput.hostname,
+			userInput.ip,
+			fmt.Sprint(userInput.port),
+			fmt.Sprint(streak),
+			"-",
+		}
 	}
 
 	if err := cp.writeRecord(record); err != nil {
