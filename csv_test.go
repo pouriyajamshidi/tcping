@@ -97,7 +97,6 @@ func TestWriteStatistics(t *testing.T) {
     os.Remove(dataFilename)
     os.Remove(cp.statsFilename)
 }
-
 func TestCleanup(t *testing.T) {
     dataFilename := "test_data.csv"
     showTimestamp := true
@@ -107,17 +106,26 @@ func TestCleanup(t *testing.T) {
     assert.NoError(t, err)
     assert.NotNil(t, cp)
 
-    os.Create(dataFilename)
-    os.Create(cp.statsFilename)
+    // Call printStatistics to ensure the stats file is created
+    tcping := tcping{
+        totalSuccessfulProbes:   1,
+        totalUnsuccessfulProbes: 0,
+        lastSuccessfulProbe:     time.Now(),
+        startTime:               time.Now(),
+    }
+    cp.printStatistics(tcping)
 
+    // Perform cleanup
     cp.cleanup()
 
+    // Verify files are closed and flushed
     _, err = os.Stat(dataFilename)
     assert.NoError(t, err)
 
     _, err = os.Stat(cp.statsFilename)
     assert.NoError(t, err)
 
+    // Cleanup files
     os.Remove(dataFilename)
     os.Remove(cp.statsFilename)
 }
