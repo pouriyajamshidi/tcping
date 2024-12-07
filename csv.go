@@ -148,7 +148,7 @@ func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, s
     record := []string{
         "Reply",
         hostname,
-        userInput.ip,
+        userInput.ip.String(),
         fmt.Sprint(userInput.port),
         fmt.Sprint(streak),
         fmt.Sprintf("%.3f", rtt),
@@ -172,7 +172,7 @@ func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
     record := []string{
         "No reply",
         hostname,
-        userInput.ip,
+        userInput.ip.String(),
         fmt.Sprint(userInput.port),
         fmt.Sprint(streak),
         "-",
