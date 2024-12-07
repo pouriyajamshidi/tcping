@@ -235,7 +235,6 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, timeStamp *bool, outputDb, outputCSV *string, args []string) {
 func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, outputDb *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
