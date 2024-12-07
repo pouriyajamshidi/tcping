@@ -37,20 +37,26 @@ const (
     colLocalAddress = "Local Address"
 )
 
+
+func ensureCSVExtension(filename string) string {
+	if len(filename) > 4 && filename[len(filename)-4:] == ".csv" {
+		return filename
+	}
+	return filename + ".csv"
+}
+
 func newCSVPrinter(dataFilename string, showTimestamp bool, showLocalAddress bool) (*csvPrinter, error) {
+    // Ensure .csv extension for dataFilename
+    dataFilename = ensureCSVExtension(dataFilename)
+
     // Open the data file with the os.O_TRUNC flag to truncate it
     file, err := os.OpenFile(dataFilename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
     if err != nil {
         return nil, fmt.Errorf("error creating data CSV file: %w", err)
     }
 
-    // Append _stats before the .csv extension
-    statsFilename := dataFilename
-    if len(dataFilename) > 4 && dataFilename[len(dataFilename)-4:] == ".csv" {
-        statsFilename = dataFilename[:len(dataFilename)-4] + "_stats.csv"
-    } else {
-        statsFilename = dataFilename + "_stats"
-    }
+    // Append _stats before the .csv extension for statsFilename
+    statsFilename := dataFilename[:len(dataFilename)-4] + "_stats.csv"
 
     cp := &csvPrinter{
         writer:           csv.NewWriter(file),
@@ -78,6 +84,7 @@ func newCSVPrinter(dataFilename string, showTimestamp bool, showLocalAddress boo
 
     return cp, nil
 }
+
 
 func (cp *csvPrinter) writeHeader() error {
     headers := []string{
