@@ -14,7 +14,7 @@ func TestNewCSVPrinter(t *testing.T) {
     showTimestamp := true
     showLocalAddress := true
 
-    cp, err := newCSVPrinter(dataFilename, showTimestamp, showLocalAddress)
+    cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
     assert.NoError(t, err)
     assert.NotNil(t, cp)
     assert.Equal(t, dataFilename, cp.dataFilename)
@@ -30,7 +30,7 @@ func TestWriteRecord(t *testing.T) {
     showTimestamp := false
     showLocalAddress := true
 
-    cp, err := newCSVPrinter(dataFilename, showTimestamp, showLocalAddress)
+    cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
     assert.NoError(t, err)
     assert.NotNil(t, cp)
 
@@ -63,7 +63,7 @@ func TestWriteStatistics(t *testing.T) {
     showTimestamp := true
     showLocalAddress := false
 
-    cp, err := newCSVPrinter(dataFilename, showTimestamp, showLocalAddress)
+    cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
     assert.NoError(t, err)
     assert.NotNil(t, cp)
 
@@ -97,12 +97,13 @@ func TestWriteStatistics(t *testing.T) {
     os.Remove(dataFilename)
     os.Remove(cp.statsFilename)
 }
+
 func TestCleanup(t *testing.T) {
     dataFilename := "test_data.csv"
     showTimestamp := true
     showLocalAddress := false
 
-    cp, err := newCSVPrinter(dataFilename, showTimestamp, showLocalAddress)
+    cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
     assert.NoError(t, err)
     assert.NotNil(t, cp)
 
