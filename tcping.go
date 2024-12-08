@@ -14,7 +14,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"fmt"
 	"github.com/google/go-github/v45/github"
 )
 

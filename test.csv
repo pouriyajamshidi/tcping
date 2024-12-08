@@ -1,3 +1,0 @@
-Status,Hostname,IP,Port,TCP_Conn,Latency(ms),Local Address,Timestamp
-Reply,google.com,142.250.183.46,80,1,26.628,192.168.1.11:49985,2024-12-08 11:52:13
-Reply,google.com,142.250.183.46,80,2,34.806,192.168.1.11:49986,2024-12-08 11:52:14
