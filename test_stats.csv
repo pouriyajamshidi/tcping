@@ -1,44 +1,16 @@
 Metric,Value
-Timestamp,2024-12-07T23:55:00+05:30
-Total Packets,3
-Successful Probes,3
+Timestamp,2024-12-08T11:52:14+05:30
+Total Packets,2
+Successful Probes,2
 Unsuccessful Probes,0
 Packet Loss,0.00%
-Last Successful Probe,2024-12-07 23:54:59
+Last Successful Probe,2024-12-08 11:52:14
 Last Unsuccessful Probe,0001-01-01 00:00:00
-Total Uptime,3 seconds
+Total Uptime,2 seconds
 Total Downtime,0 second
-Longest Uptime,3 seconds,From,2024-12-07 23:54:57,To,2024-12-07 23:55:00
+Longest Uptime,2 seconds,From,2024-12-08 11:52:13,To,2024-12-08 11:52:14
 Retried Hostname Lookups,0
-RTT Min,306.725 ms,RTT Avg,330.498 ms,RTT Max,354.380 ms
-TCPing Started At,2024-12-07 23:54:57
-Duration (HH:MM:SS),00:00:03
-Timestamp,2024-12-07T23:55:10+05:30
-Total Packets,13
-Successful Probes,13
-Unsuccessful Probes,0
-Packet Loss,0.00%
-Last Successful Probe,2024-12-07 23:55:09
-Last Unsuccessful Probe,0001-01-01 00:00:00
-Total Uptime,13 seconds
-Total Downtime,0 second
-Longest Uptime,13 seconds,From,2024-12-07 23:54:57,To,2024-12-07 23:55:10
-Retried Hostname Lookups,0
-RTT Min,278.473 ms,RTT Avg,321.766 ms,RTT Max,402.546 ms
-TCPing Started At,2024-12-07 23:54:57
-Duration (HH:MM:SS),00:00:13
-Timestamp,2024-12-07T23:55:35+05:30
-Total Packets,38
-Successful Probes,38
-Unsuccessful Probes,0
-Packet Loss,0.00%
-Last Successful Probe,2024-12-07 23:55:34
-Last Unsuccessful Probe,0001-01-01 00:00:00
-Total Uptime,38 seconds
-Total Downtime,0 second
-Longest Uptime,38 seconds,From,2024-12-07 23:54:57,To,2024-12-07 23:55:35
-Retried Hostname Lookups,0
-RTT Min,278.473 ms,RTT Avg,318.379 ms,RTT Max,402.546 ms
-TCPing Started At,2024-12-07 23:54:57
-TCPing Ended At,2024-12-07 23:55:35
-Duration (HH:MM:SS),00:00:38
+RTT Min,26.628 ms,RTT Avg,30.717 ms,RTT Max,34.806 ms
+TCPing Started At,2024-12-08 11:52:13
+TCPing Ended At,2024-12-08 11:52:14
+Duration (HH:MM:SS),00:00:02

@@ -13,8 +13,8 @@ type csvPrinter struct {
     file             *os.File
     dataFilename     string
     headerDone       bool
-    showTimestamp    bool
-    showLocalAddress bool
+    showTimestamp    *bool
+    showLocalAddress *bool
     statsWriter      *csv.Writer
     statsFile        *os.File
     statsFilename    string
@@ -22,9 +22,6 @@ type csvPrinter struct {
     cleanup          func()
 }
 
-const (
-    csvTimeFormat = "2006-01-02 15:04:05.000"
-)
 
 const (
     colStatus       = "Status"
@@ -45,7 +42,7 @@ func ensureCSVExtension(filename string) string {
 	return filename + ".csv"
 }
 
-func newCSVPrinter(dataFilename string, showTimestamp bool, showLocalAddress bool) (*csvPrinter, error) {
+func newCSVPrinter(dataFilename string, showTimestamp *bool, showLocalAddress *bool) (*csvPrinter, error) {
     // Ensure .csv extension for dataFilename
     dataFilename = ensureCSVExtension(dataFilename)
 
@@ -57,7 +54,6 @@ func newCSVPrinter(dataFilename string, showTimestamp bool, showLocalAddress boo
 
     // Append _stats before the .csv extension for statsFilename
     statsFilename := dataFilename[:len(dataFilename)-4] + "_stats.csv"
-
     cp := &csvPrinter{
         writer:           csv.NewWriter(file),
         file:             file,
@@ -96,11 +92,11 @@ func (cp *csvPrinter) writeHeader() error {
         colLatency,
     }
 
-    if cp.showLocalAddress {
+    if *cp.showLocalAddress {
         headers = append(headers, colLocalAddress)
     }
 
-    if cp.showTimestamp {
+    if *cp.showTimestamp {
         headers = append(headers, colTimestamp)
     }
 
@@ -130,8 +126,8 @@ func (cp *csvPrinter) writeRecord(record []string) error {
         cp.headerDone = true
     }
 
-    if cp.showTimestamp {
-        record = append(record, time.Now().Format(csvTimeFormat))
+    if *cp.showTimestamp {
+        record = append(record, time.Now().Format(timeFormat))
     }
 
     if err := cp.writer.Write(record); err != nil {
@@ -161,7 +157,7 @@ func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, s
         fmt.Sprintf("%.3f", rtt),
     }
 
-    if cp.showLocalAddress {
+    if *cp.showLocalAddress {
         record = append(record, localAddr)
     }
 

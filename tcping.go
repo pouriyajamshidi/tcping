@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
+	"fmt"
 	"github.com/google/go-github/v45/github"
 )
 
@@ -235,7 +235,7 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, outputDb *string, outputCSV *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, localAddress *bool, outputDb *string, outputCSV *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
@@ -246,7 +246,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 		tcping.printer = newDB(*outputDb, args)
 	} else if *outputCSV != "" {
 		var err error
-		tcping.printer, err = newCSVPrinter(*outputCSV, *timeStamp, tcping.userInput.showLocalAddress)
+		tcping.printer, err = newCSVPrinter(*outputCSV, timeStamp, localAddress)
 		if err != nil {
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
@@ -354,6 +354,7 @@ func processUserInput(tcping *tcping) {
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
 
+
 	flag.CommandLine.Usage = usage
 
 	permuteArgs(os.Args[1:])
@@ -364,7 +365,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, outputDB, saveToCSV, args)
+	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showLocalAddress, outputDB, saveToCSV, args)
 
 	// Handle -v flag
 	if *showVer {
