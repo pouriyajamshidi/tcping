@@ -250,7 +250,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
 		}
-	} else if *noColor == true {
+	} else if *noColor {
 		tcping.printer = newPlanePrinter(timeStamp)
 	} else {
 		tcping.printer = newColorPrinter(timeStamp)
