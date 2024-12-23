@@ -14,7 +14,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
 	"github.com/google/go-github/v45/github"
 )
 
@@ -199,9 +198,14 @@ func shutdown(tcping *tcping) {
 	tcping.endTime = time.Now()
 	tcping.printStats()
 
-	// if the printer type is `database`, close the it before exiting
+	// if the printer type is `database`, close it before exiting
 	if db, ok := tcping.printer.(*database); ok {
 		db.conn.Close()
+	}
+
+	// if the printer type is `csvPrinter`, call the cleanup function before exiting
+	if cp, ok := tcping.printer.(*csvPrinter); ok {
+		cp.cleanup()
 	}
 
 	os.Exit(0)
@@ -230,7 +234,7 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, outputDb *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, localAddress *bool, outputDb *string, outputCSV *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
@@ -239,7 +243,14 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 		tcping.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
 		tcping.printer = newDB(*outputDb, args)
-	} else if *noColor == true {
+	} else if *outputCSV != "" {
+		var err error
+		tcping.printer, err = newCSVPrinter(*outputCSV, timeStamp, localAddress)
+		if err != nil {
+			tcping.printError("Failed to create CSV file: %s", err)
+			os.Exit(1)
+		}
+	} else if *noColor {
 		tcping.printer = newPlanePrinter(timeStamp)
 	} else {
 		tcping.printer = newColorPrinter(timeStamp)
@@ -331,6 +342,7 @@ func processUserInput(tcping *tcping) {
 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	noColor := flag.Bool("no-color", false, "do not colorize output.")
 	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
+	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name but _stats appended.")
 	showVer := flag.Bool("v", false, "show version.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -340,6 +352,7 @@ func processUserInput(tcping *tcping) {
 	showLocalAddress := flag.Bool("show-local-address", false, "Show source address and port used for probe.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
+
 
 	flag.CommandLine.Usage = usage
 
@@ -351,7 +364,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, outputDB, args)
+	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showLocalAddress, outputDB, saveToCSV, args)
 
 	// Handle -v flag
 	if *showVer {
@@ -422,6 +435,8 @@ func permuteArgs(args []string) {
 			case "I":
 				fallthrough
 			case "i":
+				fallthrough
+			case "csv":
 				fallthrough
 			case "r":
 				/* out of index */
