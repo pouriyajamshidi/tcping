@@ -175,7 +175,11 @@ func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
 		userInput.ip.String(),
 		fmt.Sprint(userInput.port),
 		fmt.Sprint(streak),
-		"-",
+		"",
+	}
+
+	if *cp.showLocalAddress {
+		record = append(record, "")
 	}
 
 	if err := cp.writeRecord(record); err != nil {
@@ -203,7 +207,7 @@ func (cp *csvPrinter) printError(format string, args ...any) {
 }
 
 func (cp *csvPrinter) writeStatsHeader() error {
-    
+
 	headers := []string{
 		"Metric",
 		"Value",
