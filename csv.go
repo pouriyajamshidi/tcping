@@ -162,9 +162,6 @@ func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, s
 
 func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
 	hostname := userInput.hostname
-	if hostname == "" {
-		hostname = ""
-	}
 
 	record := []string{
 		"No reply",
