@@ -141,9 +141,6 @@ func (cp *csvPrinter) printStart(hostname string, port uint16) {
 
 func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	hostname := userInput.hostname
-	if hostname == "" {
-		hostname = ""
-	}
 
 	record := []string{
 		"Reply",
