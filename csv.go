@@ -142,7 +142,7 @@ func (cp *csvPrinter) printStart(hostname string, port uint16) {
 func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
 	hostname := userInput.hostname
 	if hostname == "" {
-		hostname = "-"
+		hostname = ""
 	}
 
 	record := []string{
@@ -166,7 +166,7 @@ func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, s
 func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
 	hostname := userInput.hostname
 	if hostname == "" {
-		hostname = "-"
+		hostname = ""
 	}
 
 	record := []string{
@@ -191,10 +191,10 @@ func (cp *csvPrinter) printRetryingToResolve(hostname string) {
 	record := []string{
 		"Resolving",
 		hostname,
-		"-",
-		"-",
-		"-",
-		"-",
+		"",
+		"",
+		"",
+		"",
 	}
 
 	if err := cp.writeRecord(record); err != nil {
