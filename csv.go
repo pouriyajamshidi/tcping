@@ -143,7 +143,7 @@ func (cp *csvPrinter) writeRecord(record []string) error {
 }
 
 func (cp *csvPrinter) printStart(hostname string, port uint16) {
-	fmt.Printf("TCPing results being written to: %s\n", cp.probeFilename)
+	fmt.Printf("TCPing results for %s on port %d being written to: %s\n", hostname, port, cp.probeFilename)
 }
 
 func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
