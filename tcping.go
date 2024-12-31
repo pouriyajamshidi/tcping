@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
 	"github.com/google/go-github/v45/github"
 )
 
@@ -239,6 +240,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
+
 	if *outputJSON {
 		tcping.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
