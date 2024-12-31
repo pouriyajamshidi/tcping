@@ -5,20 +5,21 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 )
 
 type csvPrinter struct {
-	writer           *csv.Writer
-	file             *os.File
-	dataFilename     string
-	headerDone       bool
-	showTimestamp    *bool
-	showLocalAddress *bool
+	probeWriter      *csv.Writer
 	statsWriter      *csv.Writer
+	probeFile        *os.File
 	statsFile        *os.File
 	statsFilename    string
+	probeFilename    string
+	headerDone       bool
 	statsHeaderDone  bool
+	showTimestamp    *bool
+	showLocalAddress *bool
 	cleanup          func()
 }
 
@@ -33,40 +34,44 @@ const (
 	colLocalAddress = "Local Address"
 )
 
-func ensureCSVExtension(filename string) string {
-	if len(filename) > 4 && filename[len(filename)-4:] == ".csv" {
+const (
+	filePermission os.FileMode = 0644
+)
+
+func addCSVExtension(filename string, withStats bool) string {
+	if withStats {
+		return strings.Split(filename, ".")[0] + "_stats.csv"
+	}
+	if strings.HasSuffix(filename, ".csv") {
 		return filename
 	}
 	return filename + ".csv"
 }
 
-func newCSVPrinter(dataFilename string, showTimestamp *bool, showLocalAddress *bool) (*csvPrinter, error) {
-	// Ensure .csv extension for dataFilename
-	dataFilename = ensureCSVExtension(dataFilename)
+func newCSVPrinter(filename string, showTimestamp *bool, showLocalAddress *bool) (*csvPrinter, error) {
+	filename = addCSVExtension(filename, false)
 
-	// Open the data file with the os.O_TRUNC flag to truncate it
-	file, err := os.OpenFile(dataFilename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermission)
 	if err != nil {
 		return nil, fmt.Errorf("error creating data CSV file: %w", err)
 	}
 
-	// Append _stats before the .csv extension for statsFilename
-	statsFilename := dataFilename[:len(dataFilename)-4] + "_stats.csv"
+	statsFilename := addCSVExtension(filename, true)
 	cp := &csvPrinter{
-		writer:           csv.NewWriter(file),
-		file:             file,
-		dataFilename:     dataFilename,
+		probeWriter:      csv.NewWriter(file),
+		probeFile:        file,
+		probeFilename:    filename,
 		statsFilename:    statsFilename,
 		showTimestamp:    showTimestamp,
 		showLocalAddress: showLocalAddress,
 	}
 
 	cp.cleanup = func() {
-		if cp.writer != nil {
-			cp.writer.Flush()
+		if cp.probeWriter != nil {
+			cp.probeWriter.Flush()
 		}
-		if cp.file != nil {
-			cp.file.Close()
+		if cp.probeFile != nil {
+			cp.probeFile.Close()
 		}
 		if cp.statsWriter != nil {
 			cp.statsWriter.Flush()
@@ -97,22 +102,23 @@ func (cp *csvPrinter) writeHeader() error {
 		headers = append(headers, colTimestamp)
 	}
 
-	if err := cp.writer.Write(headers); err != nil {
+	if err := cp.probeWriter.Write(headers); err != nil {
 		return fmt.Errorf("failed to write headers: %w", err)
 	}
 
-	cp.writer.Flush()
-	return cp.writer.Error()
+	cp.probeWriter.Flush()
+
+	return cp.probeWriter.Error()
 }
 
 func (cp *csvPrinter) writeRecord(record []string) error {
-	if _, err := os.Stat(cp.dataFilename); os.IsNotExist(err) {
-		file, err := os.OpenFile(cp.dataFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if _, err := os.Stat(cp.probeFilename); os.IsNotExist(err) {
+		file, err := os.OpenFile(cp.probeFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermission)
 		if err != nil {
 			return fmt.Errorf("failed to recreate data CSV file: %w", err)
 		}
-		cp.file = file
-		cp.writer = csv.NewWriter(file)
+		cp.probeFile = file
+		cp.probeWriter = csv.NewWriter(file)
 		cp.headerDone = false
 	}
 
@@ -127,24 +133,23 @@ func (cp *csvPrinter) writeRecord(record []string) error {
 		record = append(record, time.Now().Format(timeFormat))
 	}
 
-	if err := cp.writer.Write(record); err != nil {
+	if err := cp.probeWriter.Write(record); err != nil {
 		return fmt.Errorf("failed to write record: %w", err)
 	}
 
-	cp.writer.Flush()
-	return cp.writer.Error()
+	cp.probeWriter.Flush()
+
+	return cp.probeWriter.Error()
 }
 
 func (cp *csvPrinter) printStart(hostname string, port uint16) {
-	fmt.Printf("TCPing results being written to: %s\n", cp.dataFilename)
+	fmt.Printf("TCPing results for %s on port %d being written to: %s\n", hostname, port, cp.probeFilename)
 }
 
 func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
-	hostname := userInput.hostname
-
 	record := []string{
 		"Reply",
-		hostname,
+		userInput.hostname,
 		userInput.ip.String(),
 		fmt.Sprint(userInput.port),
 		fmt.Sprint(streak),
@@ -156,16 +161,14 @@ func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, s
 	}
 
 	if err := cp.writeRecord(record); err != nil {
-		cp.printError("Failed to write success record: %v", err)
+		cp.printError("failed to write success record: %v", err)
 	}
 }
 
 func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
-	hostname := userInput.hostname
-
 	record := []string{
 		"No reply",
-		hostname,
+		userInput.hostname,
 		userInput.ip.String(),
 		fmt.Sprint(userInput.port),
 		fmt.Sprint(streak),
@@ -177,7 +180,7 @@ func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
 	}
 
 	if err := cp.writeRecord(record); err != nil {
-		cp.printError("Failed to write failure record: %v", err)
+		cp.printError("failed to write failure record: %v", err)
 	}
 }
 
@@ -192,7 +195,7 @@ func (cp *csvPrinter) printRetryingToResolve(hostname string) {
 	}
 
 	if err := cp.writeRecord(record); err != nil {
-		cp.printError("Failed to write resolve record: %v", err)
+		cp.printError("failed to write resolve record: %v", err)
 	}
 }
 
@@ -212,12 +215,13 @@ func (cp *csvPrinter) writeStatsHeader() error {
 	}
 
 	cp.statsWriter.Flush()
+
 	return cp.statsWriter.Error()
 }
 
 func (cp *csvPrinter) writeStatsRecord(record []string) error {
 	if _, err := os.Stat(cp.statsFilename); os.IsNotExist(err) {
-		statsFile, err := os.OpenFile(cp.statsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		statsFile, err := os.OpenFile(cp.statsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermission)
 		if err != nil {
 			return fmt.Errorf("failed to recreate statistics CSV file: %w", err)
 		}
@@ -226,7 +230,6 @@ func (cp *csvPrinter) writeStatsRecord(record []string) error {
 		cp.statsHeaderDone = false
 	}
 
-	// Write header if not done
 	if !cp.statsHeaderDone {
 		if err := cp.writeStatsHeader(); err != nil {
 			return err
@@ -239,15 +242,15 @@ func (cp *csvPrinter) writeStatsRecord(record []string) error {
 	}
 
 	cp.statsWriter.Flush()
+
 	return cp.statsWriter.Error()
 }
 
 func (cp *csvPrinter) printStatistics(t tcping) {
-	// Initialize stats file if not already done
 	if cp.statsFile == nil {
-		statsFile, err := os.OpenFile(cp.statsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_TRUNC, 0644)
+		statsFile, err := os.OpenFile(cp.statsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_TRUNC, filePermission)
 		if err != nil {
-			cp.printError("Failed to create statistics CSV file: %v", err)
+			cp.printError("failed to create statistics CSV file: %v", err)
 			return
 		}
 		cp.statsFile = statsFile
@@ -262,7 +265,7 @@ func (cp *csvPrinter) printStatistics(t tcping) {
 	}
 
 	// Collect statistics data
-	timestamp := time.Now().Format(time.RFC3339)
+	timestamp := time.Now().Format(timeFormat)
 	statistics := [][]string{
 		{"Timestamp", timestamp},
 		{"Total Packets", fmt.Sprint(totalPackets)},
@@ -333,15 +336,13 @@ func (cp *csvPrinter) printStatistics(t tcping) {
 	durationTime := time.Time{}.Add(t.totalDowntime + t.totalUptime)
 	statistics = append(statistics, []string{"Duration (HH:MM:SS)", durationTime.Format(hourFormat)})
 
-	// Write statistics to CSV
 	for _, record := range statistics {
 		if err := cp.writeStatsRecord(record); err != nil {
-			cp.printError("Failed to write statistics record: %v", err)
+			cp.printError("failed to write statistics record: %v", err)
 			return
 		}
 	}
 
-	// Print the message only if statistics are written
 	fmt.Printf("TCPing statistics written to: %s\n", cp.statsFilename)
 }
 

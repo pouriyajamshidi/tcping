@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
 	"github.com/google/go-github/v45/github"
 )
 
@@ -239,6 +240,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
+
 	if *outputJSON {
 		tcping.printer = newJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
@@ -352,7 +354,6 @@ func processUserInput(tcping *tcping) {
 	showLocalAddress := flag.Bool("show-local-address", false, "Show source address and port used for probe.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
-
 
 	flag.CommandLine.Usage = usage
 
