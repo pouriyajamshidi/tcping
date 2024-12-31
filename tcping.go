@@ -355,7 +355,6 @@ func processUserInput(tcping *tcping) {
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
 
-
 	flag.CommandLine.Usage = usage
 
 	permuteArgs(os.Args[1:])
