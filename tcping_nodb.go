@@ -1,4 +1,4 @@
-//go:build database
+//go:build !database
 
 package main
 
@@ -201,11 +201,6 @@ func shutdown(tcping *tcping) {
 	tcping.endTime = time.Now()
 	tcping.printStats()
 
-	// if the printer type is `database`, close it before exiting
-	if db, ok := tcping.printer.(*database); ok {
-		db.conn.Close()
-	}
-
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting
 	if cp, ok := tcping.printer.(*csvPrinter); ok {
 		cp.cleanup()
@@ -237,15 +232,13 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, localAddress *bool, outputDb *string, outputCSV *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, localAddress *bool, outputCSV *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
 	if *outputJSON {
 		tcping.printer = newJSONPrinter(*prettyJSON)
-	} else if *outputDb != "" {
-		tcping.printer = newDB(*outputDb, args)
 	} else if *outputCSV != "" {
 		var err error
 		tcping.printer, err = newCSVPrinter(*outputCSV, timeStamp, localAddress)
@@ -350,7 +343,6 @@ func processUserInput(tcping *tcping) {
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address.")
 	showLocalAddress := flag.Bool("show-local-address", false, "Show source address and port used for probe.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
@@ -366,7 +358,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showLocalAddress, outputDB, saveToCSV, args)
+	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showLocalAddress, saveToCSV, args)
 
 	// Handle -v flag
 	if *showVer {
@@ -431,8 +423,6 @@ func permuteArgs(args []string) {
 			case "c":
 				fallthrough
 			case "t":
-				fallthrough
-			case "db":
 				fallthrough
 			case "I":
 				fallthrough
