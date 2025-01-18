@@ -28,7 +28,7 @@ CREATE TABLE %s (
     event_type TEXT NOT NULL, -- for the data type eg. statistics, hostname change
     timestamp DATETIME,
     addr TEXT,
-    localAddr TEXT,
+    sourceAddr TEXT,
     hostname TEXT,
     port INTEGER,
     hostname_resolve_retries INTEGER,
@@ -71,7 +71,7 @@ CREATE TABLE %s (
 	event_type,
 	timestamp,
 	addr,
-	localAddr,
+	sourceAddr,
 	hostname,
 	port,
 	hostname_resolve_retries,
@@ -181,14 +181,14 @@ func (db *database) saveStats(tcping tcping) error {
 		totalDuration = tcping.endTime.Sub(tcping.startTime).String()
 	}
 
-	// TODO: Find a clean way to include local address
+	// TODO: Find a clean way to include source address
 	// other printers utilize printProbeSuccess which takes the net.Conn
 	// whereas DB is having its own way
 	args := []interface{}{
 		eventTypeStatistics,
 		time.Now().Format(timeFormat),
 		tcping.userInput.ip.String(),
-		"local address",
+		"source address",
 		tcping.userInput.hostname,
 		tcping.userInput.port,
 		tcping.retriedHostnameLookups,
