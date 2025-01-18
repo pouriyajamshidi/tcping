@@ -10,28 +10,28 @@ import (
 )
 
 type csvPrinter struct {
-	probeWriter      *csv.Writer
-	statsWriter      *csv.Writer
-	probeFile        *os.File
-	statsFile        *os.File
-	statsFilename    string
-	probeFilename    string
-	headerDone       bool
-	statsHeaderDone  bool
-	showTimestamp    *bool
-	showLocalAddress *bool
-	cleanup          func()
+	probeWriter       *csv.Writer
+	statsWriter       *csv.Writer
+	probeFile         *os.File
+	statsFile         *os.File
+	statsFilename     string
+	probeFilename     string
+	headerDone        bool
+	statsHeaderDone   bool
+	showTimestamp     *bool
+	showSourceAddress *bool
+	cleanup           func()
 }
 
 const (
-	colStatus       = "Status"
-	colTimestamp    = "Timestamp"
-	colHostname     = "Hostname"
-	colIP           = "IP"
-	colPort         = "Port"
-	colTCPConn      = "TCP_Conn"
-	colLatency      = "Latency(ms)"
-	colLocalAddress = "Local Address"
+	colStatus        = "Status"
+	colTimestamp     = "Timestamp"
+	colHostname      = "Hostname"
+	colIP            = "IP"
+	colPort          = "Port"
+	colTCPConn       = "TCP_Conn"
+	colLatency       = "Latency(ms)"
+	colSourceAddress = "Source Address"
 )
 
 const (
@@ -48,7 +48,7 @@ func addCSVExtension(filename string, withStats bool) string {
 	return filename + ".csv"
 }
 
-func newCSVPrinter(filename string, showTimestamp *bool, showLocalAddress *bool) (*csvPrinter, error) {
+func newCSVPrinter(filename string, showTimestamp *bool, showSourceAddress *bool) (*csvPrinter, error) {
 	filename = addCSVExtension(filename, false)
 
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermission)
@@ -58,12 +58,12 @@ func newCSVPrinter(filename string, showTimestamp *bool, showLocalAddress *bool)
 
 	statsFilename := addCSVExtension(filename, true)
 	cp := &csvPrinter{
-		probeWriter:      csv.NewWriter(file),
-		probeFile:        file,
-		probeFilename:    filename,
-		statsFilename:    statsFilename,
-		showTimestamp:    showTimestamp,
-		showLocalAddress: showLocalAddress,
+		probeWriter:       csv.NewWriter(file),
+		probeFile:         file,
+		probeFilename:     filename,
+		statsFilename:     statsFilename,
+		showTimestamp:     showTimestamp,
+		showSourceAddress: showSourceAddress,
 	}
 
 	cp.cleanup = func() {
@@ -94,8 +94,8 @@ func (cp *csvPrinter) writeHeader() error {
 		colLatency,
 	}
 
-	if *cp.showLocalAddress {
-		headers = append(headers, colLocalAddress)
+	if *cp.showSourceAddress {
+		headers = append(headers, colSourceAddress)
 	}
 
 	if *cp.showTimestamp {
@@ -146,7 +146,7 @@ func (cp *csvPrinter) printStart(hostname string, port uint16) {
 	fmt.Printf("TCPing results for %s on port %d being written to: %s\n", hostname, port, cp.probeFilename)
 }
 
-func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32) {
+func (cp *csvPrinter) printProbeSuccess(sourceAddr string, userInput userInput, streak uint, rtt float32) {
 	record := []string{
 		"Reply",
 		userInput.hostname,
@@ -156,8 +156,8 @@ func (cp *csvPrinter) printProbeSuccess(localAddr string, userInput userInput, s
 		fmt.Sprintf("%.3f", rtt),
 	}
 
-	if *cp.showLocalAddress {
-		record = append(record, localAddr)
+	if *cp.showSourceAddress {
+		record = append(record, sourceAddr)
 	}
 
 	if err := cp.writeRecord(record); err != nil {
@@ -175,7 +175,7 @@ func (cp *csvPrinter) printProbeFail(userInput userInput, streak uint) {
 		"",
 	}
 
-	if *cp.showLocalAddress {
+	if *cp.showSourceAddress {
 		record = append(record, "")
 	}
 
@@ -347,6 +347,6 @@ func (cp *csvPrinter) printStatistics(t tcping) {
 }
 
 // Satisfying remaining printer interface methods
-func (cp *csvPrinter) printTotalDownTime(downtime time.Duration) {}
-func (cp *csvPrinter) printVersion()                             {}
-func (cp *csvPrinter) printInfo(format string, args ...any)      {}
+func (cp *csvPrinter) printTotalDownTime(_ time.Duration) {}
+func (cp *csvPrinter) printVersion()                      {}
+func (cp *csvPrinter) printInfo(_ string, _ ...any)       {}

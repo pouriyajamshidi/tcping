@@ -12,9 +12,9 @@ import (
 func TestNewCSVPrinter(t *testing.T) {
 	dataFilename := "test_data.csv"
 	showTimestamp := true
-	showLocalAddress := true
+	showSourceAddress := true
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
+	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 	assert.Equal(t, dataFilename, cp.probeFilename)
@@ -28,13 +28,13 @@ func TestNewCSVPrinter(t *testing.T) {
 func TestWriteRecord(t *testing.T) {
 	dataFilename := "test_data.csv"
 	showTimestamp := false
-	showLocalAddress := true
+	showSourceAddress := true
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
+	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
-	record := []string{"Success", "hostname", "127.0.0.1", "80", "1", "10.123", "localAddr"}
+	record := []string{"Success", "hostname", "127.0.0.1", "80", "1", "10.123", "sourceAddr"}
 	err = cp.writeRecord(record)
 	assert.NoError(t, err)
 
@@ -46,7 +46,7 @@ func TestWriteRecord(t *testing.T) {
 	reader := csv.NewReader(file)
 	headers, err := reader.Read()
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"Status", "Hostname", "IP", "Port", "TCP_Conn", "Latency(ms)", "Local Address"}, headers)
+	assert.Equal(t, []string{"Status", "Hostname", "IP", "Port", "TCP_Conn", "Latency(ms)", "Source Address"}, headers)
 
 	readRecord, err := reader.Read()
 	assert.NoError(t, err)
@@ -61,9 +61,9 @@ func TestWriteRecord(t *testing.T) {
 func TestWriteStatistics(t *testing.T) {
 	dataFilename := "test_data.csv"
 	showTimestamp := true
-	showLocalAddress := false
+	showSourceAddress := false
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
+	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
@@ -101,9 +101,9 @@ func TestWriteStatistics(t *testing.T) {
 func TestCleanup(t *testing.T) {
 	dataFilename := "test_data.csv"
 	showTimestamp := true
-	showLocalAddress := false
+	showSourceAddress := false
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showLocalAddress)
+	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
