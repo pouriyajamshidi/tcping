@@ -100,60 +100,60 @@ func TestDurationToString(t *testing.T) {
 }
 
 func getProbeSuccessTests() []struct {
-	name             string
-	showTimestamp    bool
-	useHostname      bool
-	showLocalAddress bool
-	expectedOutput   string
+	name              string
+	showTimestamp     bool
+	useHostname       bool
+	showSourceAddress bool
+	expectedOutput    string
 } {
 	return []struct {
-		name             string
-		showTimestamp    bool
-		useHostname      bool
-		showLocalAddress bool
-		expectedOutput   string
+		name              string
+		showTimestamp     bool
+		useHostname       bool
+		showSourceAddress bool
+		expectedOutput    string
 	}{
 		{
-			name:             "With hostname, no timestamp",
-			showTimestamp:    false,
-			useHostname:      true,
-			showLocalAddress: false,
-			expectedOutput:   "Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+			name:              "With hostname, no timestamp",
+			showTimestamp:     false,
+			useHostname:       true,
+			showSourceAddress: false,
+			expectedOutput:    "Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:             "With hostname, with timestamp",
-			showTimestamp:    true,
-			useHostname:      true,
-			showLocalAddress: false,
-			expectedOutput:   "%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+			name:              "With hostname, with timestamp",
+			showTimestamp:     true,
+			useHostname:       true,
+			showSourceAddress: false,
+			expectedOutput:    "%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:             "Without hostname, with timestamp",
-			showTimestamp:    true,
-			useHostname:      false,
-			showLocalAddress: false,
-			expectedOutput:   "%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			name:              "Without hostname, with timestamp",
+			showTimestamp:     true,
+			useHostname:       false,
+			showSourceAddress: false,
+			expectedOutput:    "%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:             "Without hostname, no timestamp",
-			showTimestamp:    false,
-			useHostname:      false,
-			showLocalAddress: false,
-			expectedOutput:   "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			name:              "Without hostname, no timestamp",
+			showTimestamp:     false,
+			useHostname:       false,
+			showSourceAddress: false,
+			expectedOutput:    "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:             "Without hostname, no timestamp, with show local address",
-			showTimestamp:    false,
-			useHostname:      false,
-			showLocalAddress: true,
-			expectedOutput:   "Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+			name:              "Without hostname, no timestamp, with show source address",
+			showTimestamp:     false,
+			useHostname:       false,
+			showSourceAddress: true,
+			expectedOutput:    "Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
 		},
 		{
-			name:             "With hostname, no timestamp, with show local address",
-			showTimestamp:    false,
-			useHostname:      true,
-			showLocalAddress: true,
-			expectedOutput:   "Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+			name:              "With hostname, no timestamp, with show source address",
+			showTimestamp:     false,
+			useHostname:       true,
+			showSourceAddress: true,
+			expectedOutput:    "Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
 		},
 	}
 }
@@ -164,7 +164,7 @@ func TestPrintProbeSuccess(t *testing.T) {
 	stats.userInput.hostname = "example.com"
 	streak := uint(5)
 	rtt := float32(15.123)
-	localAddr := "127.0.0.1:4567"
+	sourceAddr := "127.0.0.1:4567"
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -179,11 +179,11 @@ func TestPrintProbeSuccess(t *testing.T) {
 				stats.userInput.hostname = "example.com"
 			}
 
-			if tc.showLocalAddress {
-				stats.userInput.showLocalAddress = true
+			if tc.showSourceAddress {
+				stats.userInput.showSourceAddress = true
 			}
 
-			pp.printProbeSuccess(localAddr, stats.userInput, streak, rtt)
+			pp.printProbeSuccess(sourceAddr, stats.userInput, streak, rtt)
 
 			write.Close()
 
@@ -197,20 +197,20 @@ func TestPrintProbeSuccess(t *testing.T) {
 			var expected string
 			if tc.showTimestamp {
 				timestamp := time.Now().Format("2006-01-02 15:04:05")
-				if tc.showLocalAddress && tc.useHostname {
-					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
-				} else if tc.showLocalAddress {
-					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
+				if tc.showSourceAddress && tc.useHostname {
+					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, sourceAddr, streak, rtt)
+				} else if tc.showSourceAddress {
+					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, sourceAddr, streak, rtt)
 				} else if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				}
 			} else {
-				if tc.showLocalAddress && tc.useHostname {
-					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
-				} else if tc.showLocalAddress {
-					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.ip, stats.userInput.port, localAddr, streak, rtt)
+				if tc.showSourceAddress && tc.useHostname {
+					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, sourceAddr, streak, rtt)
+				} else if tc.showSourceAddress {
+					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.ip, stats.userInput.port, sourceAddr, streak, rtt)
 				} else if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.userInput.hostname, stats.userInput.ip, stats.userInput.port, streak, rtt)
 				} else {
