@@ -168,7 +168,7 @@ func TestPrintProbeSuccess(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := newPlanePrinter(&tc.showTimestamp)
+			pp := newPlainPrinter(&tc.showTimestamp)
 
 			read, write, _ := os.Pipe()
 			os.Stdout = write

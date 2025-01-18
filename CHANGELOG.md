@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.x.x - Unreleased
+
+- refactor: rename plain to plain printer
+
 ## v2.7.0 - 2025-01-18
 
 - new feature: implement **csv** output through `--csv <filename>` flag [#254](https://github.com/pouriyajamshidi/tcping/pull/254) thanks to @Ilhan-Personal
