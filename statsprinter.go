@@ -242,21 +242,21 @@ func (p *colorPrinter) printVersion() {
 	colorGreen("TCPING version %s\n", version)
 }
 
-// MARK: PLANE PRINTER
+// MARK: PLAIN PRINTER
 
-type planePrinter struct {
+type plainPrinter struct {
 	showTimestamp *bool
 }
 
-func newPlanePrinter(showTimestamp *bool) *planePrinter {
-	return &planePrinter{showTimestamp: showTimestamp}
+func newPlainPrinter(showTimestamp *bool) *plainPrinter {
+	return &plainPrinter{showTimestamp: showTimestamp}
 }
 
-func (p *planePrinter) printStart(hostname string, port uint16) {
+func (p *plainPrinter) printStart(hostname string, port uint16) {
 	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
 }
 
-func (p *planePrinter) printStatistics(t tcping) {
+func (p *plainPrinter) printStatistics(t tcping) {
 	totalPackets := t.totalSuccessfulProbes + t.totalUnsuccessfulProbes
 	packetLoss := (float32(t.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
@@ -349,7 +349,7 @@ func (p *planePrinter) printStatistics(t tcping) {
 	fmt.Printf("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
 }
 
-func (p *planePrinter) printProbeSuccess(sourceAddr string, userInput userInput, streak uint, rtt float32) {
+func (p *plainPrinter) printProbeSuccess(sourceAddr string, userInput userInput, streak uint, rtt float32) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
@@ -385,7 +385,7 @@ func (p *planePrinter) printProbeSuccess(sourceAddr string, userInput userInput,
 	}
 }
 
-func (p *planePrinter) printProbeFail(userInput userInput, streak uint) {
+func (p *plainPrinter) printProbeFail(userInput userInput, streak uint) {
 	timestamp := ""
 	if *p.showTimestamp {
 		timestamp = time.Now().Format(timeFormat)
@@ -405,23 +405,23 @@ func (p *planePrinter) printProbeFail(userInput userInput, streak uint) {
 	}
 }
 
-func (p *planePrinter) printTotalDownTime(downtime time.Duration) {
+func (p *plainPrinter) printTotalDownTime(downtime time.Duration) {
 	fmt.Printf("No response received for %s\n", durationToString(downtime))
 }
 
-func (p *planePrinter) printRetryingToResolve(hostname string) {
+func (p *plainPrinter) printRetryingToResolve(hostname string) {
 	fmt.Printf("retrying to resolve %s\n", hostname)
 }
 
-func (p *planePrinter) printInfo(format string, args ...any) {
+func (p *plainPrinter) printInfo(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
 }
 
-func (p *planePrinter) printError(format string, args ...any) {
+func (p *plainPrinter) printError(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
 }
 
-func (p *planePrinter) printVersion() {
+func (p *plainPrinter) printVersion() {
 	fmt.Printf("TCPING version %s\n", version)
 }
 

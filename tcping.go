@@ -253,7 +253,7 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 			os.Exit(1)
 		}
 	} else if *noColor {
-		tcping.printer = newPlanePrinter(timeStamp)
+		tcping.printer = newPlainPrinter(timeStamp)
 	} else {
 		tcping.printer = newColorPrinter(timeStamp)
 	}
