@@ -273,9 +273,10 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 | `-D`                   | 在探测输出中显示日期和时间。类似于 Linux 的 ping 工具，但更易于阅读                      |
 | `-i`                   | 发送探测之间的间隔                                                                 |
 | `-I`                   | 用于发送探测的接口名称                                                              |
+| `--no-color`           | 输出不带颜色                                                                      |
+| `--csv`                | 以 CSV 格式输出到指定的文件路径                                                     |
 | `-j`                   | 以 `JSON` 格式输出                                                                |
 | `--pretty`             | 美化 `JSON` 输出                                                                 |
-| `--no-color`           | 输出不带颜色   (未发布 - 该功能将在 2.7.0 版本发布)                                   |
 | `--db`                 | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--db /tmp/tcping.db`         |
 | `-v`                   | 打印版本                                                                         |
 | `-u`                   | 检查更新                                                                         |
