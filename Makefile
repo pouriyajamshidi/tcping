@@ -127,7 +127,8 @@ $(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
 .PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
 $(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
 	@echo "[+] Building binary: $@"
-	@export GOARCH=$(word 1, $(subst -, ,$*)); \
+	@export GOOS=windows; \
+	export GOARCH=$(word 1, $(subst -, ,$*)); \
 	[ $(word 2, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
 	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
 
