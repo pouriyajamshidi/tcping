@@ -281,7 +281,7 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 | `-v`                   | 打印版本                                                                         |
 | `-u`                   | 检查更新                                                                         |
 | `--show-failures-only` | 仅显示探测失败，并省略打印探测成功消息                                                |
-| `--show-local_address` | 显示探测所用的本地IP地址及端口   (未发布 - 该功能将在 2.7.0 版本发布)                    | 
+| `--show-source-address` | 显示探测所用的本地IP地址及端口                                                      | 
 
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。
 
