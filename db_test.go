@@ -42,7 +42,7 @@ func TestDbSaveStats(t *testing.T) {
 
 	query := `SELECT
 addr,
-localAddr,
+sourceAddr,
 hostname,
 port,
 hostname_resolve_retries,
@@ -71,7 +71,7 @@ total_duration
 FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatistics)
 
 	var (
-		addr, localAddr, hostname, port                string
+		addr, sourceAddr, hostname, port               string
 		hostNameResolveTries                           int
 		totalSuccessfulProbes, totalUnsuccessfulProbes uint
 		neverSucceedProbe, neverFailedProbe            bool
@@ -94,8 +94,8 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 
 		// addr
 		addr = stmt.ColumnText(0)
-		// Local address
-		localAddr = stmt.ColumnText(1)
+		// source address
+		sourceAddr = stmt.ColumnText(1)
 		// hostname
 		hostname = stmt.ColumnText(2)
 		// port
@@ -163,7 +163,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	stat.rttResults.max = toFixedFloat(stat.rttResults.max, 3)
 
 	Equals(t, addr, stat.userInput.ip.String())
-	Equals(t, localAddr, "local address")
+	Equals(t, sourceAddr, "source address")
 	Equals(t, hostname, stat.userInput.hostname)
 	Equals(t, totalUnsuccessfulProbes, stat.totalUnsuccessfulProbes)
 	Equals(t, totalSuccessfulProbes, stat.totalSuccessfulProbes)

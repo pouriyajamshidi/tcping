@@ -4,7 +4,7 @@
 
 # Meta
 SHELL := /bin/bash
-VERSION := 2.6.0
+VERSION := 2.7.0
 MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 

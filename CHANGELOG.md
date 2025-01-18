@@ -1,10 +1,12 @@
 # Changelog
 
-## v2.7.0 - Unreleased
+## v2.7.0 - 2025-01-18
 
-- new feature: implement color-less (plane printer) output through `--no-color` flag [#253](https://github.com/pouriyajamshidi/tcping/issues/253)
-- new feature: implement display of local IP address and port used to create TCP connections through `--show-local-address` flag [#249](https://github.com/pouriyajamshidi/tcping/issues/249)
+- new feature: implement **csv** output through `--csv <filename>` flag [#254](https://github.com/pouriyajamshidi/tcping/pull/254) thanks to @Ilhan-Personal
+- new feature: implement plain (color-less) output through `--no-color` flag [#253](https://github.com/pouriyajamshidi/tcping/issues/253)
+- new feature: implement display of source IP address and port used to create TCP connections through `--show-source-address` flag [#249](https://github.com/pouriyajamshidi/tcping/issues/249)
 - refactor: rename `planePrinter` to `colorPrinter` to match the actual functionality of the function
+- refactor: rename `localAddr` to `sourceAddr` throughout the code-base for better clarity
 - refactor: complete rewrite of the **Makefile** thanks to @cyqsimon
 - refactor: add containerization section in the **Makefile** thanks to @cyqsimon
 - fix: crash on database writes when hostname includes a hyphen thanks to @pro0o
@@ -12,10 +14,13 @@
 - documents: add link to [X CMD](https://x-cmd.com/pkg/tcping) thanks to @edwinjhlee
 - tests: add new tests for `printProbeSuccess` and `printProbeFail` thanks to @basil-gray
 - tests: add tests for `show-local-address` flag
-- dependencies: bump:
-  - crypto v0.28.0 => v0.29.0
-  - exp v0.0.0-20241004190924-225e2abe05e6 => v0.0.0-20241108190413-2d47ceb2692f
-  - sys v0.26.0 => v0.27.0
+- dependencies:
+  - crypto v0.28.0 => v0.32.0
+  - exp v0.0.0-20241004190924-225e2abe05e6 => v0.0.0-20250106191152-7588d65b2ba8
+  - sys v0.26.0 => v0.29.0
+  - modernc.org/libc v1.61.6 => v1.61.8
+  - modernc.org/memory v1.8.0 => v1.8.2
+  - modernc.org/sqlite v1.34.4 => v1.34.5
 
 ## v2.6.0 - 2024-10-05
 
