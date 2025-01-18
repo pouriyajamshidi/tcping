@@ -30,6 +30,7 @@ Here are some of the features of **TCPING**:
 - Display the longest encountered `downtime` and `uptime` duration and time.
 - Monitor and audit your peers network (SLA).
 - Calculate the total uptime or downtime of your network when conducting a maintenance.
+- output information in **colored**, **plain**, **json**, **csv** and **sqlite3** formats
 
 This document is also available in [Chinese | 中文](README.cn.md).
 
@@ -240,25 +241,26 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 
 The following flags are available to control the behavior of application:
 
-| Flag                   | Description                                                                                                       |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `-h`                   | Show help                                                                                                         |
-| `-4`                   | Only use IPv4 addresses                                                                                           |
-| `-6`                   | Only use IPv6 addresses                                                                                           |
-| `-r`                   | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
-| `-c`                   | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
-| `-t`                   | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
-| `-D`                   | Display date and time in probe output. Similar to Linux's ping utility but human-readable                         |
-| `-i`                   | Interval between sending probes                                                                                   |
-| `-I`                   | Interface name to use for sending probes                                                                          |
-| `-j`                   | Output in `JSON` format                                                                                           |
-| `--pretty`             | Prettify the `JSON` output                                                                                        |
-| `--no-color`           | Do not colorize output (unreleased - included in version 2.7.0)                                                   |
-| `--db`                 | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
-| `-v`                   | Print version                                                                                                     |
-| `-u`                   | Check for updates                                                                                                 |
-| `--show-failures-only` | Only show probe failures and omit printing probe success messages                                                 |
-| `--show-local_address` | Show the local IP address and port used for probes (unreleased - included in version 2.7.0)                       |
+| Flag                    | Description                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `-h`                    | Show help                                                                                                         |
+| `-4`                    | Only use IPv4 addresses                                                                                           |
+| `-6`                    | Only use IPv6 addresses                                                                                           |
+| `-r`                    | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
+| `-c`                    | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
+| `-t`                    | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
+| `-D`                    | Display date and time in probe output. Similar to Linux's ping utility but human-readable                         |
+| `-i`                    | Interval between sending probes                                                                                   |
+| `-I`                    | Interface name to use for sending probes                                                                          |
+| `--no-color`            | Do not colorize output                                                                                            |
+| `--csv`                 | Path and file name to store tcping output in `CSV` format                                                         |
+| `-j`                    | Output in `JSON` format                                                                                           |
+| `--pretty`              | Prettify the `JSON` output                                                                                        |
+| `--db`                  | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
+| `-v`                    | Print version                                                                                                     |
+| `-u`                    | Check for updates                                                                                                 |
+| `--show-failures-only`  | Only show probe failures and omit printing probe success messages                                                 |
+| `--show-source-address` | Show the source IP address and port used for probes                                                               |
 
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 
