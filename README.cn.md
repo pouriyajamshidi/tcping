@@ -30,6 +30,7 @@
 - 显示遇到的最长 `停机时间` 和 `正常运行时间` 持续时间和时间。
 - 监控和审计您的对等网络 (SLA)。
 - 在进行维护时计算网络的总正常运行时间或停机时间。
+- 提供彩色、纯文本、JSON、CSV 和 SQLite3 多种输出格式。
 
 ---
 
@@ -273,14 +274,15 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 | `-D`                   | 在探测输出中显示日期和时间。类似于 Linux 的 ping 工具，但更易于阅读                      |
 | `-i`                   | 发送探测之间的间隔                                                                 |
 | `-I`                   | 用于发送探测的接口名称                                                              |
+| `--no-color`           | 输出不带颜色                                                                      |
+| `--csv`                | 以 CSV 格式输出到指定的文件路径                                                     |
 | `-j`                   | 以 `JSON` 格式输出                                                                |
 | `--pretty`             | 美化 `JSON` 输出                                                                 |
-| `--no-color`           | 输出不带颜色   (未发布 - 该功能将在 2.7.0 版本发布)                                   |
 | `--db`                 | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--db /tmp/tcping.db`         |
 | `-v`                   | 打印版本                                                                         |
 | `-u`                   | 检查更新                                                                         |
 | `--show-failures-only` | 仅显示探测失败，并省略打印探测成功消息                                                |
-| `--show-local_address` | 显示探测所用的本地IP地址及端口   (未发布 - 该功能将在 2.7.0 版本发布)                    | 
+| `--show-source-address` | 显示探测所用的来源IP地址及端口                                                      | 
 
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。
 
