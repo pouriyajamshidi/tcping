@@ -692,7 +692,7 @@ func retryResolveHostname(tcping *tcping) {
 		tcping.printRetryingToResolve(tcping.userInput.hostname)
 		tcping.userInput.ip = resolveHostname(tcping)
 		tcping.ongoingUnsuccessfulProbes = 0
-		tcping.retriedHostnameLookups += 1
+		tcping.retriedHostnameLookups++
 
 		// At this point hostnameChanges should have len > 0, but just in case
 		if len(tcping.hostnameChanges) == 0 {
@@ -820,8 +820,8 @@ func (t *tcping) handleConnError(connTime time.Time, elapsed time.Duration) {
 
 	t.totalDowntime += elapsed
 	t.lastUnsuccessfulProbe = connTime
-	t.totalUnsuccessfulProbes += 1
-	t.ongoingUnsuccessfulProbes += 1
+	t.totalUnsuccessfulProbes++
+	t.ongoingUnsuccessfulProbes++
 
 	t.printProbeFail(
 		t.userInput,
@@ -848,8 +848,8 @@ func (t *tcping) handleConnSuccess(sourceAddr string, rtt float32, connTime time
 
 	t.totalUptime += elapsed
 	t.lastSuccessfulProbe = connTime
-	t.totalSuccessfulProbes += 1
-	t.ongoingSuccessfulProbes += 1
+	t.totalSuccessfulProbes++
+	t.ongoingSuccessfulProbes++
 	t.rtt = append(t.rtt, rtt)
 
 	if !t.userInput.showFailuresOnly {

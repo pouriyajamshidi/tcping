@@ -1,3 +1,4 @@
+// csv.go outputs data in CSV format
 package main
 
 import (

@@ -3,6 +3,7 @@
 ## v2.x.x - Unreleased
 
 - refactor: rename plain to plain printer
+- CI: apply **revive** suggestions
 
 ## v2.7.0 - 2025-01-18
 
