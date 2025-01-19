@@ -205,7 +205,6 @@ func (cp *csvPrinter) printError(format string, args ...any) {
 }
 
 func (cp *csvPrinter) writeStatsHeader() error {
-
 	headers := []string{
 		"Metric",
 		"Value",

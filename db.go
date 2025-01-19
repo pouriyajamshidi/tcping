@@ -1,3 +1,4 @@
+// db.go outputs data in sqlite3 format
 package main
 
 import (
@@ -266,7 +267,6 @@ func (db *database) printStatistics(tcping tcping) {
 		if err != nil {
 			db.printError("\nError while writing hostname changes to the database %q\nerr: %s", db.dbPath, err)
 		}
-
 	}
 
 	colorYellow("\nStatistics for %q have been saved to %q in the table %q\n", tcping.userInput.hostname, db.dbPath, db.tableName)
