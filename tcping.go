@@ -872,8 +872,8 @@ func tcpProbe(tcping *tcping) {
 		// dialer already contains the timeout value
 		conn, err = tcping.userInput.networkInterface.dialer.Dial("tcp", tcping.userInput.networkInterface.remoteAddr.String())
 	} else {
-		IPAndPort := netip.AddrPortFrom(tcping.userInput.ip, tcping.userInput.port)
-		conn, err = net.DialTimeout("tcp", IPAndPort.String(), tcping.userInput.timeout)
+		ipAndPort := netip.AddrPortFrom(tcping.userInput.ip, tcping.userInput.port)
+		conn, err = net.DialTimeout("tcp", ipAndPort.String(), tcping.userInput.timeout)
 	}
 
 	connDuration := time.Since(connStart)

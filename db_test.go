@@ -197,7 +197,6 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.tableName, eventTypeStatis
 	Equals(t, longestDowntime, stat.longestDowntime.duration.String())
 	Equals(t, longestDowntimeStart, stat.longestDowntime.start.Format(timeFormat))
 	Equals(t, longestDowntimeEnd, stat.longestDowntime.end.Format(timeFormat))
-
 }
 
 func TestSaveHostname(t *testing.T) {
