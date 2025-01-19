@@ -3,8 +3,9 @@
 ## v2.x.x - Unreleased
 
 - refactor: rename plain to plain printer
-- CI: apply **revive** suggestions
-- CI: add **revive** to CI
+- CI: apply **Revive** suggestions
+- CI: add **Revive** to CI
+- CI: add **Revive** config
 
 ## v2.7.0 - 2025-01-18
 
