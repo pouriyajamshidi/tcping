@@ -1,3 +1,5 @@
+//go:build database
+
 package main
 
 import (

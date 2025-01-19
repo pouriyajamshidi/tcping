@@ -1,4 +1,4 @@
-//go:build database
+//go:build !database
 
 package main
 
@@ -40,7 +40,7 @@ type printer interface {
 	// printProbeSuccess should print a message after each successful probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecutive probes.
-	printProbeSuccess(sourceAddr string, userInput userInput, streak uint, rtt float32)
+	printProbeSuccess(localAddr string, userInput userInput, streak uint, rtt float32)
 
 	// printProbeFail should print a message after each failed probe.
 	// hostname could be empty, meaning it's pinging an address.
@@ -118,7 +118,7 @@ type userInput struct {
 	useIPv6                  bool
 	shouldRetryResolve       bool
 	showFailuresOnly         bool
-	showSourceAddress        bool
+	showLocalAddress         bool
 }
 
 type genericUserInputArgs struct {
@@ -128,7 +128,7 @@ type genericUserInputArgs struct {
 	secondsBetweenProbes *float64
 	intName              *string
 	showFailuresOnly     *bool
-	showSourceAddress    *bool
+	showLocalAddress     *bool
 	args                 []string
 }
 
@@ -201,11 +201,6 @@ func shutdown(tcping *tcping) {
 	tcping.endTime = time.Now()
 	tcping.printStats()
 
-	// if the printer type is `database`, close it before exiting
-	if db, ok := tcping.printer.(*database); ok {
-		db.conn.Close()
-	}
-
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting
 	if cp, ok := tcping.printer.(*csvPrinter); ok {
 		cp.cleanup()
@@ -237,25 +232,22 @@ func usage() {
 }
 
 // setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, sourceAddress *bool, outputDb *string, outputCSV *string, args []string) {
+func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, localAddress *bool, outputCSV *string, args []string) {
 	if *prettyJSON && !*outputJSON {
 		colorRed("--pretty has no effect without the -j flag.")
 		usage()
 	}
-
 	if *outputJSON {
 		tcping.printer = newJSONPrinter(*prettyJSON)
-	} else if *outputDb != "" {
-		tcping.printer = newDB(*outputDb, args)
 	} else if *outputCSV != "" {
 		var err error
-		tcping.printer, err = newCSVPrinter(*outputCSV, timeStamp, sourceAddress)
+		tcping.printer, err = newCSVPrinter(*outputCSV, timeStamp, localAddress)
 		if err != nil {
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
 		}
 	} else if *noColor {
-		tcping.printer = newPlainPrinter(timeStamp)
+		tcping.printer = newPlanePrinter(timeStamp)
 	} else {
 		tcping.printer = newColorPrinter(timeStamp)
 	}
@@ -333,7 +325,7 @@ func setGenericArgs(tcping *tcping, genericArgs genericUserInputArgs) {
 
 	tcping.userInput.showFailuresOnly = *genericArgs.showFailuresOnly
 
-	tcping.userInput.showSourceAddress = *genericArgs.showSourceAddress
+	tcping.userInput.showLocalAddress = *genericArgs.showLocalAddress
 }
 
 // processUserInput gets and validate user input
@@ -346,14 +338,13 @@ func processUserInput(tcping *tcping) {
 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
 	noColor := flag.Bool("no-color", false, "do not colorize output.")
 	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
-	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name and _stats appended.")
+	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name but _stats appended.")
 	showVer := flag.Bool("v", false, "show version.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address.")
-	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
+	showLocalAddress := flag.Bool("show-local-address", false, "Show source address and port used for probe.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
 
@@ -367,7 +358,7 @@ func processUserInput(tcping *tcping) {
 
 	// we need to set printers first, because they're used for
 	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showSourceAddress, outputDB, saveToCSV, args)
+	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showLocalAddress, saveToCSV, args)
 
 	// Handle -v flag
 	if *showVer {
@@ -403,7 +394,7 @@ func processUserInput(tcping *tcping) {
 		secondsBetweenProbes: secondsBetweenProbes,
 		intName:              interfaceName,
 		showFailuresOnly:     showFailuresOnly,
-		showSourceAddress:    showSourceAddress,
+		showLocalAddress:     showLocalAddress,
 		args:                 args,
 	}
 
@@ -432,8 +423,6 @@ func permuteArgs(args []string) {
 			case "c":
 				fallthrough
 			case "t":
-				fallthrough
-			case "db":
 				fallthrough
 			case "I":
 				fallthrough
@@ -527,12 +516,12 @@ func newNetworkInterface(tcping *tcping, netInterface string) networkInterface {
 		Port: int(tcping.userInput.port),
 	}
 
-	sourceAddr := &net.TCPAddr{
+	localAddr := &net.TCPAddr{
 		IP: interfaceAddress,
 	}
 
 	ni.dialer = net.Dialer{
-		LocalAddr: sourceAddr,
+		LocalAddr: localAddr,
 		Timeout:   tcping.userInput.timeout, // Set the timeout duration
 	}
 
@@ -694,7 +683,7 @@ func retryResolveHostname(tcping *tcping) {
 		tcping.printRetryingToResolve(tcping.userInput.hostname)
 		tcping.userInput.ip = resolveHostname(tcping)
 		tcping.ongoingUnsuccessfulProbes = 0
-		tcping.retriedHostnameLookups++
+		tcping.retriedHostnameLookups += 1
 
 		// At this point hostnameChanges should have len > 0, but just in case
 		if len(tcping.hostnameChanges) == 0 {
@@ -822,8 +811,8 @@ func (t *tcping) handleConnError(connTime time.Time, elapsed time.Duration) {
 
 	t.totalDowntime += elapsed
 	t.lastUnsuccessfulProbe = connTime
-	t.totalUnsuccessfulProbes++
-	t.ongoingUnsuccessfulProbes++
+	t.totalUnsuccessfulProbes += 1
+	t.ongoingUnsuccessfulProbes += 1
 
 	t.printProbeFail(
 		t.userInput,
@@ -832,7 +821,7 @@ func (t *tcping) handleConnError(connTime time.Time, elapsed time.Duration) {
 }
 
 // handleConnSuccess processes successful probes
-func (t *tcping) handleConnSuccess(sourceAddr string, rtt float32, connTime time.Time, elapsed time.Duration) {
+func (t *tcping) handleConnSuccess(localAddr string, rtt float32, connTime time.Time, elapsed time.Duration) {
 	if t.destWasDown {
 		t.startOfUptime = connTime
 		downtime := t.startOfUptime.Sub(t.startOfDowntime)
@@ -850,13 +839,13 @@ func (t *tcping) handleConnSuccess(sourceAddr string, rtt float32, connTime time
 
 	t.totalUptime += elapsed
 	t.lastSuccessfulProbe = connTime
-	t.totalSuccessfulProbes++
-	t.ongoingSuccessfulProbes++
+	t.totalSuccessfulProbes += 1
+	t.ongoingSuccessfulProbes += 1
 	t.rtt = append(t.rtt, rtt)
 
 	if !t.userInput.showFailuresOnly {
 		t.printProbeSuccess(
-			sourceAddr,
+			localAddr,
 			t.userInput,
 			t.ongoingSuccessfulProbes,
 			rtt,
