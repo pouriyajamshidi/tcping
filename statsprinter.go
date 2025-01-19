@@ -1,3 +1,4 @@
+// statsprinter.go contains the logic for printing information
 package main
 
 import (

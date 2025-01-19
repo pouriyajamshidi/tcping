@@ -1,3 +1,4 @@
+// tcping.go probes a target using TCP
 package main
 
 import (

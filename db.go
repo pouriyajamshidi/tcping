@@ -1,3 +1,4 @@
+// db.go outputs data in sqlite3 format
 package main
 
 import (
