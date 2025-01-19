@@ -1,0 +1,16 @@
+name: Lint
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  lint:
+    name: Lint -- Revive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Run Revive Action
+        uses: morphy2k/revive-action@v2.7.1
