@@ -30,7 +30,7 @@ Here are some of the features of **TCPING**:
 - Retries hostname resolution after a predetermined number of probe failures by using the `-r` flag . Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
 - uses different `TCP sequence numbering` for _successful_ and _unsuccessful_ probes to infer the total failed or successful probes at a glance.
 
-Checkout the [demos](#demos) to get a look and feel of **tcping**.
+Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
@@ -235,7 +235,7 @@ tcping www.example.com 443 --json --pretty
 tcping www.example.com 443 --no-color
 ```
 
-> [!INFO]
+> [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
 
 The Docker image can be used with the same set of flags, like:
@@ -323,7 +323,7 @@ Please make sure that your pull request **only covers one specific issue/feature
 
 Should you need a new feature or find a bug, please feel free to [open a pull request](#contributing) or submit an issue.
 
-> For larger features/contributions, please make sure to first communicate it on an `issue` before starting your work.
+For larger features/contributions, please make sure to first communicate it on a **discussion** before starting your work.
 
 ## Help The Project
 
