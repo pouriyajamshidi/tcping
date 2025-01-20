@@ -4,35 +4,33 @@
 
 # TCPING
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/pouriyajamshidi/tcping)](https://goreportcard.com/report/github.com/pouriyajamshidi/tcping)
-[![CodeFactor](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping/badge)](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping)
-[![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/.github/workflows/codeql-analysis.yml/badge.svg)](https://github.com/pouriyajamshidi/tcping/actions/workflows/go.yml)
-[![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml)
+![Go Report Card](https://goreportcard.com/badge/github.com/pouriyajamshidi/tcping)
+![CodeFactor](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping/badge)
+![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/.github/workflows/codeql-analysis.yml/badge.svg)
+![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
-[![Go project version](https://badge.fury.io/go/github.com%2Fpouriyajamshidi%2Ftcping.svg)](https://badge.fury.io/go/github.com%2Fpouriyajamshidi%2Ftcping)
+![Go project version](https://badge.fury.io/go/github.com%2Fpouriyajamshidi%2Ftcping.svg)
 ![Download](https://img.shields.io/github/downloads/pouriyajamshidi/tcping/total.svg?label=DOWNLOADS&logo=github)
 ![Docker Pulls](https://img.shields.io/docker/pulls/pouriyajamshidi/tcping)
 
-A cross-platform ping program for `TCP` ports inspired by the Linux's ping utility. This program will send `TCP` probes to an `IP address` or a `hostname` specified by you and prints the results. It supports both `IPv4` and `IPv6`.
+A cross-platform ping program using `TCP` instead of `ICMP`, inspired by Linux's ping utility.
 
-**TCPING** uses different `TCP sequence numbering` for _successful_ and _unsuccessful_ probes, so that when you look at the results and spot a failed probe, inferring the total packet drops to that point would be easy.
+> [!TIP]
+> This document is also available in [Chinese | 中文](README.cn.md).
 
 Here are some of the features of **TCPING**:
 
 - An alternative to `ping` in environments that `ICMP` is blocked.
-- Monitor your network connection.
-- Determine packet loss.
-- Analyze the network's latency.
-- Calculate `minimum`, `average` and `maximum` latency of network probes.
-- Print connection statistics by pressing the `Enter` key, without stopping the program.
-- Retry hostname resolution after a predetermined number of probe failures by using the `-r` flag . Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
-- Enforce using `IPv4` or `IPv6`.
-- Display the longest encountered `downtime` and `uptime` duration and time.
-- Monitor and audit your peers network (SLA).
-- Calculate the total uptime or downtime of your network when conducting a maintenance.
-- output information in **colored**, **plain**, **json**, **csv** and **sqlite3** formats
+- Outputs information in **colored**, **plain**, **JSON**, **CSV** and **sqlite3** formats.
+- Monitor and audit your or your peers network latency, packet loss, and connection quality.
+- Let's you specify the **source interface**, **timeout**, and **interval** between probes.
+- Supports both `IPv4` or `IPv6` and lets you enforce using either.
+- Prints total connection statistics by pressing the `Enter` key, without stopping the program.
+- Reports the longest encountered `downtime` and `uptime` duration and time.
+- Retries hostname resolution after a predetermined number of probe failures by using the `-r` flag . Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
+- uses different `TCP sequence numbering` for _successful_ and _unsuccessful_ probes to infer the total failed or successful probes at a glance.
 
-This document is also available in [Chinese | 中文](README.cn.md).
+Checkout the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
@@ -40,24 +38,248 @@ This document is also available in [Chinese | 中文](README.cn.md).
 
 - [TCPING](#tcping)
   - [Table of Contents](#table-of-contents)
+  - [Download and Installation](#download-and-installation)
+    - [Windows](#windows)
+    - [macOS](#macos)
+    - [Linux - Debian and Derivatives](#linux---debian-and-derivatives)
+    - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
+    - [Alternative Ways](#alternative-ways)
+  - [Usage](#usage)
+  - [Flags](#flags)
   - [Demos](#demos)
     - [Basic usage](#basic-usage)
     - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
     - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
-  - [Download](#download)
-  - [Usage](#usage)
-    - [Linux - Debian and Ubuntu](#linux---debian-and-ubuntu)
-    - [Linux, BSD and mac OS](#linux-bsd-and-mac-os)
-    - [Windows](#windows)
-    - [Docker](#docker)
-  - [Flags](#flags)
-  - [Tips](#tips)
-  - [Check for Updates](#check-for-updates)
   - [Contributing](#contributing)
   - [Feature Requests and Issues](#feature-requests-and-issues)
-  - [Tested on](#tested-on)
   - [Help The Project](#help-the-project)
   - [License](#license)
+
+---
+
+## Download and Installation
+
+We offer prebuilt binaries for various systems (Windows, Linux, macOS, Docker) and architectures (amd64, arm64). You can find them on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
+
+Once the installation is done, head to the [usage](#usage) section.
+
+### Windows
+
+> [!TIP]
+> We recommend using [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
+
+Extract the downloaded zip file and copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32`
+
+> [!CAUTION]
+> TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official statement from the Go team [here](https://go.dev/doc/faq#virus).
+
+### macOS
+
+Install using `brew`:
+
+  ```bash
+  brew install pouriyajamshidi/tap/tcping
+  ```
+
+You can also manually download and install **tcping** following the steps described in [this section](#bsd-and-linux---manual-way).
+
+### Linux - Debian and Derivatives
+
+On **Debian** and its flavors such as **Ubuntu**, download the `.deb` package:
+
+```bash
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.deb -O /tmp/tcping.deb
+# Or for ARM64 machines
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.deb -O /tmp/tcping.deb
+```
+
+And install it:
+
+```bash
+sudo apt install -y /tmp/tcping.deb
+```
+
+If you are using different Linux distros, proceed to [this section](#bsd-and-linux---manual-way).
+
+### BSD and Linux - Manual Way
+
+Download the file for your respective OS and architecture:
+
+```bash
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-freebsd-amd64-static.tar.gz
+# Or for Linux ARM64 machines and using cURL
+curl -LO https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-arm64-static.tar.gz
+```
+
+Extract the file:
+
+```bash
+tar -xvf tcping-freebsd-amd64-static.tar.gz
+```
+
+Make the file executable:
+
+```bash
+chmod +x tcping
+```
+
+Copy the executable to your system `PATH` like `/usr/local/bin/`:
+
+```bash
+sudo cp tcping /usr/local/bin/
+```
+
+> [!TIP]
+> In case you have `brew` installed, you can install tcping using `brew install pouriyajamshidi/tap/tcping`
+
+### Alternative Ways
+
+These are some additional ways in which **tcping** can be installed:
+
+- `Docker` images:
+
+  ```bash
+  docker pull pouriyajamshidi/tcping:latest
+  # Or
+  docker pull ghcr.io/pouriyajamshidi/tcping:latest
+  ```
+
+- Using `go install`:
+
+  > This requires at least go version `1.23.1`
+
+  ```bash
+  go install github.com/pouriyajamshidi/tcping/v2@latest
+  ```
+
+- [x tcping](https://x-cmd.com/pkg/tcping):
+
+  **Directly without installation** in [x-cmd](https://www.x-cmd.com).
+
+  ```bash
+  x tcping example.com 80
+  ```
+
+  Or install `tcping` locally using x-cmd, without needing root privileges or affecting your global setup.
+
+  ```bash
+  x env use tcping
+  tcping example.com 80
+  ```
+
+- Finally, you can compile the code yourself by running the `make` command:
+
+  ```bash
+  make build
+  ```
+
+  > This will place the executables in the `output` folder.
+
+---
+
+## Usage
+
+**tcping** can run in various ways.
+
+1. The simplest form is providing the target and the port number:
+
+  ```bash
+  tcping www.example.com 443
+  ```
+
+2. Specify the interval between probes (2 seconds), the timeout (5 seconds) and source interface:
+
+  ```bash
+  tcping www.example.com 443 -i 2 -t 5 -I eth2
+  ```
+
+3. Enforce using IPv4 or IPv6 only:
+
+  ```bash
+    tcping www.example.com 443 -4
+    # Or
+    tcping www.example.com 443 -6
+  ```
+
+4. Show timestamp of probes:
+
+  ```bash
+  tcping www.example.com 443 -D
+  ```
+
+5. Retry resolving the hostname after 5 failures:
+
+  ```bash
+  tcping www.example.com 443 -r 5
+
+  ```
+
+6. Stop after 5 probes:
+
+  ```bash
+  tcping www.example.com 443 -c 5
+  ```
+
+7. Change the default output from colored to:
+
+  ```bash
+  # Save the output in CSV format:
+  tcping www.example.com 443 --csv example.com.csv
+  # Save the output in sqlite3 format:
+  tcping www.example.com 443 --db example.com.db
+  # Show the output in JSON format:
+  tcping www.example.com 443 --json
+  # Show the output in JSON format - pretty:
+  tcping www.example.com 443 --json --pretty
+  # Show the output in plain (no ANSI colors):
+  tcping www.example.com 443 --no-color
+  ```
+
+> ![INFO]
+> Check the **available flags** [here](#flags) for a more advanced usage.
+
+The Docker image can be used with the same set of flags, like:
+
+```bash
+# If downloaded from Docker Hub
+docker run -it pouriyajamshidi/tcping:latest example.com 443
+
+# If downloaded from GitHub container registry:
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+```
+
+> ![TIP]
+> Press the `Enter` key while the program is running to examine the summary of all probes without terminating the program, as shown in the [demos](#demos) section.
+
+---
+
+## Flags
+
+The following flags are available to control the behavior of **tcping**:
+
+| Flag                    | Description                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `-h`                    | Show help                                                                                                         |
+| `-4`                    | Only use IPv4 addresses                                                                                           |
+| `-6`                    | Only use IPv6 addresses                                                                                           |
+| `-r`                    | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
+| `-c`                    | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
+| `-t`                    | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
+| `-D`                    | Display date and time in probe output. Similar to Linux's ping utility but human-readable                         |
+| `-i`                    | Interval between sending probes                                                                                   |
+| `-I`                    | Interface name to use for sending probes                                                                          |
+| `--no-color`            | Do not colorize output                                                                                            |
+| `--csv`                 | Path and file name to store tcping output in `CSV` format                                                         |
+| `-j`                    | Output in `JSON` format                                                                                           |
+| `--pretty`              | Prettify the `JSON` output                                                                                        |
+| `--db`                  | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
+| `-v`                    | Print version                                                                                                     |
+| `-u`                    | Check for updates                                                                                                 |
+| `--show-failures-only`  | Only show probe failures and omit printing probe success messages                                                 |
+| `--show-source-address` | Show the source IP address and port used for probes                                                               |
+
+> ![TIP]
+> Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 
 ---
 
@@ -81,208 +303,9 @@ This document is also available in [Chinese | 中文](README.cn.md).
 
 ---
 
-## Download
-
-We offer prebuilt binaries for various OSes and architectures (Windows, Linux and macOS). You can find them on
-[the release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
-
-When the download is complete, head to the [usage](#usage) section.
-
-**Alternatively**, you can:
-
-- Use the `Docker` images:
-
-  ```bash
-  docker pull pouriyajamshidi/tcping:latest
-  ```
-
-  > Image is also available on GitHub container registry:
-
-  ```bash
-  docker pull ghcr.io/pouriyajamshidi/tcping:latest
-  ```
-
-- Install using `go install`:
-
-  This requires at least go version `1.23.1`
-
-  ```bash
-  go install github.com/pouriyajamshidi/tcping/v2@latest
-  ```
-
-- Install using `brew`:
-
-  ```bash
-  brew install pouriyajamshidi/tap/tcping
-  ```
-
-- [x tcping](https://x-cmd.com/pkg/tcping):
-
-  Use it **directly without installation** in [x-cmd](https://www.x-cmd.com).
-
-  ```bash
-  x tcping bing.com 80
-  ```
-
-  Alternatively, you can install `tcping` locally using x-cmd, without needing root privileges or affecting your global setup.
-
-  ```bash
-  x env use tcping
-  tcping bing.com 80
-  ```
-
-- Or compile the code yourself by running the `make` command in the `tcping` directory:
-
-  ```bash
-  make build
-  ```
-
-  This will produce an executable under `target/` folder.
-
----
-
-## Usage
-
-Follow the instructions below for your operating system:
-
-- [Linux - Debian and Ubuntu](#linux---debian-and-ubuntu)
-- [Linux, BSD and macOS](#linux-bsd-and-mac-os)
-- [Windows](#windows)
-- [Docker images](#docker)
-
-Also check the [available flags here](#flags).
-
-### Linux - Debian and Ubuntu
-
-On **Debian** and its flavors such as **Ubuntu**, download the `.deb` package:
-
-```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_amd64.deb -O /tmp/tcping.deb
-```
-
-And install it:
-
-```bash
-sudo apt install -y /tmp/tcping.deb
-```
-
-If you are using different Linux distros, proceed to [this section](#linux-bsd-and-mac-os).
-
-### Linux, BSD and mac OS
-
-Extract the file:
-
-```bash
-tar -xvf tcping_Linux.tar.gz
-#
-# Or on Mac OS
-#
-tar -xvf tcping_MacOS.tar.gz
-#
-# on Mac OS ARM
-#
-tar -xvf tcping_MacOS_ARM.tar.gz
-#
-# on BSD
-#
-tar -xvf tcping_FreeBSD.tar.gz
-```
-
-Make the file executable:
-
-```bash
-chmod +x tcping
-```
-
-Copy the executable to your system `PATH` like `/usr/local/bin/`:
-
-```bash
-sudo cp tcping /usr/local/bin/
-```
-
-Run it like:
-
-```bash
-tcping www.example.com 443
-# Or
-tcping 10.10.10.1 22
-```
-
-### Windows
-
-We recommend [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
-
-Copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32` and run it like:
-
-```powershell
-tcping www.example.com 443
-# Or provide the -r flag to
-# enable name resolution retries after a certain number of failures:
-tcping www.example.com 443 -r 10
-```
-
-> TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official documentation from Go [here](https://go.dev/doc/faq#virus).
-
-### Docker
-
-The Docker image can be used like:
-
-```bash
-# Using Docker Hub
-docker run -it pouriyajamshidi/tcping:latest example.com 443
-
-# Using GitHub container registry:
-docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
-```
-
----
-
-## Flags
-
-The following flags are available to control the behavior of application:
-
-| Flag                    | Description                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `-h`                    | Show help                                                                                                         |
-| `-4`                    | Only use IPv4 addresses                                                                                           |
-| `-6`                    | Only use IPv6 addresses                                                                                           |
-| `-r`                    | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
-| `-c`                    | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
-| `-t`                    | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
-| `-D`                    | Display date and time in probe output. Similar to Linux's ping utility but human-readable                         |
-| `-i`                    | Interval between sending probes                                                                                   |
-| `-I`                    | Interface name to use for sending probes                                                                          |
-| `--no-color`            | Do not colorize output                                                                                            |
-| `--csv`                 | Path and file name to store tcping output in `CSV` format                                                         |
-| `-j`                    | Output in `JSON` format                                                                                           |
-| `--pretty`              | Prettify the `JSON` output                                                                                        |
-| `--db`                  | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
-| `-v`                    | Print version                                                                                                     |
-| `-u`                    | Check for updates                                                                                                 |
-| `--show-failures-only`  | Only show probe failures and omit printing probe success messages                                                 |
-| `--show-source-address` | Show the source IP address and port used for probes                                                               |
-
-> Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
-
----
-
-## Tips
-
-- Press the `Enter` key while the program is running to examine the summary of all probes without terminating the program, as shown in the [demos](#demos) section.
-
----
-
-## Check for Updates
-
-`TCPING` is constantly being improved, adding numerous new features and fixing bugs. Be sure to look for updated versions.
-
-```bash
-tcping -u
-```
-
 ## Contributing
 
-Pull requests are welcome to solve bugs, add new features and also to help with the open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues)
+Pull requests are welcome to solve bugs, add new features and to help with the open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues)
 
 1. Pick any issue that you feel comfortable with.
 1. Fork the repository.
@@ -302,21 +325,17 @@ Should you need a new feature or find a bug, please feel free to [open a pull re
 
 > For larger features/contributions, please make sure to first communicate it on an `issue` before starting your work.
 
-## Tested on
-
-Windows, Linux and macOS.
-
 ## Help The Project
 
-If tcping proves to be useful for you, consider giving it a ⭐ to extend its reach and help other people to also benefit from it.
+If tcping proves to be useful for you, consider sharing it with your network to extend its reach and help other people to also benefit from it.
 
-Furthermore, you can support the project using the links below.
+Furthermore, you can support the project using the links below:
 
-Buy me a coffee: [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)
+- Buy me a coffee: [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)
 
-GitHub Sponsors: [![sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)
+- GitHub Sponsors: [![sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)
 
-Total number of sponsors: ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
+- Total number of sponsors: ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
 
 ## License
 
