@@ -77,9 +77,9 @@ Extract the downloaded zip file and copy `tcping.exe` to your system [PATH](http
 
 Install using `brew`:
 
-  ```bash
-  brew install pouriyajamshidi/tap/tcping
-  ```
+```bash
+brew install pouriyajamshidi/tap/tcping
+```
 
 You can also manually download and install **tcping** following the steps described in [this section](#bsd-and-linux---manual-way).
 
@@ -173,7 +173,7 @@ These are some additional ways in which **tcping** can be installed:
   make build
   ```
 
-  > This will place the executables in the `output` folder.
+  This will place the executables in the `output` folder.
 
 ---
 
@@ -183,59 +183,59 @@ These are some additional ways in which **tcping** can be installed:
 
 1. The simplest form is providing the target and the port number:
 
-  ```bash
-  tcping www.example.com 443
-  ```
+```bash
+tcping www.example.com 443
+```
 
 2. Specify the interval between probes (2 seconds), the timeout (5 seconds) and source interface:
 
-  ```bash
-  tcping www.example.com 443 -i 2 -t 5 -I eth2
-  ```
+```bash
+tcping www.example.com 443 -i 2 -t 5 -I eth2
+```
 
 3. Enforce using IPv4 or IPv6 only:
 
-  ```bash
-    tcping www.example.com 443 -4
-    # Or
-    tcping www.example.com 443 -6
-  ```
+```bash
+  tcping www.example.com 443 -4
+  # Or
+  tcping www.example.com 443 -6
+```
 
 4. Show timestamp of probes:
 
-  ```bash
-  tcping www.example.com 443 -D
-  ```
+```bash
+tcping www.example.com 443 -D
+```
 
 5. Retry resolving the hostname after 5 failures:
 
-  ```bash
-  tcping www.example.com 443 -r 5
+```bash
+tcping www.example.com 443 -r 5
 
-  ```
+```
 
 6. Stop after 5 probes:
 
-  ```bash
-  tcping www.example.com 443 -c 5
-  ```
+```bash
+tcping www.example.com 443 -c 5
+```
 
 7. Change the default output from colored to:
 
-  ```bash
-  # Save the output in CSV format:
-  tcping www.example.com 443 --csv example.com.csv
-  # Save the output in sqlite3 format:
-  tcping www.example.com 443 --db example.com.db
-  # Show the output in JSON format:
-  tcping www.example.com 443 --json
-  # Show the output in JSON format - pretty:
-  tcping www.example.com 443 --json --pretty
-  # Show the output in plain (no ANSI colors):
-  tcping www.example.com 443 --no-color
-  ```
+```bash
+# Save the output in CSV format:
+tcping www.example.com 443 --csv example.com.csv
+# Save the output in sqlite3 format:
+tcping www.example.com 443 --db example.com.db
+# Show the output in JSON format:
+tcping www.example.com 443 --json
+# Show the output in JSON format - pretty:
+tcping www.example.com 443 --json --pretty
+# Show the output in plain (no ANSI colors):
+tcping www.example.com 443 --no-color
+```
 
-> ![INFO]
+> [!INFO]
 > Check the **available flags** [here](#flags) for a more advanced usage.
 
 The Docker image can be used with the same set of flags, like:
@@ -248,7 +248,7 @@ docker run -it pouriyajamshidi/tcping:latest example.com 443
 docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 ```
 
-> ![TIP]
+> [!TIP]
 > Press the `Enter` key while the program is running to examine the summary of all probes without terminating the program, as shown in the [demos](#demos) section.
 
 ---
@@ -278,7 +278,7 @@ The following flags are available to control the behavior of **tcping**:
 | `--show-failures-only`  | Only show probe failures and omit printing probe success messages                                                 |
 | `--show-source-address` | Show the source IP address and port used for probes                                                               |
 
-> ![TIP]
+> [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 
 ---
@@ -331,12 +331,12 @@ If tcping proves to be useful for you, consider sharing it with your network to 
 
 Furthermore, you can support the project using the links below:
 
-- Buy me a coffee: [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)
+- Buy me a coffee: ["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)
 
-- GitHub Sponsors: [![sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)
+- GitHub Sponsors: [sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)
 
 - Total number of sponsors: ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
 
 ## License
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
