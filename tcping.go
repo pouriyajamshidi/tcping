@@ -616,6 +616,10 @@ func selectResolvedIP(tcping *tcping, ipAddrs []netip.Addr) netip.Addr {
 			if ip.Is4() {
 				ipList = append(ipList, ip)
 			}
+			// static builds (CGO=0) return IPv4-mapped IPv6 address
+			if ip.Is4In6() {
+				ipList = append(ipList, ip.Unmap())
+			}
 		}
 
 		if len(ipList) == 0 {
