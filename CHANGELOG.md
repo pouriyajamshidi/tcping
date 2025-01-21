@@ -2,6 +2,7 @@
 
 ## v2.x.x - Unreleased
 
+- bug: fix name resolution in static builds with `-4` flag causing name resolution failures due to _IPv4-mapped IPv6 addresses_
 - refactor: rename plane to plain printer
 - CI: apply **Revive** suggestions
 - CI: add **Revive** to CI
