@@ -59,16 +59,22 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Download and Installation
 
-We offer prebuilt binaries for various systems (Windows, Linux, macOS, Docker) and architectures (amd64, arm64). You can find them on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
+We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---debian-and-derivatives), [macOS](#macos), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
-Once the installation is done, head to the [usage](#usage) section.
+Once you are done with the download and installation, head to the [usage](#usage) section.
 
 ### Windows
+
+The best way to install **tcping** on Windows is through _Windows Package Manager_ by utilizing [WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget/?ref=github.com%2Fpouriyajamshidi%2Ftcping), which is available on practically all Windows _10_ and _11_ machines by default since September of 2020:
+
+```powershell
+winget install pj.tcping
+```
 
 > [!TIP]
 > We recommend using [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
 
-Extract the downloaded zip file and copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32`
+If you wish to manually install **tcping**, extract the downloaded zip file and copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32`
 
 > [!CAUTION]
 > TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official statement from the Go team [here](https://go.dev/doc/faq#virus).
