@@ -1,6 +1,14 @@
 # Changelog
 
-## v2.x.x - Unreleased
+## v3.0.0 - Unreleased
+
+- refactor: simplify the `Printer` interface to rid empty implementations
+- refactor: restructure the entire program into different sections for easier maintenance and addition of new handlers
+- refactor: cleanup user input logic
+- refactor: use the `netip` package instead of net for IP operations when given the `-I` flag
+- fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
+
+## v2.7.1 - 2025-01-26
 
 - release: add tcping to [WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget) [#113](https://github.com/pouriyajamshidi/tcping/issues/113)
 - bug: fix name resolution in static builds with `-4` flag causing name resolution failures due to _IPv4-mapped IPv6 addresses_

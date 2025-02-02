@@ -4,7 +4,7 @@
 
 # Meta
 SHELL := /bin/bash
-VERSION := 2.7.0
+VERSION := 3.0.0_beta
 MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
@@ -107,7 +107,7 @@ $(TARGET_DIR)/:
 .PRECIOUS: $(TARGET_DIR)/$(BIN_NAME)
 $(TARGET_DIR)/$(BIN_NAME): $(TARGET_DIR)/
 	@echo "[+] Building binary for current platform: $@"
-	@go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+	@go build -ldflags "-s -w -X consts.version=$(VERSION)" -o $@;
 
 # Per-target output directory
 .PRECIOUS: $(TARGET_DIR)/%/
@@ -121,7 +121,7 @@ $(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
 	@export GOOS=$(word 1, $(subst -, ,$*)); \
 	export GOARCH=$(word 2, $(subst -, ,$*)); \
 	[ $(word 3, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
-	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+	go build -ldflags "-s -w -X consts.version=$(VERSION)" -o $@;
 
 # Per-target tcping.exe binary (Windows)
 .PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
@@ -130,7 +130,7 @@ $(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
 	@export GOOS=windows; \
 	export GOARCH=$(word 1, $(subst -, ,$*)); \
 	[ $(word 2, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
-	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+	go build -ldflags "-s -w -X consts.version=$(VERSION)" -o $@;
 
 # ==================================================
 # Release outputs
