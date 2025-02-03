@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v2/consts"
-	"github.com/pouriyajamshidi/tcping/v2/internal/nameresolution"
+	"github.com/pouriyajamshidi/tcping/v2/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/printers"
 	"github.com/pouriyajamshidi/tcping/v2/types"
@@ -30,16 +30,16 @@ type printerConfig struct {
 }
 
 type options struct {
-	useIPv4              *bool
-	useIPv6              *bool
-	showFailuresOnly     *bool
-	showSourceAddress    *bool
-	retryResolve         *uint
-	probesBeforeQuit     *uint
-	intName              *string
-	timeout              *float64
-	secondsBetweenProbes *float64
-	args                 []string
+	useIPv4               *bool
+	useIPv6               *bool
+	showFailuresOnly      *bool
+	showSourceAddress     *bool
+	retryResolve          *uint
+	probesBeforeQuit      *uint
+	intName               *string
+	timeout               *float64
+	intervalBetweenProbes *float64
+	args                  []string
 }
 
 // newNetworkInterface uses the given IP address or a NIC to find the first IP address
@@ -136,11 +136,11 @@ func setOptions(t *types.Tcping, opts options) {
 
 	t.Options.Hostname = opts.args[0]
 	t.Options.Port = convertAndValidatePort(t, opts.args[1])
-	t.Options.IP = nameresolution.ResolveHostname(t)
+	t.Options.IP = dns.ResolveHostname(t)
 	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
 	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
 
-	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.secondsBetweenProbes)
+	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
 	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
 		t.PrintError("Wait interval should be more than 2 ms")
 		os.Exit(1)
@@ -341,16 +341,16 @@ func ProcessUserInput(tcping *types.Tcping) {
 	tcping.Printer = printer
 
 	opts := options{
-		useIPv4:              useIPv4,
-		useIPv6:              useIPv6,
-		retryResolve:         retryHostnameResolveAfter,
-		probesBeforeQuit:     probesBeforeQuit,
-		timeout:              timeout,
-		secondsBetweenProbes: intervalBetweenProbes,
-		intName:              interfaceName,
-		showFailuresOnly:     showFailuresOnly,
-		showSourceAddress:    showSourceAddress,
-		args:                 args,
+		useIPv4:               useIPv4,
+		useIPv6:               useIPv6,
+		retryResolve:          retryHostnameResolveAfter,
+		probesBeforeQuit:      probesBeforeQuit,
+		timeout:               timeout,
+		intervalBetweenProbes: intervalBetweenProbes,
+		intName:               interfaceName,
+		showFailuresOnly:      showFailuresOnly,
+		showSourceAddress:     showSourceAddress,
+		args:                  args,
 	}
 
 	setOptions(tcping, opts)

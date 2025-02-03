@@ -25,7 +25,7 @@ type Printer interface {
 	PrintProbeFail(userInput Options, streak uint)
 
 	// PrintRetryingToResolve should print a message with the hostname
-	// it is trying to resolve an ip for.
+	// it is trying to resolve an IP for.
 	//
 	// This is only being printed when the -r flag is applied.
 	PrintRetryingToResolve(hostname string)
@@ -87,7 +87,7 @@ type Tcping struct {
 	TotalUnsuccessfulProbes   uint             // Total unsuccessful probes.
 	RetriedHostnameLookups    uint             // Total number of retries for hostname resolution.
 	RttResults                RttResult        // Struct holding the minimum, average, and maximum RTT values.
-	DestWasDown               bool             // Flag indicating if the destination was down at some point.
+	DestWasDown               bool             // Flag indicating if the destination was unreachable previously.
 	DestIsIP                  bool             // Flag indicating whether the destination is an IP address (not a hostname).
 }
 

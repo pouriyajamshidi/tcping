@@ -155,12 +155,12 @@ func (cp *CsvPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess logs a successful probe attempt to the CSV file.
-func (cp *CsvPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Options, streak uint, rtt float32) {
+func (cp *CsvPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	record := []string{
 		"Reply",
-		userInput.Hostname,
-		userInput.IP.String(),
-		fmt.Sprint(userInput.Port),
+		opts.Hostname,
+		opts.IP.String(),
+		fmt.Sprint(opts.Port),
 		fmt.Sprint(streak),
 		fmt.Sprintf("%.3f", rtt),
 	}
@@ -175,12 +175,12 @@ func (cp *CsvPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Optio
 }
 
 // PrintProbeFail logs a failed probe attempt to the CSV file.
-func (cp *CsvPrinter) PrintProbeFail(userInput types.Options, streak uint) {
+func (cp *CsvPrinter) PrintProbeFail(opts types.Options, streak uint) {
 	record := []string{
 		"No reply",
-		userInput.Hostname,
-		userInput.IP.String(),
-		fmt.Sprint(userInput.Port),
+		opts.Hostname,
+		opts.IP.String(),
+		fmt.Sprint(opts.Port),
 		fmt.Sprint(streak),
 		"",
 	}

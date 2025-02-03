@@ -4,7 +4,7 @@ package main
 import (
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/internal/nameresolution"
+	"github.com/pouriyajamshidi/tcping/v2/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v2/internal/options"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/printers"
@@ -18,6 +18,10 @@ import (
 // 3. Pass a Printer to `newNetworkInterface`
 // 4. Probably it is better to move SignalHandler to probes instead of printers
 // 5. Make `Options` of `Tcping` implicit too?
+// 6. Move types.NewLongestTime to printer instead?
+// 7. SetLongestUptime and SetLongestDowntime do not seem to belong to printer package
+// 8. Cross-check the printer implementations to see how much they differ
+//    For instance JSONPrinter's PrintProbeFail lacks timestamp implementation
 
 func main() {
 	tcping := &types.Tcping{}
@@ -39,10 +43,10 @@ func main() {
 	var probeCount uint
 	for {
 		if tcping.Options.ShouldRetryResolve {
-			nameresolution.RetryResolveHostname(tcping)
+			dns.RetryResolveHostname(tcping)
 		}
 
-		probes.Probe(tcping)
+		probes.Ping(tcping)
 
 		select {
 		case pressedEnter := <-stdinchan:

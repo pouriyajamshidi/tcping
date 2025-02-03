@@ -87,7 +87,7 @@ func TestProbeSuccess(t *testing.T) {
 	expectedSuccessful := 100
 
 	for i := 0; i < expectedSuccessful; i++ {
-		Probe(stats)
+		Ping(stats)
 	}
 
 	assert.Equal(t, stats.TotalSuccessfulProbes, uint(expectedSuccessful))
@@ -110,7 +110,7 @@ func TestProbeSuccessInterval(t *testing.T) {
 	expectedSuccessful := 100
 
 	for i := 0; i < expectedSuccessful; i++ {
-		Probe(stats)
+		Ping(stats)
 	}
 
 	assert.Equal(t, stats.TotalSuccessfulProbes, uint(expectedSuccessful))
@@ -126,7 +126,7 @@ func TestProbeFail(t *testing.T) {
 	expectedFailed := 100
 
 	for i := 0; i < expectedFailed; i++ {
-		Probe(stats)
+		Ping(stats)
 	}
 
 	assert.Equal(t, stats.TotalUnsuccessfulProbes, uint(expectedFailed))
@@ -143,7 +143,7 @@ func TestProbeFailInterval(t *testing.T) {
 	expectedFailed := 100
 
 	for i := 0; i < expectedFailed; i++ {
-		Probe(stats)
+		Ping(stats)
 	}
 
 	assert.Equal(t, stats.TotalUnsuccessfulProbes, uint(expectedFailed))

@@ -1,4 +1,4 @@
-package nameresolution
+package dns
 
 import (
 	"net/netip"

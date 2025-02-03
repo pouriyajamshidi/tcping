@@ -120,59 +120,61 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 }
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
-func (p *PlainPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Options, streak uint, rtt float32) {
+func (p *PlainPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	timestamp := ""
 	if p.showTimestamp {
 		timestamp = time.Now().Format(consts.TimeFormat)
 	}
-	if userInput.Hostname == "" {
+
+	if opts.Hostname == "" {
 		if timestamp == "" {
-			if userInput.ShowSourceAddress {
-				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.IP.String(), userInput.Port, sourceAddr, streak, rtt)
+			if opts.ShowSourceAddress {
+				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
 			} else {
-				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", userInput.IP.String(), userInput.Port, streak, rtt)
+				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", opts.IP.String(), opts.Port, streak, rtt)
 			}
 		} else {
-			if userInput.ShowSourceAddress {
-				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.IP.String(), userInput.Port, sourceAddr, streak, rtt)
+			if opts.ShowSourceAddress {
+				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
 			} else {
-				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.IP.String(), userInput.Port, streak, rtt)
+				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, opts.IP.String(), opts.Port, streak, rtt)
 			}
 		}
 	} else {
 		if timestamp == "" {
-			if userInput.ShowSourceAddress {
-				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", userInput.Hostname, userInput.IP.String(), userInput.Port, sourceAddr, streak, rtt)
+			if opts.ShowSourceAddress {
+				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", opts.Hostname, opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
 			} else {
-				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", userInput.Hostname, userInput.IP.String(), userInput.Port, streak, rtt)
+				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", opts.Hostname, opts.IP.String(), opts.Port, streak, rtt)
 			}
 		} else {
-			if userInput.ShowSourceAddress {
-				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, userInput.Hostname, userInput.IP.String(), userInput.Port, sourceAddr, streak, rtt)
+			if opts.ShowSourceAddress {
+				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, opts.Hostname, opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
 			} else {
-				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, userInput.Hostname, userInput.IP.String(), userInput.Port, streak, rtt)
+				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, opts.Hostname, opts.IP.String(), opts.Port, streak, rtt)
 			}
 		}
 	}
 }
 
 // PrintProbeFail prints a failure message for a probe.
-func (p *PlainPrinter) PrintProbeFail(userInput types.Options, streak uint) {
+func (p *PlainPrinter) PrintProbeFail(opts types.Options, streak uint) {
 	timestamp := ""
 	if p.showTimestamp {
 		timestamp = time.Now().Format(consts.TimeFormat)
 	}
-	if userInput.Hostname == "" {
+
+	if opts.Hostname == "" {
 		if timestamp == "" {
-			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n", userInput.IP, userInput.Port, streak)
+			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n", opts.IP, opts.Port, streak)
 		} else {
-			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, userInput.IP, userInput.Port, streak)
+			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, opts.IP, opts.Port, streak)
 		}
 	} else {
 		if timestamp == "" {
-			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n", userInput.Hostname, userInput.IP, userInput.Port, streak)
+			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n", opts.Hostname, opts.IP, opts.Port, streak)
 		} else {
-			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, userInput.Hostname, userInput.IP, userInput.Port, streak)
+			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, opts.Hostname, opts.IP, opts.Port, streak)
 		}
 	}
 }

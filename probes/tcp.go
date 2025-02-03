@@ -13,17 +13,19 @@ import (
 )
 
 // handleConnError processes failed probes
-func handleConnError(t *types.Tcping, connTime time.Time, elapsed time.Duration) {
+func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration) {
+	// if last probe had succeeded
 	if !t.DestWasDown {
-		t.StartOfDowntime = connTime
-		uptime := t.StartOfDowntime.Sub(t.StartOfUptime)
-		printers.CalcLongestUptime(t, uptime)
+		t.StartOfDowntime = startTime
+		duration := t.StartOfDowntime.Sub(t.StartOfUptime)
+		// set longest uptime since uptime is interrupted
+		printers.SetLongestDuration(t.StartOfUptime, duration, &t.LongestUptime)
 		t.StartOfUptime = time.Time{}
 		t.DestWasDown = true
 	}
 
 	t.TotalDowntime += elapsed
-	t.LastUnsuccessfulProbe = connTime
+	t.LastUnsuccessfulProbe = startTime
 	t.TotalUnsuccessfulProbes++
 	t.OngoingUnsuccessfulProbes++
 
@@ -34,12 +36,13 @@ func handleConnError(t *types.Tcping, connTime time.Time, elapsed time.Duration)
 }
 
 // handleConnSuccess processes successful probes
-func handleConnSuccess(t *types.Tcping, sourceAddr string, rtt float32, connTime time.Time, elapsed time.Duration) {
+func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Duration, sourceAddr string, rtt float32) {
 	if t.DestWasDown {
-		t.StartOfUptime = connTime
-		downtime := t.StartOfUptime.Sub(t.StartOfDowntime)
-		printers.CalcLongestDowntime(t, downtime)
-		t.PrintTotalDownTime(downtime)
+		t.StartOfUptime = startTime
+		duration := t.StartOfUptime.Sub(t.StartOfDowntime)
+		// set longest downtime since downtime is interrupted
+		printers.SetLongestDuration(t.StartOfDowntime, duration, &t.LongestDowntime)
+		t.PrintTotalDownTime(duration)
 		t.StartOfDowntime = time.Time{}
 		t.DestWasDown = false
 		t.OngoingUnsuccessfulProbes = 0
@@ -47,11 +50,11 @@ func handleConnSuccess(t *types.Tcping, sourceAddr string, rtt float32, connTime
 	}
 
 	if t.StartOfUptime.IsZero() {
-		t.StartOfUptime = connTime
+		t.StartOfUptime = startTime
 	}
 
 	t.TotalUptime += elapsed
-	t.LastSuccessfulProbe = connTime
+	t.LastSuccessfulProbe = startTime
 	t.TotalSuccessfulProbes++
 	t.OngoingSuccessfulProbes++
 	t.Rtt = append(t.Rtt, rtt)
@@ -66,14 +69,15 @@ func handleConnSuccess(t *types.Tcping, sourceAddr string, rtt float32, connTime
 	}
 }
 
-// Probe pings a host using TCP
-func Probe(tcping *types.Tcping) {
+// Ping checks target's availability using TCP
+func Ping(tcping *types.Tcping) {
 	var err error
 	var conn net.Conn
+
 	connStart := time.Now()
 
 	if tcping.Options.NetworkInterface.Use {
-		// dialer already contains the timeout value
+		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
 		conn, err = tcping.Options.NetworkInterface.Dialer.Dial("tcp", tcping.Options.NetworkInterface.RemoteAddr.String())
 	} else {
 		ipAndPort := netip.AddrPortFrom(tcping.Options.IP, tcping.Options.Port)
@@ -81,15 +85,15 @@ func Probe(tcping *types.Tcping) {
 	}
 
 	connDuration := time.Since(connStart)
-	rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
-
 	elapsed := utils.MaxDuration(connDuration, tcping.Options.IntervalBetweenProbes)
 
 	if err != nil {
 		handleConnError(tcping, connStart, elapsed)
 	} else {
-		handleConnSuccess(tcping, conn.LocalAddr().String(), rtt, connStart, elapsed)
+		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
+		handleConnSuccess(tcping, connStart, elapsed, conn.LocalAddr().String(), rtt)
 		conn.Close()
 	}
+
 	<-tcping.Ticker.C
 }

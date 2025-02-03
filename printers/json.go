@@ -159,42 +159,42 @@ func (p *JSONPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess prints TCP probe replies according to our policies in JSON format.
-func (p *JSONPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Options, streak uint, rtt float32) {
+func (p *JSONPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	var (
 		// for *bool fields
 		f    = false
 		t    = true
 		data = JSONData{
 			Type:                  probeEvent,
-			Hostname:              userInput.Hostname,
-			Addr:                  userInput.IP.String(),
-			Port:                  userInput.Port,
+			Hostname:              opts.Hostname,
+			Addr:                  opts.IP.String(),
+			Port:                  opts.Port,
 			Rtt:                   rtt,
 			DestIsIP:              &t,
 			Success:               &t,
 			TotalSuccessfulProbes: streak,
 		}
 	)
-	if userInput.ShowSourceAddress {
+	if opts.ShowSourceAddress {
 		data.LocalAddr = sourceAddr
 	}
 
-	if userInput.Hostname != "" {
+	if opts.Hostname != "" {
 		data.DestIsIP = &f
-		if userInput.ShowSourceAddress {
+		if opts.ShowSourceAddress {
 			data.Message = fmt.Sprintf("Reply from %s (%s) on port %d using %s time=%.3f ms",
-				userInput.Hostname, userInput.IP.String(), userInput.Port, sourceAddr, rtt)
+				opts.Hostname, opts.IP.String(), opts.Port, sourceAddr, rtt)
 		} else {
 			data.Message = fmt.Sprintf("Reply from %s (%s) on port %d time=%.3f ms",
-				userInput.Hostname, userInput.IP.String(), userInput.Port, rtt)
+				opts.Hostname, opts.IP.String(), opts.Port, rtt)
 		}
 	} else {
-		if userInput.ShowSourceAddress {
+		if opts.ShowSourceAddress {
 			data.Message = fmt.Sprintf("Reply from %s on port %d using %s time=%.3f ms",
-				userInput.IP.String(), userInput.Port, sourceAddr, rtt)
+				opts.IP.String(), opts.Port, sourceAddr, rtt)
 		} else {
 			data.Message = fmt.Sprintf("Reply from %s on port %d time=%.3f ms",
-				userInput.IP.String(), userInput.Port, rtt)
+				opts.IP.String(), opts.Port, rtt)
 		}
 	}
 
@@ -202,29 +202,29 @@ func (p *JSONPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Optio
 }
 
 // PrintProbeFail prints a JSON message when a TCP probe fails.
-func (p *JSONPrinter) PrintProbeFail(userInput types.Options, streak uint) {
+func (p *JSONPrinter) PrintProbeFail(opts types.Options, streak uint) {
 	var (
 		// for *bool fields
 		f    = false
 		t    = true
 		data = JSONData{
 			Type:                    probeEvent,
-			Hostname:                userInput.Hostname,
-			Addr:                    userInput.IP.String(),
-			Port:                    userInput.Port,
+			Hostname:                opts.Hostname,
+			Addr:                    opts.IP.String(),
+			Port:                    opts.Port,
 			DestIsIP:                &t,
 			Success:                 &f,
 			TotalUnsuccessfulProbes: streak,
 		}
 	)
 
-	if userInput.Hostname != "" {
+	if opts.Hostname != "" {
 		data.DestIsIP = &f
 		data.Message = fmt.Sprintf("No reply from %s (%s) on port %d",
-			userInput.Hostname, userInput.IP.String(), userInput.Port)
+			opts.Hostname, opts.IP.String(), opts.Port)
 	} else {
 		data.Message = fmt.Sprintf("No reply from %s on port %d",
-			userInput.IP.String(), userInput.Port)
+			opts.IP.String(), opts.Port)
 	}
 
 	p.Print(data)

@@ -6,6 +6,13 @@
 - refactor: restructure the entire program into different sections for easier maintenance and addition of new handlers
 - refactor: cleanup user input logic
 - refactor: use the `netip` package instead of net for IP operations when given the `-I` flag
+- refactor: display DNS timeout value in case of name resolution failures
+- refactor: reduce code duplication and minor cleanups in `selectResolvedIP` logic
+- refactor: remove unnecessary `len` check on hostname changes in `RetryResolveHostname` logic
+- refactor: rename `Probe` to `Ping` inside `tcp.go`
+- refactor: rename `connTime` to `startTime` in connection handlers of `tcp.go`
+- refactor: rename `secondsBetweenProbes` to `intervalBetweenProbes` in user input options
+- refactor: replace `CalcLongestDowntime` and `CalcLongestUptime` with `SetLongestDuration`
 - fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
 
 ## v2.7.1 - 2025-01-26

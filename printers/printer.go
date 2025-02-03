@@ -47,50 +47,25 @@ func SignalHandler(tcping *types.Tcping) {
 // all the necessary calculations beforehand.
 func PrintStats(t *types.Tcping) {
 	if t.DestWasDown {
-		CalcLongestDowntime(t, time.Since(t.StartOfDowntime))
+		SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfDowntime), &t.LongestUptime)
 	} else {
-		CalcLongestUptime(t, time.Since(t.StartOfUptime))
+		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfUptime), &t.LongestDowntime)
 	}
 	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
 
 	t.Printer.PrintStatistics(*t)
 }
 
-// CalcLongestUptime calculates the longest uptime and sets it to tcpStats.
-func CalcLongestUptime(tcping *types.Tcping, duration time.Duration) {
-	if tcping.StartOfUptime.IsZero() || duration == 0 {
+// SetLongestDuration updates the longest uptime or downtime based on the given type.
+func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
+	if start.IsZero() || duration == 0 {
 		return
 	}
 
-	longestUptime := types.NewLongestTime(tcping.StartOfUptime, duration)
+	newLongest := types.NewLongestTime(start, duration)
 
-	// It means it is the first time we're calling this function
-	if tcping.LongestUptime.End.IsZero() {
-		tcping.LongestUptime = longestUptime
-		return
-	}
-
-	if longestUptime.Duration >= tcping.LongestUptime.Duration {
-		tcping.LongestUptime = longestUptime
-	}
-}
-
-// CalcLongestDowntime calculates the longest downtime and sets it to tcpStats.
-func CalcLongestDowntime(tcping *types.Tcping, duration time.Duration) {
-	if tcping.StartOfDowntime.IsZero() || duration == 0 {
-		return
-	}
-
-	longestDowntime := types.NewLongestTime(tcping.StartOfDowntime, duration)
-
-	// It means it is the first time we're calling this function
-	if tcping.LongestDowntime.End.IsZero() {
-		tcping.LongestDowntime = longestDowntime
-		return
-	}
-
-	if longestDowntime.Duration >= tcping.LongestDowntime.Duration {
-		tcping.LongestDowntime = longestDowntime
+	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
+		*longest = newLongest
 	}
 }
 

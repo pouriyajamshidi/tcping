@@ -256,37 +256,38 @@ func (p *ColorPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Opti
 // Parameters:
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive failed probes.
-func (p *ColorPrinter) PrintProbeFail(userInput types.Options, streak uint) {
+func (p *ColorPrinter) PrintProbeFail(opts types.Options, streak uint) {
 	timestamp := ""
 	if p.ShowTimestamp {
 		timestamp = time.Now().Format(consts.TimeFormat)
 	}
-	if userInput.Hostname == "" {
+
+	if opts.Hostname == "" {
 		if timestamp == "" {
 			consts.ColorRed("No reply from %s on port %d TCP_conn=%d\n",
-				userInput.IP,
-				userInput.Port,
+				opts.IP,
+				opts.Port,
 				streak)
 		} else {
 			consts.ColorRed("%s No reply from %s on port %d TCP_conn=%d\n",
 				timestamp,
-				userInput.IP,
-				userInput.Port,
+				opts.IP,
+				opts.Port,
 				streak)
 		}
 	} else {
 		if timestamp == "" {
 			consts.ColorRed("No reply from %s (%s) on port %d TCP_conn=%d\n",
-				userInput.Hostname,
-				userInput.IP,
-				userInput.Port,
+				opts.Hostname,
+				opts.IP,
+				opts.Port,
 				streak)
 		} else {
 			consts.ColorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n",
 				timestamp,
-				userInput.Hostname,
-				userInput.IP,
-				userInput.Port,
+				opts.Hostname,
+				opts.IP,
+				opts.Port,
 				streak)
 		}
 	}
