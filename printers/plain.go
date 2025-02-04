@@ -25,6 +25,146 @@ func (p *PlainPrinter) PrintStart(hostname string, port uint16) {
 	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
 }
 
+// PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
+func (p *PlainPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
+	timestamp := ""
+	if p.showTimestamp {
+		timestamp = time.Now().Format(consts.TimeFormat)
+	}
+
+	if opts.Hostname == "" {
+		if timestamp == "" {
+			if opts.ShowSourceAddress {
+				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+					opts.IP.String(),
+					opts.Port,
+					sourceAddr,
+					streak,
+					rtt)
+			} else {
+				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+					opts.IP.String(),
+					opts.Port,
+					streak,
+					rtt)
+			}
+		} else {
+			if opts.ShowSourceAddress {
+				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+					timestamp,
+					opts.IP.String(),
+					opts.Port,
+					sourceAddr,
+					streak,
+					rtt)
+			} else {
+				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+					timestamp,
+					opts.IP.String(),
+					opts.Port,
+					streak,
+					rtt)
+			}
+		}
+	} else {
+		if timestamp == "" {
+			if opts.ShowSourceAddress {
+				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
+					sourceAddr,
+					streak,
+					rtt)
+			} else {
+				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
+					streak,
+					rtt)
+			}
+		} else {
+			if opts.ShowSourceAddress {
+				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+					timestamp,
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
+					sourceAddr,
+					streak,
+					rtt)
+			} else {
+				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+					timestamp,
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
+					streak,
+					rtt)
+			}
+		}
+	}
+}
+
+// PrintProbeFail prints a failure message for a probe.
+func (p *PlainPrinter) PrintProbeFail(opts types.Options, streak uint) {
+	timestamp := ""
+	if p.showTimestamp {
+		timestamp = time.Now().Format(consts.TimeFormat)
+	}
+
+	if opts.Hostname == "" {
+		if timestamp == "" {
+			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n",
+				opts.IP,
+				opts.Port,
+				streak)
+		} else {
+			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n",
+				timestamp,
+				opts.IP,
+				opts.Port,
+				streak)
+		}
+	} else {
+		if timestamp == "" {
+			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n",
+				opts.Hostname,
+				opts.IP,
+				opts.Port,
+				streak)
+		} else {
+			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n",
+				timestamp,
+				opts.Hostname,
+				opts.IP,
+				opts.Port,
+				streak)
+		}
+	}
+}
+
+// PrintTotalDownTime prints the total downtime when no response is received.
+func (p *PlainPrinter) PrintTotalDownTime(downtime time.Duration) {
+	fmt.Printf("No response received for %s\n", utils.DurationToString(downtime))
+}
+
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
+func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("retrying to resolve %s\n", hostname)
+}
+
+// PrintInfo prints general informational messages.
+func (p *PlainPrinter) PrintInfo(format string, args ...any) {
+	fmt.Printf(format+"\n", args...)
+}
+
+// PrintError prints error messages.
+func (p *PlainPrinter) PrintError(format string, args ...any) {
+	fmt.Printf(format+"\n", args...)
+}
+
 // PrintStatistics prints detailed statistics about the TCPing session.
 func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
@@ -36,11 +176,16 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 
 	/* general stats */
 	if !t.DestIsIP {
-		fmt.Printf("\n--- %s (%s) TCPing statistics ---\n", t.Options.Hostname, t.Options.IP)
+		fmt.Printf("\n--- %s (%s) TCPing statistics ---\n",
+			t.Options.Hostname,
+			t.Options.IP)
 	} else {
 		fmt.Printf("\n--- %s TCPing statistics ---\n", t.Options.Hostname)
 	}
-	fmt.Printf("%d probes transmitted on port %d | %d received", totalPackets, t.Options.Port, t.TotalSuccessfulProbes)
+	fmt.Printf("%d probes transmitted on port %d | %d received",
+		totalPackets,
+		t.Options.Port,
+		t.TotalSuccessfulProbes)
 
 	/* packet loss stats */
 	fmt.Printf("%.2f%% packet loss\n", packetLoss)
@@ -90,7 +235,14 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 
 	/* resolve retry stats */
 	if !t.DestIsIP {
-		fmt.Printf("retried to resolve hostname %d times\n", t.RetriedHostnameLookups)
+		timeNoun := "time"
+		if t.RetriedHostnameLookups > 1 {
+			timeNoun = "times"
+		}
+
+		fmt.Printf("retried to resolve hostname %d %s\n",
+			t.RetriedHostnameLookups,
+			timeNoun)
 
 		if len(t.HostnameChanges) >= 2 {
 			fmt.Printf("IP address changes:\n")
@@ -104,7 +256,10 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 
 	if t.RttResults.HasResults {
 		fmt.Printf("rtt min/avg/max: ")
-		fmt.Printf("%.3f/%.3f/%.3f ms\n", t.RttResults.Min, t.RttResults.Average, t.RttResults.Max)
+		fmt.Printf("%.3f/%.3f/%.3f ms\n",
+			t.RttResults.Min,
+			t.RttResults.Average,
+			t.RttResults.Max)
 	}
 
 	fmt.Printf("--------------------------------------\n")
@@ -117,84 +272,4 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 
 	durationTime := time.Time{}.Add(t.TotalDowntime + t.TotalUptime)
 	fmt.Printf("duration (HH:MM:SS): %v\n\n", durationTime.Format(consts.HourFormat))
-}
-
-// PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
-func (p *PlainPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
-	timestamp := ""
-	if p.showTimestamp {
-		timestamp = time.Now().Format(consts.TimeFormat)
-	}
-
-	if opts.Hostname == "" {
-		if timestamp == "" {
-			if opts.ShowSourceAddress {
-				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
-			} else {
-				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", opts.IP.String(), opts.Port, streak, rtt)
-			}
-		} else {
-			if opts.ShowSourceAddress {
-				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
-			} else {
-				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n", timestamp, opts.IP.String(), opts.Port, streak, rtt)
-			}
-		}
-	} else {
-		if timestamp == "" {
-			if opts.ShowSourceAddress {
-				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", opts.Hostname, opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
-			} else {
-				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", opts.Hostname, opts.IP.String(), opts.Port, streak, rtt)
-			}
-		} else {
-			if opts.ShowSourceAddress {
-				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n", timestamp, opts.Hostname, opts.IP.String(), opts.Port, sourceAddr, streak, rtt)
-			} else {
-				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n", timestamp, opts.Hostname, opts.IP.String(), opts.Port, streak, rtt)
-			}
-		}
-	}
-}
-
-// PrintProbeFail prints a failure message for a probe.
-func (p *PlainPrinter) PrintProbeFail(opts types.Options, streak uint) {
-	timestamp := ""
-	if p.showTimestamp {
-		timestamp = time.Now().Format(consts.TimeFormat)
-	}
-
-	if opts.Hostname == "" {
-		if timestamp == "" {
-			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n", opts.IP, opts.Port, streak)
-		} else {
-			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n", timestamp, opts.IP, opts.Port, streak)
-		}
-	} else {
-		if timestamp == "" {
-			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n", opts.Hostname, opts.IP, opts.Port, streak)
-		} else {
-			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n", timestamp, opts.Hostname, opts.IP, opts.Port, streak)
-		}
-	}
-}
-
-// PrintTotalDownTime prints the total downtime when no response is received.
-func (p *PlainPrinter) PrintTotalDownTime(downtime time.Duration) {
-	fmt.Printf("No response received for %s\n", utils.DurationToString(downtime))
-}
-
-// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
-func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
-	fmt.Printf("retrying to resolve %s\n", hostname)
-}
-
-// PrintInfo prints general informational messages.
-func (p *PlainPrinter) PrintInfo(format string, args ...any) {
-	fmt.Printf(format+"\n", args...)
-}
-
-// PrintError prints error messages.
-func (p *PlainPrinter) PrintError(format string, args ...any) {
-	fmt.Printf(format+"\n", args...)
 }

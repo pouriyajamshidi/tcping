@@ -13,6 +13,7 @@
 - refactor: rename `connTime` to `startTime` in connection handlers of `tcp.go`
 - refactor: rename `secondsBetweenProbes` to `intervalBetweenProbes` in user input options
 - refactor: replace `CalcLongestDowntime` and `CalcLongestUptime` with `SetLongestDuration`
+- improvement: better grammar when printing the number of times a hostname resolution was retried
 - fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
 
 ## v2.7.1 - 2025-01-26

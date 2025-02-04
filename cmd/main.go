@@ -22,6 +22,7 @@ import (
 // 7. SetLongestUptime and SetLongestDowntime do not seem to belong to printer package
 // 8. Cross-check the printer implementations to see how much they differ
 //    For instance JSONPrinter's PrintProbeFail lacks timestamp implementation
+// 9. Separate probe packages. e.g. tcp.Ping, http.Ping
 
 func main() {
 	tcping := &types.Tcping{}

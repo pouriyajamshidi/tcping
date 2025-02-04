@@ -17,12 +17,18 @@ func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration
 	// if last probe had succeeded
 	if !t.DestWasDown {
 		t.StartOfDowntime = startTime
-		duration := t.StartOfDowntime.Sub(t.StartOfUptime)
+		uptimeDuration := t.StartOfDowntime.Sub(t.StartOfUptime)
 		// set longest uptime since uptime is interrupted
-		printers.SetLongestDuration(t.StartOfUptime, duration, &t.LongestUptime)
+		printers.SetLongestDuration(t.StartOfUptime, uptimeDuration, &t.LongestUptime)
 		t.StartOfUptime = time.Time{}
 		t.DestWasDown = true
 	}
+
+	// NOTE: Is this necessary?
+	// why was it not implemented :D
+	// if t.StartOfDowntime.IsZero() {
+	// 	t.StartOfDowntime = startTime
+	// }
 
 	t.TotalDowntime += elapsed
 	t.LastUnsuccessfulProbe = startTime
@@ -39,19 +45,20 @@ func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration
 func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Duration, sourceAddr string, rtt float32) {
 	if t.DestWasDown {
 		t.StartOfUptime = startTime
-		duration := t.StartOfUptime.Sub(t.StartOfDowntime)
+		downtimeDuration := t.StartOfUptime.Sub(t.StartOfDowntime)
 		// set longest downtime since downtime is interrupted
-		printers.SetLongestDuration(t.StartOfDowntime, duration, &t.LongestDowntime)
-		t.PrintTotalDownTime(duration)
+		printers.SetLongestDuration(t.StartOfDowntime, downtimeDuration, &t.LongestDowntime)
+		t.PrintTotalDownTime(downtimeDuration)
 		t.StartOfDowntime = time.Time{}
 		t.DestWasDown = false
 		t.OngoingUnsuccessfulProbes = 0
 		t.OngoingSuccessfulProbes = 0
 	}
 
-	if t.StartOfUptime.IsZero() {
-		t.StartOfUptime = startTime
-	}
+	// NOTE: So I commented this and I think there is a tiny problem in reports now
+	// if t.StartOfUptime.IsZero() {
+	// 	t.StartOfUptime = startTime
+	// }
 
 	t.TotalUptime += elapsed
 	t.LastSuccessfulProbe = startTime
