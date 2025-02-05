@@ -24,12 +24,6 @@ func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration
 		t.DestWasDown = true
 	}
 
-	// NOTE: Is this necessary?
-	// why was it not implemented :D
-	// if t.StartOfDowntime.IsZero() {
-	// 	t.StartOfDowntime = startTime
-	// }
-
 	t.TotalDowntime += elapsed
 	t.LastUnsuccessfulProbe = startTime
 	t.TotalUnsuccessfulProbes++
@@ -55,10 +49,9 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 		t.OngoingSuccessfulProbes = 0
 	}
 
-	// NOTE: So I commented this and I think there is a tiny problem in reports now
-	// if t.StartOfUptime.IsZero() {
-	// 	t.StartOfUptime = startTime
-	// }
+	if t.StartOfUptime.IsZero() {
+		t.StartOfUptime = startTime
+	}
 
 	t.TotalUptime += elapsed
 	t.LastSuccessfulProbe = startTime
@@ -99,6 +92,7 @@ func Ping(tcping *types.Tcping) {
 	} else {
 		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
 		handleConnSuccess(tcping, connStart, elapsed, conn.LocalAddr().String(), rtt)
+
 		conn.Close()
 	}
 

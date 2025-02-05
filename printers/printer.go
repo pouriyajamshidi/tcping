@@ -40,35 +40,6 @@ func SignalHandler(tcping *types.Tcping) {
 	}()
 }
 
-// PrintStats is a helper method for printStatistics
-// for the current printer.
-//
-// This should be used instead, as it makes
-// all the necessary calculations beforehand.
-func PrintStats(t *types.Tcping) {
-	if t.DestWasDown {
-		SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfDowntime), &t.LongestUptime)
-	} else {
-		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfUptime), &t.LongestDowntime)
-	}
-	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
-
-	t.Printer.PrintStatistics(*t)
-}
-
-// SetLongestDuration updates the longest uptime or downtime based on the given type.
-func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
-	if start.IsZero() || duration == 0 {
-		return
-	}
-
-	newLongest := types.NewLongestTime(start, duration)
-
-	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
-		*longest = newLongest
-	}
-}
-
 // calcMinAvgMaxRttTime calculates min, avg and max RTT values
 func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
 	var sum float32
@@ -97,4 +68,33 @@ func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
 	}
 
 	return result
+}
+
+// SetLongestDuration updates the longest uptime or downtime based on the given type.
+func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
+	if start.IsZero() || duration == 0 {
+		return
+	}
+
+	newLongest := types.NewLongestTime(start, duration)
+
+	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
+		*longest = newLongest
+	}
+}
+
+// PrintStats is a helper method for PrintStatistics
+// for the current printer.
+// This should be used instead, as it makes
+// all the necessary calculations beforehand.
+func PrintStats(t *types.Tcping) {
+	if t.DestWasDown {
+		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
+	} else {
+		SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfUptime), &t.LongestUptime)
+	}
+
+	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
+
+	t.PrintStatistics(*t)
 }

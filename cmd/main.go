@@ -13,7 +13,7 @@ import (
 )
 
 // TODO:
-// 1. Perhaps move HostnameChange from types to nameresolution
+// 1. Perhaps move HostnameChange from types to dns
 // 2. Pass Handler instead of tcping to helpers, etc
 // 3. Pass a Printer to `newNetworkInterface`
 // 4. Probably it is better to move SignalHandler to probes instead of printers
@@ -23,6 +23,12 @@ import (
 // 8. Cross-check the printer implementations to see how much they differ
 //    For instance JSONPrinter's PrintProbeFail lacks timestamp implementation
 // 9. Separate probe packages. e.g. tcp.Ping, http.Ping
+// 10. Show how long we were up on failure similar to what we do for success?
+// 11. Where should we place the Shutdown function? Printers seems a bit off
+// 12. Replace .PrintStatistics with .PrintStats in CSV tests
+// 13. What happened to 23:04:40?
+//	  2025-02-05 23:04:39 Reply from ...
+//	  2025-02-05 23:04:41 No reply from ...
 
 func main() {
 	tcping := &types.Tcping{}
@@ -42,6 +48,7 @@ func main() {
 	go utils.MonitorSTDIN(stdinchan)
 
 	var probeCount uint
+
 	for {
 		if tcping.Options.ShouldRetryResolve {
 			dns.RetryResolveHostname(tcping)
