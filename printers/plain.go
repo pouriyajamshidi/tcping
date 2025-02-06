@@ -26,10 +26,10 @@ func (p *PlainPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
-func (p *PlainPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
+func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	timestamp := ""
 	if p.showTimestamp {
-		timestamp = time.Now().Format(consts.TimeFormat)
+		timestamp = startTime.Format(consts.TimeFormat)
 	}
 
 	if opts.Hostname == "" {
@@ -108,10 +108,10 @@ func (p *PlainPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, 
 }
 
 // PrintProbeFail prints a failure message for a probe.
-func (p *PlainPrinter) PrintProbeFail(opts types.Options, streak uint) {
+func (p *PlainPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.showTimestamp {
-		timestamp = time.Now().Format(consts.TimeFormat)
+		timestamp = startTime.Format(consts.TimeFormat)
 	}
 
 	if opts.Hostname == "" {
@@ -152,7 +152,7 @@ func (p *PlainPrinter) PrintTotalDownTime(downtime time.Duration) {
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
 func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
-	fmt.Printf("retrying to resolve %s\n", hostname)
+	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
 // PrintInfo prints general informational messages.

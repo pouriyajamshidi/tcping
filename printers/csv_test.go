@@ -75,7 +75,7 @@ func TestWriteStatistics(t *testing.T) {
 		StartTime:               time.Now(),
 	}
 
-	cp.PrintStatistics(tcping)
+	PrintStats(&tcping)
 
 	statsFile, err := os.Open(cp.StatsFilename)
 	assert.NoError(t, err)
@@ -115,7 +115,8 @@ func TestCleanup(t *testing.T) {
 		LastSuccessfulProbe:     time.Now(),
 		StartTime:               time.Now(),
 	}
-	cp.PrintStatistics(tcping)
+
+	PrintStats(&tcping)
 
 	// Perform cleanup
 	cp.Cleanup()

@@ -13,27 +13,26 @@ import (
 )
 
 // TODO:
-// 1. Perhaps move HostnameChange from types to dns
-// 2. Pass Handler instead of tcping to helpers, etc
-// 3. Pass a Printer to `newNetworkInterface`
-// 4. Probably it is better to move SignalHandler to probes instead of printers
-// 5. Make `Options` of `Tcping` implicit too?
-// 6. Move types.NewLongestTime to printer instead?
-// 7. SetLongestUptime and SetLongestDowntime do not seem to belong to printer package
-// 8. Cross-check the printer implementations to see how much they differ
-//    For instance JSONPrinter's PrintProbeFail lacks timestamp implementation
-// 9. Separate probe packages. e.g. tcp.Ping, http.Ping
-// 10. Show how long we were up on failure similar to what we do for success?
-// 11. Where should we place the Shutdown function? Printers seems a bit off
-// 12. Replace .PrintStatistics with .PrintStats in CSV tests
-// 13. What happened to 23:04:40?
-//	  2025-02-05 23:04:39 Reply from ...
-//	  2025-02-05 23:04:41 No reply from ...
+// - Take care of `startTime time.Time` for printers other than colored and plain
+// - Should consts package move to internal?
+// - Pass Handler instead of tcping to printers helpers, etc
+// - Probably it is better to move SignalHandler to probes instead of printers
+// - Where should we place the Shutdown function? Printers seems a bit off
+// - Make `Options` of `Tcping` implicit too?
+// - Move types.NewLongestTime to printer instead?
+// - SetLongestTime does not seem to belong to printer package
+// - Cross-check the printer implementations to see how much they differ
+// 	 for instance JSONPrinter's PrintProbeFail lacks timestamp implementation
+// - Separate probe packages. e.g. tcp.Ping, http.Ping
+// - Show how long we were up on failure similar to what we do for success?
+// - Do we need the `PrintStart` functionality?
 
 func main() {
 	tcping := &types.Tcping{}
 
 	options.ProcessUserInput(tcping)
+
+	tcping.PrintStart(tcping.Options.Hostname, tcping.Options.Port)
 
 	tcping.StartTime = time.Now()
 
@@ -42,10 +41,8 @@ func main() {
 
 	printers.SignalHandler(tcping)
 
-	tcping.PrintStart(tcping.Options.Hostname, tcping.Options.Port)
-
-	stdinchan := make(chan bool)
-	go utils.MonitorSTDIN(stdinchan)
+	stdinChan := make(chan bool)
+	go utils.MonitorSTDIN(stdinChan)
 
 	var probeCount uint
 
@@ -57,7 +54,7 @@ func main() {
 		probes.Ping(tcping)
 
 		select {
-		case pressedEnter := <-stdinchan:
+		case pressedEnter := <-stdinChan:
 			if pressedEnter {
 				printers.PrintStats(tcping)
 			}

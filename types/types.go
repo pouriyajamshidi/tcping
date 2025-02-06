@@ -17,12 +17,12 @@ type Printer interface {
 	// PrintProbeSuccess should print a message after each successful probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecuti`ve probes.
-	PrintProbeSuccess(sourceAddr string, userInput Options, streak uint, rtt float32)
+	PrintProbeSuccess(startTime time.Time, sourceAddr string, userInput Options, streak uint, rtt float32)
 
 	// PrintProbeFail should print a message after each failed probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecutive probes.
-	PrintProbeFail(userInput Options, streak uint)
+	PrintProbeFail(startTime time.Time, userInput Options, streak uint)
 
 	// PrintRetryingToResolve should print a message with the hostname
 	// it is trying to resolve an IP for.
@@ -58,9 +58,7 @@ type Printer interface {
 type Handler interface {
 	Printer
 	Options
-	Probe(any)
-	handleConnSuccess(any)
-	handleConnFailure(any)
+	Ping(any)
 }
 
 // Tcping contains the main data structure for the TCPing program.

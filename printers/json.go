@@ -159,7 +159,7 @@ func (p *JSONPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess prints TCP probe replies according to our policies in JSON format.
-func (p *JSONPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
+func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	var (
 		// for *bool fields
 		f    = false
@@ -202,7 +202,7 @@ func (p *JSONPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, s
 }
 
 // PrintProbeFail prints a JSON message when a TCP probe fails.
-func (p *JSONPrinter) PrintProbeFail(opts types.Options, streak uint) {
+func (p *JSONPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
 	var (
 		// for *bool fields
 		f    = false

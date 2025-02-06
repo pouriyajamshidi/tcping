@@ -40,11 +40,12 @@ func (p *ColorPrinter) PrintStart(hostname string, port uint16) {
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive successful probes.
 //   - rtt: The round-trip time of the probe in milliseconds.
-func (p *ColorPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Options, streak uint, rtt float32) {
+func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, userInput types.Options, streak uint, rtt float32) {
 	timestamp := ""
 	if p.ShowTimestamp {
-		timestamp = time.Now().Format(consts.TimeFormat)
+		timestamp = startTime.Format(consts.TimeFormat)
 	}
+
 	if userInput.Hostname == "" {
 		if timestamp == "" {
 			if userInput.ShowSourceAddress {
@@ -126,10 +127,10 @@ func (p *ColorPrinter) PrintProbeSuccess(sourceAddr string, userInput types.Opti
 // Parameters:
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive failed probes.
-func (p *ColorPrinter) PrintProbeFail(opts types.Options, streak uint) {
+func (p *ColorPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.ShowTimestamp {
-		timestamp = time.Now().Format(consts.TimeFormat)
+		timestamp = startTime.Format(consts.TimeFormat)
 	}
 
 	if opts.Hostname == "" {
@@ -176,7 +177,7 @@ func (p *ColorPrinter) PrintTotalDownTime(downtime time.Duration) {
 // Parameters:
 //   - hostname: The hostname that is being resolved.
 func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
-	consts.ColorLightYellow("retrying to resolve %s\n", hostname)
+	consts.ColorLightYellow("Retrying to resolve %s\n", hostname)
 }
 
 // PrintInfo prints an informational message in light blue.

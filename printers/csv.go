@@ -50,10 +50,11 @@ func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) 
 
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermission)
 	if err != nil {
-		return nil, fmt.Errorf("error creating data CSV file: %w", err)
+		return nil, fmt.Errorf("Failed creating data CSV file: %w", err)
 	}
 
 	statsFilename := addCSVExtension(filename, true)
+
 	cp := &CsvPrinter{
 		ProbeWriter:       csv.NewWriter(file),
 		ProbeFile:         file,
@@ -67,12 +68,15 @@ func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) 
 		if cp.ProbeWriter != nil {
 			cp.ProbeWriter.Flush()
 		}
+
 		if cp.ProbeFile != nil {
 			cp.ProbeFile.Close()
 		}
+
 		if cp.StatsWriter != nil {
 			cp.StatsWriter.Flush()
 		}
+
 		if cp.StatsFile != nil {
 			cp.StatsFile.Close()
 		}
@@ -85,9 +89,11 @@ func addCSVExtension(filename string, withStats bool) string {
 	if withStats {
 		return strings.Split(filename, ".")[0] + "_stats.csv"
 	}
+
 	if strings.HasSuffix(filename, ".csv") {
 		return filename
 	}
+
 	return filename + ".csv"
 }
 
@@ -124,6 +130,7 @@ func (cp *CsvPrinter) writeRecord(record []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to recreate data CSV file: %w", err)
 		}
+
 		cp.ProbeFile = file
 		cp.ProbeWriter = csv.NewWriter(file)
 		cp.HeaderDone = false
@@ -133,6 +140,7 @@ func (cp *CsvPrinter) writeRecord(record []string) error {
 		if err := cp.writeHeader(); err != nil {
 			return err
 		}
+
 		cp.HeaderDone = true
 	}
 
@@ -155,7 +163,7 @@ func (cp *CsvPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess logs a successful probe attempt to the CSV file.
-func (cp *CsvPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, streak uint, rtt float32) {
+func (cp *CsvPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	record := []string{
 		"Reply",
 		opts.Hostname,
@@ -175,7 +183,7 @@ func (cp *CsvPrinter) PrintProbeSuccess(sourceAddr string, opts types.Options, s
 }
 
 // PrintProbeFail logs a failed probe attempt to the CSV file.
-func (cp *CsvPrinter) PrintProbeFail(opts types.Options, streak uint) {
+func (cp *CsvPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
 	record := []string{
 		"No reply",
 		opts.Hostname,
@@ -277,6 +285,7 @@ func (cp *CsvPrinter) PrintStatistics(t types.Tcping) {
 	} else {
 		packetLoss = (float32(t.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
 	}
+
 	if math.IsNaN(float64(packetLoss)) {
 		packetLoss = 0
 	}

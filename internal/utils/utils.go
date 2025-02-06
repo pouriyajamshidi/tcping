@@ -18,7 +18,7 @@ import (
 )
 
 // MonitorSTDIN checks stdin to see whether the 'Enter' key was pressed
-func MonitorSTDIN(stdinChan chan bool) {
+func MonitorSTDIN(stdinChan chan<- bool) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _ := reader.ReadString('\n')

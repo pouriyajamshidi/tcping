@@ -13,8 +13,15 @@
 - refactor: rename `connTime` to `startTime` in connection handlers of `tcp.go`
 - refactor: rename `secondsBetweenProbes` to `intervalBetweenProbes` in user input options
 - refactor: replace `CalcLongestDowntime` and `CalcLongestUptime` with `SetLongestDuration`
+- refactor: convert channel in `MonitorSTDIN` to _send-only_
+- refactor: rename `stdinchan` to `stdinChan` to conform to Go's standard library conventions
+- refactor: capitalize the _r_ in `retrying to resolve` message of the `-r` flag
+- refactor: replace `PrintStatistics` with `PrintStats` in **CSV** tests
 - improvement: better grammar when printing the number of times a hostname resolution was retried
+- improvement: do not generate a new timestamp when printing probe failures. This will now correctly show sequential timestamps when the `-D` flag is provided
+- improvement: apply the same spacing throughout the code
 - fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
+- refactor: a lot of big and small code cleanups (too many to count)
 
 ## v2.7.1 - 2025-01-26
 

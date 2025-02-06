@@ -62,7 +62,6 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 				break
 			}
 		}
-
 	} else { // we are probably given an interface name
 		iface, err := net.InterfaceByName(ipAddress)
 		if err != nil {

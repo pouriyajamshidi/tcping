@@ -28,12 +28,12 @@ const (
 
 // Color functions used when printing information
 var (
-	ColorYellow      = color.Yellow.Printf
-	ColorGreen       = color.Green.Printf
-	ColorRed         = color.Red.Printf
 	ColorCyan        = color.Cyan.Printf
-	ColorLightYellow = color.LightYellow.Printf
-	ColorLightBlue   = color.FgLightBlue.Printf
-	ColorLightGreen  = color.LightGreen.Printf
 	ColorLightCyan   = color.LightCyan.Printf
+	ColorGreen       = color.Green.Printf
+	ColorLightGreen  = color.LightGreen.Printf
+	ColorYellow      = color.Yellow.Printf
+	ColorLightYellow = color.LightYellow.Printf
+	ColorRed         = color.Red.Printf
+	ColorLightBlue   = color.FgLightBlue.Printf
 )

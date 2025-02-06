@@ -30,6 +30,7 @@ func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration
 	t.OngoingUnsuccessfulProbes++
 
 	t.PrintProbeFail(
+		startTime,
 		t.Options,
 		t.OngoingUnsuccessfulProbes,
 	)
@@ -61,6 +62,7 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 
 	if !t.Options.ShowFailuresOnly {
 		t.PrintProbeSuccess(
+			startTime,
 			sourceAddr,
 			t.Options,
 			t.OngoingSuccessfulProbes,
