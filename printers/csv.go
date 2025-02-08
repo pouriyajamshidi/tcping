@@ -29,8 +29,8 @@ const (
 	filePermission os.FileMode = 0644
 )
 
-// CsvPrinter is responsible for writing probe results and statistics to CSV files.
-type CsvPrinter struct {
+// CSVPrinter is responsible for writing probe results and statistics to CSV files.
+type CSVPrinter struct {
 	ProbeWriter       *csv.Writer
 	StatsWriter       *csv.Writer
 	ProbeFile         *os.File
@@ -45,7 +45,7 @@ type CsvPrinter struct {
 }
 
 // NewCSVPrinter initializes a CsvPrinter instance with the given filename and settings.
-func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) (*CsvPrinter, error) {
+func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) (*CSVPrinter, error) {
 	filename = addCSVExtension(filename, false)
 
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermission)
@@ -55,7 +55,7 @@ func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) 
 
 	statsFilename := addCSVExtension(filename, true)
 
-	cp := &CsvPrinter{
+	cp := &CSVPrinter{
 		ProbeWriter:       csv.NewWriter(file),
 		ProbeFile:         file,
 		ProbeFilename:     filename,
@@ -85,8 +85,8 @@ func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) 
 	return cp, nil
 }
 
-func addCSVExtension(filename string, withStats bool) string {
-	if withStats {
+func addCSVExtension(filename string, withStatsExt bool) string {
+	if withStatsExt {
 		return strings.Split(filename, ".")[0] + "_stats.csv"
 	}
 
@@ -97,7 +97,7 @@ func addCSVExtension(filename string, withStats bool) string {
 	return filename + ".csv"
 }
 
-func (cp *CsvPrinter) writeHeader() error {
+func (cp *CSVPrinter) writeHeader() error {
 	headers := []string{
 		colStatus,
 		colHostname,
@@ -124,7 +124,7 @@ func (cp *CsvPrinter) writeHeader() error {
 	return cp.ProbeWriter.Error()
 }
 
-func (cp *CsvPrinter) writeRecord(record []string) error {
+func (cp *CSVPrinter) writeRecord(record []string) error {
 	if _, err := os.Stat(cp.ProbeFilename); os.IsNotExist(err) {
 		file, err := os.OpenFile(cp.ProbeFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermission)
 		if err != nil {
@@ -158,12 +158,12 @@ func (cp *CsvPrinter) writeRecord(record []string) error {
 }
 
 // PrintStart logs the beginning of a TCPing session.
-func (cp *CsvPrinter) PrintStart(hostname string, port uint16) {
+func (cp *CSVPrinter) PrintStart(hostname string, port uint16) {
 	fmt.Printf("TCPing results for %s on port %d being written to: %s\n", hostname, port, cp.ProbeFilename)
 }
 
 // PrintProbeSuccess logs a successful probe attempt to the CSV file.
-func (cp *CsvPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
+func (cp *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	record := []string{
 		"Reply",
 		opts.Hostname,
@@ -178,12 +178,12 @@ func (cp *CsvPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 	}
 
 	if err := cp.writeRecord(record); err != nil {
-		cp.PrintError("failed to write success record: %v", err)
+		cp.PrintError("Failed to write success record: %v", err)
 	}
 }
 
 // PrintProbeFail logs a failed probe attempt to the CSV file.
-func (cp *CsvPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
+func (cp *CSVPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
 	record := []string{
 		"No reply",
 		opts.Hostname,
@@ -198,12 +198,12 @@ func (cp *CsvPrinter) PrintProbeFail(startTime time.Time, opts types.Options, st
 	}
 
 	if err := cp.writeRecord(record); err != nil {
-		cp.PrintError("failed to write failure record: %v", err)
+		cp.PrintError("Failed to write failure record: %v", err)
 	}
 }
 
 // PrintRetryingToResolve logs an attempt to resolve a hostname.
-func (cp *CsvPrinter) PrintRetryingToResolve(hostname string) {
+func (cp *CSVPrinter) PrintRetryingToResolve(hostname string) {
 	record := []string{
 		"Resolving",
 		hostname,
@@ -214,23 +214,23 @@ func (cp *CsvPrinter) PrintRetryingToResolve(hostname string) {
 	}
 
 	if err := cp.writeRecord(record); err != nil {
-		cp.PrintError("failed to write resolve record: %v", err)
+		cp.PrintError("Failed to write resolve record: %v", err)
 	}
 }
 
 // PrintError logs an error message to stderr.
-func (cp *CsvPrinter) PrintError(format string, args ...any) {
+func (cp *CSVPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
-func (cp *CsvPrinter) writeStatsHeader() error {
+func (cp *CSVPrinter) writeStatsHeader() error {
 	headers := []string{
 		"Metric",
 		"Value",
 	}
 
 	if err := cp.StatsWriter.Write(headers); err != nil {
-		return fmt.Errorf("failed to write statistics headers: %w", err)
+		return fmt.Errorf("Failed to write statistics headers: %w", err)
 	}
 
 	cp.StatsWriter.Flush()
@@ -238,11 +238,11 @@ func (cp *CsvPrinter) writeStatsHeader() error {
 	return cp.StatsWriter.Error()
 }
 
-func (cp *CsvPrinter) writeStatsRecord(record []string) error {
+func (cp *CSVPrinter) writeStatsRecord(record []string) error {
 	if _, err := os.Stat(cp.StatsFilename); os.IsNotExist(err) {
 		statsFile, err := os.OpenFile(cp.StatsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermission)
 		if err != nil {
-			return fmt.Errorf("failed to recreate statistics CSV file: %w", err)
+			return fmt.Errorf("Failed to recreate statistics CSV file: %w", err)
 		}
 		cp.StatsFile = statsFile
 		cp.StatsWriter = csv.NewWriter(statsFile)
@@ -257,7 +257,7 @@ func (cp *CsvPrinter) writeStatsRecord(record []string) error {
 	}
 
 	if err := cp.StatsWriter.Write(record); err != nil {
-		return fmt.Errorf("failed to write statistics record: %w", err)
+		return fmt.Errorf("Failed to write statistics record: %w", err)
 	}
 
 	cp.StatsWriter.Flush()
@@ -266,11 +266,11 @@ func (cp *CsvPrinter) writeStatsRecord(record []string) error {
 }
 
 // PrintStatistics logs TCPing statistics to a CSV file.
-func (cp *CsvPrinter) PrintStatistics(t types.Tcping) {
+func (cp *CSVPrinter) PrintStatistics(t types.Tcping) {
 	if cp.StatsFile == nil {
 		statsFile, err := os.OpenFile(cp.StatsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_TRUNC, filePermission)
 		if err != nil {
-			cp.PrintError("failed to create statistics CSV file: %v", err)
+			cp.PrintError("Failed to create statistics CSV file: %v", err)
 			return
 		}
 		cp.StatsFile = statsFile
@@ -364,7 +364,7 @@ func (cp *CsvPrinter) PrintStatistics(t types.Tcping) {
 
 	for _, record := range statistics {
 		if err := cp.writeStatsRecord(record); err != nil {
-			cp.PrintError("failed to write statistics record: %v", err)
+			cp.PrintError("Failed to write statistics record: %v", err)
 			return
 		}
 	}
@@ -373,7 +373,7 @@ func (cp *CsvPrinter) PrintStatistics(t types.Tcping) {
 }
 
 // PrintTotalDownTime is a no-op implementation to satisfy the Printer interface.
-func (cp *CsvPrinter) PrintTotalDownTime(_ time.Duration) {}
+func (cp *CSVPrinter) PrintTotalDownTime(_ time.Duration) {}
 
 // PrintInfo is a no-op implementation to satisfy the Printer interface.
-func (cp *CsvPrinter) PrintInfo(_ string, _ ...any) {}
+func (cp *CSVPrinter) PrintInfo(_ string, _ ...any) {}

@@ -12,20 +12,23 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
-// TODO:
-// - Take care of `startTime time.Time` for printers other than colored and plain
-// - Should consts package move to internal?
-// - Pass Handler instead of tcping to printers helpers, etc
-// - Probably it is better to move SignalHandler to probes instead of printers
-// - Where should we place the Shutdown function? Printers seems a bit off
-// - Make `Options` of `Tcping` implicit too?
-// - Move types.NewLongestTime to printer instead?
-// - SetLongestTime does not seem to belong to printer package
-// - Cross-check the printer implementations to see how much they differ
-// 	 for instance JSONPrinter's PrintProbeFail lacks timestamp implementation
-// - Separate probe packages. e.g. tcp.Ping, http.Ping
-// - Show how long we were up on failure similar to what we do for success?
-// - Do we need the `PrintStart` functionality?
+/* TODO:
+- Take care of `startTime time.Time` for printers other than colored and plain
+- Pass Handler instead of tcping to printers helpers, etc
+- Probably it is better to move SignalHandler to probes instead of printers
+- SetLongestTime does not seem to belong to printer package
+- Cross-check the printer implementations to see how much they differ
+	 for instance JSONPrinter's PrintProbeFail lacks timestamp implementation
+- Move types.NewLongestTime to printer instead?
+- Make `Options` of `Tcping` implicit too?
+- Where should we place the Shutdown function? Printers seems a bit off
+- Separate probe packages. e.g. tcp.Ping, http.Ping
+- Show how long we were up on failure similar to what we do for success?
+- Should consts package move to internal?
+- Should types package move to internal?
+- Implement functional pattern to chose the prober
+- Read the entire code once everything is done for "code smells"
+*/
 
 func main() {
 	tcping := &types.Tcping{}

@@ -22,7 +22,7 @@ func Shutdown(t *types.Tcping) {
 	}
 
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting
-	if cp, ok := t.Printer.(*CsvPrinter); ok {
+	if cp, ok := t.Printer.(*CSVPrinter); ok {
 		cp.Cleanup()
 	}
 
