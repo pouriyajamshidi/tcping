@@ -14,6 +14,8 @@ import (
 
 /* TODO:
 - Take care of `startTime time.Time` for printers other than colored and plain
+- Probably, it is better to pass the userInput to NewXYZPrinter rather than sub functions
+- Should I nest the JSON output for example the latency stuff or let it lay flat?
 - Pass Handler instead of tcping to printers helpers, etc
 - Probably it is better to move SignalHandler to probes instead of printers
 - SetLongestTime does not seem to belong to printer package
@@ -28,6 +30,7 @@ import (
 - Should types package move to internal?
 - Implement functional pattern to chose the prober
 - Read the entire code once everything is done for "code smells"
+- Implement non-interactive mode so that we can use it with `disown` and `nohup`
 */
 
 func main() {

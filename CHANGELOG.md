@@ -18,9 +18,11 @@
 - refactor: rename `CsvPrinter` to `CSVPrinter`
 - refactor: capitalize the _r_ in `retrying to resolve` message of the `-r` flag
 - refactor: replace `PrintStatistics` with `PrintStats` in **CSV** tests
+- refactor: rename fields in JSON output to conform to JSON naming conventions
 - improvement: better grammar when printing the number of times a hostname resolution was retried
 - improvement: do not generate a new timestamp when printing probe failures. This will now correctly show sequential timestamps when the `-D` flag is provided
 - improvement: apply the same spacing throughout the code
+- improvement: display the same time format in JSON mode as the rest of printers
 - fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
 - refactor: a lot of big and small code cleanups (too many to count)
 

@@ -2,6 +2,7 @@
 package printers
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,19 +11,55 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
+// PrinterConfig holds all configuration options for Printer creation
+type PrinterConfig struct {
+	OutputJSON    bool
+	PrettyJSON    bool
+	NoColor       bool
+	TimeStamp     bool
+	SourceAddress bool
+	OutputDB      string
+	OutputCSV     string
+	TargetArgs    []string
+}
+
+// NewPrinter creates and returns an appropriate printer based on configuration
+func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
+	if cfg.PrettyJSON && !cfg.OutputJSON {
+		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
+	}
+
+	switch {
+	case cfg.OutputJSON:
+		return NewJSONPrinter(cfg), nil
+
+	case cfg.OutputDB != "":
+		return NewDB(cfg.OutputDB, cfg.TargetArgs), nil
+
+	case cfg.OutputCSV != "":
+		return NewCSVPrinter(cfg.OutputCSV, cfg.TimeStamp, cfg.SourceAddress)
+
+	case cfg.NoColor:
+		return NewPlainPrinter(cfg.TimeStamp), nil
+
+	default:
+		return NewColorPrinter(cfg.TimeStamp), nil
+	}
+}
+
 // Shutdown calculates endTime, prints statistics and calls os.Exit(0).
 // This should be used as the main exit-point.
-func Shutdown(t *types.Tcping) {
-	t.EndTime = time.Now()
-	PrintStats(t)
+func Shutdown(p *types.Tcping) {
+	p.EndTime = time.Now()
+	PrintStats(p)
 
 	// if the printer type is `database`, close it before exiting
-	if db, ok := t.Printer.(*Database); ok {
+	if db, ok := p.Printer.(*Database); ok {
 		db.Conn.Close()
 	}
 
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting
-	if cp, ok := t.Printer.(*CSVPrinter); ok {
+	if cp, ok := p.Printer.(*CSVPrinter); ok {
 		cp.Cleanup()
 	}
 
@@ -30,13 +67,13 @@ func Shutdown(t *types.Tcping) {
 }
 
 // SignalHandler catches SIGINT and SIGTERM then prints tcping stats
-func SignalHandler(tcping *types.Tcping) {
+func SignalHandler(p *types.Tcping) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-sigChan
-		Shutdown(tcping)
+		Shutdown(p)
 	}()
 }
 

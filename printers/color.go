@@ -40,80 +40,80 @@ func (p *ColorPrinter) PrintStart(hostname string, port uint16) {
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive successful probes.
 //   - rtt: The round-trip time of the probe in milliseconds.
-func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, userInput types.Options, streak uint, rtt float32) {
+func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
 	timestamp := ""
 	if p.ShowTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)
 	}
 
-	if userInput.Hostname == "" {
+	if opts.Hostname == opts.IP.String() {
 		if timestamp == "" {
-			if userInput.ShowSourceAddress {
+			if opts.ShowSourceAddress {
 				consts.ColorLightGreen("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
-					userInput.IP.String(),
-					userInput.Port,
+					opts.IP.String(),
+					opts.Port,
 					sourceAddr,
 					streak,
 					rtt)
 			} else {
 				consts.ColorLightGreen("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
-					userInput.IP.String(),
-					userInput.Port,
+					opts.IP.String(),
+					opts.Port,
 					streak,
 					rtt)
 			}
 		} else {
-			if userInput.ShowSourceAddress {
+			if opts.ShowSourceAddress {
 				consts.ColorLightGreen("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
 					timestamp,
-					userInput.IP.String(),
-					userInput.Port,
+					opts.IP.String(),
+					opts.Port,
 					sourceAddr,
 					streak,
 					rtt)
 			} else {
 				consts.ColorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
 					timestamp,
-					userInput.IP.String(),
-					userInput.Port,
+					opts.IP.String(),
+					opts.Port,
 					streak,
 					rtt)
 			}
 		}
 	} else {
 		if timestamp == "" {
-			if userInput.ShowSourceAddress {
+			if opts.ShowSourceAddress {
 				consts.ColorLightGreen("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
-					userInput.Hostname,
-					userInput.IP.String(),
-					userInput.Port,
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
 					sourceAddr,
 					streak,
 					rtt)
 			} else {
 				consts.ColorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
-					userInput.Hostname,
-					userInput.IP.String(),
-					userInput.Port,
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
 					streak,
 					rtt)
 			}
 		} else {
-			if userInput.ShowSourceAddress {
+			if opts.ShowSourceAddress {
 				consts.ColorLightGreen("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
 					timestamp,
-					userInput.Hostname,
-					userInput.IP.String(),
-					userInput.Port,
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
 					sourceAddr,
 					streak,
 					rtt)
 			} else {
 				consts.ColorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
 					timestamp,
-					userInput.Hostname,
-					userInput.IP.String(),
-					userInput.Port,
+					opts.Hostname,
+					opts.IP.String(),
+					opts.Port,
 					streak,
 					rtt)
 			}

@@ -17,18 +17,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
-// printerConfig holds all configuration options for Printer creation
-type printerConfig struct {
-	OutputJSON    bool
-	PrettyJSON    bool
-	NoColor       bool
-	TimeStamp     bool
-	SourceAddress bool
-	OutputDB      string
-	OutputCSV     string
-	TargetArgs    []string
-}
-
 type options struct {
 	useIPv4               *bool
 	useIPv6               *bool
@@ -182,30 +170,6 @@ func convertAndValidatePort(t *types.Tcping, portStr string) uint16 {
 	return uint16(port)
 }
 
-// newPrinter creates and returns an appropriate printer based on configuration
-func newPrinter(cfg printerConfig) (types.Printer, error) {
-	if cfg.PrettyJSON && !cfg.OutputJSON {
-		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
-	}
-
-	switch {
-	case cfg.OutputJSON:
-		return printers.NewJSONPrinter(cfg.PrettyJSON), nil
-
-	case cfg.OutputDB != "":
-		return printers.NewDB(cfg.OutputDB, cfg.TargetArgs), nil
-
-	case cfg.OutputCSV != "":
-		return printers.NewCSVPrinter(cfg.OutputCSV, cfg.TimeStamp, cfg.SourceAddress)
-
-	case cfg.NoColor:
-		return printers.NewPlainPrinter(cfg.TimeStamp), nil
-
-	default:
-		return printers.NewColorPrinter(cfg.TimeStamp), nil
-	}
-}
-
 // permuteArgs permute args for flag parsing stops just before the first non-flag argument.
 // see: https://pkg.go.dev/flag
 func permuteArgs(args []string) {
@@ -321,7 +285,7 @@ func ProcessUserInput(tcping *types.Tcping) {
 		utils.Usage()
 	}
 
-	config := printerConfig{
+	config := printers.PrinterConfig{
 		OutputJSON:    *outputJSON,
 		PrettyJSON:    *prettyJSON,
 		NoColor:       *noColor,
@@ -332,11 +296,12 @@ func ProcessUserInput(tcping *types.Tcping) {
 		TargetArgs:    args,
 	}
 
-	printer, err := newPrinter(config)
+	printer, err := printers.NewPrinter(config)
 	if err != nil {
 		fmt.Printf("Failed to create printer: %s\n", err)
 		os.Exit(1)
 	}
+
 	tcping.Printer = printer
 
 	opts := options{

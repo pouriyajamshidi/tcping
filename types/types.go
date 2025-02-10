@@ -53,12 +53,10 @@ type Printer interface {
 	PrintError(format string, args ...any)
 }
 
-// Handler represents an object that can probe a target
-// TODO: Re-evaluate
-type Handler interface {
+// Prober represents an object that can probe a target
+type Prober interface {
 	Printer
-	Options
-	Ping(any)
+	Ping()
 }
 
 // Tcping contains the main data structure for the TCPing program.
@@ -104,6 +102,7 @@ type Options struct {
 	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
 	ShowFailuresOnly         bool             // Flag indicating whether to only show failed probes.
 	ShowSourceAddress        bool             // Flag indicating whether to show the source address in the output.
+	ShowTimestamp            bool             // Flag indicating whether to show the timestamp in the output.
 }
 
 // RttResult holds statistics for round-trip times (RTT) results.
