@@ -13,13 +13,13 @@ import (
 // ColorPrinter provides functionality for printing messages with color support.
 // It optionally includes a timestamp in the output if ShowTimestamp is enabled.
 type ColorPrinter struct {
-	ShowTimestamp bool
+	cfg PrinterConfig
 }
 
 // NewColorPrinter creates a new ColorPrinter instance.
 // The showTimestamp parameter controls whether timestamps should be included in printed messages.
-func NewColorPrinter(showTimestamp bool) *ColorPrinter {
-	return &ColorPrinter{ShowTimestamp: showTimestamp}
+func NewColorPrinter(cfg PrinterConfig) *ColorPrinter {
+	return &ColorPrinter{cfg: cfg}
 }
 
 // PrintStart prints a message indicating the start of a TCP ping attempt.
@@ -41,14 +41,18 @@ func (p *ColorPrinter) PrintStart(hostname string, port uint16) {
 //   - streak: The number of consecutive successful probes.
 //   - rtt: The round-trip time of the probe in milliseconds.
 func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
+	if p.cfg.ShowFailuresOnly {
+		return
+	}
+
 	timestamp := ""
-	if p.ShowTimestamp {
+	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)
 	}
 
 	if opts.Hostname == opts.IP.String() {
 		if timestamp == "" {
-			if opts.ShowSourceAddress {
+			if p.cfg.WithSourceAddress {
 				consts.ColorLightGreen("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
 					opts.IP.String(),
 					opts.Port,
@@ -63,7 +67,7 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 					rtt)
 			}
 		} else {
-			if opts.ShowSourceAddress {
+			if p.cfg.WithSourceAddress {
 				consts.ColorLightGreen("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
 					timestamp,
 					opts.IP.String(),
@@ -82,7 +86,7 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 		}
 	} else {
 		if timestamp == "" {
-			if opts.ShowSourceAddress {
+			if p.cfg.WithSourceAddress {
 				consts.ColorLightGreen("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
 					opts.Hostname,
 					opts.IP.String(),
@@ -99,7 +103,7 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 					rtt)
 			}
 		} else {
-			if opts.ShowSourceAddress {
+			if p.cfg.WithSourceAddress {
 				consts.ColorLightGreen("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
 					timestamp,
 					opts.Hostname,
@@ -129,7 +133,7 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 //   - streak: The number of consecutive failed probes.
 func (p *ColorPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
-	if p.ShowTimestamp {
+	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)
 	}
 

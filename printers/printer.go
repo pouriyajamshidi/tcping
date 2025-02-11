@@ -13,14 +13,15 @@ import (
 
 // PrinterConfig holds all configuration options for Printer creation
 type PrinterConfig struct {
-	OutputJSON    bool
-	PrettyJSON    bool
-	NoColor       bool
-	TimeStamp     bool
-	SourceAddress bool
-	OutputDB      string
-	OutputCSV     string
-	TargetArgs    []string
+	OutputJSON        bool
+	PrettyJSON        bool
+	NoColor           bool
+	WithTimestamp     bool
+	WithSourceAddress bool
+	ShowFailuresOnly  bool
+	OutputDBPath      string
+	OutputCSVPath     string
+	TargetArgs        []string // TODO: Can I be omitted or be made more specific?
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration
@@ -33,17 +34,17 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 	case cfg.OutputJSON:
 		return NewJSONPrinter(cfg), nil
 
-	case cfg.OutputDB != "":
-		return NewDB(cfg.OutputDB, cfg.TargetArgs), nil
+	case cfg.OutputDBPath != "":
+		return NewDB(cfg.OutputDBPath, cfg.TargetArgs), nil
 
-	case cfg.OutputCSV != "":
-		return NewCSVPrinter(cfg.OutputCSV, cfg.TimeStamp, cfg.SourceAddress)
+	case cfg.OutputCSVPath != "":
+		return NewCSVPrinter(cfg.OutputCSVPath, cfg.WithTimestamp, cfg.WithSourceAddress)
 
 	case cfg.NoColor:
-		return NewPlainPrinter(cfg.TimeStamp), nil
+		return NewPlainPrinter(cfg), nil
 
 	default:
-		return NewColorPrinter(cfg.TimeStamp), nil
+		return NewColorPrinter(cfg), nil
 	}
 }
 

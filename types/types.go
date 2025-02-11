@@ -100,9 +100,6 @@ type Options struct {
 	UseIPv4                  bool             // Flag indicating whether to use IPv4 addresses.
 	UseIPv6                  bool             // Flag indicating whether to use IPv6 addresses.
 	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
-	ShowFailuresOnly         bool             // Flag indicating whether to only show failed probes.
-	ShowSourceAddress        bool             // Flag indicating whether to show the source address in the output.
-	ShowTimestamp            bool             // Flag indicating whether to show the timestamp in the output.
 }
 
 // RttResult holds statistics for round-trip times (RTT) results.

@@ -19,6 +19,10 @@
 - refactor: capitalize the _r_ in `retrying to resolve` message of the `-r` flag
 - refactor: replace `PrintStatistics` with `PrintStats` in **CSV** tests
 - refactor: rename fields in JSON output to conform to JSON naming conventions
+- refactor: rename `cp` to `p` in `CSVPrinter` to conform to the rest of the code base
+- refactor: define a `PrinterConfig` struct and pass that to printer initializers instead of various flags to printer methods
+- refactor: remove the `Print` method in `JSONPrinter` in favor of directly using `Encode`
+- refactor: align `JSONPrinter` with other printers
 - improvement: better grammar when printing the number of times a hostname resolution was retried
 - improvement: do not generate a new timestamp when printing probe failures. This will now correctly show sequential timestamps when the `-D` flag is provided
 - improvement: apply the same spacing throughout the code

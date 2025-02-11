@@ -149,9 +149,6 @@ func setOptions(t *types.Tcping, opts options) {
 	if *opts.intName != "" {
 		t.Options.NetworkInterface = newNetworkInterface(t, *opts.intName)
 	}
-
-	t.Options.ShowFailuresOnly = *opts.showFailuresOnly
-	t.Options.ShowSourceAddress = *opts.showSourceAddress
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
@@ -286,14 +283,15 @@ func ProcessUserInput(tcping *types.Tcping) {
 	}
 
 	config := printers.PrinterConfig{
-		OutputJSON:    *outputJSON,
-		PrettyJSON:    *prettyJSON,
-		NoColor:       *noColor,
-		TimeStamp:     *showTimestamp,
-		SourceAddress: *showSourceAddress,
-		OutputDB:      *saveToDB,
-		OutputCSV:     *saveToCSV,
-		TargetArgs:    args,
+		OutputJSON:        *outputJSON,
+		PrettyJSON:        *prettyJSON,
+		NoColor:           *noColor,
+		WithTimestamp:     *showTimestamp,
+		WithSourceAddress: *showSourceAddress,
+		ShowFailuresOnly:  *showFailuresOnly,
+		OutputDBPath:      *saveToDB,
+		OutputCSVPath:     *saveToCSV,
+		TargetArgs:        args,
 	}
 
 	printer, err := printers.NewPrinter(config)
@@ -312,8 +310,6 @@ func ProcessUserInput(tcping *types.Tcping) {
 		timeout:               timeout,
 		intervalBetweenProbes: intervalBetweenProbes,
 		intName:               interfaceName,
-		showFailuresOnly:      showFailuresOnly,
-		showSourceAddress:     showSourceAddress,
 		args:                  args,
 	}
 

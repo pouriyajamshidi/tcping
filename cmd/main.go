@@ -14,15 +14,16 @@ import (
 
 /* TODO:
 - Take care of `startTime time.Time` for printers other than colored and plain
-- Probably, it is better to pass the userInput to NewXYZPrinter rather than sub functions
+- Reorder JSON fields for better readability
+- I think there are some overlaps in printer success and probe failure conditionals
 - Should I nest the JSON output for example the latency stuff or let it lay flat?
-- Pass Handler instead of tcping to printers helpers, etc
 - Probably it is better to move SignalHandler to probes instead of printers
 - SetLongestTime does not seem to belong to printer package
 - Cross-check the printer implementations to see how much they differ
-	 for instance JSONPrinter's PrintProbeFail lacks timestamp implementation
+for instance JSONPrinter's PrintProbeFail lacks timestamp implementation
 - Move types.NewLongestTime to printer instead?
 - Make `Options` of `Tcping` implicit too?
+- Pass Handler instead of tcping to printers helpers, etc
 - Where should we place the Shutdown function? Printers seems a bit off
 - Separate probe packages. e.g. tcp.Ping, http.Ping
 - Show how long we were up on failure similar to what we do for success?

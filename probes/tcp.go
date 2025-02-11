@@ -60,15 +60,13 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 	t.OngoingSuccessfulProbes++
 	t.Rtt = append(t.Rtt, rtt)
 
-	if !t.Options.ShowFailuresOnly {
-		t.PrintProbeSuccess(
-			startTime,
-			sourceAddr,
-			t.Options,
-			t.OngoingSuccessfulProbes,
-			rtt,
-		)
-	}
+	t.PrintProbeSuccess(
+		startTime,
+		sourceAddr,
+		t.Options,
+		t.OngoingSuccessfulProbes,
+		rtt,
+	)
 }
 
 // Ping checks target's availability using TCP

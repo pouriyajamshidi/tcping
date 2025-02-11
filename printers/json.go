@@ -25,7 +25,6 @@ const (
 	retrySuccessEvent JSONEventType = "retry-success" // Event type for `PrintTotalDowntime` method.
 	statisticsEvent   JSONEventType = "statistics"    // Event type for `PrintStatistics` method.
 	infoEvent         JSONEventType = "info"          // Event type for `PrintInfo` method.
-	versionEvent      JSONEventType = "version"       // Event type for `PrintVersion` method. // FIXME: This is unused
 	errorEvent        JSONEventType = "error"         // Event type for `PrintError` method.
 )
 
@@ -65,7 +64,7 @@ type JSONData struct {
 	TotalDuration           string     `json:"totalDuration,omitempty"`   // TotalDuration is a total amount of seconds that program was running
 	LongestUptime           string     `json:"longestUptime,omitempty"`   // LongestUptime is the longest uptime in seconds.
 	LongestDowntime         string     `json:"longestDowntime,omitempty"` // LongestUptime is the longest uptime in seconds.
-	TotalPacketLoss         string     `json:"totalPacketLoss,omitempty"` // TotalPacketLoss in seconds. //TODO: is this a good comment?
+	TotalPacketLoss         string     `json:"totalPacketLoss,omitempty"` // TotalPacketLoss in seconds.
 	TotalPackets            uint       `json:"totalPackets,omitempty"`
 	TotalSuccessfulProbes   uint       `json:"totalSuccessfulProbes,omitempty"`
 	TotalUnsuccessfulProbes uint       `json:"totalUnsuccessfulProbes,omitempty"`
@@ -81,26 +80,19 @@ type JSONPrinter struct {
 
 // NewJSONPrinter creates a new JSONPrinter instance.
 // If prettify is true, the JSON output will be formatted with indentation.
-func NewJSONPrinter(opts PrinterConfig) *JSONPrinter {
+func NewJSONPrinter(cfg PrinterConfig) *JSONPrinter {
 	encoder := json.NewEncoder(os.Stdout)
 
-	if opts.PrettyJSON {
+	if cfg.PrettyJSON {
 		encoder.SetIndent("", "\t")
 	}
 
-	return &JSONPrinter{encoder: encoder, cfg: opts}
-}
-
-// Print is a little helper method for p.encoder.Encode.
-// it also sets data.Timestamp to Now().
-func (p *JSONPrinter) Print(data JSONData) {
-	data.Timestamp = time.Now().Format(consts.TimeFormat)
-	p.encoder.Encode(data)
+	return &JSONPrinter{encoder: encoder, cfg: cfg}
 }
 
 // PrintStart prints the initial message before doing probes.
 func (p *JSONPrinter) PrintStart(hostname string, port uint16) {
-	p.Print(JSONData{
+	p.encoder.Encode(JSONData{
 		Type:     startEvent,
 		Message:  fmt.Sprintf("TCPinging %s on port %d", hostname, port),
 		Hostname: hostname,
@@ -110,6 +102,10 @@ func (p *JSONPrinter) PrintStart(hostname string, port uint16) {
 
 // PrintProbeSuccess prints successful TCP probe replies in JSON format.
 func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
+	if p.cfg.ShowFailuresOnly {
+		return
+	}
+
 	// so that *bool fields not get omitted
 	f := false
 	t := true
@@ -126,16 +122,13 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 	}
 
 	timestamp := ""
-	if opts.ShowTimestamp {
+	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)
 	}
 
-	// TODO: why timestamp is false when -D is provided?
-
 	if opts.Hostname == opts.IP.String() {
-		data.DestIsIP = &f
 		if timestamp == "" {
-			if opts.ShowSourceAddress {
+			if p.cfg.WithSourceAddress {
 				data.Message = fmt.Sprintf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms",
 					opts.IP.String(),
 					opts.Port,
@@ -150,7 +143,9 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 					rtt)
 			}
 		} else {
-			if opts.ShowSourceAddress {
+			data.Timestamp = time.Now().Format(consts.TimeFormat)
+
+			if p.cfg.WithSourceAddress {
 				data.Message = fmt.Sprintf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms",
 					timestamp,
 					opts.IP.String(),
@@ -168,8 +163,9 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 			}
 		}
 	} else {
+		data.DestIsIP = &f
 		if timestamp == "" {
-			if opts.ShowSourceAddress {
+			if p.cfg.WithSourceAddress {
 				data.Message = fmt.Sprintf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms",
 					opts.Hostname,
 					opts.IP.String(),
@@ -186,7 +182,9 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 					rtt)
 			}
 		} else {
-			if opts.ShowSourceAddress {
+			data.Timestamp = time.Now().Format(consts.TimeFormat)
+
+			if p.cfg.WithSourceAddress {
 				data.Message = fmt.Sprintf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms",
 					timestamp,
 					opts.Hostname,
@@ -207,46 +205,104 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 		}
 	}
 
-	p.Print(data)
+	p.encoder.Encode(data)
 }
 
 // PrintProbeFail prints a JSON message when a TCP probe fails.
 func (p *JSONPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
-	var (
-		// for *bool fields
-		f    = false
-		t    = true
-		data = JSONData{
-			Type:                    probeEvent,
-			Hostname:                opts.Hostname,
-			IPAddr:                  opts.IP.String(),
-			Port:                    opts.Port,
-			DestIsIP:                &t,
-			Success:                 &f,
-			TotalUnsuccessfulProbes: streak,
-		}
-	)
+	// so that *bool fields not get omitted
+	f := false
+	t := true
 
-	if opts.Hostname != "" {
-		data.DestIsIP = &f
-		data.Message = fmt.Sprintf("No reply from %s (%s) on port %d",
-			opts.Hostname, opts.IP.String(), opts.Port)
-	} else {
-		data.Message = fmt.Sprintf("No reply from %s on port %d",
-			opts.IP.String(), opts.Port)
+	data := JSONData{
+		Type:                    probeEvent,
+		Hostname:                opts.Hostname,
+		IPAddr:                  opts.IP.String(),
+		Port:                    opts.Port,
+		DestIsIP:                &t,
+		Success:                 &f,
+		TotalUnsuccessfulProbes: streak,
 	}
 
-	p.Print(data)
+	timestamp := ""
+	if p.cfg.WithTimestamp {
+		timestamp = startTime.Format(consts.TimeFormat)
+	}
+
+	if opts.Hostname == opts.IP.String() {
+		if timestamp == "" {
+			data.Message = fmt.Sprintf("No reply from %s on port %d",
+				opts.IP.String(),
+				opts.Port)
+		} else {
+			data.Message = fmt.Sprintf("%s No reply from %s on port %d",
+				timestamp,
+				opts.IP.String(),
+				opts.Port)
+		}
+	} else {
+		data.DestIsIP = &f
+		if timestamp == "" {
+			data.Message = fmt.Sprintf("No reply from %s (%s) on port %d",
+				opts.Hostname,
+				opts.IP.String(),
+				opts.Port)
+		} else {
+			data.Message = fmt.Sprintf("%s No reply from %s (%s) on port %d",
+				timestamp,
+				opts.Hostname,
+				opts.IP.String(),
+				opts.Port)
+		}
+	}
+
+	p.encoder.Encode(data)
+}
+
+// PrintTotalDownTime prints the total downtime,
+// if the next retry was successful.
+func (p *JSONPrinter) PrintTotalDownTime(downtime time.Duration) {
+	p.encoder.Encode(JSONData{
+		Type:          retrySuccessEvent,
+		Message:       fmt.Sprintf("No response received for %s", utils.DurationToString(downtime)),
+		TotalDowntime: downtime.Seconds(),
+	})
+}
+
+// PrintRetryingToResolve print the message retrying to resolve,
+// after n failed probes.
+func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
+	p.encoder.Encode(JSONData{
+		Type:     retryEvent,
+		Message:  fmt.Sprintf("Retrying to resolve %s", hostname),
+		Hostname: hostname,
+	})
+}
+
+// PrintInfo formats and prints an informational message in JSON format.
+func (p *JSONPrinter) PrintInfo(format string, args ...any) {
+	p.encoder.Encode(JSONData{
+		Type:    infoEvent,
+		Message: fmt.Sprintf(format, args...),
+	})
+}
+
+// PrintError formats and prints an error message in JSON format.
+func (p *JSONPrinter) PrintError(format string, args ...any) {
+	p.encoder.Encode(JSONData{
+		Type:    errorEvent,
+		Message: fmt.Sprintf(format, args...),
+	})
 }
 
 // PrintStatistics prints all gathered stats when program exits.
 func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 	data := JSONData{
-		Type:     statisticsEvent,
-		Message:  fmt.Sprintf("stats for %s", t.Options.Hostname),
-		IPAddr:   t.Options.IP.String(),
-		Hostname: t.Options.Hostname,
-
+		Type:                    statisticsEvent,
+		Message:                 fmt.Sprintf("stats for %s", t.Options.Hostname),
+		IPAddr:                  t.Options.IP.String(),
+		Hostname:                t.Options.Hostname,
+		Timestamp:               time.Now().Format(consts.TimeFormat),
 		StartTimestamp:          &t.StartTime,
 		TotalDowntime:           t.TotalDowntime.Seconds(),
 		TotalPackets:            t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes,
@@ -303,41 +359,5 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 	totalDuration := t.TotalDowntime + t.TotalUptime
 	data.TotalDuration = fmt.Sprintf("%.0f", totalDuration.Seconds())
 
-	p.Print(data)
-}
-
-// PrintTotalDownTime prints the total downtime,
-// if the next retry was successful.
-func (p *JSONPrinter) PrintTotalDownTime(downtime time.Duration) {
-	p.Print(JSONData{
-		Type:          retrySuccessEvent,
-		Message:       fmt.Sprintf("No response received for %s", utils.DurationToString(downtime)),
-		TotalDowntime: downtime.Seconds(),
-	})
-}
-
-// PrintRetryingToResolve print the message retrying to resolve,
-// after n failed probes.
-func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
-	p.Print(JSONData{
-		Type:     retryEvent,
-		Message:  fmt.Sprintf("Retrying to resolve %s", hostname),
-		Hostname: hostname,
-	})
-}
-
-// PrintInfo formats and prints an informational message in JSON format.
-func (p *JSONPrinter) PrintInfo(format string, args ...any) {
-	p.Print(JSONData{
-		Type:    infoEvent,
-		Message: fmt.Sprintf(format, args...),
-	})
-}
-
-// PrintError formats and prints an error message in JSON format.
-func (p *JSONPrinter) PrintError(format string, args ...any) {
-	p.Print(JSONData{
-		Type:    errorEvent,
-		Message: fmt.Sprintf(format, args...),
-	})
+	p.encoder.Encode(data)
 }
