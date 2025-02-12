@@ -26,7 +26,7 @@ func (p *PlainPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
-func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
+func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
 	if p.cfg.ShowFailuresOnly {
 		return
 	}
@@ -39,14 +39,14 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 	if opts.Hostname == "" {
 		if timestamp == "" {
 			if p.cfg.WithSourceAddress {
-				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 					opts.IP.String(),
 					opts.Port,
 					sourceAddr,
 					streak,
 					rtt)
 			} else {
-				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%s ms\n",
 					opts.IP.String(),
 					opts.Port,
 					streak,
@@ -54,7 +54,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 			}
 		} else {
 			if p.cfg.WithSourceAddress {
-				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 					timestamp,
 					opts.IP.String(),
 					opts.Port,
@@ -62,7 +62,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 					streak,
 					rtt)
 			} else {
-				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%s ms\n",
 					timestamp,
 					opts.IP.String(),
 					opts.Port,
@@ -73,7 +73,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 	} else {
 		if timestamp == "" {
 			if p.cfg.WithSourceAddress {
-				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 					opts.Hostname,
 					opts.IP.String(),
 					opts.Port,
@@ -81,7 +81,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 					streak,
 					rtt)
 			} else {
-				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
 					opts.Hostname,
 					opts.IP.String(),
 					opts.Port,
@@ -90,7 +90,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 			}
 		} else {
 			if p.cfg.WithSourceAddress {
-				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 					timestamp,
 					opts.Hostname,
 					opts.IP.String(),
@@ -99,7 +99,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 					streak,
 					rtt)
 			} else {
-				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
 					timestamp,
 					opts.Hostname,
 					opts.IP.String(),

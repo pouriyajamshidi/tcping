@@ -17,7 +17,7 @@ type Printer interface {
 	// PrintProbeSuccess should print a message after each successful probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecuti`ve probes.
-	PrintProbeSuccess(startTime time.Time, sourceAddr string, userInput Options, streak uint, rtt float32)
+	PrintProbeSuccess(startTime time.Time, sourceAddr string, userInput Options, streak uint, rtt string)
 
 	// PrintProbeFail should print a message after each failed probe.
 	// hostname could be empty, meaning it's pinging an address.

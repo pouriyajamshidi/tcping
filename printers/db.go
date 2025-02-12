@@ -282,7 +282,7 @@ func (db *Database) PrintError(format string, args ...any) {
 }
 
 // PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
-func (db *Database) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ float32) {
+func (db *Database) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ string) {
 }
 
 // PrintProbeFail satisfies the "printer" interface but does nothing in this implementation

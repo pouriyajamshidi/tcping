@@ -163,14 +163,14 @@ func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
 }
 
 // PrintProbeSuccess logs a successful probe attempt to the CSV file.
-func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt float32) {
+func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
 	record := []string{
 		"Reply",
 		opts.Hostname,
 		opts.IP.String(),
 		fmt.Sprint(opts.Port),
 		fmt.Sprint(streak),
-		fmt.Sprintf("%.3f", rtt),
+		rtt,
 	}
 
 	if p.ShowSourceAddress {

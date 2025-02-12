@@ -3,6 +3,7 @@
 package probes
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
 	"time"
@@ -65,7 +66,7 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 		sourceAddr,
 		t.Options,
 		t.OngoingSuccessfulProbes,
-		rtt,
+		fmt.Sprintf("%.3f", rtt),
 	)
 }
 

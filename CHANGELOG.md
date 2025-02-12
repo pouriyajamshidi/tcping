@@ -20,10 +20,14 @@
 - refactor: replace `PrintStatistics` with `PrintStats` in **CSV** tests
 - refactor: rename fields in JSON output to conform to JSON naming conventions
 - refactor: rename `cp` to `p` in `CSVPrinter` to conform to the rest of the code base
+- refactor: rename `totalSuccessfulProbes` and `totalUnsuccessfulProbes` to `ongoingSuccessfulProbes` and `ongoingUnsuccessfulProbes` in JSON output
 - refactor: define a `PrinterConfig` struct and pass that to printer initializers instead of various flags to printer methods
 - refactor: remove the `Print` method in `JSONPrinter` in favor of directly using `Encode`
 - refactor: align `JSONPrinter` with other printers
+- refactor: reorder JSON output fields for better readability
+- refactor: use the preferred time format on all JSON output to conform to other printers
 - improvement: better grammar when printing the number of times a hostname resolution was retried
+- improvement: omit `Hostname` from JSON output if the target is an IP address
 - improvement: do not generate a new timestamp when printing probe failures. This will now correctly show sequential timestamps when the `-D` flag is provided
 - improvement: apply the same spacing throughout the code
 - improvement: display the same time format in JSON mode as the rest of printers
