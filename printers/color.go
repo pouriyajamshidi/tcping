@@ -207,13 +207,6 @@ func (p *ColorPrinter) PrintError(format string, args ...any) {
 // successful and unsuccessful probes, uptime/downtime durations,
 // longest uptime/downtime, IP address changes, and RTT statistics.
 func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
-	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
-	packetLoss := (float32(t.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
-
-	if math.IsNaN(float64(packetLoss)) {
-		packetLoss = 0
-	}
-
 	/* general stats */
 	if !t.DestIsIP {
 		consts.ColorYellow("\n--- %s (%s) TCPing statistics ---\n",
@@ -222,8 +215,17 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 	} else {
 		consts.ColorYellow("\n--- %s TCPing statistics ---\n", t.Options.Hostname)
 	}
+
+	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
+
 	consts.ColorYellow("%d probes transmitted on port %d | ", totalPackets, t.Options.Port)
 	consts.ColorYellow("%d received, ", t.TotalSuccessfulProbes)
+
+	packetLoss := (float32(t.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
+
+	if math.IsNaN(float64(packetLoss)) {
+		packetLoss = 0
+	}
 
 	/* packet loss stats */
 	if packetLoss == 0 {

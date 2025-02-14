@@ -37,38 +37,40 @@ type JSONData struct {
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted,
 	// but we still need to omit it for non-probe messages.
-	Success                   *bool                  `json:"success,omitempty"`
-	Timestamp                 string                 `json:"timestamp,omitempty"`
-	Message                   string                 `json:"message"` // Message contains a message similar to other plain and colored printers.
-	IPAddr                    string                 `json:"ipAddress,omitempty"`
-	Hostname                  string                 `json:"hostname,omitempty"`
-	Port                      uint16                 `json:"port,omitempty"`
-	SourceAddr                string                 `json:"sourceAddress,omitempty"`
-	HostnameResolveTries      uint                   `json:"hostnameResolveTries,omitempty"`
-	HostnameChanges           []types.HostnameChange `json:"hostnameChanges,omitempty"`
-	DestIsIP                  *bool                  `json:"destinationIsIP,omitempty"`
-	Rtt                       string                 `json:"time,omitempty"`
-	StartTimestamp            string                 `json:"startTimestamp,omitempty"` // StartTimestamp is used as a start time of TotalDuration for stats messages.
-	EndTimestamp              string                 `json:"endTimestamp,omitempty"`   // EndTimestamp is used as an end of TotalDuration for stats messages.
-	LastSuccessfulProbe       string                 `json:"lastSuccessfulProbe,omitempty"`
-	LastUnsuccessfulProbe     string                 `json:"lastUnsuccessfulProbe,omitempty"`
-	LongestUptimeStart        string                 `json:"longestUptimeStart,omitempty"`
-	LongestUptimeEnd          string                 `json:"longestUptimeEnd,omitempty"`
-	LongestDowntimeEnd        string                 `json:"longestDowntimeEnd,omitempty"`
-	LongestDowntimeStart      string                 `json:"longestDowntimeStart,omitempty"`
-	Latency                   float32                `json:"latency,omitempty"`         // Latency in ms for a successful probe messages.
-	LatencyMin                string                 `json:"latencyMin,omitempty"`      // LatencyMin is a stringified 3 decimal places min latency for the stats event.
-	LatencyAvg                string                 `json:"latencyAvg,omitempty"`      // LatencyAvg is a stringified 3 decimal places avg latency for the stats event.
-	LatencyMax                string                 `json:"latencyMax,omitempty"`      // LatencyMax is a stringified 3 decimal places max latency for the stats event.
-	TotalDuration             string                 `json:"totalDuration,omitempty"`   // TotalDuration is a total amount of seconds that program was running
-	LongestUptime             string                 `json:"longestUptime,omitempty"`   // LongestUptime is the longest uptime in seconds.
-	LongestDowntime           string                 `json:"longestDowntime,omitempty"` // LongestUptime is the longest uptime in seconds.
-	TotalPacketLoss           string                 `json:"totalPacketLoss,omitempty"` // TotalPacketLoss in seconds.
-	TotalPackets              uint                   `json:"totalPackets,omitempty"`
-	OngoingSuccessfulProbes   uint                   `json:"ongoingSuccessfulProbes,omitempty"`
-	OngoingUnsuccessfulProbes uint                   `json:"ongoingUnsuccessfulProbes,omitempty"`
-	TotalUptime               float64                `json:"totalUptime,omitempty"`   // TotalUptime in seconds.
-	TotalDowntime             float64                `json:"totalDowntime,omitempty"` // TotalDowntime in seconds.
+	Success                         *bool                  `json:"success,omitempty"`
+	Timestamp                       string                 `json:"timestamp,omitempty"`
+	Message                         string                 `json:"message"` // Message contains a message similar to other plain and colored printers.
+	IPAddr                          string                 `json:"ipAddress,omitempty"`
+	Hostname                        string                 `json:"hostname,omitempty"`
+	Port                            uint16                 `json:"port,omitempty"`
+	TotalDuration                   string                 `json:"totalDuration,omitempty"` // TotalDuration is a total amount of seconds that program was running
+	TotalUptime                     string                 `json:"totalUptime,omitempty"`   // TotalUptime in seconds.
+	TotalDowntime                   string                 `json:"totalDowntime,omitempty"` // TotalDowntime in seconds.
+	TotalPackets                    uint                   `json:"totalPackets,omitempty"`
+	TotalSuccessfulPackets          uint                   `json:"totalSuccessfulPackets,omitempty"`
+	TotalUnsuccessfulPackets        uint                   `json:"totalUnsuccessfulPackets,omitempty"`
+	TotalPacketLossPercent          string                 `json:"totalPacketLossPercent,omitempty"` // TotalPacketLoss in seconds.
+	LongestUptime                   string                 `json:"longestUptime,omitempty"`          // LongestUptime is the longest uptime in seconds.
+	LongestDowntime                 string                 `json:"longestDowntime,omitempty"`        // LongestDowntime is the longest downtime in seconds.
+	SourceAddr                      string                 `json:"sourceAddress,omitempty"`
+	HostnameResolveTries            uint                   `json:"hostnameResolveTries,omitempty"`
+	HostnameChanges                 []types.HostnameChange `json:"hostnameChanges,omitempty"`
+	DestIsIP                        *bool                  `json:"destinationIsIP,omitempty"`
+	Rtt                             string                 `json:"time,omitempty"`
+	LastSuccessfulProbe             string                 `json:"lastSuccessfulProbe,omitempty"`
+	LastUnsuccessfulProbe           string                 `json:"lastUnsuccessfulProbe,omitempty"`
+	LongestConsecutiveUptimeStart   string                 `json:"longestConsecutiveUptimeStart,omitempty"`
+	LongestConsecutiveUptimeEnd     string                 `json:"longestConsecutiveUptimeEnd,omitempty"`
+	LongestConsecutiveDowntimeStart string                 `json:"longestConsecutiveDowntimeStart,omitempty"`
+	LongestConsecutiveDowntimeEnd   string                 `json:"longestConsecutiveDowntimeEnd,omitempty"`
+	Latency                         float32                `json:"latency,omitempty"`    // Latency in ms for a successful probe messages.
+	LatencyMin                      string                 `json:"latencyMin,omitempty"` // LatencyMin is a stringified 3 decimal places min latency for the stats event.
+	LatencyAvg                      string                 `json:"latencyAvg,omitempty"` // LatencyAvg is a stringified 3 decimal places avg latency for the stats event.
+	LatencyMax                      string                 `json:"latencyMax,omitempty"` // LatencyMax is a stringified 3 decimal places max latency for the stats event.
+	OngoingSuccessfulProbes         uint                   `json:"ongoingSuccessfulProbes,omitempty"`
+	OngoingUnsuccessfulProbes       uint                   `json:"ongoingUnsuccessfulProbes,omitempty"`
+	StartTimestamp                  string                 `json:"startTime,omitempty"` // StartTime is used as a start time of TotalDuration for stats messages.
+	EndTimestamp                    string                 `json:"endTime,omitempty"`   // EndTime is used as an end of TotalDuration for stats messages.
 }
 
 // JSONPrinter is a struct that holds a JSON encoder to print structured JSON output.
@@ -270,7 +272,7 @@ func (p *JSONPrinter) PrintTotalDownTime(downtime time.Duration) {
 	p.encoder.Encode(JSONData{
 		Type:          retrySuccessEvent,
 		Message:       fmt.Sprintf("No response received for %s", utils.DurationToString(downtime)),
-		TotalDowntime: downtime.Seconds(),
+		TotalDowntime: utils.DurationToString(downtime),
 	})
 }
 
@@ -303,16 +305,17 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 // PrintStatistics prints all gathered stats when program exits.
 func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 	data := JSONData{
-		Type:                      statisticsEvent,
-		IPAddr:                    t.Options.IP.String(),
-		Hostname:                  t.Options.Hostname,
-		Timestamp:                 time.Now().Format(consts.TimeFormat),
-		StartTimestamp:            t.StartTime.Format(consts.TimeFormat),
-		TotalDowntime:             t.TotalDowntime.Seconds(),
-		TotalPackets:              t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes,
-		OngoingSuccessfulProbes:   t.TotalSuccessfulProbes,
-		OngoingUnsuccessfulProbes: t.TotalUnsuccessfulProbes,
-		TotalUptime:               t.TotalUptime.Seconds(),
+		Type:                     statisticsEvent,
+		IPAddr:                   t.Options.IP.String(),
+		Port:                     t.Options.Port,
+		Hostname:                 t.Options.Hostname,
+		TotalSuccessfulPackets:   t.TotalSuccessfulProbes,
+		TotalUnsuccessfulPackets: t.TotalUnsuccessfulProbes,
+		Timestamp:                time.Now().Format(consts.TimeFormat),
+		StartTimestamp:           t.StartTime.Format(consts.TimeFormat),
+		TotalUptime:              utils.DurationToString(t.TotalUptime),
+		TotalDowntime:            utils.DurationToString(t.TotalDowntime),
+		TotalPackets:             t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes,
 	}
 
 	if !t.DestIsIP {
@@ -321,6 +324,7 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 			t.Options.IP)
 	} else {
 		data.Message = fmt.Sprintf("%s TCPing statistics - ", t.Options.IP)
+		data.Hostname = "" // to omit hostname from the output
 	}
 
 	data.Message += fmt.Sprintf("%d probes transmitted on port %d | %d received",
@@ -332,12 +336,14 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 		data.HostnameChanges = t.HostnameChanges
 	}
 
-	loss := (float32(data.OngoingUnsuccessfulProbes) / float32(data.TotalPackets)) * 100
-	if math.IsNaN(float64(loss)) {
-		loss = 0
+	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
+	packetLoss := (float32(t.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
+
+	if math.IsNaN(float64(packetLoss)) {
+		packetLoss = 0
 	}
 
-	data.TotalPacketLoss = fmt.Sprintf("%.2f", loss)
+	data.TotalPacketLossPercent = fmt.Sprintf("%.2f", packetLoss)
 
 	if !t.LastSuccessfulProbe.IsZero() {
 		data.LastSuccessfulProbe = t.LastSuccessfulProbe.Format(consts.TimeFormat)
@@ -349,14 +355,14 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 
 	if t.LongestUptime.Duration != 0 {
 		data.LongestUptime = fmt.Sprintf("%.0f", t.LongestUptime.Duration.Seconds())
-		data.LongestUptimeStart = t.LongestUptime.Start.Format(consts.TimeFormat)
-		data.LongestUptimeEnd = t.LongestUptime.End.Format(consts.TimeFormat)
+		data.LongestConsecutiveUptimeStart = t.LongestUptime.Start.Format(consts.TimeFormat)
+		data.LongestConsecutiveUptimeEnd = t.LongestUptime.End.Format(consts.TimeFormat)
 	}
 
 	if t.LongestDowntime.Duration != 0 {
 		data.LongestDowntime = fmt.Sprintf("%.0f", t.LongestDowntime.Duration.Seconds())
-		data.LongestDowntimeStart = t.LongestDowntime.Start.Format(consts.TimeFormat)
-		data.LongestDowntimeEnd = t.LongestDowntime.End.Format(consts.TimeFormat)
+		data.LongestConsecutiveDowntimeStart = t.LongestDowntime.Start.Format(consts.TimeFormat)
+		data.LongestConsecutiveDowntimeEnd = t.LongestDowntime.End.Format(consts.TimeFormat)
 	}
 
 	if !t.DestIsIP {
