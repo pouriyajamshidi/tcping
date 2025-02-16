@@ -16,7 +16,7 @@ import (
 
 func TestNewDBTableCreation(t *testing.T) {
 	arg := []string{"localhost", "8001"}
-	db := NewDB(":memory:", arg)
+	db := NewDatabasePrinter(":memory:", arg)
 	defer db.Conn.Close()
 
 	query := "SELECT name FROM sqlite_master WHERE type='table';"
@@ -34,7 +34,7 @@ func TestNewDBTableCreation(t *testing.T) {
 func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
-	db := NewDB(":memory:", arg)
+	db := NewDatabasePrinter(":memory:", arg)
 	t.Log(db.TableName)
 	defer db.Conn.Close()
 
@@ -204,7 +204,7 @@ FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.TableName, eventTypeStatis
 func TestSaveHostname(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"local-.host", "8001"}
-	db := NewDB(":memory:", arg)
+	db := NewDatabasePrinter(":memory:", arg)
 	defer db.Conn.Close()
 
 	// Test if hostName is sanitized correctly

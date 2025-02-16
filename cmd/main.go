@@ -14,13 +14,13 @@ import (
 
 /* TODO:
 - Take care of `startTime time.Time` for printers other than colored and plain
-- Reorder JSON fields for better readability
 - I think there are some overlaps in printer success and probe failure conditionals
-- Should I nest the JSON output for example the latency stuff or let it lay flat?
+- retry resolve hostname is not shown in other printers than color and plain
+- `PrintInfo` and possibly some other methods of the printer interface are not used -- remove
 - Probably it is better to move SignalHandler to probes instead of printers
 - SetLongestTime does not seem to belong to printer package
 - Cross-check the printer implementations to see how much they differ
-for instance JSONPrinter's PrintProbeFail lacks timestamp implementation
+- Implement a non-interactive mode
 - Move types.NewLongestTime to printer instead?
 - Make `Options` of `Tcping` implicit too?
 - Pass Handler instead of tcping to printers helpers, etc

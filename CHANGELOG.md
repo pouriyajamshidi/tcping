@@ -23,6 +23,7 @@
 - refactor: rename `totalSuccessfulProbes` and `totalUnsuccessfulProbes` to `ongoingSuccessfulProbes` and `ongoingUnsuccessfulProbes` in JSON output
 - refactor: define a `PrinterConfig` struct and pass that to printer initializers instead of various flags to printer methods
 - refactor: remove the `Print` method in `JSONPrinter` in favor of directly using `Encode`
+- refactor: rename `Database` to `DatabasePrinter`
 - improvement: add missing information to `PrintStatistics` of `JSONPrinter`
 - refactor: align `JSONPrinter` with other printers
 - refactor: reorder JSON output fields for better readability

@@ -15,24 +15,18 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-// Database represents a SQLite database connection for storing TCPing results.
-type Database struct {
-	Conn      *sqlite.Conn
-	DbPath    string
-	TableName string
-}
-
 const (
 	eventTypeStatistics     = "statistics"
 	eventTypeHostnameChange = "hostname change"
+)
 
-	tableSchema = `
-CREATE TABLE %s (
+const (
+	dataTableSchema = `CREATE TABLE %s (
     id INTEGER PRIMARY KEY,
     event_type TEXT NOT NULL, -- for the data type eg. statistics, hostname change
     timestamp DATETIME,
-    addr TEXT,
-    sourceAddr TEXT,
+    ip_address TEXT,
+    source_addr TEXT,
     hostname TEXT,
     port INTEGER,
     hostname_resolve_retries INTEGER,
@@ -68,14 +62,14 @@ CREATE TABLE %s (
 
     total_uptime TEXT,
     total_downtime TEXT
-);`
+	);`
 
 	// SQL statement for inserting statistics into the table
 	statSaveSchema = `INSERT INTO %s (
 	event_type,
 	timestamp,
-	addr,
-	sourceAddr,
+	ip_address,
+	source_addr,
 	hostname,
 	port,
 	hostname_resolve_retries,
@@ -103,33 +97,60 @@ CREATE TABLE %s (
 	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-// NewDB initializes a new Database instance, creates the table, and returns a pointer to it.
-// If any error occurs during database creation or table initialization, the function exits the program.
-func NewDB(dbPath string, args []string) *Database {
-	tableName := newTableName(args)
-	tableSchema := fmt.Sprintf(tableSchema, tableName)
+// DatabasePrinter represents a SQLite database connection for storing TCPing results.
+type DatabasePrinter struct {
+	Conn      *sqlite.Conn
+	DbPath    string
+	TableName string
+}
 
-	conn, err := sqlite.OpenConn(dbPath, sqlite.OpenCreate, sqlite.OpenReadWrite)
+// NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data table, and returns a pointer to it.
+// If any error occurs during database creation or table initialization, the function exits the program.
+func NewDatabasePrinter(cfg PrinterConfig) *DatabasePrinter {
+	filename := addDbExtension(cfg.OutputDBPath)
+
+	conn, err := sqlite.OpenConn(filename, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
-		consts.ColorRed("\nError while creating the database %q: %s\n", dbPath, err)
+		consts.ColorRed("\nError creating the database %q: %s\n", filename, err)
 		os.Exit(1)
 	}
+
+	tableName := sanitizeTableName(cfg.Target, cfg.Port)
+	tableSchema := fmt.Sprintf(dataTableSchema, tableName)
 
 	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
 	if err != nil {
-		consts.ColorRed("\nError writing to the database %q \nerr: %s\n", dbPath, err)
+		consts.ColorRed("\nError creating the data table: %s\n", err)
 		os.Exit(1)
 	}
-	return &Database{conn, dbPath, tableName}
+
+	return &DatabasePrinter{conn, filename, tableName}
 }
 
-// newTableName will return correctly formatted table name
-// formatting the table name as "example_com_port_hour_minute_sec_day_month_year"
+func addDbExtension(filename string) string {
+	if strings.HasSuffix(filename, ".db") {
+		return filename
+	}
+
+	return filename + ".db"
+}
+
+// sanitizeTableName will return the sanitized and correctly formatted table name
+// formatting the table name as "example_com_port__year_month_day_hour_minute_sec"
 // table name can't have '.','-' and can't start with numbers
-func newTableName(args []string) string {
-	sanitizedHost := strings.ReplaceAll(args[0], ".", "_")
+func sanitizeTableName(hostname, port string) string {
+	sanitizedHost := strings.ReplaceAll(hostname, ".", "_")
 	sanitizedHost = strings.ReplaceAll(sanitizedHost, "-", "_")
-	tableName := fmt.Sprintf("%s_%s_%s", sanitizedHost, args[1], time.Now().Format("15_04_05_01_02_2006"))
+
+	sanitizedTime := strings.ReplaceAll(time.Now().Format(consts.TimeFormat), "-", "_")
+	sanitizedTime = strings.ReplaceAll(sanitizedTime, ":", "_")
+	sanitizedTime = strings.ReplaceAll(sanitizedTime, " ", "_")
+
+	tableName := fmt.Sprintf("%s_%s__%s",
+		sanitizedHost,
+		port,
+		sanitizedTime,
+	)
 
 	if unicode.IsNumber(rune(tableName[0])) {
 		tableName = "_" + tableName
@@ -138,8 +159,17 @@ func newTableName(args []string) string {
 	return tableName
 }
 
+// PrintStart prints a message indicating that TCPing has started for the given hostname and port.
+func (db *DatabasePrinter) PrintStart(hostname string, port uint16) {
+	fmt.Printf("TCPinging %s on port %d - saving results to: %s\n", hostname, port, db.DbPath)
+}
+
+// PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
+func (db *DatabasePrinter) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ string) {
+}
+
 // saveStats saves stats to the database with proper formatting
-func (db *Database) saveStats(tcping types.Tcping) error {
+func (db *DatabasePrinter) saveStats(tcping types.Tcping) error {
 	totalPackets := tcping.TotalSuccessfulProbes + tcping.TotalUnsuccessfulProbes
 	packetLoss := (float32(tcping.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
 	if math.IsNaN(float64(packetLoss)) {
@@ -230,7 +260,7 @@ func (db *Database) saveStats(tcping types.Tcping) error {
 
 // saveHostNameChang saves the hostname changes
 // in multiple rows with event_type = eventTypeHostnameChange
-func (db *Database) saveHostNameChange(h []types.HostnameChange) error {
+func (db *DatabasePrinter) saveHostNameChange(h []types.HostnameChange) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s
 	(event_type, hostname_changed_to, hostname_change_time)
@@ -250,14 +280,9 @@ func (db *Database) saveHostNameChange(h []types.HostnameChange) error {
 	return nil
 }
 
-// PrintStart prints a message indicating that TCPing has started for the given hostname and port.
-func (db *Database) PrintStart(hostname string, port uint16) {
-	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
-}
-
 // PrintStatistics saves TCPing statistics to the database.
 // If an error occurs while saving, it logs the error.
-func (db *Database) PrintStatistics(tcping types.Tcping) {
+func (db *DatabasePrinter) PrintStatistics(tcping types.Tcping) {
 	err := db.saveStats(tcping)
 	if err != nil {
 		db.PrintError("\nError while writing stats to the database %q\nerr: %s", db.DbPath, err)
@@ -276,23 +301,19 @@ func (db *Database) PrintStatistics(tcping types.Tcping) {
 }
 
 // PrintError prints an error message to stderr and exits the program.
-func (db *Database) PrintError(format string, args ...any) {
+func (db *DatabasePrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 	os.Exit(1)
 }
 
-// PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
-func (db *Database) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ string) {
-}
-
 // PrintProbeFail satisfies the "printer" interface but does nothing in this implementation
-func (db *Database) PrintProbeFail(_ time.Time, _ types.Options, _ uint) {}
+func (db *DatabasePrinter) PrintProbeFail(_ time.Time, _ types.Options, _ uint) {}
 
 // PrintRetryingToResolve satisfies the "printer" interface but does nothing in this implementation
-func (db *Database) PrintRetryingToResolve(_ string) {}
+func (db *DatabasePrinter) PrintRetryingToResolve(_ string) {}
 
 // PrintTotalDownTime satisfies the "printer" interface but does nothing in this implementation
-func (db *Database) PrintTotalDownTime(_ time.Duration) {}
+func (db *DatabasePrinter) PrintTotalDownTime(_ time.Duration) {}
 
 // PrintInfo satisfies the "printer" interface but does nothing in this implementation
-func (db *Database) PrintInfo(_ string, _ ...any) {}
+func (db *DatabasePrinter) PrintInfo(_ string, _ ...any) {}

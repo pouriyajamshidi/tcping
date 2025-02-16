@@ -21,7 +21,8 @@ type PrinterConfig struct {
 	ShowFailuresOnly  bool
 	OutputDBPath      string
 	OutputCSVPath     string
-	TargetArgs        []string // TODO: Can I be omitted or be made more specific?
+	Target            string
+	Port              string
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration
@@ -35,7 +36,7 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 		return NewJSONPrinter(cfg), nil
 
 	case cfg.OutputDBPath != "":
-		return NewDB(cfg.OutputDBPath, cfg.TargetArgs), nil
+		return NewDatabasePrinter(cfg), nil
 
 	case cfg.OutputCSVPath != "":
 		return NewCSVPrinter(cfg.OutputCSVPath, cfg.WithTimestamp, cfg.WithSourceAddress)
@@ -55,7 +56,7 @@ func Shutdown(p *types.Tcping) {
 	PrintStats(p)
 
 	// if the printer type is `database`, close it before exiting
-	if db, ok := p.Printer.(*Database); ok {
+	if db, ok := p.Printer.(*DatabasePrinter); ok {
 		db.Conn.Close()
 	}
 

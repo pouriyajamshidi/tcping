@@ -237,8 +237,8 @@ func ProcessUserInput(tcping *types.Tcping) {
 	noColor := flag.Bool("no-color", false, "do not colorize output.")
 	saveToCSV := flag.String("csv",
 		"",
-		"path and file name to store output to CSV file. The stats will be saved with the same name and `_stats` suffix.")
-	saveToDB := flag.String("db", "", "path and file name to store output to sqlite3 database.")
+		"path and file name to store output to a CSV file. The stats will be saved with the same name and `_stats` suffix.")
+	saveToDB := flag.String("db", "", "path and file name to store output to a sqlite3 database.")
 	intervalBetweenProbes := flag.Float64("i",
 		1,
 		"interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
@@ -291,7 +291,8 @@ func ProcessUserInput(tcping *types.Tcping) {
 		ShowFailuresOnly:  *showFailuresOnly,
 		OutputDBPath:      *saveToDB,
 		OutputCSVPath:     *saveToCSV,
-		TargetArgs:        args,
+		Target:            args[0],
+		Port:              args[1],
 	}
 
 	printer, err := printers.NewPrinter(config)
