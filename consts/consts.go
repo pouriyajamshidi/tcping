@@ -22,8 +22,8 @@ const DNSTimeout = 2 * time.Second
 
 // Date and Time formats
 const (
-	TimeFormat = "2006-01-02 15:04:05"
-	HourFormat = "15:04:05"
+	TimeFormat = "2006-01-02 15:04:05" // TODO: Change with time.DateTime
+	HourFormat = "15:04:05"            // TODO: Change with time.TimeOnly
 )
 
 // Color functions used when printing information

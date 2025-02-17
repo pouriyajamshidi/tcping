@@ -19,20 +19,20 @@ import (
 type JSONEventType string
 
 const (
-	startEvent        JSONEventType = "start"        // Event type for `PrintStart` method.
-	probeEvent        JSONEventType = "probe"        // Event type for both `PrintProbeSuccess` and `PrintProbeFail`.
-	retryEvent        JSONEventType = "retry"        // Event type for `PrintRetryingToResolve` method.
-	retrySuccessEvent JSONEventType = "retrySuccess" // Event type for `PrintTotalDowntime` method.
-	statisticsEvent   JSONEventType = "statistics"   // Event type for `PrintStatistics` method.
-	infoEvent         JSONEventType = "info"         // Event type for `PrintInfo` method.
-	errorEvent        JSONEventType = "error"        // Event type for `PrintError` method.
+	startEvent        EventType = "start"        // Event type for `PrintStart` method.
+	probeEvent        EventType = "probe"        // Event type for both `PrintProbeSuccess` and `PrintProbeFail`.
+	retryEvent        EventType = "retry"        // Event type for `PrintRetryingToResolve` method.
+	retrySuccessEvent EventType = "retrySuccess" // Event type for `PrintTotalDowntime` method.
+	statisticsEvent   EventType = "statistics"   // Event type for `PrintStatistics` method.
+	infoEvent         EventType = "info"         // Event type for `PrintInfo` method.
+	errorEvent        EventType = "error"        // Event type for `PrintError` method.
 )
 
 // JSONData contains all possible fields for JSON output.
 // Because one event usually contains only a subset of fields,
 // other fields will be omitted in the output.
 type JSONData struct {
-	Type JSONEventType `json:"type"` // Specifies type of a message/event.
+	Type EventType `json:"type"` // Specifies type of a message/event.
 	// Success is a special field from probe messages, containing information
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted,
@@ -53,10 +53,10 @@ type JSONData struct {
 	LongestUptime                   string                 `json:"longestUptime,omitempty"`          // LongestUptime is the longest uptime in seconds.
 	LongestDowntime                 string                 `json:"longestDowntime,omitempty"`        // LongestDowntime is the longest downtime in seconds.
 	SourceAddr                      string                 `json:"sourceAddress,omitempty"`
-	HostnameResolveTries            uint                   `json:"hostnameResolveTries,omitempty"`
+	HostnameResolveRetries          uint                   `json:"hostnameResolveRetries,omitempty"`
 	HostnameChanges                 []types.HostnameChange `json:"hostnameChanges,omitempty"`
 	DestIsIP                        *bool                  `json:"destinationIsIP,omitempty"`
-	Rtt                             string                 `json:"time,omitempty"`
+	Time                            string                 `json:"time,omitempty"`
 	LastSuccessfulProbe             string                 `json:"lastSuccessfulProbe,omitempty"`
 	LastUnsuccessfulProbe           string                 `json:"lastUnsuccessfulProbe,omitempty"`
 	LongestConsecutiveUptimeStart   string                 `json:"longestConsecutiveUptimeStart,omitempty"`
@@ -116,7 +116,7 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 		Hostname:                opts.Hostname,
 		IPAddr:                  opts.IP.String(),
 		Port:                    opts.Port,
-		Rtt:                     rtt,
+		Time:                    rtt,
 		DestIsIP:                &t,
 		Success:                 &t,
 		OngoingSuccessfulProbes: streak,
@@ -146,7 +146,7 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 					rtt)
 			}
 		} else {
-			data.Timestamp = time.Now().Format(consts.TimeFormat)
+			data.Timestamp = timestamp
 
 			if p.cfg.WithSourceAddress {
 				data.Message = fmt.Sprintf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms",
@@ -186,7 +186,7 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 					rtt)
 			}
 		} else {
-			data.Timestamp = time.Now().Format(consts.TimeFormat)
+			data.Timestamp = timestamp
 
 			if p.cfg.WithSourceAddress {
 				data.Message = fmt.Sprintf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms",
@@ -366,7 +366,7 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 	}
 
 	if !t.DestIsIP {
-		data.HostnameResolveTries = t.RetriedHostnameLookups
+		data.HostnameResolveRetries = t.RetriedHostnameLookups
 	}
 
 	if t.RttResults.HasResults {

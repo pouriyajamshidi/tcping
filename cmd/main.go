@@ -32,6 +32,7 @@ import (
 - Implement functional pattern to chose the prober
 - Read the entire code once everything is done for "code smells"
 - Implement non-interactive mode so that we can use it with `disown` and `nohup`
+- Possibly use new slice functions instead of the current manual way
 */
 
 func main() {
