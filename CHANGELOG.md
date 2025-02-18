@@ -24,7 +24,10 @@
 - refactor: define a `PrinterConfig` struct and pass that to printer initializers instead of various flags to printer methods
 - refactor: remove the `Print` method in `JSONPrinter` in favor of directly using `Encode`
 - refactor: rename `Database` to `DatabasePrinter`
+- refactor: remove color printers from `DatabasePrinter`
+- refactor: remove `PrintInfo` from printer interface
 - improvement: add missing information to `PrintStatistics` of `JSONPrinter`
+- improvement: complete re-write of the `sqlite3` printer making it conformant to the rest of the code
 - refactor: align `JSONPrinter` with other printers
 - refactor: reorder JSON output fields for better readability
 - refactor: use the preferred time format on all JSON output to conform to other printers

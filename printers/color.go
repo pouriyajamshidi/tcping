@@ -184,15 +184,6 @@ func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
 	consts.ColorLightYellow("Retrying to resolve %s\n", hostname)
 }
 
-// PrintInfo prints an informational message in light blue.
-//
-// Parameters:
-//   - format: A format string for the message.
-//   - args: Arguments to format the message.
-func (p *ColorPrinter) PrintInfo(format string, args ...any) {
-	consts.ColorLightBlue(format+"\n", args...)
-}
-
 // PrintError prints an error message in red.
 //
 // Parameters:
@@ -227,7 +218,6 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		packetLoss = 0
 	}
 
-	/* packet loss stats */
 	if packetLoss == 0 {
 		consts.ColorGreen("%.2f%%", packetLoss)
 	} else if packetLoss > 0 && packetLoss <= 30 {
@@ -238,11 +228,9 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 
 	consts.ColorYellow(" packet loss\n")
 
-	/* successful packet stats */
 	consts.ColorYellow("successful probes:   ")
 	consts.ColorGreen("%d\n", t.TotalSuccessfulProbes)
 
-	/* unsuccessful packet stats */
 	consts.ColorYellow("unsuccessful probes: ")
 	consts.ColorRed("%d\n", t.TotalUnsuccessfulProbes)
 
@@ -260,13 +248,11 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		consts.ColorRed("%v\n", t.LastUnsuccessfulProbe.Format(consts.TimeFormat))
 	}
 
-	/* uptime and downtime stats */
 	consts.ColorYellow("total uptime: ")
 	consts.ColorGreen("  %s\n", utils.DurationToString(t.TotalUptime))
 	consts.ColorYellow("total downtime: ")
 	consts.ColorRed("%s\n", utils.DurationToString(t.TotalDowntime))
 
-	/* longest uptime stats */
 	if t.LongestUptime.Duration != 0 {
 		uptime := utils.DurationToString(t.LongestUptime.Duration)
 
@@ -278,7 +264,6 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		consts.ColorLightBlue("%v\n", t.LongestUptime.End.Format(consts.TimeFormat))
 	}
 
-	/* longest downtime stats */
 	if t.LongestDowntime.Duration != 0 {
 		downtime := utils.DurationToString(t.LongestDowntime.Duration)
 
@@ -290,7 +275,6 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		consts.ColorLightBlue("%v\n", t.LongestDowntime.End.Format(consts.TimeFormat))
 	}
 
-	/* resolve retry stats */
 	if !t.DestIsIP {
 		timeNoun := "time"
 		if t.RetriedHostnameLookups > 1 {
@@ -301,7 +285,7 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		consts.ColorRed("%d ", t.RetriedHostnameLookups)
 		consts.ColorYellow("%s\n", timeNoun)
 
-		if len(t.HostnameChanges) >= 2 {
+		if len(t.HostnameChanges) > 1 {
 			consts.ColorYellow("IP address changes:\n")
 			for i := 0; i < len(t.HostnameChanges)-1; i++ {
 				consts.ColorYellow("  from ")

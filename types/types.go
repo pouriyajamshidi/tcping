@@ -42,12 +42,6 @@ type Printer interface {
 	// This is being called on exit and when user hits "Enter".
 	PrintStatistics(s Tcping)
 
-	// PrintInfo should a message, which is not directly related
-	// to the pinging and serves as a helpful information.
-	//
-	// Example of such: new version with -u flag.
-	PrintInfo(format string, args ...any)
-
 	// PrintError should print an error message.
 	// Printer should also apply \n to the given string, if needed.
 	PrintError(format string, args ...any)

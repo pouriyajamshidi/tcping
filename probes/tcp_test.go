@@ -15,14 +15,13 @@ import (
 // of a printer that does nothing.
 type dummyPrinter struct{}
 
-func (fp *dummyPrinter) PrintStart(_ string, _ uint16)                                  {}
-func (fp *dummyPrinter) PrintProbeSuccess(_ string, _ types.Options, _ uint, _ float32) {}
-func (fp *dummyPrinter) PrintProbeFail(_ types.Options, _ uint)                         {}
-func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                                {}
-func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                             {}
-func (fp *dummyPrinter) PrintStatistics(_ types.Tcping)                                 {}
-func (fp *dummyPrinter) PrintInfo(_ string, _ ...interface{})                           {}
-func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                          {}
+func (fp *dummyPrinter) PrintStart(_ string, _ uint16)                                              {}
+func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ string) {}
+func (fp *dummyPrinter) PrintProbeFail(_ time.Time, _ types.Options, _ uint)                        {}
+func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                                            {}
+func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                                         {}
+func (fp *dummyPrinter) PrintStatistics(_ types.Tcping)                                             {}
+func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                                      {}
 
 // createTestStats should be used to create new stats structs.
 // it uses "127.0.0.1:12345" as default values, because

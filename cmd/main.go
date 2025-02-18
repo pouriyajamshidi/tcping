@@ -15,6 +15,8 @@ import (
 /* TODO:
 - Take care of `startTime time.Time` for printers other than colored and plain
 - I think there are some overlaps in printer success and probe failure conditionals
+- Rename `PrintProbeFail` to `PrintProbeFailure`
+- Should I implement a Done function for CSV and DB printers instead of doing different things in Shutdown()?
 - retry resolve hostname is not shown in other printers than color and plain
 - `PrintInfo` and possibly some other methods of the printer interface are not used -- remove
 - Probably it is better to move SignalHandler to probes instead of printers
@@ -33,6 +35,8 @@ import (
 - Read the entire code once everything is done for "code smells"
 - Implement non-interactive mode so that we can use it with `disown` and `nohup`
 - Possibly use new slice functions instead of the current manual way
+- See what printer methods are not used
+- The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 */
 
 func main() {

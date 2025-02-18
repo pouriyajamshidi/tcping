@@ -159,11 +159,6 @@ func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintInfo prints general informational messages.
-func (p *PlainPrinter) PrintInfo(format string, args ...any) {
-	fmt.Printf(format+"\n", args...)
-}
-
 // PrintError prints error messages.
 func (p *PlainPrinter) PrintError(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
@@ -178,7 +173,6 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 		packetLoss = 0
 	}
 
-	/* general stats */
 	if !t.DestIsIP {
 		fmt.Printf("\n--- %s (%s) TCPing statistics ---\n",
 			t.Options.Hostname,
@@ -191,13 +185,8 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 		t.Options.Port,
 		t.TotalSuccessfulProbes)
 
-	/* packet loss stats */
 	fmt.Printf("%.2f%% packet loss\n", packetLoss)
-
-	/* successful packet stats */
 	fmt.Printf("successful probes:   %d\n", t.TotalSuccessfulProbes)
-
-	/* unsuccessful packet stats */
 	fmt.Printf("unsuccessful probes: %d\n", t.TotalUnsuccessfulProbes)
 
 	fmt.Printf("last successful probe:   ")
@@ -214,11 +203,9 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 		fmt.Printf("%v\n", t.LastUnsuccessfulProbe.Format(consts.TimeFormat))
 	}
 
-	/* uptime and downtime stats */
 	fmt.Printf("total uptime: %s\n", utils.DurationToString(t.TotalUptime))
 	fmt.Printf("total downtime: %s\n", utils.DurationToString(t.TotalDowntime))
 
-	/* longest uptime stats */
 	if t.LongestUptime.Duration != 0 {
 		uptime := utils.DurationToString(t.LongestUptime.Duration)
 
@@ -228,7 +215,6 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 		fmt.Printf("to %v\n", t.LongestUptime.End.Format(consts.TimeFormat))
 	}
 
-	/* longest downtime stats */
 	if t.LongestDowntime.Duration != 0 {
 		downtime := utils.DurationToString(t.LongestDowntime.Duration)
 
@@ -237,7 +223,6 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 		fmt.Printf("to %v\n", t.LongestDowntime.End.Format(consts.TimeFormat))
 	}
 
-	/* resolve retry stats */
 	if !t.DestIsIP {
 		timeNoun := "time"
 		if t.RetriedHostnameLookups > 1 {

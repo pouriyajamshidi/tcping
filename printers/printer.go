@@ -39,7 +39,7 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 		return NewDatabasePrinter(cfg), nil
 
 	case cfg.OutputCSVPath != "":
-		return NewCSVPrinter(cfg.OutputCSVPath, cfg.WithTimestamp, cfg.WithSourceAddress)
+		return NewCSVPrinter(cfg)
 
 	case cfg.NoColor:
 		return NewPlainPrinter(cfg), nil
@@ -47,6 +47,22 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 	default:
 		return NewColorPrinter(cfg), nil
 	}
+}
+
+// PrintStats is a helper method for PrintStatistics
+// for the current printer.
+// This should be used instead, as it makes
+// all the necessary calculations beforehand.
+func PrintStats(t *types.Tcping) {
+	if t.DestWasDown {
+		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
+	} else {
+		SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfUptime), &t.LongestUptime)
+	}
+
+	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
+
+	t.PrintStatistics(*t)
 }
 
 // Shutdown calculates endTime, prints statistics and calls os.Exit(0).
@@ -120,20 +136,4 @@ func SetLongestDuration(start time.Time, duration time.Duration, longest *types.
 	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
 		*longest = newLongest
 	}
-}
-
-// PrintStats is a helper method for PrintStatistics
-// for the current printer.
-// This should be used instead, as it makes
-// all the necessary calculations beforehand.
-func PrintStats(t *types.Tcping) {
-	if t.DestWasDown {
-		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
-	} else {
-		SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfUptime), &t.LongestUptime)
-	}
-
-	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
-
-	t.PrintStatistics(*t)
 }

@@ -286,14 +286,6 @@ func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
 	})
 }
 
-// PrintInfo formats and prints an informational message in JSON format.
-func (p *JSONPrinter) PrintInfo(format string, args ...any) {
-	p.encoder.Encode(JSONData{
-		Type:    infoEvent,
-		Message: fmt.Sprintf(format, args...),
-	})
-}
-
 // PrintError formats and prints an error message in JSON format.
 func (p *JSONPrinter) PrintError(format string, args ...any) {
 	p.encoder.Encode(JSONData{

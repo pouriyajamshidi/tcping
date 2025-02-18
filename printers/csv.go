@@ -44,13 +44,13 @@ type CSVPrinter struct {
 	Cleanup           func()
 }
 
-// NewCSVPrinter initializes a CsvPrinter instance with the given filename and settings.
-func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) (*CSVPrinter, error) {
-	filename = addCSVExtension(filename, false)
+// NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
+func NewCSVPrinter(cfg PrinterConfig) (*CSVPrinter, error) {
+	filename := addCSVExtension(cfg.OutputCSVPath, false)
 
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermission)
 	if err != nil {
-		return nil, fmt.Errorf("Failed creating data CSV file: %w", err)
+		return nil, fmt.Errorf("Failed creating %s data CSV file: %w", cfg.OutputCSVPath, err)
 	}
 
 	statsFilename := addCSVExtension(filename, true)
@@ -60,8 +60,8 @@ func NewCSVPrinter(filename string, showTimestamp bool, showSourceAddress bool) 
 		ProbeFile:         file,
 		ProbeFilename:     filename,
 		StatsFilename:     statsFilename,
-		ShowTimestamp:     showTimestamp,
-		ShowSourceAddress: showSourceAddress,
+		ShowTimestamp:     cfg.WithTimestamp,
+		ShowSourceAddress: cfg.WithSourceAddress,
 	}
 
 	cp.Cleanup = func() {
@@ -374,6 +374,3 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 
 // PrintTotalDownTime is a no-op implementation to satisfy the Printer interface.
 func (p *CSVPrinter) PrintTotalDownTime(_ time.Duration) {}
-
-// PrintInfo is a no-op implementation to satisfy the Printer interface.
-func (p *CSVPrinter) PrintInfo(_ string, _ ...any) {}

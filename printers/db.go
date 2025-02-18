@@ -78,7 +78,7 @@ const (
 		longest_uptime TEXT,
 		longest_downtime TEXT,
 		hostname_resolve_retries INTEGER,
-		hostname_changes TEXT,
+		hostname_changes BLOB,
 		last_successful_probe TEXT,
 		last_unsuccessful_probe TEXT,
 		longest_consecutive_uptime_start TEXT,
@@ -169,14 +169,13 @@ type dbStats struct {
 	longestUptime                   string
 	longestDowntime                 string
 	hostnameResolveRetries          uint
-	hostnameChanges                 []types.HostnameChange
+	hostnameChanges                 string
 	lastSuccessfulProbe             string
 	lastUnsuccessfulProbe           string
 	longestConsecutiveUptimeStart   string
 	longestConsecutiveUptimeEnd     string
 	longestConsecutiveDowntimeStart string
 	longestConsecutiveDowntimeEnd   string
-	latency                         float32
 	latencyMin                      string
 	latencyAvg                      string
 	latencyMax                      string
@@ -208,7 +207,6 @@ func (d *dbStats) toArgs() []interface{} {
 		d.longestConsecutiveUptimeEnd,
 		d.longestConsecutiveDowntimeStart,
 		d.longestConsecutiveDowntimeEnd,
-		d.latency,
 		d.latencyMin,
 		d.latencyAvg,
 		d.latencyMax,
@@ -231,7 +229,7 @@ func NewDatabasePrinter(cfg PrinterConfig) *DatabasePrinter {
 
 	conn, err := sqlite.OpenConn(cfg.OutputDBPath, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
-		consts.ColorRed("\nError creating the database %q: %s\n", cfg.OutputDBPath, err)
+		fmt.Printf("\nError creating the database %q: %s\n", cfg.OutputDBPath, err)
 		os.Exit(1)
 	}
 
@@ -240,14 +238,14 @@ func NewDatabasePrinter(cfg PrinterConfig) *DatabasePrinter {
 
 	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
 	if err != nil {
-		consts.ColorRed("\nError creating the data table: %s\n", err)
+		fmt.Printf("\nError creating the data table: %s\n", err)
 		os.Exit(1)
 	}
 
-	statsTableSchema := fmt.Sprintf(statsTableSchema, tableName+"stats")
+	statsTableSchema := fmt.Sprintf(statsTableSchema, tableName+"_stats")
 	err = sqlitex.Execute(conn, statsTableSchema, &sqlitex.ExecOptions{})
 	if err != nil {
-		consts.ColorRed("\nError creating the statistics table: %s\n", err)
+		fmt.Printf("\nError creating the statistics table: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -288,7 +286,7 @@ func sanitizeTableName(hostname, port string) string {
 
 // PrintStart prints a message indicating that TCPing has started for the given hostname and port.
 func (p *DatabasePrinter) PrintStart(hostname string, port uint16) {
-	fmt.Printf("TCPinging %s on port %d - saving results to: %s\n", hostname, port, p.cfg.OutputDBPath)
+	fmt.Printf("TCPinging %s on port %d - saving results to file: %s\n", hostname, port, p.cfg.OutputDBPath)
 }
 
 // PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
@@ -425,6 +423,17 @@ func (p *DatabasePrinter) PrintProbeFail(startTime time.Time, opts types.Options
 	}
 }
 
+// PrintError prints an error message to stderr and exits the program.
+func (p *DatabasePrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
+}
+
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
+func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("Retrying to resolve %s\n", hostname)
+}
+
 // PrintStatistics saves TCPing statistics to the database.
 // If an error occurs while saving, it logs the error.
 func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
@@ -443,7 +452,17 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 	}
 
 	if len(t.HostnameChanges) > 1 {
-		data.hostnameChanges = t.HostnameChanges
+		for i := 0; i < len(t.HostnameChanges)-1; i++ {
+			if t.HostnameChanges[i].Addr.String() == "" {
+				continue
+			}
+
+			data.hostnameChanges += fmt.Sprintf("from %s to %s at %v\n",
+				t.HostnameChanges[i].Addr.String(),
+				t.HostnameChanges[i+1].Addr.String(),
+				t.HostnameChanges[i+1].When.Format(consts.TimeFormat),
+			)
+		}
 	}
 
 	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
@@ -494,137 +513,18 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(dataTableInsertSchema, p.TableName+"stats"),
+		fmt.Sprintf(statsTableInsertSchema, p.TableName+"_stats"),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
 		p.PrintError("Failed writing statistics to database: %s\n", err)
 	}
 
-	consts.ColorYellow("\nStatistics for %q have been saved to %q in the table %q\n", t.Options.Hostname, p.cfg.OutputDBPath, p.TableName+"stats")
-}
-
-func (p *DatabasePrinter) saveStats(tcping types.Tcping) error {
-	totalPackets := tcping.TotalSuccessfulProbes + tcping.TotalUnsuccessfulProbes
-	packetLoss := (float32(tcping.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
-	if math.IsNaN(float64(packetLoss)) {
-		packetLoss = 0
-	}
-
-	// If the time is zero, that means it never failed.
-	// In this case, the time should be empty instead of "0001-01-01 00:00:00".
-	// Rather, it should be left empty.
-	lastSuccessfulProbe := tcping.LastSuccessfulProbe.Format(consts.TimeFormat)
-	var neverSucceedProbe, neverFailedProbe bool
-	if tcping.LastSuccessfulProbe.IsZero() {
-		lastSuccessfulProbe = ""
-		neverSucceedProbe = true
-	}
-	lastUnsuccessfulProbe := tcping.LastUnsuccessfulProbe.Format(consts.TimeFormat)
-	if tcping.LastUnsuccessfulProbe.IsZero() {
-		lastUnsuccessfulProbe = ""
-		neverFailedProbe = true
-	}
-
-	// if the longest uptime is empty, then the column should also be empty
-	var longestUptimeDuration, longestUptimeStart, longestUptimeEnd string
-	var longestDowntimeDuration, longestDowntimeStart, longestDowntimeEnd string
-	longestUptimeDuration = "0s"
-	longestDowntimeDuration = "0s"
-
-	if !tcping.LongestUptime.Start.IsZero() {
-		longestUptimeDuration = tcping.LongestUptime.Duration.String()
-		longestUptimeStart = tcping.LongestUptime.Start.Format(consts.TimeFormat)
-		longestUptimeEnd = tcping.LongestUptime.End.Format(consts.TimeFormat)
-	}
-
-	if !tcping.LongestDowntime.Start.IsZero() {
-		longestDowntimeDuration = tcping.LongestDowntime.Duration.String()
-		longestDowntimeStart = tcping.LongestDowntime.Start.Format(consts.TimeFormat)
-		longestDowntimeEnd = tcping.LongestDowntime.End.Format(consts.TimeFormat)
-	}
-
-	var totalDuration string
-	if tcping.EndTime.IsZero() {
-		totalDuration = time.Since(tcping.StartTime).String()
-	} else {
-		totalDuration = tcping.EndTime.Sub(tcping.StartTime).String()
-	}
-
-	// TODO: Find a clean way to include source address
-	// other printers utilize printProbeSuccess which takes the net.Conn
-	// whereas DB is having its own way
-	args := []interface{}{
-		eventTypeStatistics,
-		time.Now().Format(consts.TimeFormat),
-		tcping.Options.IP.String(),
-		"source address",
-		tcping.Options.Hostname,
-		tcping.Options.Port,
-		tcping.RetriedHostnameLookups,
-		tcping.TotalSuccessfulProbes,
-		tcping.TotalUnsuccessfulProbes,
-		neverSucceedProbe,
-		neverFailedProbe,
-		lastSuccessfulProbe,
-		lastUnsuccessfulProbe,
-		totalPackets,
-		packetLoss,
-		tcping.TotalUptime.String(),
-		tcping.TotalDowntime.String(),
-		longestUptimeDuration,
-		longestUptimeStart,
-		longestUptimeEnd,
-		longestDowntimeDuration,
-		longestDowntimeStart,
-		longestDowntimeEnd,
-		fmt.Sprintf("%.3f", tcping.RttResults.Min),
-		fmt.Sprintf("%.3f", tcping.RttResults.Average),
-		fmt.Sprintf("%.3f", tcping.RttResults.Max),
-		tcping.StartTime.Format(consts.TimeFormat),
-		tcping.EndTime.Format(consts.TimeFormat),
-		totalDuration,
-	}
-
-	return sqlitex.Execute(
-		p.Conn,
-		fmt.Sprintf(dataTableInsertSchema, p.TableName),
-		&sqlitex.ExecOptions{Args: args},
+	fmt.Printf("\nProbe and statistics data for %q have been saved to the table %q and %q, respectively\n",
+		t.Options.Hostname,
+		p.TableName,
+		p.TableName+"_stats",
 	)
 }
 
-// saveHostNameChang saves the hostname changes
-// in multiple rows with event_type = eventTypeHostnameChange
-func (p *DatabasePrinter) saveHostNameChange(h []types.HostnameChange) error {
-	// %s will be replaced by the table name
-	schema := `INSERT INTO %s
-	(event_type, hostname_changed_to, hostname_change_time)
-	VALUES (?, ?, ?)`
-
-	for _, host := range h {
-		if host.Addr.String() == "" {
-			continue
-		}
-		err := sqlitex.Execute(p.Conn, fmt.Sprintf(schema, p.TableName), &sqlitex.ExecOptions{
-			Args: []interface{}{eventTypeHostnameChange, host.Addr.String(), host.When.Format(consts.TimeFormat)}})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// PrintError prints an error message to stderr and exits the program.
-func (p *DatabasePrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, format, args...)
-	os.Exit(1)
-}
-
-// PrintRetryingToResolve satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintRetryingToResolve(_ string) {}
-
 // PrintTotalDownTime satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintTotalDownTime(_ time.Duration) {}
-
-// PrintInfo satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintInfo(_ string, _ ...any) {}
