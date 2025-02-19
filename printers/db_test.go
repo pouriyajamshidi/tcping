@@ -23,7 +23,7 @@ func TestNewDBTableCreation(t *testing.T) {
 	err := sqlitex.Execute(db.Conn, query, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			Equals(t, stmt.ColumnCount(), 1)
-			Equals(t, stmt.ColumnText(0), db.TableName)
+			Equals(t, stmt.ColumnText(0), db.probeTableName)
 			return nil
 		},
 	})
@@ -35,7 +35,7 @@ func TestDbSaveStats(t *testing.T) {
 	// There are many fields, so many things could go wrong; that's why this elaborate test.
 	arg := []string{"localhost", "8001"}
 	db := NewDatabasePrinter(":memory:", arg)
-	t.Log(db.TableName)
+	t.Log(db.probeTableName)
 	defer db.Conn.Close()
 
 	stat := mockStats()
@@ -70,7 +70,7 @@ latency_max,
 start_time,
 end_time,
 total_duration
-FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.TableName, eventTypeStatistics)
+FROM ` + fmt.Sprintf("%s WHERE event_type = '%s'", db.probeTableName, eventTypeStatistics)
 
 	var (
 		addr, sourceAddr, hostname, port               string
@@ -209,14 +209,14 @@ func TestSaveHostname(t *testing.T) {
 
 	// Test if hostName is sanitized correctly
 	expectedTableName := fmt.Sprintf("%s_%s_%s", "local__host", "8001", time.Now().Format("15_04_05_01_02_2006"))
-	Equals(t, db.TableName, expectedTableName)
+	Equals(t, db.probeTableName, expectedTableName)
 
 	// Ensure the table is created correctly
-	dropQuery := fmt.Sprintf("DROP TABLE IF EXISTS %s;", db.TableName)
+	dropQuery := fmt.Sprintf("DROP TABLE IF EXISTS %s;", db.probeTableName)
 	err := sqlitex.Execute(db.Conn, dropQuery, nil)
 	isNil(t, err)
 
-	createQuery := fmt.Sprintf("CREATE TABLE %s (id INTEGER PRIMARY KEY, event_type TEXT NOT NULL, hostname_changed_to TEXT, hostname_change_time TEXT);", db.TableName)
+	createQuery := fmt.Sprintf("CREATE TABLE %s (id INTEGER PRIMARY KEY, event_type TEXT NOT NULL, hostname_changed_to TEXT, hostname_change_time TEXT);", db.probeTableName)
 	err = sqlitex.Execute(db.Conn, createQuery, nil)
 	isNil(t, err)
 
@@ -228,7 +228,7 @@ func TestSaveHostname(t *testing.T) {
 	// testing the host names if they are properly written
 	query := `SELECT
 		hostname_changed_to, hostname_change_time
-		FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", db.TableName, eventTypeHostnameChange)
+		FROM ` + fmt.Sprintf("%s WHERE event_type IS '%s';", db.probeTableName, eventTypeHostnameChange)
 
 	idx := 0
 	err = sqlitex.Execute(db.Conn, query, &sqlitex.ExecOptions{

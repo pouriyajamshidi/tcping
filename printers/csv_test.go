@@ -21,7 +21,7 @@ func TestNewCSVPrinter(t *testing.T) {
 	assert.Equal(t, dataFilename, cp.ProbeFilename)
 	assert.Equal(t, dataFilename[:len(dataFilename)-4]+"_stats.csv", cp.StatsFilename)
 
-	cp.Cleanup()
+	cp.Done()
 	os.Remove(dataFilename)
 	os.Remove(cp.StatsFilename)
 }
@@ -54,7 +54,7 @@ func TestWriteRecord(t *testing.T) {
 	assert.Equal(t, record, readRecord)
 
 	// Cleanup
-	cp.Cleanup()
+	cp.Done()
 	os.Remove(dataFilename)
 	os.Remove(cp.StatsFilename)
 }
@@ -94,7 +94,7 @@ func TestWriteStatistics(t *testing.T) {
 		assert.NotEmpty(t, record)
 	}
 
-	cp.Cleanup()
+	cp.Done()
 	os.Remove(dataFilename)
 	os.Remove(cp.StatsFilename)
 }
@@ -119,7 +119,7 @@ func TestCleanup(t *testing.T) {
 	PrintStats(&tcping)
 
 	// Perform cleanup
-	cp.Cleanup()
+	cp.Done()
 
 	// Verify files are closed and flushed
 	_, err = os.Stat(dataFilename)

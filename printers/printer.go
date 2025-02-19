@@ -36,7 +36,7 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 		return NewJSONPrinter(cfg), nil
 
 	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg), nil
+		return NewDatabasePrinter(cfg)
 
 	case cfg.OutputCSVPath != "":
 		return NewCSVPrinter(cfg)
@@ -78,7 +78,7 @@ func Shutdown(p *types.Tcping) {
 
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting
 	if cp, ok := p.Printer.(*CSVPrinter); ok {
-		cp.Cleanup()
+		cp.Done()
 	}
 
 	os.Exit(0)

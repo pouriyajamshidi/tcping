@@ -217,39 +217,42 @@ func (d *dbStats) toArgs() []interface{} {
 
 // DatabasePrinter represents a SQLite database connection for storing TCPing results.
 type DatabasePrinter struct {
-	Conn      *sqlite.Conn
-	TableName string
-	cfg       PrinterConfig
+	Conn           *sqlite.Conn
+	probeTableName string
+	statsTableName string
+	cfg            PrinterConfig
 }
 
 // NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data table, and returns a pointer to it.
 // If any error occurs during database creation or table initialization, the function exits the program.
-func NewDatabasePrinter(cfg PrinterConfig) *DatabasePrinter {
+func NewDatabasePrinter(cfg PrinterConfig) (*DatabasePrinter, error) {
+	probeTableName := sanitizeTableName(cfg.Target, cfg.Port)
+	statsTableName := probeTableName + "_stats"
+
 	cfg.OutputDBPath = addDbExtension(cfg.OutputDBPath)
 
 	conn, err := sqlite.OpenConn(cfg.OutputDBPath, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
-		fmt.Printf("\nError creating the database %q: %s\n", cfg.OutputDBPath, err)
-		os.Exit(1)
+		return nil, fmt.Errorf("\nError creating the database %q: %s", cfg.OutputDBPath, err)
 	}
 
-	tableName := sanitizeTableName(cfg.Target, cfg.Port)
-	tableSchema := fmt.Sprintf(dataTableSchema, tableName)
-
-	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
-	if err != nil {
+	tableSchema := fmt.Sprintf(dataTableSchema, probeTableName)
+	if err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{}); err != nil {
 		fmt.Printf("\nError creating the data table: %s\n", err)
 		os.Exit(1)
 	}
 
-	statsTableSchema := fmt.Sprintf(statsTableSchema, tableName+"_stats")
-	err = sqlitex.Execute(conn, statsTableSchema, &sqlitex.ExecOptions{})
-	if err != nil {
-		fmt.Printf("\nError creating the statistics table: %s\n", err)
-		os.Exit(1)
+	statsTableSchema := fmt.Sprintf(statsTableSchema, statsTableName)
+	if err = sqlitex.Execute(conn, statsTableSchema, &sqlitex.ExecOptions{}); err != nil {
+		return nil, fmt.Errorf("\nError creating the statistics table: %s", err)
 	}
 
-	return &DatabasePrinter{Conn: conn, TableName: tableName, cfg: cfg}
+	return &DatabasePrinter{
+		Conn:           conn,
+		probeTableName: probeTableName,
+		statsTableName: statsTableName,
+		cfg:            cfg,
+	}, nil
 }
 
 func addDbExtension(filename string) string {
@@ -368,7 +371,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(startTime time.Time, sourceAddr stri
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(dataTableInsertSchema, p.TableName),
+		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
 		p.PrintError("Failed writing probe success data to database: %s\n", err)
@@ -416,7 +419,7 @@ func (p *DatabasePrinter) PrintProbeFail(startTime time.Time, opts types.Options
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(dataTableInsertSchema, p.TableName),
+		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
 		p.PrintError("Failed writing probe failure data to database: %s\n", err)
@@ -513,7 +516,7 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(statsTableInsertSchema, p.TableName+"_stats"),
+		fmt.Sprintf(statsTableInsertSchema, p.statsTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
 		p.PrintError("Failed writing statistics to database: %s\n", err)
@@ -521,8 +524,8 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 
 	fmt.Printf("\nProbe and statistics data for %q have been saved to the table %q and %q, respectively\n",
 		t.Options.Hostname,
-		p.TableName,
-		p.TableName+"_stats",
+		p.probeTableName,
+		p.statsTableName,
 	)
 }
 

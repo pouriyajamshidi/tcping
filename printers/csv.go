@@ -15,56 +15,61 @@ import (
 )
 
 const (
-	colStatus        = "Status"
-	colTimestamp     = "Timestamp"
-	colHostname      = "Hostname"
-	colIP            = "IP"
-	colPort          = "Port"
-	colTCPConn       = "TCP_Conn"
-	colLatency       = "Latency(ms)"
-	colSourceAddress = "Source Address"
+	colStatus        string = "Status"
+	colTimestamp     string = "Timestamp"
+	colHostname      string = "Hostname"
+	colIP            string = "IP"
+	colPort          string = "Port"
+	colTCPConn       string = "TCP_Conn"
+	colLatency       string = "Latency(ms)"
+	colSourceAddress string = "Source Address"
 )
 
 const (
 	filePermission os.FileMode = 0644
+	fileFlag       int         = os.O_CREATE | os.O_WRONLY | os.O_APPEND
 )
 
 // CSVPrinter is responsible for writing probe results and statistics to CSV files.
 type CSVPrinter struct {
-	ProbeWriter       *csv.Writer
-	StatsWriter       *csv.Writer
-	ProbeFile         *os.File
-	StatsFile         *os.File
-	StatsFilename     string
-	ProbeFilename     string
-	HeaderDone        bool
-	StatsHeaderDone   bool
-	ShowTimestamp     bool
-	ShowSourceAddress bool
-	Cleanup           func()
+	ProbeWriter     *csv.Writer
+	StatsWriter     *csv.Writer
+	ProbeFile       *os.File
+	StatsFile       *os.File
+	StatsFilename   string
+	ProbeFilename   string
+	HeaderDone      bool
+	StatsHeaderDone bool
+	Done            func()
+	cfg             PrinterConfig
 }
 
 // NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
 func NewCSVPrinter(cfg PrinterConfig) (*CSVPrinter, error) {
-	filename := addCSVExtension(cfg.OutputCSVPath, false)
+	probeFilename := addCSVExtension(cfg.OutputCSVPath, false)
 
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermission)
+	probeFile, err := os.OpenFile(probeFilename, fileFlag, filePermission)
 	if err != nil {
-		return nil, fmt.Errorf("Failed creating %s data CSV file: %w", cfg.OutputCSVPath, err)
+		return nil, fmt.Errorf("Error creating the probe CSV file %s: %w", probeFilename, err)
 	}
 
-	statsFilename := addCSVExtension(filename, true)
+	statsFilename := addCSVExtension(cfg.OutputCSVPath, true)
+
+	statsFile, err := os.OpenFile(statsFilename, fileFlag, filePermission)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating the probe CSV file %s: %w", statsFilename, err)
+	}
 
 	cp := &CSVPrinter{
-		ProbeWriter:       csv.NewWriter(file),
-		ProbeFile:         file,
-		ProbeFilename:     filename,
-		StatsFilename:     statsFilename,
-		ShowTimestamp:     cfg.WithTimestamp,
-		ShowSourceAddress: cfg.WithSourceAddress,
+		ProbeWriter:   csv.NewWriter(probeFile),
+		ProbeFile:     probeFile,
+		StatsFile:     statsFile,
+		ProbeFilename: probeFilename,
+		StatsFilename: statsFilename,
+		cfg:           cfg,
 	}
 
-	cp.Cleanup = func() {
+	cp.Done = func() {
 		if cp.ProbeWriter != nil {
 			cp.ProbeWriter.Flush()
 		}
@@ -95,6 +100,31 @@ func addCSVExtension(filename string, withStatsExt bool) string {
 	}
 
 	return filename + ".csv"
+}
+
+// PrintStart logs the beginning of a TCPing session.
+func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
+	fmt.Printf("TCPinging %s on port %d - saving results to file: %s\n", hostname, port, p.cfg.OutputCSVPath)
+}
+
+// PrintProbeSuccess logs a successful probe to the CSV file.
+func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
+	record := []string{
+		"Reply",
+		opts.Hostname,
+		opts.IP.String(),
+		fmt.Sprint(opts.Port),
+		fmt.Sprint(streak),
+		rtt,
+	}
+
+	if p.ShowSourceAddress {
+		record = append(record, sourceAddr)
+	}
+
+	if err := p.writeRecord(record); err != nil {
+		p.PrintError("Failed to write success record: %v", err)
+	}
 }
 
 func (p *CSVPrinter) writeHeader() error {
@@ -155,31 +185,6 @@ func (p *CSVPrinter) writeRecord(record []string) error {
 	p.ProbeWriter.Flush()
 
 	return p.ProbeWriter.Error()
-}
-
-// PrintStart logs the beginning of a TCPing session.
-func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
-	fmt.Printf("TCPing results for %s on port %d being written to: %s\n", hostname, port, p.ProbeFilename)
-}
-
-// PrintProbeSuccess logs a successful probe attempt to the CSV file.
-func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	record := []string{
-		"Reply",
-		opts.Hostname,
-		opts.IP.String(),
-		fmt.Sprint(opts.Port),
-		fmt.Sprint(streak),
-		rtt,
-	}
-
-	if p.ShowSourceAddress {
-		record = append(record, sourceAddr)
-	}
-
-	if err := p.writeRecord(record); err != nil {
-		p.PrintError("Failed to write success record: %v", err)
-	}
 }
 
 // PrintProbeFail logs a failed probe attempt to the CSV file.
