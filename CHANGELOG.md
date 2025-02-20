@@ -32,6 +32,7 @@
 - refactor: reorder JSON output fields for better readability
 - refactor: use the preferred time format on all JSON output to conform to other printers
 - improvement: better grammar when printing the number of times a hostname resolution was retried
+- improvement: implement a `Done` method for CSV and DB printers to make exiting the program more unified
 - improvement: omit `Hostname` from JSON output if the target is an IP address
 - improvement: do not generate a new timestamp when printing probe failures. This will now correctly show sequential timestamps when the `-D` flag is provided
 - improvement: apply the same spacing throughout the code

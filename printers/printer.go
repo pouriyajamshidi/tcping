@@ -73,7 +73,7 @@ func Shutdown(p *types.Tcping) {
 
 	// if the printer type is `database`, close it before exiting
 	if db, ok := p.Printer.(*DatabasePrinter); ok {
-		db.Conn.Close()
+		db.Done()
 	}
 
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting

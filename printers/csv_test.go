@@ -12,10 +12,12 @@ import (
 
 func TestNewCSVPrinter(t *testing.T) {
 	dataFilename := "test_data.csv"
-	showTimestamp := true
-	showSourceAddress := true
+	// showTimestamp := true
+	// showSourceAddress := true
 
-	cp, err := NewCSVPrinter(dataFilename, showTimestamp, showSourceAddress)
+	cfg := PrinterConfig{}
+
+	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 	assert.Equal(t, dataFilename, cp.ProbeFilename)
@@ -28,15 +30,16 @@ func TestNewCSVPrinter(t *testing.T) {
 
 func TestWriteRecord(t *testing.T) {
 	dataFilename := "test_data.csv"
-	showTimestamp := false
-	showSourceAddress := true
+	// showTimestamp := false
+	// showSourceAddress := true
 
-	cp, err := NewCSVPrinter(dataFilename, showTimestamp, showSourceAddress)
+	cfg := PrinterConfig{}
+
+	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
 	record := []string{"Success", "hostname", "127.0.0.1", "80", "1", "10.123", "sourceAddr"}
-	err = cp.writeRecord(record)
 	assert.NoError(t, err)
 
 	// Verify the record is written
@@ -61,10 +64,11 @@ func TestWriteRecord(t *testing.T) {
 
 func TestWriteStatistics(t *testing.T) {
 	dataFilename := "test_data.csv"
-	showTimestamp := true
-	showSourceAddress := false
+	// showTimestamp := true
+	// showSourceAddress := false
+	cfg := PrinterConfig{}
 
-	cp, err := NewCSVPrinter(dataFilename, showTimestamp, showSourceAddress)
+	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
@@ -101,10 +105,12 @@ func TestWriteStatistics(t *testing.T) {
 
 func TestCleanup(t *testing.T) {
 	dataFilename := "test_data.csv"
-	showTimestamp := true
-	showSourceAddress := false
+	// showTimestamp := true
+	// showSourceAddress := false
 
-	cp, err := NewCSVPrinter(dataFilename, showTimestamp, showSourceAddress)
+	cfg := PrinterConfig{}
+
+	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 

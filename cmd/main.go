@@ -16,6 +16,8 @@ import (
 - Take care of `startTime time.Time` for printers other than colored and plain
 - I think there are some overlaps in printer success and probe failure conditionals
 - Rename `PrintProbeFail` to `PrintProbeFailure`
+- The PrintStart method probably is ok to just take the cfg rather than ip and port
+- Perhaps it is better to use `if p.cfg.ShowFailuresOnly` in the handle probe success only
 - Should I implement a Done function for CSV and DB printers instead of doing different things in Shutdown()?
 - retry resolve hostname is not shown in other printers than color and plain
 - `PrintInfo` and possibly some other methods of the printer interface are not used -- remove

@@ -40,7 +40,6 @@ type CSVPrinter struct {
 	ProbeFilename   string
 	HeaderDone      bool
 	StatsHeaderDone bool
-	Done            func()
 	cfg             PrinterConfig
 }
 
@@ -69,24 +68,6 @@ func NewCSVPrinter(cfg PrinterConfig) (*CSVPrinter, error) {
 		cfg:           cfg,
 	}
 
-	cp.Done = func() {
-		if cp.ProbeWriter != nil {
-			cp.ProbeWriter.Flush()
-		}
-
-		if cp.ProbeFile != nil {
-			cp.ProbeFile.Close()
-		}
-
-		if cp.StatsWriter != nil {
-			cp.StatsWriter.Flush()
-		}
-
-		if cp.StatsFile != nil {
-			cp.StatsFile.Close()
-		}
-	}
-
 	return cp, nil
 }
 
@@ -102,32 +83,26 @@ func addCSVExtension(filename string, withStatsExt bool) string {
 	return filename + ".csv"
 }
 
-// PrintStart logs the beginning of a TCPing session.
-func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
-	fmt.Printf("TCPinging %s on port %d - saving results to file: %s\n", hostname, port, p.cfg.OutputCSVPath)
-}
-
-// PrintProbeSuccess logs a successful probe to the CSV file.
-func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	record := []string{
-		"Reply",
-		opts.Hostname,
-		opts.IP.String(),
-		fmt.Sprint(opts.Port),
-		fmt.Sprint(streak),
-		rtt,
+// Done flushes the buffer of writers and closes the probe and stats file
+func (p *CSVPrinter) Done() {
+	if p.ProbeWriter != nil {
+		p.ProbeWriter.Flush()
 	}
 
-	if p.ShowSourceAddress {
-		record = append(record, sourceAddr)
+	if p.ProbeFile != nil {
+		p.ProbeFile.Close()
 	}
 
-	if err := p.writeRecord(record); err != nil {
-		p.PrintError("Failed to write success record: %v", err)
+	if p.StatsWriter != nil {
+		p.StatsWriter.Flush()
+	}
+
+	if p.StatsFile != nil {
+		p.StatsFile.Close()
 	}
 }
 
-func (p *CSVPrinter) writeHeader() error {
+func (p *CSVPrinter) writeProbeHeader() error {
 	headers := []string{
 		colStatus,
 		colHostname,
@@ -137,95 +112,21 @@ func (p *CSVPrinter) writeHeader() error {
 		colLatency,
 	}
 
-	if p.ShowSourceAddress {
+	if p.cfg.WithSourceAddress {
 		headers = append(headers, colSourceAddress)
 	}
 
-	if p.ShowTimestamp {
+	if p.cfg.WithTimestamp {
 		headers = append(headers, colTimestamp)
 	}
 
 	if err := p.ProbeWriter.Write(headers); err != nil {
-		return fmt.Errorf("failed to write headers: %w", err)
+		return fmt.Errorf("Failed to write headers: %w", err)
 	}
 
 	p.ProbeWriter.Flush()
 
 	return p.ProbeWriter.Error()
-}
-
-func (p *CSVPrinter) writeRecord(record []string) error {
-	if _, err := os.Stat(p.ProbeFilename); os.IsNotExist(err) {
-		file, err := os.OpenFile(p.ProbeFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermission)
-		if err != nil {
-			return fmt.Errorf("failed to recreate data CSV file: %w", err)
-		}
-
-		p.ProbeFile = file
-		p.ProbeWriter = csv.NewWriter(file)
-		p.HeaderDone = false
-	}
-
-	if !p.HeaderDone {
-		if err := p.writeHeader(); err != nil {
-			return err
-		}
-
-		p.HeaderDone = true
-	}
-
-	if p.ShowTimestamp {
-		record = append(record, time.Now().Format(consts.TimeFormat))
-	}
-
-	if err := p.ProbeWriter.Write(record); err != nil {
-		return fmt.Errorf("failed to write record: %w", err)
-	}
-
-	p.ProbeWriter.Flush()
-
-	return p.ProbeWriter.Error()
-}
-
-// PrintProbeFail logs a failed probe attempt to the CSV file.
-func (p *CSVPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
-	record := []string{
-		"No reply",
-		opts.Hostname,
-		opts.IP.String(),
-		fmt.Sprint(opts.Port),
-		fmt.Sprint(streak),
-		"",
-	}
-
-	if p.ShowSourceAddress {
-		record = append(record, "")
-	}
-
-	if err := p.writeRecord(record); err != nil {
-		p.PrintError("Failed to write failure record: %v", err)
-	}
-}
-
-// PrintRetryingToResolve logs an attempt to resolve a hostname.
-func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
-	record := []string{
-		"Resolving",
-		hostname,
-		"",
-		"",
-		"",
-		"",
-	}
-
-	if err := p.writeRecord(record); err != nil {
-		p.PrintError("Failed to write resolve record: %v", err)
-	}
-}
-
-// PrintError logs an error message to stderr.
-func (p *CSVPrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
 func (p *CSVPrinter) writeStatsHeader() error {
@@ -241,6 +142,87 @@ func (p *CSVPrinter) writeStatsHeader() error {
 	p.StatsWriter.Flush()
 
 	return p.StatsWriter.Error()
+}
+
+// PrintStart logs the beginning of a TCPing session.
+func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
+	fmt.Printf("TCPinging %s on port %d - saving results to file: %s\n", hostname, port, p.cfg.OutputCSVPath)
+}
+
+// PrintProbeSuccess logs a successful probe to the CSV file.
+func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
+	if p.cfg.ShowFailuresOnly {
+		return
+	}
+
+	timestamp := ""
+	if p.cfg.WithTimestamp {
+		timestamp = startTime.Format(consts.TimeFormat)
+	}
+
+	record := []string{
+		"Reply",
+		opts.Hostname,
+		opts.IP.String(),
+		fmt.Sprint(opts.Port),
+		fmt.Sprint(streak),
+		rtt,
+	}
+
+	if p.cfg.WithSourceAddress {
+		record = append(record, sourceAddr)
+	}
+
+	if p.cfg.WithTimestamp {
+		record = append(record, time.Now().Format(consts.TimeFormat))
+	}
+
+	if err := p.ProbeWriter.Write(record); err != nil {
+		fmt.Printf("Failed to write success record: %w", err)
+	}
+
+	p.ProbeWriter.Flush()
+}
+
+// PrintProbeFail logs a failed probe attempt to the CSV file.
+func (p *CSVPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
+	record := []string{
+		"No reply",
+		opts.Hostname,
+		opts.IP.String(),
+		fmt.Sprint(opts.Port),
+		fmt.Sprint(streak),
+		"",
+	}
+
+	if p.cfg.WithSourceAddress {
+		record = append(record, "")
+	}
+
+	if err := p.ProbeWriter.Write(record); err != nil {
+		p.PrintError("Failed to write failure record: %v", err)
+	}
+}
+
+// PrintRetryingToResolve logs an attempt to resolve a hostname.
+func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
+	record := []string{
+		"Resolving",
+		hostname,
+		"",
+		"",
+		"",
+		"",
+	}
+
+	if err := p.ProbeWriter.Write(record); err != nil {
+		p.PrintError("Failed to write resolve record: %v", err)
+	}
+}
+
+// PrintError logs an error message to stderr.
+func (p *CSVPrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
 func (p *CSVPrinter) writeStatsRecord(record []string) error {
