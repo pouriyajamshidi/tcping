@@ -9,7 +9,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 	"zombiezen.com/go/sqlite"
@@ -268,7 +267,7 @@ func sanitizeTableName(hostname, port string) string {
 	sanitizedHost := strings.ReplaceAll(hostname, ".", "_")
 	sanitizedHost = strings.ReplaceAll(sanitizedHost, "-", "_")
 
-	sanitizedTime := strings.ReplaceAll(time.Now().Format(consts.TimeFormat), "-", "_")
+	sanitizedTime := strings.ReplaceAll(time.Now().Format(time.DateTime), "-", "_")
 	sanitizedTime = strings.ReplaceAll(sanitizedTime, ":", "_")
 	sanitizedTime = strings.ReplaceAll(sanitizedTime, " ", "_")
 
@@ -303,7 +302,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(startTime time.Time, sourceAddr stri
 
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	data := dbData{
@@ -385,7 +384,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(startTime time.Time, sourceAddr stri
 func (p *DatabasePrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	data := dbData{
@@ -445,13 +444,13 @@ func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
 func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 	data := dbStats{
 		eventType:                statisticsEvent,
-		timestamp:                time.Now().Format(consts.TimeFormat),
+		timestamp:                time.Now().Format(time.DateTime),
 		ipAddr:                   t.Options.IP.String(),
 		hostname:                 t.Options.Hostname,
 		port:                     t.Options.Port,
 		totalSuccessfulPackets:   t.TotalSuccessfulProbes,
 		totalUnsuccessfulPackets: t.TotalUnsuccessfulProbes,
-		startTimestamp:           t.StartTime.Format(consts.TimeFormat),
+		startTimestamp:           t.StartTime.Format(time.DateTime),
 		totalUptime:              utils.DurationToString(t.TotalUptime),
 		totalDowntime:            utils.DurationToString(t.TotalDowntime),
 		totalPackets:             t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes,
@@ -466,7 +465,7 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 			data.hostnameChanges += fmt.Sprintf("from %s to %s at %v\n",
 				t.HostnameChanges[i].Addr.String(),
 				t.HostnameChanges[i+1].Addr.String(),
-				t.HostnameChanges[i+1].When.Format(consts.TimeFormat),
+				t.HostnameChanges[i+1].When.Format(time.DateTime),
 			)
 		}
 	}
@@ -481,23 +480,23 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 	data.totalPacketLossPercent = fmt.Sprintf("%.2f", packetLoss)
 
 	if !t.LastSuccessfulProbe.IsZero() {
-		data.lastSuccessfulProbe = t.LastSuccessfulProbe.Format(consts.TimeFormat)
+		data.lastSuccessfulProbe = t.LastSuccessfulProbe.Format(time.DateTime)
 	}
 
 	if !t.LastUnsuccessfulProbe.IsZero() {
-		data.lastUnsuccessfulProbe = t.LastUnsuccessfulProbe.Format(consts.TimeFormat)
+		data.lastUnsuccessfulProbe = t.LastUnsuccessfulProbe.Format(time.DateTime)
 	}
 
 	if t.LongestUptime.Duration != 0 {
 		data.longestUptime = fmt.Sprintf("%.0f", t.LongestUptime.Duration.Seconds())
-		data.longestConsecutiveUptimeStart = t.LongestUptime.Start.Format(consts.TimeFormat)
-		data.longestConsecutiveUptimeEnd = t.LongestUptime.End.Format(consts.TimeFormat)
+		data.longestConsecutiveUptimeStart = t.LongestUptime.Start.Format(time.DateTime)
+		data.longestConsecutiveUptimeEnd = t.LongestUptime.End.Format(time.DateTime)
 	}
 
 	if t.LongestDowntime.Duration != 0 {
 		data.longestDowntime = fmt.Sprintf("%.0f", t.LongestDowntime.Duration.Seconds())
-		data.longestConsecutiveDowntimeStart = t.LongestDowntime.Start.Format(consts.TimeFormat)
-		data.longestConsecutiveDowntimeEnd = t.LongestDowntime.End.Format(consts.TimeFormat)
+		data.longestConsecutiveDowntimeStart = t.LongestDowntime.Start.Format(time.DateTime)
+		data.longestConsecutiveDowntimeEnd = t.LongestDowntime.End.Format(time.DateTime)
 	}
 
 	if !t.DestIsIP {
@@ -511,7 +510,7 @@ func (p *DatabasePrinter) PrintStatistics(t types.Tcping) {
 	}
 
 	if !t.EndTime.IsZero() {
-		data.endTimestamp = t.EndTime.Format(consts.TimeFormat)
+		data.endTimestamp = t.EndTime.Format(time.DateTime)
 	}
 
 	totalDuration := t.TotalDowntime + t.TotalUptime

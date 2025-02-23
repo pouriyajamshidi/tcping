@@ -11,6 +11,8 @@
 - refactor: reduce code duplication and minor cleanups in `selectResolvedIP` logic
 - refactor: remove unnecessary `len` check on hostname changes in `RetryResolveHostname` logic
 - refactor: rename `Probe` to `Ping` inside `tcp.go`
+- refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
+- refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - refactor: rename `connTime` to `startTime` in connection handlers of `tcp.go`
 - refactor: rename `secondsBetweenProbes` to `intervalBetweenProbes` in user input options
 - refactor: replace `CalcLongestDowntime` and `CalcLongestUptime` with `SetLongestDuration`

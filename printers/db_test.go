@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -301,11 +300,11 @@ func TestDatabasePrinter_PrintStatistics(t *testing.T) {
 			assertEquals(t, fmt.Sprintf("%.2f", stmt.ColumnFloat(11)), fmt.Sprintf("%.2f", packetLoss))
 
 			// Verify timestamps
-			startTime, err := time.Parse(consts.TimeFormat, stmt.ColumnText(25))
+			startTime, err := time.Parse(time.DateTime, stmt.ColumnText(25))
 			if err != nil {
 				t.Errorf("failed to parse start time: %v", err)
 			}
-			assertEquals(t, startTime.Format(consts.TimeFormat), stats.StartTime.Format(consts.TimeFormat))
+			assertEquals(t, startTime.Format(time.DateTime), stats.StartTime.Format(time.DateTime))
 
 			// Verify RTT stats
 			assertEquals(t, fmt.Sprintf("%.3f", stmt.ColumnFloat(22)), fmt.Sprintf("%.3f", stats.RttResults.Min))
@@ -321,7 +320,7 @@ func TestDatabasePrinter_PrintStatistics(t *testing.T) {
 }
 
 func TestSanitizeTableName(t *testing.T) {
-	now := time.Now().Format(consts.TimeFormat)
+	now := time.Now().Format(time.DateTime)
 	now = strings.ReplaceAll(now, " ", "_")
 	now = strings.ReplaceAll(now, "-", "_")
 	now = strings.ReplaceAll(now, ":", "_")

@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
@@ -124,7 +123,7 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	if opts.Hostname == opts.IP.String() {
@@ -230,7 +229,7 @@ func (p *JSONPrinter) PrintProbeFailure(startTime time.Time, opts types.Options,
 
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	if opts.Hostname == opts.IP.String() {
@@ -303,8 +302,8 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 		Hostname:                 t.Options.Hostname,
 		TotalSuccessfulPackets:   t.TotalSuccessfulProbes,
 		TotalUnsuccessfulPackets: t.TotalUnsuccessfulProbes,
-		Timestamp:                time.Now().Format(consts.TimeFormat),
-		StartTimestamp:           t.StartTime.Format(consts.TimeFormat),
+		Timestamp:                time.Now().Format(time.DateTime),
+		StartTimestamp:           t.StartTime.Format(time.DateTime),
 		TotalUptime:              utils.DurationToString(t.TotalUptime),
 		TotalDowntime:            utils.DurationToString(t.TotalDowntime),
 		TotalPackets:             t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes,
@@ -338,23 +337,23 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 	data.TotalPacketLossPercent = fmt.Sprintf("%.2f", packetLoss)
 
 	if !t.LastSuccessfulProbe.IsZero() {
-		data.LastSuccessfulProbe = t.LastSuccessfulProbe.Format(consts.TimeFormat)
+		data.LastSuccessfulProbe = t.LastSuccessfulProbe.Format(time.DateTime)
 	}
 
 	if !t.LastUnsuccessfulProbe.IsZero() {
-		data.LastUnsuccessfulProbe = t.LastUnsuccessfulProbe.Format(consts.TimeFormat)
+		data.LastUnsuccessfulProbe = t.LastUnsuccessfulProbe.Format(time.DateTime)
 	}
 
 	if t.LongestUptime.Duration != 0 {
 		data.LongestUptime = fmt.Sprintf("%.0f", t.LongestUptime.Duration.Seconds())
-		data.LongestConsecutiveUptimeStart = t.LongestUptime.Start.Format(consts.TimeFormat)
-		data.LongestConsecutiveUptimeEnd = t.LongestUptime.End.Format(consts.TimeFormat)
+		data.LongestConsecutiveUptimeStart = t.LongestUptime.Start.Format(time.DateTime)
+		data.LongestConsecutiveUptimeEnd = t.LongestUptime.End.Format(time.DateTime)
 	}
 
 	if t.LongestDowntime.Duration != 0 {
 		data.LongestDowntime = fmt.Sprintf("%.0f", t.LongestDowntime.Duration.Seconds())
-		data.LongestConsecutiveDowntimeStart = t.LongestDowntime.Start.Format(consts.TimeFormat)
-		data.LongestConsecutiveDowntimeEnd = t.LongestDowntime.End.Format(consts.TimeFormat)
+		data.LongestConsecutiveDowntimeStart = t.LongestDowntime.Start.Format(time.DateTime)
+		data.LongestConsecutiveDowntimeEnd = t.LongestDowntime.End.Format(time.DateTime)
 	}
 
 	if !t.DestIsIP {
@@ -368,7 +367,7 @@ func (p *JSONPrinter) PrintStatistics(t types.Tcping) {
 	}
 
 	if !t.EndTime.IsZero() {
-		data.EndTimestamp = t.EndTime.Format(consts.TimeFormat)
+		data.EndTimestamp = t.EndTime.Format(time.DateTime)
 	}
 
 	totalDuration := t.TotalDowntime + t.TotalUptime

@@ -5,7 +5,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
@@ -33,7 +32,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	if opts.Hostname == "" {
@@ -115,7 +114,7 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 func (p *PlainPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	if opts.Hostname == "" {
@@ -193,14 +192,14 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 	if t.LastSuccessfulProbe.IsZero() {
 		fmt.Printf("Never succeeded\n")
 	} else {
-		fmt.Printf("%v\n", t.LastSuccessfulProbe.Format(consts.TimeFormat))
+		fmt.Printf("%v\n", t.LastSuccessfulProbe.Format(time.DateTime))
 	}
 
 	fmt.Printf("last unsuccessful probe: ")
 	if t.LastUnsuccessfulProbe.IsZero() {
 		fmt.Printf("Never failed\n")
 	} else {
-		fmt.Printf("%v\n", t.LastUnsuccessfulProbe.Format(consts.TimeFormat))
+		fmt.Printf("%v\n", t.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
 	fmt.Printf("total uptime: %s\n", utils.DurationToString(t.TotalUptime))
@@ -211,16 +210,16 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 
 		fmt.Printf("longest consecutive uptime:   ")
 		fmt.Printf("%v ", uptime)
-		fmt.Printf("from %v ", t.LongestUptime.Start.Format(consts.TimeFormat))
-		fmt.Printf("to %v\n", t.LongestUptime.End.Format(consts.TimeFormat))
+		fmt.Printf("from %v ", t.LongestUptime.Start.Format(time.DateTime))
+		fmt.Printf("to %v\n", t.LongestUptime.End.Format(time.DateTime))
 	}
 
 	if t.LongestDowntime.Duration != 0 {
 		downtime := utils.DurationToString(t.LongestDowntime.Duration)
 
 		fmt.Printf("longest consecutive downtime: %v ", downtime)
-		fmt.Printf("from %v ", t.LongestDowntime.Start.Format(consts.TimeFormat))
-		fmt.Printf("to %v\n", t.LongestDowntime.End.Format(consts.TimeFormat))
+		fmt.Printf("from %v ", t.LongestDowntime.Start.Format(time.DateTime))
+		fmt.Printf("to %v\n", t.LongestDowntime.End.Format(time.DateTime))
 	}
 
 	if !t.DestIsIP {
@@ -238,7 +237,7 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 			for i := 0; i < len(t.HostnameChanges)-1; i++ {
 				fmt.Printf("  from %s", t.HostnameChanges[i].Addr.String())
 				fmt.Printf(" to %s", t.HostnameChanges[i+1].Addr.String())
-				fmt.Printf(" at %v\n", t.HostnameChanges[i+1].When.Format(consts.TimeFormat))
+				fmt.Printf(" at %v\n", t.HostnameChanges[i+1].When.Format(time.DateTime))
 			}
 		}
 	}
@@ -252,13 +251,13 @@ func (p *PlainPrinter) PrintStatistics(t types.Tcping) {
 	}
 
 	fmt.Printf("--------------------------------------\n")
-	fmt.Printf("TCPing started at: %v\n", t.StartTime.Format(consts.TimeFormat))
+	fmt.Printf("TCPing started at: %v\n", t.StartTime.Format(time.DateTime))
 
 	/* If the program was not terminated, no need to show the end time */
 	if !t.EndTime.IsZero() {
-		fmt.Printf("TCPing ended at:   %v\n", t.EndTime.Format(consts.TimeFormat))
+		fmt.Printf("TCPing ended at:   %v\n", t.EndTime.Format(time.DateTime))
 	}
 
 	durationTime := time.Time{}.Add(t.TotalDowntime + t.TotalUptime)
-	fmt.Printf("duration (HH:MM:SS): %v\n\n", durationTime.Format(consts.HourFormat))
+	fmt.Printf("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
 }

@@ -47,7 +47,7 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	if opts.Hostname == opts.IP.String() {
@@ -134,7 +134,7 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 func (p *ColorPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		timestamp = startTime.Format(time.DateTime)
 	}
 
 	if opts.Hostname == "" {
@@ -237,14 +237,14 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 	if t.LastSuccessfulProbe.IsZero() {
 		consts.ColorRed("Never succeeded\n")
 	} else {
-		consts.ColorGreen("%v\n", t.LastSuccessfulProbe.Format(consts.TimeFormat))
+		consts.ColorGreen("%v\n", t.LastSuccessfulProbe.Format(time.DateTime))
 	}
 
 	consts.ColorYellow("last unsuccessful probe: ")
 	if t.LastUnsuccessfulProbe.IsZero() {
 		consts.ColorGreen("Never failed\n")
 	} else {
-		consts.ColorRed("%v\n", t.LastUnsuccessfulProbe.Format(consts.TimeFormat))
+		consts.ColorRed("%v\n", t.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
 	consts.ColorYellow("total uptime: ")
@@ -258,9 +258,9 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		consts.ColorYellow("longest consecutive uptime:   ")
 		consts.ColorGreen("%v ", uptime)
 		consts.ColorYellow("from ")
-		consts.ColorLightBlue("%v ", t.LongestUptime.Start.Format(consts.TimeFormat))
+		consts.ColorLightBlue("%v ", t.LongestUptime.Start.Format(time.DateTime))
 		consts.ColorYellow("to ")
-		consts.ColorLightBlue("%v\n", t.LongestUptime.End.Format(consts.TimeFormat))
+		consts.ColorLightBlue("%v\n", t.LongestUptime.End.Format(time.DateTime))
 	}
 
 	if t.LongestDowntime.Duration != 0 {
@@ -269,9 +269,9 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 		consts.ColorYellow("longest consecutive downtime: ")
 		consts.ColorRed("%v ", downtime)
 		consts.ColorYellow("from ")
-		consts.ColorLightBlue("%v ", t.LongestDowntime.Start.Format(consts.TimeFormat))
+		consts.ColorLightBlue("%v ", t.LongestDowntime.Start.Format(time.DateTime))
 		consts.ColorYellow("to ")
-		consts.ColorLightBlue("%v\n", t.LongestDowntime.End.Format(consts.TimeFormat))
+		consts.ColorLightBlue("%v\n", t.LongestDowntime.End.Format(time.DateTime))
 	}
 
 	if !t.DestIsIP {
@@ -292,7 +292,7 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 				consts.ColorYellow(" to ")
 				consts.ColorGreen(t.HostnameChanges[i+1].Addr.String())
 				consts.ColorYellow(" at ")
-				consts.ColorLightBlue("%v\n", t.HostnameChanges[i+1].When.Format(consts.TimeFormat))
+				consts.ColorLightBlue("%v\n", t.HostnameChanges[i+1].When.Format(time.DateTime))
 			}
 		}
 	}
@@ -313,13 +313,13 @@ func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
 	}
 
 	consts.ColorYellow("--------------------------------------\n")
-	consts.ColorYellow("TCPing started at: %v\n", t.StartTime.Format(consts.TimeFormat))
+	consts.ColorYellow("TCPing started at: %v\n", t.StartTime.Format(time.DateTime))
 
 	/* If the program was not terminated, no need to show the end time */
 	if !t.EndTime.IsZero() {
-		consts.ColorYellow("TCPing ended at:   %v\n", t.EndTime.Format(consts.TimeFormat))
+		consts.ColorYellow("TCPing ended at:   %v\n", t.EndTime.Format(time.DateTime))
 	}
 
 	durationTime := time.Time{}.Add(t.TotalDowntime + t.TotalUptime)
-	consts.ColorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(consts.HourFormat))
+	consts.ColorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
 }

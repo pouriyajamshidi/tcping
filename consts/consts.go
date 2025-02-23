@@ -20,12 +20,6 @@ const (
 // DNSTimeout is the accepted duration when doing hostname resolution
 const DNSTimeout = 2 * time.Second
 
-// Date and Time formats
-const (
-	TimeFormat = "2006-01-02 15:04:05" // TODO: Change with time.DateTime
-	HourFormat = "15:04:05"            // TODO: Change with time.TimeOnly
-)
-
 // Color functions used when printing information
 var (
 	ColorCyan        = color.Cyan.Printf

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
@@ -153,7 +152,7 @@ func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, o
 	record := []string{}
 
 	if p.cfg.WithTimestamp {
-		record = append(record, startTime.Format(consts.TimeFormat))
+		record = append(record, startTime.Format(time.DateTime))
 	}
 
 	record = append(
@@ -182,7 +181,7 @@ func (p *CSVPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, 
 	record := []string{}
 
 	if p.cfg.WithTimestamp {
-		record = append(record, startTime.Format(consts.TimeFormat))
+		record = append(record, startTime.Format(time.DateTime))
 	}
 
 	record = append(
@@ -213,7 +212,7 @@ func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
 
 // PrintStatistics logs TCPing statistics to a CSV file.
 func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
-	timestamp := time.Now().Format(consts.TimeFormat)
+	timestamp := time.Now().Format(time.DateTime)
 
 	statistics := [][]string{
 		{"Timestamp", timestamp},
@@ -252,8 +251,8 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 
 	if t.LongestUptime.Duration != 0 {
 		longestUptime := fmt.Sprintf("%.0f", t.LongestUptime.Duration.Seconds())
-		longestConsecutiveUptimeStart := t.LongestUptime.Start.Format(consts.TimeFormat)
-		longestConsecutiveUptimeEnd := t.LongestUptime.End.Format(consts.TimeFormat)
+		longestConsecutiveUptimeStart := t.LongestUptime.Start.Format(time.DateTime)
+		longestConsecutiveUptimeEnd := t.LongestUptime.End.Format(time.DateTime)
 
 		statistics = append(statistics, []string{"Longest Uptime", longestUptime})
 		statistics = append(statistics, []string{"Longest Consecutive Uptime Start", longestConsecutiveUptimeStart})
@@ -266,8 +265,8 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 
 	if t.LongestDowntime.Duration != 0 {
 		longestDowntime := fmt.Sprintf("%.0f", t.LongestDowntime.Duration.Seconds())
-		longestConsecutiveDowntimeStart := t.LongestDowntime.Start.Format(consts.TimeFormat)
-		longestConsecutiveDowntimeEnd := t.LongestDowntime.End.Format(consts.TimeFormat)
+		longestConsecutiveDowntimeStart := t.LongestDowntime.Start.Format(time.DateTime)
+		longestConsecutiveDowntimeEnd := t.LongestDowntime.End.Format(time.DateTime)
 
 		statistics = append(statistics, []string{"Longest Downtime", longestDowntime})
 		statistics = append(statistics, []string{"Longest Consecutive Downtime Start", longestConsecutiveDowntimeStart})
@@ -293,7 +292,7 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 			hostnameChanges += fmt.Sprintf("from %s to %s at %v - ",
 				t.HostnameChanges[i].Addr.String(),
 				t.HostnameChanges[i+1].Addr.String(),
-				t.HostnameChanges[i+1].When.Format(consts.TimeFormat),
+				t.HostnameChanges[i+1].When.Format(time.DateTime),
 			)
 		}
 	} else {
@@ -303,13 +302,13 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 	if t.LastSuccessfulProbe.IsZero() {
 		statistics = append(statistics, []string{"Last Successful Probe", "Never succeeded"})
 	} else {
-		statistics = append(statistics, []string{"Last Successful Probe", t.LastSuccessfulProbe.Format(consts.TimeFormat)})
+		statistics = append(statistics, []string{"Last Successful Probe", t.LastSuccessfulProbe.Format(time.DateTime)})
 	}
 
 	if t.LastUnsuccessfulProbe.IsZero() {
 		statistics = append(statistics, []string{"Last Unsuccessful Probe", "Never failed"})
 	} else {
-		statistics = append(statistics, []string{"Last Unsuccessful Probe", t.LastUnsuccessfulProbe.Format(consts.TimeFormat)})
+		statistics = append(statistics, []string{"Last Unsuccessful Probe", t.LastUnsuccessfulProbe.Format(time.DateTime)})
 	}
 
 	if t.RttResults.HasResults {
@@ -322,10 +321,10 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 		statistics = append(statistics, []string{"Latency Max", "N/A"})
 	}
 
-	statistics = append(statistics, []string{"Start Timestamp", t.StartTime.Format(consts.TimeFormat)})
+	statistics = append(statistics, []string{"Start Timestamp", t.StartTime.Format(time.DateTime)})
 
 	if !t.EndTime.IsZero() {
-		statistics = append(statistics, []string{"End Timestamp", t.EndTime.Format(consts.TimeFormat)})
+		statistics = append(statistics, []string{"End Timestamp", t.EndTime.Format(time.DateTime)})
 	} else {
 		statistics = append(statistics, []string{"End Timestamp", "In progress"})
 	}

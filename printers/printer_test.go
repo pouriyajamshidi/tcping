@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gookit/color"
-	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 	"github.com/stretchr/testify/assert"
@@ -229,7 +228,7 @@ func TestPrintProbeSuccess(t *testing.T) {
 			var expected string
 
 			if cfg.WithTimestamp {
-				timestamp := time.Now().Format(consts.TimeFormat)
+				timestamp := time.Now().Format(time.DateTime)
 				if cfg.WithSourceAddress && tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, sourceAddr, streak, rtt)
 				} else if cfg.WithSourceAddress {
@@ -322,7 +321,7 @@ func TestPrintProbeFail(t *testing.T) {
 
 			var expected string
 			if tc.showTimestamp {
-				timestamp := time.Now().Format(consts.TimeFormat)
+				timestamp := time.Now().Format(time.DateTime)
 				if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, streak)
 				} else {
