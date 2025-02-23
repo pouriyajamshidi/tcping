@@ -49,7 +49,6 @@ type Printer interface {
 
 // Prober represents an object that can probe a target
 type Prober interface {
-	Printer
 	Ping()
 }
 
@@ -93,6 +92,7 @@ type Options struct {
 	Port                     uint16           // Port number to connect to.
 	UseIPv4                  bool             // Flag indicating whether to use IPv4 addresses.
 	UseIPv6                  bool             // Flag indicating whether to use IPv6 addresses.
+	NonInteractive           bool             // Flag the program will run in the background.
 	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
 }
 

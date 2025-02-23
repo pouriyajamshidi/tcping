@@ -15,8 +15,6 @@ import (
 /* TODO:
 - Do we need the `PrintStats` helper function
 - Pass `Prober` instead of tcping to printers, helpers, etc
-- Implement non-interactive mode so that we can use it with `disown` and `nohup`
-- Implement functional pattern to chose the prober
 - I think there are some overlaps in printer success and probe failure conditionals
 - Show how long we were up on failure similar to what we do for success?
 - SetLongestTime does not seem to belong to printer package
@@ -29,6 +27,7 @@ import (
 - Possibly use new slice functions instead of the current manual way
 - See what printer methods are not used
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
+- Implement functional pattern to chose the prober
 - Cross-check the printer implementations to see how much they differ
 - Read the entire code once everything is done for "code smells"
 */
@@ -47,8 +46,11 @@ func main() {
 
 	printers.SignalHandler(tcping)
 
-	stdinChan := make(chan bool)
-	go utils.MonitorSTDIN(stdinChan)
+	var stdinChan chan bool
+	if !tcping.Options.NonInteractive {
+		stdinChan = make(chan bool)
+		go utils.MonitorSTDIN(stdinChan)
+	}
 
 	var probeCount uint
 
@@ -59,12 +61,14 @@ func main() {
 
 		probes.Ping(tcping)
 
-		select {
-		case pressedEnter := <-stdinChan:
-			if pressedEnter {
-				printers.PrintStats(tcping)
+		if stdinChan != nil {
+			select {
+			case pressedEnter := <-stdinChan:
+				if pressedEnter {
+					printers.PrintStats(tcping)
+				}
+			default:
 			}
-		default:
 		}
 
 		if tcping.Options.ProbesBeforeQuit != 0 {

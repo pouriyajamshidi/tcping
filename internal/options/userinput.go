@@ -22,6 +22,7 @@ type options struct {
 	useIPv6               *bool
 	showFailuresOnly      *bool
 	showSourceAddress     *bool
+	nonInteractive        *bool
 	retryResolve          *uint
 	probesBeforeQuit      *uint
 	intName               *string
@@ -126,6 +127,8 @@ func setOptions(t *types.Tcping, opts options) {
 	t.Options.IP = dns.ResolveHostname(t)
 	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
 	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
+
+	t.Options.NonInteractive = *opts.nonInteractive
 
 	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
 	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
@@ -234,6 +237,9 @@ func ProcessUserInput(tcping *types.Tcping) {
 	prettyJSON := flag.Bool("pretty",
 		false,
 		"use indentation when using json output format. No effect without the '-j' flag.")
+	nonInteractive := flag.Bool("non-interactive",
+		false,
+		"let tcping run in the background, for instance using nohup or disown")
 	noColor := flag.Bool("no-color", false, "do not colorize output.")
 	saveToCSV := flag.String("csv",
 		"",
@@ -306,6 +312,7 @@ func ProcessUserInput(tcping *types.Tcping) {
 	opts := options{
 		useIPv4:               useIPv4,
 		useIPv6:               useIPv6,
+		nonInteractive:        nonInteractive,
 		retryResolve:          retryHostnameResolveAfter,
 		probesBeforeQuit:      probesBeforeQuit,
 		timeout:               timeout,
