@@ -14,7 +14,7 @@ type dummyPrinter struct{}
 
 func (fp *dummyPrinter) PrintStart(_ string, _ uint16)                                              {}
 func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ string) {}
-func (fp *dummyPrinter) PrintProbeFail(_ time.Time, _ types.Options, _ uint)                        {}
+func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ types.Options, _ uint)                     {}
 func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                                            {}
 func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                                         {}
 func (fp *dummyPrinter) PrintStatistics(_ types.Tcping)                                             {}

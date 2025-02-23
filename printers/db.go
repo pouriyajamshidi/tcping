@@ -28,8 +28,6 @@ const (
 	eventTypeHostnameChange EventType = "hostname change"
 )
 
-// TODO: These should be sorted. very unlikely it works as is
-
 const (
 	dataTableSchema = `CREATE TABLE IF NOT EXISTS %s (
 		type TEXT NOT NULL,
@@ -256,7 +254,7 @@ func NewDatabasePrinter(cfg PrinterConfig) (*DatabasePrinter, error) {
 }
 
 func addDbExtension(filename string) string {
-	if strings.HasSuffix(filename, ".db") {
+	if filename == ":memory:" || strings.HasSuffix(filename, ".db") {
 		return filename
 	}
 
@@ -383,8 +381,8 @@ func (p *DatabasePrinter) PrintProbeSuccess(startTime time.Time, sourceAddr stri
 	}
 }
 
-// PrintProbeFail satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
+// PrintProbeFailure satisfies the "printer" interface but does nothing in this implementation
+func (p *DatabasePrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)

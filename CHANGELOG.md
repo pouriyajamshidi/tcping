@@ -16,6 +16,7 @@
 - refactor: convert channel in `MonitorSTDIN` to _send-only_
 - refactor: rename `stdinchan` to `stdinChan` to conform to Go's standard library conventions
 - refactor: rename `CsvPrinter` to `CSVPrinter`
+- refactor: rename `handleConnError` to `handleConnFailure`
 - refactor: capitalize the _r_ in `retrying to resolve` message of the `-r` flag
 - refactor: replace `PrintStatistics` with `PrintStats` in **CSV** tests
 - refactor: rename fields in JSON output to conform to JSON naming conventions

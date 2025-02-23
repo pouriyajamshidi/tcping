@@ -13,8 +13,8 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
-// handleConnError processes failed probes
-func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration) {
+// handleConnFailure processes failed probes
+func handleConnFailure(t *types.Tcping, startTime time.Time, elapsed time.Duration) {
 	// if last probe had succeeded
 	if !t.DestWasDown {
 		t.StartOfDowntime = startTime
@@ -30,7 +30,7 @@ func handleConnError(t *types.Tcping, startTime time.Time, elapsed time.Duration
 	t.TotalUnsuccessfulProbes++
 	t.OngoingUnsuccessfulProbes++
 
-	t.PrintProbeFail(
+	t.PrintProbeFailure(
 		startTime,
 		t.Options,
 		t.OngoingUnsuccessfulProbes,
@@ -89,7 +89,7 @@ func Ping(tcping *types.Tcping) {
 	elapsed := utils.MaxDuration(connDuration, tcping.Options.IntervalBetweenProbes)
 
 	if err != nil {
-		handleConnError(tcping, connStart, elapsed)
+		handleConnFailure(tcping, connStart, elapsed)
 	} else {
 		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
 		handleConnSuccess(tcping, connStart, elapsed, conn.LocalAddr().String(), rtt)

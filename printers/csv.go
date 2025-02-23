@@ -15,32 +15,28 @@ import (
 )
 
 const (
-	colStatus        string = "Status"
 	colTimestamp     string = "Timestamp"
+	colStatus        string = "Status"
 	colHostname      string = "Hostname"
 	colIP            string = "IP"
 	colPort          string = "Port"
-	colTCPConn       string = "TCP_Conn"
+	colConnection    string = "Connection"
 	colLatency       string = "Latency(ms)"
 	colSourceAddress string = "Source Address"
 )
 
 const (
 	filePermission os.FileMode = 0644
-	fileFlag       int         = os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	fileFlag       int         = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 )
 
 // CSVPrinter is responsible for writing probe results and statistics to CSV files.
 type CSVPrinter struct {
-	ProbeWriter     *csv.Writer
-	StatsWriter     *csv.Writer
-	ProbeFile       *os.File
-	StatsFile       *os.File
-	StatsFilename   string
-	ProbeFilename   string
-	HeaderDone      bool
-	StatsHeaderDone bool
-	cfg             PrinterConfig
+	ProbeWriter *csv.Writer
+	StatsWriter *csv.Writer
+	ProbeFile   *os.File
+	StatsFile   *os.File
+	cfg         PrinterConfig
 }
 
 // NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
@@ -59,16 +55,18 @@ func NewCSVPrinter(cfg PrinterConfig) (*CSVPrinter, error) {
 		return nil, fmt.Errorf("Error creating the probe CSV file %s: %w", statsFilename, err)
 	}
 
-	cp := &CSVPrinter{
-		ProbeWriter:   csv.NewWriter(probeFile),
-		ProbeFile:     probeFile,
-		StatsFile:     statsFile,
-		ProbeFilename: probeFilename,
-		StatsFilename: statsFilename,
-		cfg:           cfg,
+	p := &CSVPrinter{
+		ProbeWriter: csv.NewWriter(probeFile),
+		StatsWriter: csv.NewWriter(statsFile),
+		ProbeFile:   probeFile,
+		StatsFile:   statsFile,
+		cfg:         cfg,
 	}
 
-	return cp, nil
+	writeProbeHeader(p.cfg, p.ProbeWriter)
+	writeStatsHeader(p.StatsWriter)
+
+	return p, nil
 }
 
 func addCSVExtension(filename string, withStatsExt bool) string {
@@ -102,51 +100,48 @@ func (p *CSVPrinter) Done() {
 	}
 }
 
-func (p *CSVPrinter) writeProbeHeader() error {
-	headers := []string{
-		colStatus,
-		colHostname,
-		colIP,
-		colPort,
-		colTCPConn,
-		colLatency,
-	}
+func writeProbeHeader(cfg PrinterConfig, w *csv.Writer) error {
+	headers := []string{}
 
-	if p.cfg.WithSourceAddress {
-		headers = append(headers, colSourceAddress)
-	}
-
-	if p.cfg.WithTimestamp {
+	if cfg.WithTimestamp {
 		headers = append(headers, colTimestamp)
 	}
 
-	if err := p.ProbeWriter.Write(headers); err != nil {
+	headers = append(headers, colStatus, colHostname, colIP, colPort)
+
+	if cfg.WithSourceAddress {
+		headers = append(headers, colSourceAddress)
+	}
+
+	headers = append(headers, colConnection, colLatency)
+
+	if err := w.Write(headers); err != nil {
 		return fmt.Errorf("Failed to write headers: %w", err)
 	}
 
-	p.ProbeWriter.Flush()
+	w.Flush()
 
-	return p.ProbeWriter.Error()
+	return w.Error()
 }
 
-func (p *CSVPrinter) writeStatsHeader() error {
+func writeStatsHeader(w *csv.Writer) error {
 	headers := []string{
 		"Metric",
 		"Value",
 	}
 
-	if err := p.StatsWriter.Write(headers); err != nil {
+	if err := w.Write(headers); err != nil {
 		return fmt.Errorf("Failed to write statistics headers: %w", err)
 	}
 
-	p.StatsWriter.Flush()
+	w.Flush()
 
-	return p.StatsWriter.Error()
+	return w.Error()
 }
 
 // PrintStart logs the beginning of a TCPing session.
 func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
-	fmt.Printf("TCPinging %s on port %d - saving results to file: %s\n", hostname, port, p.cfg.OutputCSVPath)
+	fmt.Printf("TCPinging %s on port %d - saving results to file: %s\n", hostname, port, p.ProbeFile.Name())
 }
 
 // PrintProbeSuccess logs a successful probe to the CSV file.
@@ -155,69 +150,55 @@ func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, o
 		return
 	}
 
-	timestamp := ""
+	record := []string{}
+
 	if p.cfg.WithTimestamp {
-		timestamp = startTime.Format(consts.TimeFormat)
+		record = append(record, startTime.Format(consts.TimeFormat))
 	}
 
-	record := []string{
+	record = append(
+		record,
 		"Reply",
 		opts.Hostname,
 		opts.IP.String(),
 		fmt.Sprint(opts.Port),
-		fmt.Sprint(streak),
-		rtt,
-	}
+	)
 
 	if p.cfg.WithSourceAddress {
-		record = append(record, sourceAddr)
+		record = append(record, sourceAddr, fmt.Sprint(streak), rtt)
 	}
 
-	if p.cfg.WithTimestamp {
-		record = append(record, time.Now().Format(consts.TimeFormat))
-	}
+	record = append(record, fmt.Sprint(streak), rtt)
 
 	if err := p.ProbeWriter.Write(record); err != nil {
-		fmt.Printf("Failed to write success record: %w", err)
+		p.PrintError("Failed to write success record: %w", err)
 	}
 
 	p.ProbeWriter.Flush()
 }
 
-// PrintProbeFail logs a failed probe attempt to the CSV file.
-func (p *CSVPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
-	record := []string{
-		"No reply",
+// PrintProbeFailure logs a failed probe attempt to the CSV file.
+func (p *CSVPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
+	record := []string{}
+
+	if p.cfg.WithTimestamp {
+		record = append(record, startTime.Format(consts.TimeFormat))
+	}
+
+	record = append(
+		record,
+		"No Reply",
 		opts.Hostname,
 		opts.IP.String(),
 		fmt.Sprint(opts.Port),
 		fmt.Sprint(streak),
-		"",
-	}
-
-	if p.cfg.WithSourceAddress {
-		record = append(record, "")
-	}
+	)
 
 	if err := p.ProbeWriter.Write(record); err != nil {
 		p.PrintError("Failed to write failure record: %v", err)
 	}
-}
 
-// PrintRetryingToResolve logs an attempt to resolve a hostname.
-func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
-	record := []string{
-		"Resolving",
-		hostname,
-		"",
-		"",
-		"",
-		"",
-	}
-
-	if err := p.ProbeWriter.Write(record); err != nil {
-		p.PrintError("Failed to write resolve record: %v", err)
-	}
+	p.ProbeWriter.Flush()
 }
 
 // PrintError logs an error message to stderr.
@@ -225,66 +206,98 @@ func (p *CSVPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
-func (p *CSVPrinter) writeStatsRecord(record []string) error {
-	if _, err := os.Stat(p.StatsFilename); os.IsNotExist(err) {
-		statsFile, err := os.OpenFile(p.StatsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermission)
-		if err != nil {
-			return fmt.Errorf("Failed to recreate statistics CSV file: %w", err)
-		}
-		p.StatsFile = statsFile
-		p.StatsWriter = csv.NewWriter(statsFile)
-		p.StatsHeaderDone = false
-	}
-
-	if !p.StatsHeaderDone {
-		if err := p.writeStatsHeader(); err != nil {
-			return err
-		}
-		p.StatsHeaderDone = true
-	}
-
-	if err := p.StatsWriter.Write(record); err != nil {
-		return fmt.Errorf("Failed to write statistics record: %w", err)
-	}
-
-	p.StatsWriter.Flush()
-
-	return p.StatsWriter.Error()
+// PrintRetryingToResolve logs an attempt to resolve a hostname.
+func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
 // PrintStatistics logs TCPing statistics to a CSV file.
 func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
-	if p.StatsFile == nil {
-		statsFile, err := os.OpenFile(p.StatsFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_TRUNC, filePermission)
-		if err != nil {
-			p.PrintError("Failed to create statistics CSV file: %v", err)
-			return
-		}
-		p.StatsFile = statsFile
-		p.StatsWriter = csv.NewWriter(statsFile)
-		p.StatsHeaderDone = false
+	timestamp := time.Now().Format(consts.TimeFormat)
+
+	statistics := [][]string{
+		{"Timestamp", timestamp},
+		{"IP Address", t.Options.IP.String()},
 	}
 
-	var packetLoss float32
-	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
-	if totalPackets == 0 {
-		packetLoss = 0
-	} else {
-		packetLoss = (float32(t.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
+	if t.Options.IP.String() != t.Options.Hostname {
+		statistics = append(statistics, []string{"Hostname", t.Options.Hostname})
 	}
+
+	statistics = append(statistics, []string{"Port", fmt.Sprintf("%d", t.Options.Port)})
+
+	totalDuration := t.TotalDowntime + t.TotalUptime
+	statistics = append(statistics, []string{"Total Duration",
+		fmt.Sprintf("%.0f", totalDuration.Seconds())},
+	)
+
+	statistics = append(statistics, []string{"Total Uptime",
+		utils.DurationToString(t.TotalUptime)},
+	)
+	statistics = append(statistics, []string{"Total Downtime",
+		utils.DurationToString(t.TotalDowntime)},
+	)
+
+	totalPackets := t.TotalSuccessfulProbes + t.TotalUnsuccessfulProbes
+	packetLoss := (float32(t.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	if math.IsNaN(float64(packetLoss)) {
 		packetLoss = 0
 	}
 
-	// Collect statistics data
-	timestamp := time.Now().Format(consts.TimeFormat)
-	statistics := [][]string{
-		{"Timestamp", timestamp},
-		{"Total Packets", fmt.Sprint(totalPackets)},
-		{"Successful Probes", fmt.Sprint(t.TotalSuccessfulProbes)},
-		{"Unsuccessful Probes", fmt.Sprint(t.TotalUnsuccessfulProbes)},
-		{"Packet Loss", fmt.Sprintf("%.2f%%", packetLoss)},
+	statistics = append(statistics, []string{"Total Packets", fmt.Sprintf("%d", totalPackets)})
+	statistics = append(statistics, []string{"Total Successful Packets", fmt.Sprintf("%d", t.TotalSuccessfulProbes)})
+	statistics = append(statistics, []string{"Total Unsuccessful Packets", fmt.Sprintf("%d", t.TotalUnsuccessfulProbes)})
+	statistics = append(statistics, []string{"Total Packet Loss Percentage", fmt.Sprintf("%.2f", packetLoss)})
+
+	if t.LongestUptime.Duration != 0 {
+		longestUptime := fmt.Sprintf("%.0f", t.LongestUptime.Duration.Seconds())
+		longestConsecutiveUptimeStart := t.LongestUptime.Start.Format(consts.TimeFormat)
+		longestConsecutiveUptimeEnd := t.LongestUptime.End.Format(consts.TimeFormat)
+
+		statistics = append(statistics, []string{"Longest Uptime", longestUptime})
+		statistics = append(statistics, []string{"Longest Consecutive Uptime Start", longestConsecutiveUptimeStart})
+		statistics = append(statistics, []string{"Longest Consecutive Uptime End", longestConsecutiveUptimeEnd})
+	} else {
+		statistics = append(statistics, []string{"Longest Uptime", "Never"})
+		statistics = append(statistics, []string{"Longest Consecutive Uptime Start", "Never"})
+		statistics = append(statistics, []string{"Longest Consecutive Uptime End", "Never"})
+	}
+
+	if t.LongestDowntime.Duration != 0 {
+		longestDowntime := fmt.Sprintf("%.0f", t.LongestDowntime.Duration.Seconds())
+		longestConsecutiveDowntimeStart := t.LongestDowntime.Start.Format(consts.TimeFormat)
+		longestConsecutiveDowntimeEnd := t.LongestDowntime.End.Format(consts.TimeFormat)
+
+		statistics = append(statistics, []string{"Longest Downtime", longestDowntime})
+		statistics = append(statistics, []string{"Longest Consecutive Downtime Start", longestConsecutiveDowntimeStart})
+		statistics = append(statistics, []string{"Longest Consecutive Downtime End", longestConsecutiveDowntimeEnd})
+	} else {
+		statistics = append(statistics, []string{"Longest Downtime", "Never"})
+		statistics = append(statistics, []string{"Longest Consecutive Downtime Start", "Never"})
+		statistics = append(statistics, []string{"Longest Consecutive Downtime End", "Never"})
+	}
+
+	if t.RetriedHostnameLookups > 0 {
+		statistics = append(statistics, []string{"Hostname Resolve Retries", fmt.Sprintf("%d", t.RetriedHostnameLookups)})
+	}
+
+	if len(t.HostnameChanges) > 1 {
+		hostnameChanges := ""
+
+		for i := 0; i < len(t.HostnameChanges)-1; i++ {
+			if t.HostnameChanges[i].Addr.String() == "" {
+				continue
+			}
+
+			hostnameChanges += fmt.Sprintf("from %s to %s at %v - ",
+				t.HostnameChanges[i].Addr.String(),
+				t.HostnameChanges[i+1].Addr.String(),
+				t.HostnameChanges[i+1].When.Format(consts.TimeFormat),
+			)
+		}
+	} else {
+		statistics = append(statistics, []string{"Hostname Changes", "Never changed"})
 	}
 
 	if t.LastSuccessfulProbe.IsZero() {
@@ -299,64 +312,32 @@ func (p *CSVPrinter) PrintStatistics(t types.Tcping) {
 		statistics = append(statistics, []string{"Last Unsuccessful Probe", t.LastUnsuccessfulProbe.Format(consts.TimeFormat)})
 	}
 
-	statistics = append(statistics, []string{"Total Uptime", utils.DurationToString(t.TotalUptime)})
-	statistics = append(statistics, []string{"Total Downtime", utils.DurationToString(t.TotalDowntime)})
-
-	if t.LongestUptime.Duration != 0 {
-		statistics = append(statistics,
-			[]string{"Longest Uptime Duration", utils.DurationToString(t.LongestUptime.Duration)},
-			[]string{"Longest Uptime From", t.LongestUptime.Start.Format(consts.TimeFormat)},
-			[]string{"Longest Uptime To", t.LongestUptime.End.Format(consts.TimeFormat)},
-		)
-	}
-
-	if t.LongestDowntime.Duration != 0 {
-		statistics = append(statistics,
-			[]string{"Longest Downtime Duration", utils.DurationToString(t.LongestDowntime.Duration)},
-			[]string{"Longest Downtime From", t.LongestDowntime.Start.Format(consts.TimeFormat)},
-			[]string{"Longest Downtime To", t.LongestDowntime.End.Format(consts.TimeFormat)},
-		)
-	}
-
-	if !t.DestIsIP {
-		statistics = append(statistics, []string{"Retried Hostname Lookups", fmt.Sprint(t.RetriedHostnameLookups)})
-
-		if len(t.HostnameChanges) >= 2 {
-			for i := 0; i < len(t.HostnameChanges)-1; i++ {
-				statistics = append(statistics,
-					[]string{"IP Change", t.HostnameChanges[i].Addr.String()},
-					[]string{"To", t.HostnameChanges[i+1].Addr.String()},
-					[]string{"At", t.HostnameChanges[i+1].When.Format(consts.TimeFormat)},
-				)
-			}
-		}
-	}
-
 	if t.RttResults.HasResults {
-		statistics = append(statistics,
-			[]string{"RTT Min", fmt.Sprintf("%.3f ms", t.RttResults.Min)},
-			[]string{"RTT Avg", fmt.Sprintf("%.3f ms", t.RttResults.Average)},
-			[]string{"RTT Max", fmt.Sprintf("%.3f ms", t.RttResults.Max)},
-		)
+		statistics = append(statistics, []string{"Latency Min", fmt.Sprintf("%.3f", t.RttResults.Min)})
+		statistics = append(statistics, []string{"Latency Avg", fmt.Sprintf("%.3f", t.RttResults.Average)})
+		statistics = append(statistics, []string{"Latency Max", fmt.Sprintf("%.3f", t.RttResults.Max)})
+	} else {
+		statistics = append(statistics, []string{"Latency Min", "N/A"})
+		statistics = append(statistics, []string{"Latency Avg", "N/A"})
+		statistics = append(statistics, []string{"Latency Max", "N/A"})
 	}
 
-	statistics = append(statistics, []string{"TCPing Started At", t.StartTime.Format(consts.TimeFormat)})
+	statistics = append(statistics, []string{"Start Timestamp", t.StartTime.Format(consts.TimeFormat)})
 
 	if !t.EndTime.IsZero() {
-		statistics = append(statistics, []string{"TCPing Ended At", t.EndTime.Format(consts.TimeFormat)})
+		statistics = append(statistics, []string{"End Timestamp", t.EndTime.Format(consts.TimeFormat)})
+	} else {
+		statistics = append(statistics, []string{"End Timestamp", "In progress"})
 	}
 
-	durationTime := time.Time{}.Add(t.TotalDowntime + t.TotalUptime)
-	statistics = append(statistics, []string{"Duration (HH:MM:SS)", durationTime.Format(consts.HourFormat)})
-
 	for _, record := range statistics {
-		if err := p.writeStatsRecord(record); err != nil {
+		if err := p.StatsWriter.Write(record); err != nil {
 			p.PrintError("Failed to write statistics record: %v", err)
 			return
 		}
 	}
 
-	fmt.Printf("TCPing statistics written to: %s\n", p.StatsFilename)
+	fmt.Printf("\nStatistics have been saved to: %s\n", p.StatsFile.Name())
 }
 
 // PrintTotalDownTime is a no-op implementation to satisfy the Printer interface.

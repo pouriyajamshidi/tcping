@@ -125,13 +125,13 @@ func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 	}
 }
 
-// PrintProbeFail prints a message indicating a failed probe attempt.
+// PrintProbeFailure prints a message indicating a failed probe attempt.
 // It includes the target hostname/IP, port, and failed connection streak.
 //
 // Parameters:
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive failed probes.
-func (p *ColorPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
+func (p *ColorPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)
@@ -198,7 +198,6 @@ func (p *ColorPrinter) PrintError(format string, args ...any) {
 // successful and unsuccessful probes, uptime/downtime durations,
 // longest uptime/downtime, IP address changes, and RTT statistics.
 func (p *ColorPrinter) PrintStatistics(t types.Tcping) {
-	/* general stats */
 	if !t.DestIsIP {
 		consts.ColorYellow("\n--- %s (%s) TCPing statistics ---\n",
 			t.Options.Hostname,

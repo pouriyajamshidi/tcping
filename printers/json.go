@@ -212,8 +212,8 @@ func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, 
 	p.encoder.Encode(data)
 }
 
-// PrintProbeFail prints a JSON message when a TCP probe fails.
-func (p *JSONPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
+// PrintProbeFailure prints a JSON message when a TCP probe fails.
+func (p *JSONPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	// so that *bool fields not get omitted
 	f := false
 	t := true

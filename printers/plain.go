@@ -111,8 +111,8 @@ func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string,
 	}
 }
 
-// PrintProbeFail prints a failure message for a probe.
-func (p *PlainPrinter) PrintProbeFail(startTime time.Time, opts types.Options, streak uint) {
+// PrintProbeFailure prints a failure message for a probe.
+func (p *PlainPrinter) PrintProbeFailure(startTime time.Time, opts types.Options, streak uint) {
 	timestamp := ""
 	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(consts.TimeFormat)

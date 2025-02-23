@@ -2,6 +2,7 @@ package printers
 
 import (
 	"encoding/csv"
+	"net/netip"
 	"os"
 	"testing"
 	"time"
@@ -11,68 +12,73 @@ import (
 )
 
 func TestNewCSVPrinter(t *testing.T) {
-	dataFilename := "test_data.csv"
-	// showTimestamp := true
-	// showSourceAddress := true
+	probeFilename := "test_data.csv"
 
-	cfg := PrinterConfig{}
+	cfg := PrinterConfig{OutputCSVPath: "test_data"}
 
 	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
-	assert.Equal(t, dataFilename, cp.ProbeFilename)
-	assert.Equal(t, dataFilename[:len(dataFilename)-4]+"_stats.csv", cp.StatsFilename)
+	assert.Equal(t, probeFilename, cp.ProbeFile.Name())
+	assert.Equal(t, probeFilename[:len(probeFilename)-4]+"_stats.csv", cp.StatsFile.Name())
 
 	cp.Done()
-	os.Remove(dataFilename)
-	os.Remove(cp.StatsFilename)
+
+	os.Remove(cp.ProbeFile.Name())
+	os.Remove(cp.StatsFile.Name())
 }
 
 func TestWriteRecord(t *testing.T) {
-	dataFilename := "test_data.csv"
-	// showTimestamp := false
-	// showSourceAddress := true
-
 	cfg := PrinterConfig{}
 
 	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
-	record := []string{"Success", "hostname", "127.0.0.1", "80", "1", "10.123", "sourceAddr"}
-	assert.NoError(t, err)
-
-	// Verify the record is written
-	file, err := os.Open(dataFilename)
+	file, err := os.Open(cp.ProbeFile.Name())
 	assert.NoError(t, err)
 	defer file.Close()
 
 	reader := csv.NewReader(file)
 	headers, err := reader.Read()
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"Status", "Hostname", "IP", "Port", "TCP_Conn", "Latency(ms)", "Source Address"}, headers)
+	assert.Equal(t, []string{"Status", "Hostname", "IP", "Port", "Connection", "Latency(ms)"}, headers)
+
+	opts := types.Options{
+		IP:       netip.MustParseAddr("127.0.0.1"),
+		Hostname: "localhost",
+		Port:     80,
+	}
+
+	cp.PrintProbeSuccess(time.Now(), "192.168.1.10:1234", opts, 1, "10.123")
 
 	readRecord, err := reader.Read()
 	assert.NoError(t, err)
+
+	record := []string{"Reply", "localhost", "127.0.0.1", "80", "1", "10.123"}
 	assert.Equal(t, record, readRecord)
 
-	// Cleanup
 	cp.Done()
-	os.Remove(dataFilename)
-	os.Remove(cp.StatsFilename)
+
+	os.Remove(cp.ProbeFile.Name())
+	os.Remove(cp.StatsFile.Name())
 }
 
 func TestWriteStatistics(t *testing.T) {
-	dataFilename := "test_data.csv"
-	// showTimestamp := true
-	// showSourceAddress := false
-	cfg := PrinterConfig{}
+	probeFilename := "test_data.csv"
+
+	cfg := PrinterConfig{
+		OutputCSVPath: probeFilename,
+		Target:        "localhost",
+		Port:          "1234",
+	}
 
 	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
 	tcping := types.Tcping{
+		Printer:                 cp,
 		TotalSuccessfulProbes:   1,
 		TotalUnsuccessfulProbes: 0,
 		LastSuccessfulProbe:     time.Now(),
@@ -81,7 +87,7 @@ func TestWriteStatistics(t *testing.T) {
 
 	PrintStats(&tcping)
 
-	statsFile, err := os.Open(cp.StatsFilename)
+	statsFile, err := os.Open(cp.StatsFile.Name())
 	assert.NoError(t, err)
 	defer statsFile.Close()
 
@@ -99,23 +105,26 @@ func TestWriteStatistics(t *testing.T) {
 	}
 
 	cp.Done()
-	os.Remove(dataFilename)
-	os.Remove(cp.StatsFilename)
+
+	os.Remove(cp.ProbeFile.Name())
+	os.Remove(cp.StatsFile.Name())
 }
 
 func TestCleanup(t *testing.T) {
-	dataFilename := "test_data.csv"
-	// showTimestamp := true
-	// showSourceAddress := false
+	probeFilename := "test_data.csv"
 
-	cfg := PrinterConfig{}
+	cfg := PrinterConfig{
+		OutputCSVPath: probeFilename,
+		Target:        "localhost",
+		Port:          "1234",
+	}
 
 	cp, err := NewCSVPrinter(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
-	// Call printStatistics to ensure the stats file is created
 	tcping := types.Tcping{
+		Printer:                 cp,
 		TotalSuccessfulProbes:   1,
 		TotalUnsuccessfulProbes: 0,
 		LastSuccessfulProbe:     time.Now(),
@@ -124,17 +133,14 @@ func TestCleanup(t *testing.T) {
 
 	PrintStats(&tcping)
 
-	// Perform cleanup
 	cp.Done()
 
-	// Verify files are closed and flushed
-	_, err = os.Stat(dataFilename)
+	_, err = os.Stat(probeFilename)
 	assert.NoError(t, err)
 
-	_, err = os.Stat(cp.StatsFilename)
+	_, err = os.Stat(cp.StatsFile.Name())
 	assert.NoError(t, err)
 
-	// Cleanup files
-	os.Remove(dataFilename)
-	os.Remove(cp.StatsFilename)
+	os.Remove(cp.ProbeFile.Name())
+	os.Remove(cp.StatsFile.Name())
 }

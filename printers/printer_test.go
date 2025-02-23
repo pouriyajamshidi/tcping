@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/pouriyajamshidi/tcping/v2/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ type dummyPrinter struct{}
 
 func (fp *dummyPrinter) PrintStart(_ string, _ uint16)                                              {}
 func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ types.Options, _ uint, _ string) {}
-func (fp *dummyPrinter) PrintProbeFail(_ time.Time, _ types.Options, _ uint)                        {}
+func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ types.Options, _ uint)                     {}
 func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                                            {}
 func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                                         {}
 func (fp *dummyPrinter) PrintStatistics(_ types.Tcping)                                             {}
@@ -33,6 +34,7 @@ func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                  
 // It'll call t.Errorf if netip.ParseAddr has failed.
 func createTestStats(t *testing.T) *types.Tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
+
 	s := types.Tcping{
 		Printer: &dummyPrinter{},
 		Options: types.Options{
@@ -43,6 +45,7 @@ func createTestStats(t *testing.T) *types.Tcping {
 		},
 		Ticker: time.NewTicker(time.Second),
 	}
+
 	if err != nil {
 		t.Errorf("ip parse: %v", err)
 	}
@@ -125,59 +128,59 @@ func TestDurationToString(t *testing.T) {
 
 func getProbeSuccessTests() []struct {
 	name              string
-	showTimestamp     bool
+	withTimestamp     bool
 	useHostname       bool
-	showSourceAddress bool
+	withSourceAddress bool
 	expectedOutput    string
 } {
 	return []struct {
 		name              string
-		showTimestamp     bool
+		withTimestamp     bool
 		useHostname       bool
-		showSourceAddress bool
+		withSourceAddress bool
 		expectedOutput    string
 	}{
 		{
 			name:              "With hostname, no timestamp",
-			showTimestamp:     false,
+			withTimestamp:     false,
 			useHostname:       true,
-			showSourceAddress: false,
-			expectedOutput:    "Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+			withSourceAddress: false,
+			expectedOutput:    "Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
 		},
 		{
 			name:              "With hostname, with timestamp",
-			showTimestamp:     true,
+			withTimestamp:     true,
 			useHostname:       true,
-			showSourceAddress: false,
-			expectedOutput:    "%s Reply from %s (%s) on port %d TCP_conn=%d time=%.3f ms\n",
+			withSourceAddress: false,
+			expectedOutput:    "%s Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
 		},
 		{
 			name:              "Without hostname, with timestamp",
-			showTimestamp:     true,
+			withTimestamp:     true,
 			useHostname:       false,
-			showSourceAddress: false,
-			expectedOutput:    "%s Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			withSourceAddress: false,
+			expectedOutput:    "%s Reply from %s on port %d TCP_conn=%d time=%s ms\n",
 		},
 		{
 			name:              "Without hostname, no timestamp",
-			showTimestamp:     false,
+			withTimestamp:     false,
 			useHostname:       false,
-			showSourceAddress: false,
-			expectedOutput:    "Reply from %s on port %d TCP_conn=%d time=%.3f ms\n",
+			withSourceAddress: false,
+			expectedOutput:    "Reply from %s on port %d TCP_conn=%d time=%s ms\n",
 		},
 		{
 			name:              "Without hostname, no timestamp, with show source address",
-			showTimestamp:     false,
+			withTimestamp:     false,
 			useHostname:       false,
-			showSourceAddress: true,
-			expectedOutput:    "Reply from %s on port %d using %s TCP_conn=%d time=%.3f ms\n",
+			withSourceAddress: true,
+			expectedOutput:    "Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 		},
 		{
 			name:              "With hostname, no timestamp, with show source address",
-			showTimestamp:     false,
+			withTimestamp:     false,
 			useHostname:       true,
-			showSourceAddress: true,
-			expectedOutput:    "Reply from %s (%s) on port %d using %s TCP_conn=%d time=%.3f ms\n",
+			withSourceAddress: true,
+			expectedOutput:    "Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 		},
 	}
 }
@@ -187,15 +190,12 @@ func TestPrintProbeSuccess(t *testing.T) {
 	stats := createTestStats(t)
 	stats.Options.Hostname = "example.com"
 	streak := uint(5)
-	rtt := float32(15.123)
+	rtt := fmt.Sprintf("%.3f", 15.123)
 	sourceAddr := "127.0.0.1:4567"
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := NewPlainPrinter(tc.showTimestamp)
-
-			read, write, _ := os.Pipe()
-			os.Stdout = write
+			cfg := PrinterConfig{}
 
 			if !tc.useHostname {
 				stats.Options.Hostname = ""
@@ -203,11 +203,19 @@ func TestPrintProbeSuccess(t *testing.T) {
 				stats.Options.Hostname = "example.com"
 			}
 
-			if tc.showSourceAddress {
-				stats.Options.ShowSourceAddress = true
+			if tc.withTimestamp {
+				cfg.WithTimestamp = true
 			}
 
-			pp.PrintProbeSuccess(sourceAddr, stats.Options, streak, rtt)
+			if tc.withSourceAddress {
+				cfg.WithSourceAddress = true
+			}
+
+			read, write, _ := os.Pipe()
+			os.Stdout = write
+
+			p := NewPlainPrinter(cfg)
+			p.PrintProbeSuccess(time.Now(), sourceAddr, stats.Options, streak, rtt)
 
 			write.Close()
 
@@ -219,11 +227,12 @@ func TestPrintProbeSuccess(t *testing.T) {
 			output := buf.String()
 
 			var expected string
-			if tc.showTimestamp {
-				timestamp := time.Now().Format("2006-01-02 15:04:05")
-				if tc.showSourceAddress && tc.useHostname {
+
+			if cfg.WithTimestamp {
+				timestamp := time.Now().Format(consts.TimeFormat)
+				if cfg.WithSourceAddress && tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, sourceAddr, streak, rtt)
-				} else if tc.showSourceAddress {
+				} else if cfg.WithSourceAddress {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.IP, stats.Options.Port, sourceAddr, streak, rtt)
 				} else if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, streak, rtt)
@@ -231,9 +240,9 @@ func TestPrintProbeSuccess(t *testing.T) {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.IP, stats.Options.Port, streak, rtt)
 				}
 			} else {
-				if tc.showSourceAddress && tc.useHostname {
+				if cfg.WithSourceAddress && tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, sourceAddr, streak, rtt)
-				} else if tc.showSourceAddress {
+				} else if tc.withSourceAddress {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.Options.IP, stats.Options.Port, sourceAddr, streak, rtt)
 				} else if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, streak, rtt)
@@ -285,9 +294,12 @@ func TestPrintProbeFail(t *testing.T) {
 		},
 	}
 
+	cfg := PrinterConfig{}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := NewPlainPrinter(tc.showTimestamp)
+			cfg.WithTimestamp = tc.showTimestamp
+			pp := NewPlainPrinter(cfg)
 
 			read, write, _ := os.Pipe()
 			os.Stdout = write
@@ -297,7 +309,7 @@ func TestPrintProbeFail(t *testing.T) {
 				stats.Options.Hostname = ""
 			}
 
-			pp.PrintProbeFail(stats.Options, streak)
+			pp.PrintProbeFailure(time.Now(), stats.Options, streak)
 
 			write.Close()
 
@@ -310,7 +322,7 @@ func TestPrintProbeFail(t *testing.T) {
 
 			var expected string
 			if tc.showTimestamp {
-				timestamp := time.Now().Format("2006-01-02 15:04:05")
+				timestamp := time.Now().Format(consts.TimeFormat)
 				if tc.useHostname {
 					expected = fmt.Sprintf(tc.expectedOutput, timestamp, stats.Options.Hostname, stats.Options.IP, stats.Options.Port, streak)
 				} else {
