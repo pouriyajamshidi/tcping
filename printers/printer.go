@@ -65,6 +65,19 @@ func PrintStats(t *types.Tcping) {
 	t.PrintStatistics(*t)
 }
 
+// SetLongestDuration updates the longest uptime or downtime based on the given type.
+func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
+	if start.IsZero() || duration == 0 {
+		return
+	}
+
+	newLongest := types.NewLongestTime(start, duration)
+
+	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
+		*longest = newLongest
+	}
+}
+
 // Shutdown calculates endTime, prints statistics and calls os.Exit(0).
 // This should be used as the main exit-point.
 func Shutdown(p *types.Tcping) {
@@ -123,17 +136,4 @@ func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
 	}
 
 	return result
-}
-
-// SetLongestDuration updates the longest uptime or downtime based on the given type.
-func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
-	if start.IsZero() || duration == 0 {
-		return
-	}
-
-	newLongest := types.NewLongestTime(start, duration)
-
-	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
-		*longest = newLongest
-	}
 }

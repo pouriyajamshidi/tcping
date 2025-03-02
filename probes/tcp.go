@@ -19,7 +19,7 @@ func handleConnFailure(t *types.Tcping, startTime time.Time, elapsed time.Durati
 	if !t.DestWasDown {
 		t.StartOfDowntime = startTime
 		uptimeDuration := t.StartOfDowntime.Sub(t.StartOfUptime)
-		// set longest uptime since uptime is interrupted
+		// set longest uptime since it is interrupted
 		printers.SetLongestDuration(t.StartOfUptime, uptimeDuration, &t.LongestUptime)
 		t.StartOfUptime = time.Time{}
 		t.DestWasDown = true
@@ -42,7 +42,7 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 	if t.DestWasDown {
 		t.StartOfUptime = startTime
 		downtimeDuration := t.StartOfUptime.Sub(t.StartOfDowntime)
-		// set longest downtime since downtime is interrupted
+		// set longest downtime since it is interrupted
 		printers.SetLongestDuration(t.StartOfDowntime, downtimeDuration, &t.LongestDowntime)
 		t.PrintTotalDownTime(downtimeDuration)
 		t.StartOfDowntime = time.Time{}

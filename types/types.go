@@ -56,6 +56,7 @@ type Prober interface {
 // It holds statistics and state about the ongoing pinging process.
 type Tcping struct {
 	Printer                                    // Printer is an embedded interface for outputting information and data.
+	Options                   Options          // User-specified settings and configuration.
 	StartTime                 time.Time        // Start time of the TCPing operation.
 	EndTime                   time.Time        // End time of the TCPing operation.
 	StartOfUptime             time.Time        // Timestamp when the current uptime started.
@@ -67,7 +68,6 @@ type Tcping struct {
 	LongestDowntime           LongestTime      // Data structure holding information about the longest downtime.
 	Rtt                       []float32        // List of RTT results for successful probes.
 	HostnameChanges           []HostnameChange // List of hostname changes encountered.
-	Options                   Options          // User-specified settings and configuration.
 	OngoingSuccessfulProbes   uint             // Count of ongoing successful probes.
 	OngoingUnsuccessfulProbes uint             // Count of ongoing unsuccessful probes.
 	TotalDowntime             time.Duration    // Total accumulated downtime.

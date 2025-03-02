@@ -16,8 +16,7 @@ import (
 - Do we need the `PrintStats` helper function
 - Pass `Prober` instead of tcping to printers, helpers, etc
 - I think there are some overlaps in printer success and probe failure conditionals
-- Show how long we were up on failure similar to what we do for success?
-- SetLongestTime does not seem to belong to printer package
+- SetLongestDuration does not seem to belong to printer package
 - Where should we place the Shutdown function? Printers seems a bit off
 - Make `Options` of `Tcping` implicit too?
 - Probably it is better to move SignalHandler to probes instead of printers
@@ -27,6 +26,7 @@ import (
 - Possibly use new slice functions instead of the current manual way
 - See what printer methods are not used
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
+- Show how long we were up on failure similar to what we do for success?
 - Implement functional pattern to chose the prober
 - Cross-check the printer implementations to see how much they differ
 - Read the entire code once everything is done for "code smells"
