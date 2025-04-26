@@ -17,7 +17,6 @@ type Prober struct {
 	Ticker     *time.Ticker
 	Timeout    time.Duration
 	Interval   time.Duration
-	Done       chan struct{}
 	Statistics Statistics
 }
 
@@ -57,15 +56,12 @@ func (p *Prober) Probe(ctx context.Context) (Statistics, error) {
 	}
 	p.Ticker = time.NewTicker(p.Interval)
 	defer p.Ticker.Stop()
-	p.Done = make(chan struct{})
-	defer close(p.Done)
 	p.Statistics.StartTime = time.Now()
 	defer func() {
 		p.Statistics.EndTime = time.Now()
 		p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
 	}()
-	pinging := true
-	for pinging {
+	for {
 		select {
 		case <-ctx.Done():
 			return p.Statistics, ctx.Err()
@@ -83,9 +79,6 @@ func (p *Prober) Probe(ctx context.Context) (Statistics, error) {
 			p.Statistics.LongestUp = types.NewLongestTime(pingTime, rtt)
 		case <-time.After(p.Timeout):
 			return p.Statistics, ErrTimeout
-		case <-p.Done:
-			pinging = false
 		}
 	}
-	return p.Statistics, nil
 }
