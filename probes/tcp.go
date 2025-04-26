@@ -15,7 +15,7 @@ import (
 
 // handleConnFailure processes failed probes
 func handleConnFailure(t *types.Tcping, startTime time.Time, elapsed time.Duration) {
-	// if last probe had succeeded
+	// if the last probe had succeeded
 	if !t.DestWasDown {
 		t.StartOfDowntime = startTime
 		uptimeDuration := t.StartOfDowntime.Sub(t.StartOfUptime)
