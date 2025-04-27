@@ -49,6 +49,10 @@ func (p *ColorPrinter) PrintStatistics(statistics statistics.Statistics) {
 		p.w.Write(fmt.Appendf(nil, "%s%s%s %s\n", Green, "Average RTT:", Reset, statistics.AverageRTT()))
 		p.w.Write(fmt.Appendf(nil, "%s%s%s %s\n", Green, "Max RTT:", Reset, statistics.MaxRTT()))
 		p.w.Write(fmt.Appendf(nil, "%s%s%s %s\n", Green, "Min RTT:", Reset, statistics.MinRTT()))
+		p.w.Write(fmt.Appendf(nil, "%s%s%s %s\n", Green, "Longest Up:", Reset, statistics.LongestUp))
+		p.w.Write(fmt.Appendf(nil, "%s%s%s %s\n", Green, "Longest Down:", Reset, statistics.LongestDown))
+		p.w.Write(fmt.Appendf(nil, "%s%s%s %d\n", Green, "Successful Pings:", Reset, statistics.Successful))
+		p.w.Write(fmt.Appendf(nil, "%s%s%s %d\n", Green, "Failed Pings:", Reset, statistics.Failed))
 		return
 	}
 	p.w.Write(fmt.Appendf(nil, "Statistics:\n"))

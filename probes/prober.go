@@ -3,8 +3,10 @@ package probes
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v2/probes/pinger"
 	"github.com/pouriyajamshidi/tcping/v2/probes/printer"
 	"github.com/pouriyajamshidi/tcping/v2/probes/statistics"
 	"github.com/pouriyajamshidi/tcping/v2/types"
@@ -31,6 +33,8 @@ type Printer interface {
 
 type Pinger interface {
 	Ping(ctx context.Context) error
+	IP() string
+	Port() uint16
 }
 
 type ProberOption func(*Prober)
@@ -43,7 +47,7 @@ func WithInterval(interval time.Duration) ProberOption {
 
 func WithTimeout(timeout time.Duration) ProberOption {
 	return func(p *Prober) {
-		p.Timeout = timeout
+		p.Timeout = timeout + p.Interval
 	}
 }
 
@@ -79,31 +83,33 @@ func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 	p.Ticker = time.NewTicker(p.Interval)
 	defer p.Ticker.Stop()
 	p.Statistics.StartTime = time.Now()
-	defer func() {
-		p.Statistics.EndTime = time.Now()
-		p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
-	}()
 	for {
 		select {
 		case <-ctx.Done():
+			p.Statistics.EndTime = time.Now()
+			p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
 			return p.Statistics, nil
 		case <-p.Ticker.C:
 			pingTime := time.Now()
 			err := p.pinger.Ping(ctx)
 			rtt := time.Since(pingTime)
 			if err != nil {
+				if errors.Is(err, pinger.ErrPingCompleted) {
+					return p.Statistics, nil
+				}
+				p.printer.PrintError(err)
 				p.Statistics.Failed++
 				p.Statistics.LongestDown = types.NewLongestTime(pingTime, rtt)
-				p.printer.PrintError(err)
-				p.printer.PrintStatistics(p.Statistics)
 				continue
 			}
 			p.Statistics.RTT = append(p.Statistics.RTT, rtt)
 			p.Statistics.HasResults = true
 			p.Statistics.Successful++
 			p.Statistics.LongestUp = types.NewLongestTime(pingTime, rtt)
-			p.printer.PrintStatistics(p.Statistics)
+			p.printer.Print(fmt.Sprintf("Ping to %s:%d succeeded in %s with connection %d", p.pinger.IP(), p.pinger.Port(), rtt, p.Statistics.Successful))
 		case <-time.After(p.Timeout):
+			p.Statistics.EndTime = time.Now()
+			p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
 			return p.Statistics, ErrTimeout
 		}
 	}

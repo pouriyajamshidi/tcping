@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -12,14 +13,16 @@ import (
 
 func main() {
 	printer := printer.NewColor()
-
+	hostname := "159.89.250.4"
+	port := uint16(80)
+	printer.Print(fmt.Sprintf("TCPinging %s on port %d\n", hostname, port))
 	pinger := pinger.NewTCPPinger(
-		pinger.WithIP("159.89.251.4"),
-		pinger.WithPort(80))
+		pinger.WithIP(hostname),
+		pinger.WithPort(port))
 
 	prober := probes.NewProber(pinger,
 		probes.WithInterval(1*time.Second),
-		probes.WithTimeout(5*time.Second),
+		probes.WithTimeout(10*time.Second),
 		probes.WithPrinter(printer),
 	)
 
@@ -29,5 +32,4 @@ func main() {
 		log.Fatal(err)
 	}
 	printer.PrintStatistics(statistics)
-
 }

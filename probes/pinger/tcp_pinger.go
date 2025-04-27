@@ -2,6 +2,7 @@ package pinger
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/netip"
 	"time"
@@ -36,9 +37,9 @@ const (
 )
 
 var (
-	DefaultIPAddr  = netip.MustParseAddr(DefaultIP)      //nolint:gochecknoglobals // this is a default dat
-	DefaultNIC     = &types.NetworkInterface{Use: false} //nolint:gochecknoglobals // this is a default dat
-	DefaultTimeout = 5 * time.Second                     //nolint:gochecknoglobals // this is a default dat
+	DefaultIPAddr  = netip.MustParseAddr(DefaultIP)
+	DefaultNIC     = &types.NetworkInterface{Use: false}
+	DefaultTimeout = 1 * time.Second
 )
 
 func NewTCPPinger(opts ...TCPProberOption) *TCPPinger {
@@ -62,13 +63,41 @@ type TCPPinger struct {
 	timeout time.Duration
 }
 
+var ErrPingCompleted = errors.New("ping completed")
+
 func (t *TCPPinger) Ping(ctx context.Context) error {
-	conn, err := t.connect(ctx)
-	if err != nil {
+	// Create a derived context with the timeout
+	ctx, cancel := context.WithTimeout(ctx, t.timeout)
+	defer cancel()
+
+	connCh := make(chan net.Conn, 1)
+	errCh := make(chan error, 1)
+
+	go func() {
+		conn, err := t.connect(ctx)
+		if err != nil {
+			// Check if the error is related to context cancellation
+			if ctx.Err() != nil {
+				// Don't propagate the error, the select will catch ctx.Done()
+				return
+			}
+			errCh <- err
+			return
+		}
+		connCh <- conn
+	}()
+
+	select {
+	case conn := <-connCh:
+		defer conn.Close()
+		return nil
+	case err := <-errCh:
+		// Only pass through non-context related errors
 		return err
+	case <-ctx.Done():
+		// This is not an error state, but the completion of the window
+		return ErrPingCompleted
 	}
-	defer conn.Close()
-	return nil
 }
 
 func (t *TCPPinger) connect(ctx context.Context) (net.Conn, error) {
@@ -76,8 +105,15 @@ func (t *TCPPinger) connect(ctx context.Context) (net.Conn, error) {
 		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
 		return t.nic.Dialer.DialContext(ctx, "tcp", t.nic.RemoteAddr.String())
 	}
-	dailer := &net.Dialer{
-		Timeout: t.timeout,
-	}
-	return dailer.DialContext(ctx, "tcp", netip.AddrPortFrom(t.ip, t.port).String())
+
+	dialer := &net.Dialer{}
+	return dialer.DialContext(ctx, "tcp", netip.AddrPortFrom(t.ip, t.port).String())
+}
+
+func (t *TCPPinger) IP() string {
+	return t.ip.String()
+}
+
+func (t *TCPPinger) Port() uint16 {
+	return t.port
 }
