@@ -42,10 +42,30 @@ type Statistics struct {
 	HasResults  bool
 }
 
-func NewProber(p Pinger) *Prober {
-	return &Prober{
-		pinger: p,
+type ProberOption func(*Prober)
+
+func WithInterval(interval time.Duration) ProberOption {
+	return func(p *Prober) {
+		p.Interval = interval
 	}
+}
+
+func WithTimeout(timeout time.Duration) ProberOption {
+	return func(p *Prober) {
+		p.Timeout = timeout
+	}
+}
+
+func NewProber(p Pinger, opts ...ProberOption) *Prober {
+	pr := Prober{
+		pinger:   p,
+		Interval: DefaultInterval,
+		Timeout:  DefaultTimeout,
+	}
+	for _, opt := range opts {
+		opt(&pr)
+	}
+	return &pr
 }
 
 const (
@@ -54,13 +74,6 @@ const (
 )
 
 func (p *Prober) Probe(ctx context.Context) (Statistics, error) {
-	if p.Interval == 0 {
-		p.Interval = DefaultInterval
-	}
-	if p.Timeout == 0 {
-		p.Timeout = DefaultTimeout
-	}
-
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithTimeout(ctx, p.Timeout)
 	defer cancel()
