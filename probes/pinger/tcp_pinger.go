@@ -1,4 +1,4 @@
-package probes
+package pinger
 
 import (
 	"context"
@@ -11,8 +11,9 @@ import (
 
 type TCPProberOption func(*TCPPinger)
 
-func WithIP(ip netip.Addr) TCPProberOption {
+func WithIP(s string) TCPProberOption {
 	return func(t *TCPPinger) {
+		ip := netip.MustParseAddr(s)
 		t.ip = ip
 	}
 }
@@ -35,11 +36,12 @@ const (
 )
 
 var (
-	DefaultIPAddr = netip.MustParseAddr(DefaultIP)      //nolint:gochecknoglobals // this is a default dat
-	DefaultNIC    = &types.NetworkInterface{Use: false} //nolint:gochecknoglobals // this is a default dat
+	DefaultIPAddr  = netip.MustParseAddr(DefaultIP)      //nolint:gochecknoglobals // this is a default dat
+	DefaultNIC     = &types.NetworkInterface{Use: false} //nolint:gochecknoglobals // this is a default dat
+	DefaultTimeout = 5 * time.Second                     //nolint:gochecknoglobals // this is a default dat
 )
 
-func NewTCPProber(opts ...TCPProberOption) *TCPPinger {
+func NewTCPPinger(opts ...TCPProberOption) *TCPPinger {
 	t := &TCPPinger{
 		ip:      netip.MustParseAddr(DefaultIP),
 		port:    DefaultPort,
