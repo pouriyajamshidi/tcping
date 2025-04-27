@@ -23,18 +23,6 @@ func WithPort(port uint16) TCPProberOption {
 	}
 }
 
-func WithTimeout(timeout time.Duration) TCPProberOption {
-	return func(t *TCPPinger) {
-		t.timeout = timeout
-	}
-}
-
-func WithIntervalBetweenProbes(intervalBetweenProbes time.Duration) TCPProberOption {
-	return func(t *TCPPinger) {
-		t.intervalBetweenProbes = intervalBetweenProbes
-	}
-}
-
 func WithNetworkInterface(nic *types.NetworkInterface) TCPProberOption {
 	return func(t *TCPPinger) {
 		t.nic = nic
@@ -42,10 +30,8 @@ func WithNetworkInterface(nic *types.NetworkInterface) TCPProberOption {
 }
 
 const (
-	DefaultTimeout               = 5 * time.Second
-	DefaultIntervalBetweenProbes = 1 * time.Second
-	DefaultPort                  = 80
-	DefaultIP                    = "0.0.0.0"
+	DefaultPort = 80
+	DefaultIP   = "0.0.0.0"
 )
 
 var (
@@ -55,11 +41,10 @@ var (
 
 func NewTCPProber(opts ...TCPProberOption) *TCPPinger {
 	t := &TCPPinger{
-		ip:                    netip.MustParseAddr(DefaultIP),
-		port:                  DefaultPort,
-		timeout:               DefaultTimeout,
-		intervalBetweenProbes: DefaultIntervalBetweenProbes,
-		nic:                   DefaultNIC,
+		ip:      netip.MustParseAddr(DefaultIP),
+		port:    DefaultPort,
+		nic:     DefaultNIC,
+		timeout: DefaultTimeout,
 	}
 	for _, opt := range opts {
 		opt(t)
@@ -68,15 +53,15 @@ func NewTCPProber(opts ...TCPProberOption) *TCPPinger {
 }
 
 type TCPPinger struct {
-	ip                    netip.Addr
-	port                  uint16
-	timeout               time.Duration
-	intervalBetweenProbes time.Duration
-	nic                   *types.NetworkInterface
+	ip   netip.Addr
+	port uint16
+	nic  *types.NetworkInterface
+
+	timeout time.Duration
 }
 
 func (t *TCPPinger) Ping(ctx context.Context) error {
-	conn, err := t.connect(context.Background())
+	conn, err := t.connect(ctx)
 	if err != nil {
 		return err
 	}

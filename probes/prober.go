@@ -48,12 +48,23 @@ func NewProber(p Pinger) *Prober {
 	}
 }
 
+const (
+	DefaultInterval = 1 * time.Second
+	DefaultTimeout  = 5 * time.Second
+)
+
 func (p *Prober) Probe(ctx context.Context) (Statistics, error) {
-	if p.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.Timeout)
-		defer cancel()
+	if p.Interval == 0 {
+		p.Interval = DefaultInterval
 	}
+	if p.Timeout == 0 {
+		p.Timeout = DefaultTimeout
+	}
+
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, p.Timeout)
+	defer cancel()
+
 	p.Ticker = time.NewTicker(p.Interval)
 	defer p.Ticker.Stop()
 	p.Statistics.StartTime = time.Now()
