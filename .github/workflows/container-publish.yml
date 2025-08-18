@@ -47,7 +47,7 @@ jobs:
           echo ${{ env.latest_tag }}
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
