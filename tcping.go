@@ -896,8 +896,17 @@ func tcpProbe(tcping *tcping) {
 }
 
 func main() {
-	tcping := &tcping{}
-	processUserInput(tcping)
+	tcping := newProcessUserInput(
+		withMustPrinter(),
+		withMustShowVersion(),
+		withMustShowHelp(),
+		withMustCheckUpdates(),
+		withMustSpecificHostAndPort(),
+		withMustIPFlags(),
+		withMustPort(),
+		withMustGenericArgs(),
+	)
+
 	tcping.ticker = time.NewTicker(tcping.userInput.intervalBetweenProbes)
 	defer tcping.ticker.Stop()
 
