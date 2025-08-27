@@ -1,3 +1,4 @@
+// tcping_optional.go contains the optional functions for the tcping program.
 package main
 
 import (
@@ -30,7 +31,6 @@ type tcpingUserInput struct {
 type OptionalTcping func(tcping *tcping, userInput *tcpingUserInput) error
 
 func newProcessUserInput(opts ...OptionalTcping) *tcping {
-
 	tcping := defaultProcessUserInput()
 	userInput := defaultUserSettings()
 
@@ -47,8 +47,6 @@ func defaultProcessUserInput() *tcping {
 }
 
 func defaultUserSettings() tcpingUserInput {
-
-	// overlap tcping.go 340 ~ 357
 	useIPv4 := flag.Bool("4", false, "only use IPv4.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6.")
 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
@@ -99,7 +97,6 @@ func defaultUserSettings() tcpingUserInput {
 // set printer
 func withMustPrinter() OptionalTcping {
 	return func(tcping *tcping, userInput *tcpingUserInput) error {
-
 		setPrinter(tcping, userInput.outputJSON, userInput.prettyJSON, userInput.noColor, userInput.showTimestamp, userInput.showSourceAddress, userInput.outputDB, userInput.saveToCSV, userInput.args)
 		return nil
 	}
@@ -108,7 +105,6 @@ func withMustPrinter() OptionalTcping {
 // set show version (-v)
 func withMustShowVersion() OptionalTcping {
 	return func(tcping *tcping, userInput *tcpingUserInput) error {
-
 		if *userInput.showVer {
 			showVersion(tcping)
 		}
@@ -118,7 +114,7 @@ func withMustShowVersion() OptionalTcping {
 
 // set show help (-h)
 func withMustShowHelp() OptionalTcping {
-	return func(tcping *tcping, userInput *tcpingUserInput) error {
+	return func(_ *tcping, userInput *tcpingUserInput) error {
 		if *userInput.showHelp {
 			usage()
 		}
@@ -138,7 +134,7 @@ func withMustCheckUpdates() OptionalTcping {
 
 // host and port must be specified
 func withMustSpecificHostAndPort() OptionalTcping {
-	return func(tcping *tcping, userInput *tcpingUserInput) error {
+	return func(_ *tcping, userInput *tcpingUserInput) error {
 		if len(userInput.args) < 2 {
 			usage()
 		}
@@ -165,7 +161,6 @@ func withMustPort() OptionalTcping {
 // set generic args
 func withMustGenericArgs() OptionalTcping {
 	return func(tcping *tcping, userInput *tcpingUserInput) error {
-
 		genericArgs := genericUserInputArgs{
 			retryResolve:         userInput.retryHostnameResolveAfter,
 			probesBeforeQuit:     userInput.probesBeforeQuit,
