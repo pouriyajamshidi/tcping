@@ -335,79 +335,79 @@ func setGenericArgs(tcping *tcping, genericArgs genericUserInputArgs) {
 	tcping.userInput.showSourceAddress = *genericArgs.showSourceAddress
 }
 
-// processUserInput gets and validate user input
-func processUserInput(tcping *tcping) {
-	useIPv4 := flag.Bool("4", false, "only use IPv4.")
-	useIPv6 := flag.Bool("6", false, "only use IPv6.")
-	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
-	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
-	outputJSON := flag.Bool("j", false, "output in JSON format.")
-	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
-	noColor := flag.Bool("no-color", false, "do not colorize output.")
-	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
-	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name and _stats appended.")
-	showVer := flag.Bool("v", false, "show version.")
-	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
-	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
-	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
-	interfaceName := flag.String("I", "", "interface name or address.")
-	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
-	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
-	showHelp := flag.Bool("h", false, "show help message.")
+// @deprecated processUserInput gets and validate user input
+// func processUserInput(tcping *tcping) {
+// 	useIPv4 := flag.Bool("4", false, "only use IPv4.")
+// 	useIPv6 := flag.Bool("6", false, "only use IPv6.")
+// 	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
+// 	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
+// 	outputJSON := flag.Bool("j", false, "output in JSON format.")
+// 	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
+// 	noColor := flag.Bool("no-color", false, "do not colorize output.")
+// 	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
+// 	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name and _stats appended.")
+// 	showVer := flag.Bool("v", false, "show version.")
+// 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
+// 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
+// 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
+// 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
+// 	interfaceName := flag.String("I", "", "interface name or address.")
+// 	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
+// 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
+// 	showHelp := flag.Bool("h", false, "show help message.")
 
-	flag.CommandLine.Usage = usage
+// 	flag.CommandLine.Usage = usage
 
-	permuteArgs(os.Args[1:])
-	flag.Parse()
+// 	permuteArgs(os.Args[1:])
+// 	flag.Parse()
 
-	// validation for flag and args
-	args := flag.Args()
+// 	// validation for flag and args
+// 	args := flag.Args()
 
-	// we need to set printers first, because they're used for
-	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showSourceAddress, outputDB, saveToCSV, args)
+// 	// we need to set printers first, because they're used for
+// 	// error reporting and other output.
+// 	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showSourceAddress, outputDB, saveToCSV, args)
 
-	// Handle -v flag
-	if *showVer {
-		showVersion(tcping)
-	}
+// 	// Handle -v flag
+// 	if *showVer {
+// 		showVersion(tcping)
+// 	}
 
-	// Handle -h flag
-	if *showHelp {
-		usage()
-	}
+// 	// Handle -h flag
+// 	if *showHelp {
+// 		usage()
+// 	}
 
-	// Handle -u flag
-	if *checkUpdates {
-		checkForUpdates(tcping)
-	}
+// 	// Handle -u flag
+// 	if *checkUpdates {
+// 		checkForUpdates(tcping)
+// 	}
 
-	// host and port must be specified
-	if len(args) != 2 {
-		usage()
-	}
+// 	// host and port must be specified
+// 	if len(args) != 2 {
+// 		usage()
+// 	}
 
-	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
-	setIPFlags(tcping, useIPv4, useIPv6)
+// 	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
+// 	setIPFlags(tcping, useIPv4, useIPv6)
 
-	// Check if the port is valid and set it.
-	setPort(tcping, args)
+// 	// Check if the port is valid and set it.
+// 	setPort(tcping, args)
 
-	// set generic args
-	genericArgs := genericUserInputArgs{
-		retryResolve:         retryHostnameResolveAfter,
-		probesBeforeQuit:     probesBeforeQuit,
-		timeout:              timeout,
-		secondsBetweenProbes: secondsBetweenProbes,
-		intName:              interfaceName,
-		showFailuresOnly:     showFailuresOnly,
-		showSourceAddress:    showSourceAddress,
-		args:                 args,
-	}
+// 	// set generic args
+// 	genericArgs := genericUserInputArgs{
+// 		retryResolve:         retryHostnameResolveAfter,
+// 		probesBeforeQuit:     probesBeforeQuit,
+// 		timeout:              timeout,
+// 		secondsBetweenProbes: secondsBetweenProbes,
+// 		intName:              interfaceName,
+// 		showFailuresOnly:     showFailuresOnly,
+// 		showSourceAddress:    showSourceAddress,
+// 		args:                 args,
+// 	}
 
-	setGenericArgs(tcping, genericArgs)
-}
+// 	setGenericArgs(tcping, genericArgs)
+// }
 
 /*
 permuteArgs permute args for flag parsing stops just before the first non-flag argument.
