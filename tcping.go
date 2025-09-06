@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v45/github"
+	"golang.org/x/term"
 )
 
 var version = "" // set at compile time
@@ -253,10 +254,10 @@ func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, tim
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
 		}
-	} else if *noColor {
-		tcping.printer = newPlainPrinter(timeStamp)
-	} else {
+	} else if !*noColor && term.IsTerminal(int(os.Stdout.Fd())) {
 		tcping.printer = newColorPrinter(timeStamp)
+	} else {
+		tcping.printer = newPlainPrinter(timeStamp)
 	}
 }
 

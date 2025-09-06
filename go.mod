@@ -6,6 +6,7 @@ require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/gookit/color v1.6.0
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/term v0.32.0
 	zombiezen.com/go/sqlite v1.4.2
 )
 
