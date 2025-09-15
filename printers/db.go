@@ -296,10 +296,6 @@ func (p *DatabasePrinter) PrintStart(hostname string, port uint16) {
 
 // PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	if p.cfg.ShowFailuresOnly {
-		return
-	}
-
 	timestamp := ""
 	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(time.DateTime)

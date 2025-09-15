@@ -61,6 +61,10 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 	t.OngoingSuccessfulProbes++
 	t.Rtt = append(t.Rtt, rtt)
 
+	if t.Options.ShowFailuresOnly {
+		return
+	}
+
 	t.PrintProbeSuccess(
 		startTime,
 		sourceAddr,

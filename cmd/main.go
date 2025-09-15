@@ -13,6 +13,7 @@ import (
 )
 
 /* TODO:
+- Move the print failure only to the calling function instead of printers
 - Do we need the `PrintStats` helper function
 - Pass `Prober` instead of tcping to printers, helpers, etc
 - I think there are some overlaps in printer success and probe failure conditionals
@@ -24,11 +25,13 @@ import (
 - Should consts package move to internal?
 - Should types package move to internal?
 - Possibly use new slice functions instead of the current manual way
-- See what printer methods are not used
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 - Show how long we were up on failure similar to what we do for success?
 - Implement functional pattern to chose the prober
 - Cross-check the printer implementations to see how much they differ
+- Only the `NewLongestTime` is in the types.go file while others aren't
+- See what printer methods are not used
+- Run modernize
 - Read the entire code once everything is done for "code smells"
 */
 

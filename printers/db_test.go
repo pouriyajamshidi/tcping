@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	probeDataQuery = `SELECT 
+	probeDataQuery = `SELECT
 		type,
 		success,
 		timestamp,
@@ -138,7 +138,6 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 		Port:              "8001",
 		WithTimestamp:     true,
 		WithSourceAddress: true,
-		ShowFailuresOnly:  false,
 	}
 
 	db, err := NewDatabasePrinter(cfg)

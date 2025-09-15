@@ -41,10 +41,6 @@ func (p *ColorPrinter) PrintStart(hostname string, port uint16) {
 //   - streak: The number of consecutive successful probes.
 //   - rtt: The round-trip time of the probe in milliseconds (3 decimal points).
 func (p *ColorPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	if p.cfg.ShowFailuresOnly {
-		return
-	}
-
 	timestamp := ""
 	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(time.DateTime)

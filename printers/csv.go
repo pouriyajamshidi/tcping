@@ -145,10 +145,6 @@ func (p *CSVPrinter) PrintStart(hostname string, port uint16) {
 
 // PrintProbeSuccess logs a successful probe to the CSV file.
 func (p *CSVPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	if p.cfg.ShowFailuresOnly {
-		return
-	}
-
 	record := []string{}
 
 	if p.cfg.WithTimestamp {

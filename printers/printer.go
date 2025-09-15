@@ -18,7 +18,6 @@ type PrinterConfig struct {
 	NoColor           bool
 	WithTimestamp     bool
 	WithSourceAddress bool
-	ShowFailuresOnly  bool
 	OutputDBPath      string
 	OutputCSVPath     string
 	Target            string

@@ -122,6 +122,12 @@ func setOptions(t *types.Tcping, opts options) {
 		t.Options.RetryHostnameLookupAfter = *opts.retryResolve
 	}
 
+	if *opts.useIPv4 {
+		t.Options.UseIPv4 = true
+	} else if *opts.useIPv6 {
+		t.Options.UseIPv6 = true
+	}
+
 	t.Options.Hostname = opts.args[0]
 	t.Options.Port = convertAndValidatePort(t, opts.args[1])
 	t.Options.IP = dns.ResolveHostname(t)
@@ -152,6 +158,8 @@ func setOptions(t *types.Tcping, opts options) {
 	if *opts.intName != "" {
 		t.Options.NetworkInterface = newNetworkInterface(t, *opts.intName)
 	}
+
+	t.Options.ShowFailuresOnly = *opts.showFailuresOnly
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
@@ -220,7 +228,7 @@ func permuteArgs(args []string) {
 	permutedArgs := append(flagArgs, nonFlagArgs...)
 
 	/* replace args */
-	for i := 0; i < len(args); i++ {
+	for i := range len(args) {
 		args[i] = permutedArgs[i]
 	}
 }
@@ -294,7 +302,6 @@ func ProcessUserInput(tcping *types.Tcping) {
 		NoColor:           *noColor,
 		WithTimestamp:     *showTimestamp,
 		WithSourceAddress: *showSourceAddress,
-		ShowFailuresOnly:  *showFailuresOnly,
 		OutputDBPath:      *saveToDB,
 		OutputCSVPath:     *saveToCSV,
 		Target:            args[0],
@@ -318,6 +325,7 @@ func ProcessUserInput(tcping *types.Tcping) {
 		timeout:               timeout,
 		intervalBetweenProbes: intervalBetweenProbes,
 		intName:               interfaceName,
+		showFailuresOnly:      showFailuresOnly,
 		args:                  args,
 	}
 

@@ -26,10 +26,6 @@ func (p *PlainPrinter) PrintStart(hostname string, port uint16) {
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
 func (p *PlainPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	if p.cfg.ShowFailuresOnly {
-		return
-	}
-
 	timestamp := ""
 	if p.cfg.WithTimestamp {
 		timestamp = startTime.Format(time.DateTime)

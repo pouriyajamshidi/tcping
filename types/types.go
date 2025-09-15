@@ -94,6 +94,7 @@ type Options struct {
 	UseIPv6                  bool             // Flag indicating whether to use IPv6 addresses.
 	NonInteractive           bool             // Flag the program will run in the background.
 	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
+	ShowFailuresOnly         bool             // Flag indicating whether to only show failed probes.
 }
 
 // RttResult holds statistics for round-trip times (RTT) results.

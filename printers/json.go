@@ -102,11 +102,7 @@ func (p *JSONPrinter) PrintStart(hostname string, port uint16) {
 
 // PrintProbeSuccess prints successful TCP probe replies in JSON format.
 func (p *JSONPrinter) PrintProbeSuccess(startTime time.Time, sourceAddr string, opts types.Options, streak uint, rtt string) {
-	if p.cfg.ShowFailuresOnly {
-		return
-	}
-
-	// so that *bool fields not get omitted
+	// so that *bool fields do not get omitted
 	f := false
 	t := true
 
