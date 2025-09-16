@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
+	"github.com/pouriyajamshidi/tcping/v2/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v2/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/printers"

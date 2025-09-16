@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/consts"
+	"github.com/pouriyajamshidi/tcping/v2/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 

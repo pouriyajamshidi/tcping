@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v45/github"
-	"github.com/pouriyajamshidi/tcping/v2/consts"
+	"github.com/pouriyajamshidi/tcping/v2/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
