@@ -8,14 +8,12 @@ name: Docker container build
 on:
   workflow_run:
     workflows: ["CodeQL"]
-    types:
-      - completed
+    types: [completed]
     branches: ["master"]
+  push:
+    #   branches: ["master"]
+    #   # Publish semver tags as releases.
     tags: ["v*.*.*"]
-  # push:
-  #   branches: ["master"]
-  #   # Publish semver tags as releases.
-  #   tags: ["v*.*.*"]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -40,11 +38,12 @@ jobs:
           echo "version=${GITHUB_REF#"refs/tags/v"}" >> $GITHUB_ENV
           echo "version_tag=${GITHUB_REPOSITORY}:${GITHUB_REF#"refs/tags/v"}" >> $GITHUB_ENV
           echo "latest_tag=${GITHUB_REPOSITORY}:latest" >> $GITHUB_ENV
+
       - name: Print Version
         run: |
-          echo ${{ env.version }}
-          echo ${{ env.version_tag }}
-          echo ${{ env.latest_tag }}
+          echo $version
+          echo $version_tag
+          echo $latest_tag
 
       - name: Checkout repository
         uses: actions/checkout@v5
