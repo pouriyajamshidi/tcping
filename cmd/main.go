@@ -8,7 +8,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/internal/options"
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/printers"
-	"github.com/pouriyajamshidi/tcping/v2/probes"
+	probes "github.com/pouriyajamshidi/tcping/v2/probes/tcp"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
