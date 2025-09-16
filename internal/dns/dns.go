@@ -13,7 +13,8 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
-// selectResolvedIP returns a single random IPv4 or IPv6 address from the net.IP slice of resolved addresses
+// selectResolvedIP returns an IPv4, IPv6 or a random resolved address
+// if the IP version usage is not enforced from the `net.IP` slice of received addresses
 func selectResolvedIP(tcping *types.Tcping, ipAddrs []netip.Addr) netip.Addr {
 	selectRandomIP := func(ipList []netip.Addr) netip.Addr {
 		var index int
