@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="Artwork/tcping_logo3.jpeg" style="width:70%;">
+ <img alt="tcping" src="docs/Artwork/tcping_logo3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -63,19 +63,19 @@
 
 ### 基本用法
 
-![tcping](Images/gifs/tcping.gif)
+![tcping](docs/Images/gifs/tcping.gif)
 
 ---
 
 ### 重试主机名查找 (`-r`)
 
-![tcping resolve example](Images/gifs/tcping_resolve.gif)
+![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON 格式输出 (`-j --pretty`)
 
-![tcping json example](Images/gifs/tcping_json_pretty.gif)
+![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
 
 ---
 
@@ -122,20 +122,19 @@
   ```
 
 - [x tcping](https://x-cmd.com/pkg/tcping)
-  
-   在 x-cmd 中，无需安装即可**直接使用 tcping 命令**：
 
-   ```bash
-   x tcping bing.com 80
-   ```
+  在 x-cmd 中，无需安装即可**直接使用 tcping 命令**：
 
-   或者，你也可以选择将 tcping 安装到用户空间，不需 root 特权，亦不影响全局依赖：
+  ```bash
+  x tcping bing.com 80
+  ```
 
-   ```bash
-   x env use tcping
-   tcping bing.com 80
-   ```
+  或者，你也可以选择将 tcping 安装到用户空间，不需 root 特权，亦不影响全局依赖：
 
+  ```bash
+  x env use tcping
+  tcping bing.com 80
+  ```
 
 - 或者通过在 `tcping` 目录中运行 `make` 命令来自行编译代码：
 
@@ -263,26 +262,26 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
 
 以下标志可用于控制应用程序的行为：
 
-| 标志                   | 描述                                                                             |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `-h`                   | 显示帮助                                                                          |
-| `-4`                   | 仅使用 IPv4 地址                                                                  |
-| `-6`                   | 仅使用 IPv6 地址                                                                  |
-| `-r`                   | 在 `<n>` 次探测失败后重试解析目标主机名。例如，-r 10 表示在 10 次探测失败后重试            |
-| `-c`                   | 在 `<n>` 次探测后停止，无论结果如何。默认情况下，不应用限制                              |
-| `-t`                   | 等待响应的时间（以秒为单位）。允许使用实数。0 表示无限超时                                |
-| `-D`                   | 在探测输出中显示日期和时间。类似于 Linux 的 ping 工具，但更易于阅读                      |
-| `-i`                   | 发送探测之间的间隔                                                                 |
-| `-I`                   | 用于发送探测的接口名称                                                              |
-| `--no-color`           | 输出不带颜色                                                                      |
-| `--csv`                | 以 CSV 格式输出到指定的文件路径                                                     |
-| `-j`                   | 以 `JSON` 格式输出                                                                |
-| `--pretty`             | 美化 `JSON` 输出                                                                 |
-| `--db`                 | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--db /tmp/tcping.db`         |
-| `-v`                   | 打印版本                                                                         |
-| `-u`                   | 检查更新                                                                         |
-| `--show-failures-only` | 仅显示探测失败，并省略打印探测成功消息                                                |
-| `--show-source-address` | 显示探测所用的来源IP地址及端口                                                      | 
+| 标志                    | 描述                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `-h`                    | 显示帮助                                                                        |
+| `-4`                    | 仅使用 IPv4 地址                                                                |
+| `-6`                    | 仅使用 IPv6 地址                                                                |
+| `-r`                    | 在 `<n>` 次探测失败后重试解析目标主机名。例如，-r 10 表示在 10 次探测失败后重试 |
+| `-c`                    | 在 `<n>` 次探测后停止，无论结果如何。默认情况下，不应用限制                     |
+| `-t`                    | 等待响应的时间（以秒为单位）。允许使用实数。0 表示无限超时                      |
+| `-D`                    | 在探测输出中显示日期和时间。类似于 Linux 的 ping 工具，但更易于阅读             |
+| `-i`                    | 发送探测之间的间隔                                                              |
+| `-I`                    | 用于发送探测的接口名称                                                          |
+| `--no-color`            | 输出不带颜色                                                                    |
+| `--csv`                 | 以 CSV 格式输出到指定的文件路径                                                 |
+| `-j`                    | 以 `JSON` 格式输出                                                              |
+| `--pretty`              | 美化 `JSON` 输出                                                                |
+| `--db`                  | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--db /tmp/tcping.db`  |
+| `-v`                    | 打印版本                                                                        |
+| `-u`                    | 检查更新                                                                        |
+| `--show-failures-only`  | 仅显示探测失败，并省略打印探测成功消息                                          |
+| `--show-source-address` | 显示探测所用的来源 IP 地址及端口                                                |
 
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。
 

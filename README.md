@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="Artwork/tcping_logo3.jpeg" style="width:70%;">
+ <img alt="tcping" src="docs/Artwork/tcping_logo3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -293,19 +293,19 @@ The following flags are available to control the behavior of **tcping**:
 
 ### Basic usage
 
-![tcping](Images/gifs/tcping.gif)
+![tcping](docs/Images/gifs/tcping.gif)
 
 ---
 
 ### Retry hostname lookup (`-r`) flag
 
-![tcping resolve example](Images/gifs/tcping_resolve.gif)
+![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON output (`-j --pretty`) flag
 
-![tcping json example](Images/gifs/tcping_json_pretty.gif)
+![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
 
 ---
 
