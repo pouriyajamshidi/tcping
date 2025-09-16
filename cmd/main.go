@@ -25,6 +25,14 @@ import (
 - Read the entire code once everything is done for "code smells"
 */
 
+func monitorStatsRequest(stdinChan chan bool, tcping *types.Tcping) {
+	for pressedEnter := range stdinChan {
+		if pressedEnter {
+			printers.PrintStats(tcping)
+		}
+	}
+}
+
 func main() {
 	tcping := &types.Tcping{}
 
@@ -39,10 +47,10 @@ func main() {
 
 	printers.SignalHandler(tcping)
 
-	var stdinChan chan bool
 	if !tcping.Options.NonInteractive {
-		stdinChan = make(chan bool)
+		stdinChan := make(chan bool)
 		go utils.MonitorSTDIN(stdinChan)
+		go monitorStatsRequest(stdinChan, tcping)
 	}
 
 	var probeCount uint
@@ -53,16 +61,6 @@ func main() {
 		}
 
 		probes.Ping(tcping)
-
-		if stdinChan != nil {
-			select {
-			case pressedEnter := <-stdinChan:
-				if pressedEnter {
-					printers.PrintStats(tcping)
-				}
-			default:
-			}
-		}
 
 		if tcping.Options.ProbesBeforeQuit != 0 {
 			probeCount++
