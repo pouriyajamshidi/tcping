@@ -30,6 +30,7 @@
 - refactor: rename `Database` to `DatabasePrinter`
 - refactor: remove color printers from `DatabasePrinter`
 - refactor: remove `PrintInfo` from printer interface
+- refactor: modernize the `calcMinAvgMaxRttTime` function using the new `slices` package function
 - improvement: add missing information to `PrintStatistics` of `JSONPrinter`
 - improvement: complete re-write of the `sqlite3` printer making it conformant to the rest of the code
 - refactor: align `JSONPrinter` with other printers
@@ -43,6 +44,7 @@
 - improvement: display the same time format in JSON mode as the rest of printers
 - fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
 - refactor: a lot of big and small code cleanups (too many to count)
+- project structure: move Artwork and Images folders to the docs folder
 
 ## v2.7.1 - 2025-01-26
 
