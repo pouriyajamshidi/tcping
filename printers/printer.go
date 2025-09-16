@@ -48,10 +48,8 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 	}
 }
 
-// PrintStats is a helper method for PrintStatistics
-// for the current printer.
-// This should be used instead, as it makes
-// all the necessary calculations beforehand.
+// PrintStats is a helper method for PrintStatistics of the current printer.
+// This should be used instead, as it makes all the necessary calculations beforehand.
 func PrintStats(t *types.Tcping) {
 	if t.DestWasDown {
 		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
@@ -117,7 +115,7 @@ func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
 		result.Min = timeArr[0]
 	}
 
-	for i := 0; i < arrLen; i++ {
+	for i := range arrLen {
 		sum += timeArr[i]
 
 		if timeArr[i] > result.Max {
