@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
 	"time"
 
@@ -107,30 +108,23 @@ func SignalHandler(p *types.Tcping) {
 
 // calcMinAvgMaxRttTime calculates min, avg and max RTT values
 func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
-	var sum float32
 	var result types.RttResult
 
 	arrLen := len(timeArr)
-	if arrLen < 1 {
+	if arrLen == 0 {
 		return result
 	}
 
-	result.Min = timeArr[0]
+	var sum float32
 
-	for i := range arrLen {
-		sum += timeArr[i]
-
-		if timeArr[i] > result.Max {
-			result.Max = timeArr[i]
-		}
-
-		if timeArr[i] < result.Min {
-			result.Min = timeArr[i]
-		}
+	for _, t := range timeArr {
+		sum += t
 	}
 
-	result.HasResults = true
+	result.Min = slices.Min(timeArr)
+	result.Max = slices.Max(timeArr)
 	result.Average = sum / float32(arrLen)
+	result.HasResults = true
 
 	return result
 }
