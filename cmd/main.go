@@ -2,11 +2,12 @@
 package main
 
 import (
+	"bufio"
+	"os"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v2/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v2/internal/options"
-	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/printers"
 	probes "github.com/pouriyajamshidi/tcping/v2/probes/tcp"
 	"github.com/pouriyajamshidi/tcping/v2/types"
@@ -27,7 +28,26 @@ import (
 - Read the entire code once everything is done for "code smells"
 */
 
-func monitorStatsRequest(stdinChan chan bool, tcping *types.Tcping) {
+// monitorStatsRequest checks stdin to see whether the 'Enter' key was pressed
+// if so, prints the statistics
+func monitorStatsRequest(tcping *types.Tcping) {
+	reader := bufio.NewReader(os.Stdin)
+
+	stdinChan := make(chan bool, 1)
+
+	go func() {
+		for {
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				continue
+			}
+
+			if input == "\n" || input == "\r" || input == "\r\n" {
+				stdinChan <- true
+			}
+		}
+	}()
+
 	for pressedEnter := range stdinChan {
 		if pressedEnter {
 			printers.PrintStats(tcping)
@@ -50,9 +70,7 @@ func main() {
 	printers.SignalHandler(tcping)
 
 	if !tcping.Options.NonInteractive {
-		stdinChan := make(chan bool, 1)
-		go utils.MonitorSTDIN(stdinChan)
-		go monitorStatsRequest(stdinChan, tcping)
+		go monitorStatsRequest(tcping)
 	}
 
 	var probeCount uint

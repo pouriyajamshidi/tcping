@@ -2,7 +2,6 @@
 package utils
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -17,18 +16,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v2/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
-
-// MonitorSTDIN checks stdin to see whether the 'Enter' key was pressed
-func MonitorSTDIN(stdinChan chan<- bool) {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		input, _ := reader.ReadString('\n')
-
-		if input == "\n" || input == "\r" || input == "\r\n" {
-			stdinChan <- true
-		}
-	}
-}
 
 // Usage prints how tcping should be run
 func Usage() {
