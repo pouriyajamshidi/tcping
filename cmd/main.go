@@ -13,20 +13,14 @@ import (
 )
 
 /* TODO:
-- Pass `Prober` instead of tcping to printers, helpers, etc
-- I think there are some overlaps in printer success and probe failure conditionals
-- Where should we place the Shutdown function? Printers seems a bit off
-- Probably it is better to move SignalHandler to probes instead of printers
-- Make `Options` of `Tcping` implicit too?
-- Move types.NewLongestTime to printer instead?
-- Should consts package move to internal?
-- Should types package move to internal?
-- The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
-- Show how long we were up on failure similar to what we do for success?
 - Implement functional pattern to chose the prober
+- Pass `Prober` instead of tcping to printers, helpers, etc
+- Probably it is better to move SignalHandler to probes.go instead of printers
+- I think there are some overlaps in printer success and probe failure conditionals
+- The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 - Cross-check the printer implementations to see how much they differ
-- Only the `NewLongestTime` is in the types.go file while others aren't
 - See what printer methods are not used
+- Show how long we were up on failure similar to what we do for success?
 - Run modernize
 - Read the entire code once everything is done for "code smells"
 */
