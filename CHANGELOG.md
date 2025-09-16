@@ -43,6 +43,7 @@
 - improvement: apply the same spacing throughout the code
 - improvement: display the same time format in JSON mode as the rest of printers
 - fix: `newNetworkInterface` logic to fail if an IP address that is not present on a NIC is provided
+- build: address **GitHub** workflow lint issues
 - refactor: a lot of big and small code cleanups (too many to count)
 - project structure: move Artwork and Images folders to the docs folder
 
