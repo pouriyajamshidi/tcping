@@ -111,9 +111,11 @@ func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
 	var result types.RttResult
 
 	arrLen := len(timeArr)
-	if arrLen > 0 {
-		result.Min = timeArr[0]
+	if arrLen < 1 {
+		return result
 	}
+
+	result.Min = timeArr[0]
 
 	for i := range arrLen {
 		sum += timeArr[i]
@@ -127,10 +129,8 @@ func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
 		}
 	}
 
-	if arrLen > 0 {
-		result.HasResults = true
-		result.Average = sum / float32(arrLen)
-	}
+	result.HasResults = true
+	result.Average = sum / float32(arrLen)
 
 	return result
 }
