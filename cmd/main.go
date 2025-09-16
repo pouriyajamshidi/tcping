@@ -21,6 +21,8 @@ import (
 - Cross-check the printer implementations to see how much they differ
 - See what printer methods are not used
 - Show how long we were up on failure similar to what we do for success?
+- Get DNS timeout as a user input option?
+- Display name resolution times?
 - Run modernize
 - Read the entire code once everything is done for "code smells"
 */
@@ -48,7 +50,7 @@ func main() {
 	printers.SignalHandler(tcping)
 
 	if !tcping.Options.NonInteractive {
-		stdinChan := make(chan bool)
+		stdinChan := make(chan bool, 1)
 		go utils.MonitorSTDIN(stdinChan)
 		go monitorStatsRequest(stdinChan, tcping)
 	}
