@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
@@ -53,27 +54,14 @@ func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
 // This should be used instead, as it makes all the necessary calculations beforehand.
 func PrintStats(t *types.Tcping) {
 	if t.DestWasDown {
-		SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
+		utils.SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
 	} else {
-		SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfUptime), &t.LongestUptime)
+		utils.SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfUptime), &t.LongestUptime)
 	}
 
 	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
 
 	t.PrintStatistics(*t)
-}
-
-// SetLongestDuration updates the longest uptime or downtime based on the given type.
-func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
-	if start.IsZero() || duration == 0 {
-		return
-	}
-
-	newLongest := types.NewLongestTime(start, duration)
-
-	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
-		*longest = newLongest
-	}
 }
 
 // Shutdown calculates endTime, prints statistics and calls os.Exit(0).

@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/go-github/v45/github"
 	"github.com/pouriyajamshidi/tcping/v2/consts"
+	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
 // MonitorSTDIN checks stdin to see whether the 'Enter' key was pressed
@@ -183,5 +184,18 @@ func DurationToString(duration time.Duration) string {
 
 	default:
 		return fmt.Sprintf("%.0f seconds", seconds)
+	}
+}
+
+// SetLongestDuration updates the longest uptime or downtime based on the given type.
+func SetLongestDuration(start time.Time, duration time.Duration, longest *types.LongestTime) {
+	if start.IsZero() || duration == 0 {
+		return
+	}
+
+	newLongest := types.NewLongestTime(start, duration)
+
+	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
+		*longest = newLongest
 	}
 }

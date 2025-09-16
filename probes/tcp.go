@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v2/printers"
 	"github.com/pouriyajamshidi/tcping/v2/types"
 )
 
@@ -20,7 +19,7 @@ func handleConnFailure(t *types.Tcping, startTime time.Time, elapsed time.Durati
 		t.StartOfDowntime = startTime
 		uptimeDuration := t.StartOfDowntime.Sub(t.StartOfUptime)
 		// set longest uptime since it is interrupted
-		printers.SetLongestDuration(t.StartOfUptime, uptimeDuration, &t.LongestUptime)
+		utils.SetLongestDuration(t.StartOfUptime, uptimeDuration, &t.LongestUptime)
 		t.StartOfUptime = time.Time{}
 		t.DestWasDown = true
 	}
@@ -43,7 +42,7 @@ func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Durati
 		t.StartOfUptime = startTime
 		downtimeDuration := t.StartOfUptime.Sub(t.StartOfDowntime)
 		// set longest downtime since it is interrupted
-		printers.SetLongestDuration(t.StartOfDowntime, downtimeDuration, &t.LongestDowntime)
+		utils.SetLongestDuration(t.StartOfDowntime, downtimeDuration, &t.LongestDowntime)
 		t.PrintTotalDownTime(downtimeDuration)
 		t.StartOfDowntime = time.Time{}
 		t.DestWasDown = false

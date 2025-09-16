@@ -13,18 +13,14 @@ import (
 )
 
 /* TODO:
-- Move the print failure only to the calling function instead of printers
-- Do we need the `PrintStats` helper function
 - Pass `Prober` instead of tcping to printers, helpers, etc
 - I think there are some overlaps in printer success and probe failure conditionals
-- SetLongestDuration does not seem to belong to printer package
 - Where should we place the Shutdown function? Printers seems a bit off
-- Make `Options` of `Tcping` implicit too?
 - Probably it is better to move SignalHandler to probes instead of printers
+- Make `Options` of `Tcping` implicit too?
 - Move types.NewLongestTime to printer instead?
 - Should consts package move to internal?
 - Should types package move to internal?
-- Possibly use new slice functions instead of the current manual way
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 - Show how long we were up on failure similar to what we do for success?
 - Implement functional pattern to chose the prober
