@@ -5,8 +5,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v2/types"
+	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
+	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
 // PlainPrinter is a printer that prints the TCPing results in a simple, plain text format.

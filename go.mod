@@ -1,4 +1,4 @@
-module github.com/pouriyajamshidi/tcping/v2
+module github.com/pouriyajamshidi/tcping/v3
 
 go 1.25.1
 

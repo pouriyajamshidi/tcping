@@ -8,8 +8,8 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v2/types"
+	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
+	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
 // handleConnFailure processes failed probes

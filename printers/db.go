@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/pouriyajamshidi/tcping/v2/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v2/types"
+	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
+	"github.com/pouriyajamshidi/tcping/v3/types"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )

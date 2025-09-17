@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/google/go-github/v45/github"
-	"github.com/pouriyajamshidi/tcping/v2/internal/consts"
-	"github.com/pouriyajamshidi/tcping/v2/types"
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
+	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
 // Usage prints how tcping should be run

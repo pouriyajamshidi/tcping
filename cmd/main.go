@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/internal/dns"
-	"github.com/pouriyajamshidi/tcping/v2/internal/options"
-	"github.com/pouriyajamshidi/tcping/v2/printers"
-	probes "github.com/pouriyajamshidi/tcping/v2/probes/tcp"
-	"github.com/pouriyajamshidi/tcping/v2/types"
+	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
+	"github.com/pouriyajamshidi/tcping/v3/internal/options"
+	"github.com/pouriyajamshidi/tcping/v3/printers"
+	probes "github.com/pouriyajamshidi/tcping/v3/probes/tcp"
+	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
 /* TODO:

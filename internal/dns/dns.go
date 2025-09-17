@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v2/internal/consts"
-	"github.com/pouriyajamshidi/tcping/v2/types"
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
+	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
 // selectResolvedIP returns an IPv4, IPv6 or a random resolved address
