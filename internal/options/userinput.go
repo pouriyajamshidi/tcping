@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
-	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
 	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
@@ -40,7 +39,7 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 	if interfaceAddress != nil {
 		addrs, err := net.InterfaceAddrs()
 		if err != nil {
-			tcping.PrintError("Unable to get IP addresses")
+			fmt.Println("Unable to get IP addresses")
 			os.Exit(1)
 		}
 
@@ -54,13 +53,13 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 	} else { // we are probably given an interface name
 		iface, err := net.InterfaceByName(ipAddress)
 		if err != nil {
-			tcping.PrintError("Interface %s not found", ipAddress)
+			fmt.Printf("Interface %s not found\n", ipAddress)
 			os.Exit(1)
 		}
 
 		addrs, err := iface.Addrs()
 		if err != nil {
-			tcping.PrintError("Unable to get Interface addresses")
+			fmt.Println("Unable to get Interface addresses")
 			os.Exit(1)
 		}
 
@@ -87,13 +86,13 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 		}
 
 		if interfaceAddress == nil {
-			tcping.PrintError("Unable to get interface's IP address")
+			fmt.Println("Unable to get interface's IP address")
 			os.Exit(1)
 		}
 	}
 
 	if isInvalid {
-		tcping.PrintError("IP address %s is not assigned to any interface", ipAddress)
+		fmt.Printf("IP address %s is not assigned to any interface\n", ipAddress)
 		os.Exit(1)
 	}
 
@@ -117,7 +116,7 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 }
 
 // setOptions assigns the user provided flags after sanity checks
-func setOptions(t *types.Tcping, opts options) {
+func setOptions(t *types.Tcping, s *statistics.Statistics, opts options) {
 	if *opts.retryResolve > 0 {
 		t.Options.RetryHostnameLookupAfter = *opts.retryResolve
 	}
@@ -129,8 +128,10 @@ func setOptions(t *types.Tcping, opts options) {
 	}
 
 	t.Options.Hostname = opts.args[0]
-	t.Options.Port = convertAndValidatePort(t, opts.args[1])
-	t.Options.IP = dns.ResolveHostname(t)
+	s.Hostname = opts.args[0]
+	t.Options.Port = convertAndValidatePort(opts.args[1])
+	s.Port = t.Options.Port
+	// t.Options.IP = dns.ResolveHostname(t)
 	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
 	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
 
@@ -138,7 +139,7 @@ func setOptions(t *types.Tcping, opts options) {
 
 	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
 	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
-		t.PrintError("Wait interval should be more than 2 ms")
+		fmt.Println("Wait interval should be more than 2 ms")
 		os.Exit(1)
 	}
 
@@ -163,15 +164,15 @@ func setOptions(t *types.Tcping, opts options) {
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
-func convertAndValidatePort(t *types.Tcping, portStr string) uint16 {
+func convertAndValidatePort(portStr string) uint16 {
 	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
-		t.PrintError("Invalid port number: %s", portStr)
+		fmt.Printf("Invalid port number: %s\n", portStr)
 		os.Exit(1)
 	}
 
 	if port < 1 || port > 65535 {
-		t.PrintError("Port should be in 1..65535 range")
+		fmt.Println("Port should be in 1..65535 range")
 		os.Exit(1)
 	}
 
@@ -234,7 +235,7 @@ func permuteArgs(args []string) {
 }
 
 // ProcessUserInput gets and validate user input
-func ProcessUserInput(tcping *types.Tcping) {
+func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.Printer {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
 	probesBeforeQuit := flag.Uint("c",
@@ -292,9 +293,24 @@ func ProcessUserInput(tcping *types.Tcping) {
 	}
 
 	if *useIPv4 && *useIPv6 {
-		consts.ColorRed("Only one IP version can be specified")
+		printers.ColorRed("Only one IP version can be specified")
 		utils.Usage()
 	}
+
+	opts := options{
+		useIPv4:               useIPv4,
+		useIPv6:               useIPv6,
+		nonInteractive:        nonInteractive,
+		retryResolve:          retryHostnameResolveAfter,
+		probesBeforeQuit:      probesBeforeQuit,
+		timeout:               timeout,
+		intervalBetweenProbes: intervalBetweenProbes,
+		intName:               interfaceName,
+		showFailuresOnly:      showFailuresOnly,
+		args:                  args,
+	}
+
+	setOptions(tcping, s, opts)
 
 	config := printers.PrinterConfig{
 		OutputJSON:        *outputJSON,
@@ -314,20 +330,5 @@ func ProcessUserInput(tcping *types.Tcping) {
 		os.Exit(1)
 	}
 
-	tcping.Printer = printer
-
-	opts := options{
-		useIPv4:               useIPv4,
-		useIPv6:               useIPv6,
-		nonInteractive:        nonInteractive,
-		retryResolve:          retryHostnameResolveAfter,
-		probesBeforeQuit:      probesBeforeQuit,
-		timeout:               timeout,
-		intervalBetweenProbes: intervalBetweenProbes,
-		intName:               interfaceName,
-		showFailuresOnly:      showFailuresOnly,
-		args:                  args,
-	}
-
-	setOptions(tcping, opts)
+	return printer
 }

@@ -7,55 +7,9 @@ import (
 	"time"
 )
 
-// Printer defines a set of methods that any printer implementation must provide.
-// Printers are responsible for outputting information, but should not modify data or perform calculations.
-type Printer interface {
-	// PrintStart prints the first message to indicate the target's address and port.
-	// This message is printed only once, at the very beginning.
-	PrintStart(hostname string, port uint16)
-
-	// PrintProbeSuccess should print a message after each successful probe.
-	// hostname could be empty, meaning it's pinging an address.
-	// streak is the number of successful consecuti`ve probes.
-	PrintProbeSuccess(startTime time.Time, sourceAddr string, userInput Options, streak uint, rtt string)
-
-	// PrintProbeFailure should print a message after each failed probe.
-	// hostname could be empty, meaning it's pinging an address.
-	// streak is the number of successful consecutive probes.
-	PrintProbeFailure(startTime time.Time, userInput Options, streak uint)
-
-	// PrintRetryingToResolve should print a message with the hostname
-	// it is trying to resolve an IP for.
-	//
-	// This is only being printed when the -r flag is applied.
-	PrintRetryingToResolve(hostname string)
-
-	// PrintTotalDownTime should print a downtime duration.
-	//
-	// This is being called when host was unavailable for some time
-	// but the latest probe was successful (became available).
-	PrintTotalDownTime(downtime time.Duration)
-
-	// PrintStatistics should print a message with
-	// helpful statistics information.
-	//
-	// This is being called on exit and when user hits "Enter".
-	PrintStatistics(s Tcping)
-
-	// PrintError should print an error message.
-	// Printer should also apply \n to the given string, if needed.
-	PrintError(format string, args ...any)
-}
-
-// Prober represents an object that can probe a target
-type Prober interface {
-	Ping()
-}
-
 // Tcping contains the main data structure for the TCPing program.
 // It holds statistics and state about the ongoing pinging process.
 type Tcping struct {
-	Printer                                    // Printer is an embedded interface for outputting information and data.
 	Options                   Options          // User-specified settings and configuration.
 	StartTime                 time.Time        // Start time of the TCPing operation.
 	EndTime                   time.Time        // End time of the TCPing operation.

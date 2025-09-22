@@ -10,8 +10,52 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
+	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
 	"github.com/pouriyajamshidi/tcping/v3/types"
 )
+
+// Printer defines a set of methods that any printer implementation must provide.
+// Printers are responsible for outputting information, but should not modify data or perform calculations.
+type Printer interface {
+	// PrintStart prints the first message to indicate the target's address and port.
+	// This message is printed only once, at the very beginning.
+	PrintStart(s *statistics.Statistics)
+
+	// PrintProbeSuccess should print a message after each successful probe.
+	// hostname could be empty, meaning it's pinging an address.
+	// streak is the number of successful consecuti`ve probes.
+	PrintProbeSuccess(s *statistics.Statistics)
+
+	// PrintProbeFailure should print a message after each failed probe.
+	// hostname could be empty, meaning it's pinging an address.
+	// streak is the number of successful consecutive probes.
+	PrintProbeFailure(s *statistics.Statistics)
+
+	// PrintRetryingToResolve should print a message with the hostname
+	// it is trying to resolve an IP for.
+	//
+	// This is only being printed when the -r flag is applied.
+	PrintRetryingToResolve(s *statistics.Statistics)
+
+	// PrintTotalDownTime should print a downtime duration.
+	//
+	// This is being called when host was unavailable for some time
+	// but the latest probe was successful (became available).
+	PrintTotalDownTime(s *statistics.Statistics)
+
+	// PrintStatistics should print a message with
+	// helpful statistics information.
+	//
+	// This is being called on exit and when user hits "Enter".
+	PrintStatistics(s *statistics.Statistics)
+
+	// PrintError should print an error message.
+	// Printer should also apply \n to the given string, if needed.
+	PrintError(format string, args ...any)
+
+	// Shutdown sets the EndTime, calls PrintStatistics() and Done() then exits the program.
+	Shutdown(s *statistics.Statistics)
+}
 
 // PrinterConfig holds all configuration options for Printer creation
 type PrinterConfig struct {
@@ -27,70 +71,52 @@ type PrinterConfig struct {
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration
-func NewPrinter(cfg PrinterConfig) (types.Printer, error) {
+func NewPrinter(cfg PrinterConfig) (Printer, error) {
 	if cfg.PrettyJSON && !cfg.OutputJSON {
 		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
 	}
 
 	switch {
 	case cfg.OutputJSON:
-		return NewJSONPrinter(cfg), nil
+		return NewJSONPrinter(cfg.PrettyJSON), nil
 
 	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg)
+		return NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
 
 	case cfg.OutputCSVPath != "":
-		return NewCSVPrinter(cfg)
+		return NewCSVPrinter(cfg.OutputCSVPath)
 
 	case cfg.NoColor:
-		return NewPlainPrinter(cfg), nil
+		return NewPlainPrinter(), nil
 
 	default:
-		return NewColorPrinter(cfg), nil
+		return NewColorPrinter(), nil
 	}
 }
 
 // PrintStats is a helper method for PrintStatistics of the current printer.
-// This should be used instead, as it makes all the necessary calculations beforehand.
-func PrintStats(t *types.Tcping) {
-	if t.DestWasDown {
-		utils.SetLongestDuration(t.StartOfDowntime, time.Since(t.StartOfDowntime), &t.LongestDowntime)
+// This should be used instead of directly calling the PrintStatistics
+// as it makes the common calculations beforehand.
+func PrintStats(p Printer, s *statistics.Statistics) {
+	if s.DestWasDown {
+		utils.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
 	} else {
-		utils.SetLongestDuration(t.StartOfUptime, time.Since(t.StartOfUptime), &t.LongestUptime)
+		utils.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
 	}
 
-	t.RttResults = calcMinAvgMaxRttTime(t.Rtt)
+	s.RTTResults = calcMinAvgMaxRttTime(s.RTT)
 
-	t.PrintStatistics(*t)
-}
-
-// Shutdown calculates endTime, prints statistics and calls os.Exit(0).
-// This should be used as the main exit-point.
-func Shutdown(p *types.Tcping) {
-	p.EndTime = time.Now()
-	PrintStats(p)
-
-	// if the printer type is `database`, close it before exiting
-	if db, ok := p.Printer.(*DatabasePrinter); ok {
-		db.Done()
-	}
-
-	// if the printer type is `csvPrinter`, call the cleanup function before exiting
-	if cp, ok := p.Printer.(*CSVPrinter); ok {
-		cp.Done()
-	}
-
-	os.Exit(0)
+	p.PrintStatistics(s)
 }
 
 // SignalHandler catches SIGINT and SIGTERM then prints tcping stats
-func SignalHandler(p *types.Tcping) {
+func SignalHandler(p Printer, s *statistics.Statistics) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-sigChan
-		Shutdown(p)
+		p.Shutdown(s)
 	}()
 }
 

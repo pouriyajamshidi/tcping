@@ -21,11 +21,11 @@ import (
 func Usage() {
 	executableName := os.Args[0]
 
-	consts.ColorLightCyan("\nTCPING version %s\n\n", consts.Version)
-	consts.ColorRed("Try running %s like:\n", executableName)
-	consts.ColorRed("%s <hostname/ip> <port number>. For example:\n", executableName)
-	consts.ColorRed("%s www.example.com 443\n", executableName)
-	consts.ColorYellow("\n[optional flags]\n")
+	fmt.Printf("\nTCPING version %s\n\n", consts.Version)
+	fmt.Printf("Try running %s like:\n", executableName)
+	fmt.Printf("%s <hostname/ip> <port number>. For example:\n", executableName)
+	fmt.Printf("%s www.example.com 443\n", executableName)
+	fmt.Printf("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
 		flagName := f.Name
@@ -33,7 +33,7 @@ func Usage() {
 			flagName = "-" + flagName
 		}
 
-		consts.ColorYellow("  -%s : %s\n", flagName, f.Usage)
+		fmt.Printf("  -%s : %s\n", flagName, f.Usage)
 	})
 
 	os.Exit(1)
@@ -70,7 +70,7 @@ func compareVersions(v1, v2 string) int {
 
 // ShowVersion displays the version and exits
 func ShowVersion() {
-	consts.ColorGreen("TCPING version %s\n", consts.Version)
+	fmt.Printf("TCPING version %s\n", consts.Version)
 	os.Exit(0)
 }
 
@@ -81,7 +81,7 @@ func CheckForUpdates() {
 	/* unauthenticated requests from the same IP are limited to 60 per hour. */
 	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), consts.Owner, consts.Repo)
 	if err != nil {
-		consts.ColorRed("Failed to check for updates %s\n", err.Error())
+		fmt.Printf("Failed to check for updates %s\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -90,22 +90,22 @@ func CheckForUpdates() {
 	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
 
 	if len(latestVersion) == 0 {
-		consts.ColorRed("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
+		fmt.Printf("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
 		os.Exit(1)
 	}
 
 	comparison := compareVersions(consts.Version, latestVersion[1])
 
 	if comparison < 0 {
-		consts.ColorCyan("Found newer version %s\n", latestVersion[1])
-		consts.ColorCyan("Please update TCPING from the URL below:\n")
-		consts.ColorCyan("https://github.com/%s/%s/releases/tag/%s\n",
+		fmt.Printf("Found newer version %s\n", latestVersion[1])
+		fmt.Printf("Please update TCPING from the URL below:\n")
+		fmt.Printf("https://github.com/%s/%s/releases/tag/%s\n",
 			consts.Owner, consts.Repo, latestTagName)
 	} else if comparison > 0 {
-		consts.ColorCyan("Current version %s is newer than the latest release %s\n",
+		fmt.Printf("Current version %s is newer than the latest release %s\n",
 			consts.Version, latestVersion[1])
 	} else {
-		consts.ColorCyan("You have the latest version: %s\n", consts.Version)
+		fmt.Printf("TCPING is on the latest version: %s\n", consts.Version)
 	}
 
 	os.Exit(0)

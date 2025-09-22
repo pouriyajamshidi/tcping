@@ -9,13 +9,20 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
+	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
 	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
+// DNSTimeout is the accepted duration when doing hostname resolution
+const DNSTimeout = 2 * time.Second
+
+// IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
+const IPv4OrIPv6 = "ip"
+
 // selectResolvedIP returns an IPv4, IPv6 or a random resolved address
 // if the IP version usage is not enforced from the `net.IP` slice of received addresses
-func selectResolvedIP(tcping *types.Tcping, ipAddrs []netip.Addr) netip.Addr {
+func selectResolvedIP(p printers.Printer, s *statistics.Statistics, useIPv4, useIPv6 bool, ipAddrs []netip.Addr) netip.Addr {
 	selectRandomIP := func(ipList []netip.Addr) netip.Addr {
 		var index int
 		if len(ipList) > 1 {
@@ -30,7 +37,7 @@ func selectResolvedIP(tcping *types.Tcping, ipAddrs []netip.Addr) netip.Addr {
 	var ipList []netip.Addr
 
 	switch {
-	case tcping.Options.UseIPv4:
+	case useIPv4:
 		for _, ip := range ipAddrs {
 			if ip.Is4() {
 				ipList = append(ipList, ip)
@@ -42,13 +49,13 @@ func selectResolvedIP(tcping *types.Tcping, ipAddrs []netip.Addr) netip.Addr {
 		}
 
 		if len(ipList) == 0 {
-			tcping.PrintError("Failed to find an IPv4 address for %s", tcping.Options.Hostname)
+			p.PrintError("Failed to find an IPv4 address for %s", s.Hostname)
 			os.Exit(1)
 		}
 
 		return selectRandomIP(ipList)
 
-	case tcping.Options.UseIPv6:
+	case useIPv6:
 		for _, ip := range ipAddrs {
 			if ip.Is6() {
 				ipList = append(ipList, ip)
@@ -56,7 +63,7 @@ func selectResolvedIP(tcping *types.Tcping, ipAddrs []netip.Addr) netip.Addr {
 		}
 
 		if len(ipList) == 0 {
-			tcping.PrintError("Failed to find an IPv6 address for %s", tcping.Options.Hostname)
+			p.PrintError("Failed to find an IPv6 address for %s", s.Hostname)
 			os.Exit(1)
 		}
 
@@ -68,45 +75,46 @@ func selectResolvedIP(tcping *types.Tcping, ipAddrs []netip.Addr) netip.Addr {
 }
 
 // ResolveHostname handles hostname resolution with a timeout value of `consts.DNSTimeout`
-func ResolveHostname(tcping *types.Tcping) netip.Addr {
+func ResolveHostname(p printers.Printer, s *statistics.Statistics, useIPv4, useIPv6 bool) netip.Addr {
 	// Ensure hostname is not an IP address
-	ip, err := netip.ParseAddr(tcping.Options.Hostname)
+	ip, err := netip.ParseAddr(s.Hostname)
 	if err == nil {
 		return ip
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), consts.DNSTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), DNSTimeout)
 	defer cancel()
 
-	ipAddrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", tcping.Options.Hostname)
+	ipAddrs, err := net.DefaultResolver.LookupNetIP(ctx, IPv4OrIPv6, s.Hostname)
 
 	// Prevent tcping from exiting if it has been running already
-	if err != nil && (tcping.TotalSuccessfulProbes != 0 || tcping.TotalUnsuccessfulProbes != 0) {
-		return tcping.Options.IP
+	if err != nil && (s.TotalSuccessfulProbes != 0 || s.TotalUnsuccessfulProbes != 0) {
+		return s.IP
 	} else if err != nil {
-		tcping.PrintError("Failed to resolve %s in %s seconds: %s ",
-			tcping.Options.Hostname,
-			consts.DNSTimeout.String(),
+		p.PrintError("Failed to resolve %s in %s seconds: %s ",
+			s.Hostname,
+			DNSTimeout.String(),
 			err)
+
 		os.Exit(1)
 	}
 
-	return selectResolvedIP(tcping, ipAddrs)
+	return selectResolvedIP(p, s, useIPv4, useIPv6, ipAddrs)
 }
 
 // RetryResolveHostname retries resolving a hostname after certain number of failures
-func RetryResolveHostname(tcping *types.Tcping) {
-	if tcping.OngoingUnsuccessfulProbes >= tcping.Options.RetryHostnameLookupAfter {
-		tcping.PrintRetryingToResolve(tcping.Options.Hostname)
-		tcping.Options.IP = ResolveHostname(tcping)
-		tcping.OngoingUnsuccessfulProbes = 0
-		tcping.RetriedHostnameLookups++
+func RetryResolveHostname(p printers.Printer, s *statistics.Statistics, after uint, useIPv4, useIPv6 bool) {
+	if s.OngoingUnsuccessfulProbes >= after {
+		p.PrintRetryingToResolve(s)
+		s.IP = ResolveHostname(p, s, useIPv4, useIPv6)
+		s.OngoingUnsuccessfulProbes = 0
+		s.RetriedHostnameLookups++
 
 		// This is to report on hostname changes in the stats
-		lastAddr := tcping.HostnameChanges[len(tcping.HostnameChanges)-1].Addr
-		if lastAddr != tcping.Options.IP {
-			tcping.HostnameChanges = append(tcping.HostnameChanges, types.HostnameChange{
-				Addr: tcping.Options.IP,
+		lastAddr := s.HostnameChanges[len(s.HostnameChanges)-1].Addr
+		if lastAddr != s.IP {
+			s.HostnameChanges = append(s.HostnameChanges, types.HostnameChange{
+				Addr: s.IP,
 				When: time.Now(),
 			})
 		}

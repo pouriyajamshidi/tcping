@@ -3,78 +3,70 @@
 package probes
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
+	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
 	"github.com/pouriyajamshidi/tcping/v3/types"
 )
 
 // handleConnFailure processes failed probes
-func handleConnFailure(t *types.Tcping, startTime time.Time, elapsed time.Duration) {
+func handleConnFailure(s *statistics.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration) {
 	// if the last probe had succeeded
-	if !t.DestWasDown {
-		t.StartOfDowntime = startTime
-		uptimeDuration := t.StartOfDowntime.Sub(t.StartOfUptime)
+	if !s.DestWasDown {
+		s.StartOfDowntime = startTime
+		uptimeDuration := s.StartOfDowntime.Sub(s.StartOfUptime)
 		// set longest uptime since it is interrupted
-		utils.SetLongestDuration(t.StartOfUptime, uptimeDuration, &t.LongestUptime)
-		t.StartOfUptime = time.Time{}
-		t.DestWasDown = true
+		utils.SetLongestDuration(s.StartOfUptime, uptimeDuration, &s.LongestUptime)
+		s.StartOfUptime = time.Time{}
+		s.DestWasDown = true
 	}
 
-	t.TotalDowntime += elapsed
-	t.LastUnsuccessfulProbe = startTime
-	t.TotalUnsuccessfulProbes++
-	t.OngoingUnsuccessfulProbes++
+	s.TotalDowntime += elapsed
+	s.LastUnsuccessfulProbe = startTime
+	s.TotalUnsuccessfulProbes++
+	s.OngoingUnsuccessfulProbes++
 
-	t.PrintProbeFailure(
-		startTime,
-		t.Options,
-		t.OngoingUnsuccessfulProbes,
-	)
+	p.PrintProbeFailure(s)
 }
 
 // handleConnSuccess processes successful probes
-func handleConnSuccess(t *types.Tcping, startTime time.Time, elapsed time.Duration, sourceAddr string, rtt float32) {
-	if t.DestWasDown {
-		t.StartOfUptime = startTime
-		downtimeDuration := t.StartOfUptime.Sub(t.StartOfDowntime)
+func handleConnSuccess(s *statistics.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration, rtt float32, showFailuresOnly bool) {
+	if s.DestWasDown {
+		s.StartOfUptime = startTime
+		downtimeDuration := s.StartOfUptime.Sub(s.StartOfDowntime)
 		// set longest downtime since it is interrupted
-		utils.SetLongestDuration(t.StartOfDowntime, downtimeDuration, &t.LongestDowntime)
-		t.PrintTotalDownTime(downtimeDuration)
-		t.StartOfDowntime = time.Time{}
-		t.DestWasDown = false
-		t.OngoingUnsuccessfulProbes = 0
-		t.OngoingSuccessfulProbes = 0
+		utils.SetLongestDuration(s.StartOfDowntime, downtimeDuration, &s.LongestDowntime)
+		p.PrintTotalDownTime(s)
+		s.StartOfDowntime = time.Time{}
+		s.DestWasDown = false
+		s.OngoingUnsuccessfulProbes = 0
+		s.OngoingSuccessfulProbes = 0
 	}
 
-	if t.StartOfUptime.IsZero() {
-		t.StartOfUptime = startTime
+	if s.StartOfUptime.IsZero() {
+		s.StartOfUptime = startTime
 	}
 
-	t.TotalUptime += elapsed
-	t.LastSuccessfulProbe = startTime
-	t.TotalSuccessfulProbes++
-	t.OngoingSuccessfulProbes++
-	t.Rtt = append(t.Rtt, rtt)
+	s.TotalUptime += elapsed
+	s.LastSuccessfulProbe = startTime
+	s.TotalSuccessfulProbes++
+	s.OngoingSuccessfulProbes++
+	s.RTT = append(s.RTT, rtt)
+	s.LatestRTT = rtt
 
-	if t.Options.ShowFailuresOnly {
+	if showFailuresOnly {
 		return
 	}
 
-	t.PrintProbeSuccess(
-		startTime,
-		sourceAddr,
-		t.Options,
-		t.OngoingSuccessfulProbes,
-		fmt.Sprintf("%.3f", rtt),
-	)
+	p.PrintProbeSuccess(s)
 }
 
 // Ping checks target's availability using TCP
-func Ping(tcping *types.Tcping) {
+func Ping(s *statistics.Statistics, p printers.Printer, tcping *types.Tcping) {
 	var err error
 	var conn net.Conn
 
@@ -84,7 +76,7 @@ func Ping(tcping *types.Tcping) {
 		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
 		conn, err = tcping.Options.NetworkInterface.Dialer.Dial("tcp", tcping.Options.NetworkInterface.RemoteAddr.String())
 	} else {
-		ipAndPort := netip.AddrPortFrom(tcping.Options.IP, tcping.Options.Port)
+		ipAndPort := netip.AddrPortFrom(s.IP, s.Port)
 		conn, err = net.DialTimeout("tcp", ipAndPort.String(), tcping.Options.Timeout)
 	}
 
@@ -92,10 +84,10 @@ func Ping(tcping *types.Tcping) {
 	elapsed := utils.MaxDuration(connDuration, tcping.Options.IntervalBetweenProbes)
 
 	if err != nil {
-		handleConnFailure(tcping, connStart, elapsed)
+		handleConnFailure(s, p, connStart, elapsed)
 	} else {
 		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
-		handleConnSuccess(tcping, connStart, elapsed, conn.LocalAddr().String(), rtt)
+		handleConnSuccess(s, p, connStart, elapsed, rtt, false)
 
 		conn.Close()
 	}

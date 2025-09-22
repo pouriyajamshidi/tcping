@@ -186,7 +186,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 
 			query := fmt.Sprintf(probeDataQuery, db.probeTableName)
 			err := sqlitex.Execute(db.Conn, query, &sqlitex.ExecOptions{
-				Args: []interface{}{eventTypeProbe},
+				Args: []interface{}{ProbeEvent},
 				ResultFunc: func(stmt *sqlite.Stmt) error {
 					assertEquals(t, stmt.ColumnText(1), "true")
 					assertEquals(t, stmt.ColumnText(3), tt.opts.IP.String())
@@ -252,7 +252,7 @@ func TestDatabasePrinter_PrintProbeFailure(t *testing.T) {
 
 			query := fmt.Sprintf(probeDataQuery, db.probeTableName)
 			err := sqlitex.Execute(db.Conn, query, &sqlitex.ExecOptions{
-				Args: []interface{}{eventTypeProbe},
+				Args: []interface{}{ProbeEvent},
 				ResultFunc: func(stmt *sqlite.Stmt) error {
 					assertEquals(t, stmt.ColumnText(1), "false")
 					assertEquals(t, stmt.ColumnText(3), tt.opts.IP.String())
@@ -286,7 +286,7 @@ func TestDatabasePrinter_PrintStatistics(t *testing.T) {
 
 	query := fmt.Sprintf(statsDataQuery, db.statsTableName)
 	err = sqlitex.Execute(db.Conn, query, &sqlitex.ExecOptions{
-		Args: []interface{}{eventTypeStatistics},
+		Args: []interface{}{StatisticsEvent},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			// Verify all statistics fields
 			assertEquals(t, stmt.ColumnText(2), stats.Options.IP.String())
