@@ -4,6 +4,7 @@
 
 - new feature: add a _non-interactive_ mode through `--non-interactive` flag so that tcping can be run in the background using `nohup` or `disown`
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
+- refactor: de-couple the statistics from the `tcping` struct
 - refactor: simplify the `Printer` interface to rid empty implementations
 - refactor: restructure the entire program into different sections for easier maintenance and addition of new handlers
 - refactor: cleanup user input logic
