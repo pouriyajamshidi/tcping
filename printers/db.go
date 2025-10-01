@@ -9,8 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
@@ -292,7 +291,14 @@ func (p *DatabasePrinter) Done() {
 // Shutdown sets the end time, prints statistics, calls Done() and exits the program.
 func (p *DatabasePrinter) Shutdown(s *statistics.Statistics) {
 	s.EndTime = time.Now()
-	PrintStats(p, s)
+	if s.DestWasDown {
+		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
+	} else {
+		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
+	}
+
+	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
+	p.PrintStatistics(s)
 	p.Done()
 	os.Exit(0)
 }
@@ -455,8 +461,8 @@ func (p *DatabasePrinter) PrintStatistics(s *statistics.Statistics) {
 		totalSuccessfulPackets:   s.TotalSuccessfulProbes,
 		totalUnsuccessfulPackets: s.TotalUnsuccessfulProbes,
 		startTimestamp:           s.StartTime.Format(time.DateTime),
-		totalUptime:              utils.DurationToString(s.TotalUptime),
-		totalDowntime:            utils.DurationToString(s.TotalDowntime),
+		totalUptime:              statistics.DurationToString(s.TotalUptime),
+		totalDowntime:            statistics.DurationToString(s.TotalDowntime),
 		totalPackets:             s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes,
 	}
 

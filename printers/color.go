@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/gookit/color"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
 // Color functions used when printing information
@@ -36,7 +35,14 @@ func NewColorPrinter() *ColorPrinter {
 // Shutdown sets the end time, prints statistics, and exits the program.
 func (p *ColorPrinter) Shutdown(s *statistics.Statistics) {
 	s.EndTime = time.Now()
-	PrintStats(p, s)
+	if s.DestWasDown {
+		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
+	} else {
+		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
+	}
+
+	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
+	p.PrintStatistics(s)
 	os.Exit(0)
 }
 
@@ -187,7 +193,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *statistics.Statistics) {
 // Parameters:
 //   - downtime: The total duration of downtime.
 func (p *ColorPrinter) PrintTotalDownTime(s *statistics.Statistics) {
-	ColorYellow("No response received for %s\n", utils.DurationToString(s.DownTime))
+	ColorYellow("No response received for %s\n", statistics.DurationToString(s.DownTime))
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
@@ -231,11 +237,12 @@ func (p *ColorPrinter) PrintStatistics(s *statistics.Statistics) {
 		packetLoss = 0
 	}
 
-	if packetLoss == 0 {
+	switch {
+	case packetLoss == 0:
 		ColorGreen("%.2f%%", packetLoss)
-	} else if packetLoss > 0 && packetLoss <= 30 {
+	case packetLoss > 0 && packetLoss <= 30:
 		ColorLightYellow("%.2f%%", packetLoss)
-	} else {
+	default:
 		ColorRed("%.2f%%", packetLoss)
 	}
 
@@ -262,12 +269,12 @@ func (p *ColorPrinter) PrintStatistics(s *statistics.Statistics) {
 	}
 
 	ColorYellow("total uptime: ")
-	ColorGreen("  %s\n", utils.DurationToString(s.TotalUptime))
+	ColorGreen("  %s\n", statistics.DurationToString(s.TotalUptime))
 	ColorYellow("total downtime: ")
-	ColorRed("%s\n", utils.DurationToString(s.TotalDowntime))
+	ColorRed("%s\n", statistics.DurationToString(s.TotalDowntime))
 
 	if s.LongestUp.Duration != 0 {
-		uptime := utils.DurationToString(s.LongestUp.Duration)
+		uptime := statistics.DurationToString(s.LongestUp.Duration)
 
 		ColorYellow("longest consecutive uptime:   ")
 		ColorGreen("%v ", uptime)
@@ -278,7 +285,7 @@ func (p *ColorPrinter) PrintStatistics(s *statistics.Statistics) {
 	}
 
 	if s.LongestDown.Duration != 0 {
-		downtime := utils.DurationToString(s.LongestDown.Duration)
+		downtime := statistics.DurationToString(s.LongestDown.Duration)
 
 		ColorYellow("longest consecutive downtime: ")
 		ColorRed("%v ", downtime)

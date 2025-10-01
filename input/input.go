@@ -1,5 +1,5 @@
 // Package options handles the user input
-package options
+package input
 
 import (
 	"flag"
@@ -7,13 +7,13 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/printers"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
-	"github.com/pouriyajamshidi/tcping/v3/types"
+	"github.com/pouriyajamshidi/tcping/v3"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
+	"github.com/pouriyajamshidi/tcping/v3/usage"
 )
 
 type options struct {
@@ -32,7 +32,7 @@ type options struct {
 
 // newNetworkInterface uses the given IP address or a NIC to find the first IP address
 // to use as the source of the probes. The given IP address must exist on the system.
-func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkInterface {
+func newNetworkInterface(r *tcping.Result, ipAddress string) tcping.NetworkInterface {
 	interfaceAddress := net.ParseIP(ipAddress)
 	isInvalid := true
 
@@ -70,11 +70,11 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 					continue
 				}
 
-				if nipAddr.Is4() && !tcping.Options.UseIPv6 {
+				if nipAddr.Is4() && !r.Settings.UseIPv6 {
 					interfaceAddress = ip
 					isInvalid = false
 					break
-				} else if nipAddr.Is6() && !tcping.Options.UseIPv4 {
+				} else if nipAddr.Is6() && !r.Settings.UseIPv4 {
 					if nipAddr.IsLinkLocalUnicast() {
 						continue
 					}
@@ -96,71 +96,71 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 		os.Exit(1)
 	}
 
-	netIface := types.NetworkInterface{
+	netIface := tcping.NetworkInterface{
 		Use: true,
 	}
 
 	netIface.RemoteAddr = &net.TCPAddr{
-		IP:   net.ParseIP(tcping.Options.IP.String()),
-		Port: int(tcping.Options.Port),
+		IP:   net.ParseIP(r.Settings.IP.String()),
+		Port: int(r.Settings.Port),
 	}
 
 	netIface.Dialer = net.Dialer{
 		LocalAddr: &net.TCPAddr{
 			IP: interfaceAddress,
 		},
-		Timeout: tcping.Options.Timeout, // Set the timeout duration
+		Timeout: r.Settings.Timeout, // Set the timeout duration
 	}
 
 	return netIface
 }
 
 // setOptions assigns the user provided flags after sanity checks
-func setOptions(t *types.Tcping, s *statistics.Statistics, opts options) {
+func setOptions(t *tcping.Result, s *statistics.Statistics, opts options) {
 	if *opts.retryResolve > 0 {
-		t.Options.RetryHostnameLookupAfter = *opts.retryResolve
+		t.Settings.RetryHostnameLookupAfter = *opts.retryResolve
 	}
 
 	if *opts.useIPv4 {
-		t.Options.UseIPv4 = true
+		t.Settings.UseIPv4 = true
 	} else if *opts.useIPv6 {
-		t.Options.UseIPv6 = true
+		t.Settings.UseIPv6 = true
 	}
 
-	t.Options.Hostname = opts.args[0]
+	t.Settings.Hostname = opts.args[0]
 	s.Hostname = opts.args[0]
-	t.Options.Port = convertAndValidatePort(opts.args[1])
-	s.Port = t.Options.Port
+	t.Settings.Port = convertAndValidatePort(opts.args[1])
+	s.Port = t.Settings.Port
 	// t.Options.IP = dns.ResolveHostname(t)
-	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
-	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
+	t.Settings.ProbesBeforeQuit = *opts.probesBeforeQuit
+	t.Settings.Timeout = statistics.SecondsToDuration(*opts.timeout)
 
-	t.Options.NonInteractive = *opts.nonInteractive
+	t.Settings.NonInteractive = *opts.nonInteractive
 
-	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
-	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
+	t.Settings.IntervalBetweenProbes = statistics.SecondsToDuration(*opts.intervalBetweenProbes)
+	if t.Settings.IntervalBetweenProbes < 2*time.Millisecond {
 		fmt.Println("Wait interval should be more than 2 ms")
 		os.Exit(1)
 	}
 
-	if t.Options.Hostname == t.Options.IP.String() {
+	if t.Settings.Hostname == t.Settings.IP.String() {
 		t.DestIsIP = true
 	} else {
 		// The default starting value for tracking IP changes.
-		t.HostnameChanges = []types.HostnameChange{
-			{Addr: t.Options.IP, When: time.Now()},
+		t.HostnameChanges = []statistics.HostnameChange{
+			{Addr: t.Settings.IP, When: time.Now()},
 		}
 	}
 
-	if t.Options.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
-		t.Options.ShouldRetryResolve = true
+	if t.Settings.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
+		t.Settings.ShouldRetryResolve = true
 	}
 
 	if *opts.intName != "" {
-		t.Options.NetworkInterface = newNetworkInterface(t, *opts.intName)
+		t.Settings.NetworkInterface = newNetworkInterface(t, *opts.intName)
 	}
 
-	t.Options.ShowFailuresOnly = *opts.showFailuresOnly
+	t.Settings.ShowFailuresOnly = *opts.showFailuresOnly
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
@@ -210,12 +210,12 @@ func permuteArgs(args []string) {
 			case "r":
 				/* out of index */
 				if len(args) <= i+1 {
-					utils.Usage()
+					usage.Usage()
 				}
 				/* the next flag has come */
 				optionVal := args[i+1]
 				if optionVal[0] == '-' {
-					utils.Usage()
+					usage.Usage()
 				}
 				flagArgs = append(flagArgs, args[i:i+2]...)
 				i++
@@ -226,7 +226,7 @@ func permuteArgs(args []string) {
 			nonFlagArgs = append(nonFlagArgs, args[i])
 		}
 	}
-	permutedArgs := append(flagArgs, nonFlagArgs...)
+	permutedArgs := slices.Concat(flagArgs, nonFlagArgs)
 
 	/* replace args */
 	for i := range len(args) {
@@ -235,7 +235,7 @@ func permuteArgs(args []string) {
 }
 
 // ProcessUserInput gets and validate user input
-func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.Printer {
+func ProcessUserInput(r *tcping.Result, s *statistics.Statistics) tcping.Printer {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
 	probesBeforeQuit := flag.Uint("c",
@@ -271,7 +271,7 @@ func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.P
 	showVer := flag.Bool("v", false, "show version and exit.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 
-	flag.CommandLine.Usage = utils.Usage
+	flag.CommandLine.Usage = usage.Usage
 
 	permuteArgs(os.Args[1:])
 
@@ -280,21 +280,21 @@ func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.P
 	args := flag.Args()
 
 	if *showVer {
-		utils.ShowVersion()
+		usage.ShowVersion()
 	}
 
 	if *checkUpdates {
-		utils.CheckForUpdates()
+		usage.CheckForUpdates()
 	}
 
 	// At least the host and port must be specified
 	if len(args) != 2 {
-		utils.Usage()
+		usage.Usage()
 	}
 
 	if *useIPv4 && *useIPv6 {
-		printers.ColorRed("Only one IP version can be specified")
-		utils.Usage()
+		fmt.Print("Only one IP version can be specified")
+		usage.Usage()
 	}
 
 	opts := options{
@@ -310,9 +310,9 @@ func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.P
 		args:                  args,
 	}
 
-	setOptions(tcping, s, opts)
+	setOptions(r, s, opts)
 
-	config := printers.PrinterConfig{
+	config := tcping.PrinterConfig{
 		OutputJSON:        *outputJSON,
 		PrettyJSON:        *prettyJSON,
 		NoColor:           *noColor,
@@ -324,7 +324,7 @@ func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.P
 		Port:              args[1],
 	}
 
-	printer, err := printers.NewPrinter(config)
+	printer, err := tcping.NewPrinter(config)
 	if err != nil {
 		fmt.Printf("Failed to create printer: %s\n", err)
 		os.Exit(1)

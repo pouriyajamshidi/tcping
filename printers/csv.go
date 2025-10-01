@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
 const (
@@ -98,7 +97,14 @@ func (p *CSVPrinter) Done() {
 // Shutdown sets the end time, prints statistics, calls Done() and exits the program.
 func (p *CSVPrinter) Shutdown(s *statistics.Statistics) {
 	s.EndTime = time.Now()
-	PrintStats(p, s)
+	if s.DestWasDown {
+		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
+	} else {
+		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
+	}
+
+	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
+	p.PrintStatistics(s)
 	p.Done()
 	os.Exit(0)
 }
@@ -220,27 +226,27 @@ func (p *CSVPrinter) PrintRetryingToResolve(s *statistics.Statistics) {
 func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 	timestamp := time.Now().Format(time.DateTime)
 
-	statistics := [][]string{
+	stats := [][]string{
 		{"Timestamp", timestamp},
 		{"IP Address", s.IPStr()},
 	}
 
 	if s.IPStr() != s.Hostname {
-		statistics = append(statistics, []string{"Hostname", s.Hostname})
+		stats = append(stats, []string{"Hostname", s.Hostname})
 	}
 
-	statistics = append(statistics, []string{"Port", fmt.Sprintf("%d", s.Port)})
+	stats = append(stats, []string{"Port", fmt.Sprintf("%d", s.Port)})
 
 	totalDuration := s.TotalDowntime + s.TotalUptime
-	statistics = append(statistics, []string{"Total Duration",
+	stats = append(stats, []string{"Total Duration",
 		fmt.Sprintf("%.0f", totalDuration.Seconds())},
 	)
 
-	statistics = append(statistics, []string{"Total Uptime",
-		utils.DurationToString(s.TotalUptime)},
+	stats = append(stats, []string{"Total Uptime",
+		statistics.DurationToString(s.TotalUptime)},
 	)
-	statistics = append(statistics, []string{"Total Downtime",
-		utils.DurationToString(s.TotalDowntime)},
+	stats = append(stats, []string{"Total Downtime",
+		statistics.DurationToString(s.TotalDowntime)},
 	)
 
 	totalPackets := s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
@@ -250,23 +256,23 @@ func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 		packetLoss = 0
 	}
 
-	statistics = append(statistics, []string{"Total Packets", fmt.Sprintf("%d", totalPackets)})
-	statistics = append(statistics, []string{"Total Successful Packets", fmt.Sprintf("%d", s.TotalSuccessfulProbes)})
-	statistics = append(statistics, []string{"Total Unsuccessful Packets", fmt.Sprintf("%d", s.TotalUnsuccessfulProbes)})
-	statistics = append(statistics, []string{"Total Packet Loss Percentage", fmt.Sprintf("%.2f", packetLoss)})
+	stats = append(stats, []string{"Total Packets", fmt.Sprintf("%d", totalPackets)})
+	stats = append(stats, []string{"Total Successful Packets", fmt.Sprintf("%d", s.TotalSuccessfulProbes)})
+	stats = append(stats, []string{"Total Unsuccessful Packets", fmt.Sprintf("%d", s.TotalUnsuccessfulProbes)})
+	stats = append(stats, []string{"Total Packet Loss Percentage", fmt.Sprintf("%.2f", packetLoss)})
 
 	if s.LongestUp.Duration != 0 {
 		longestUptime := fmt.Sprintf("%.0f", s.LongestUp.Duration.Seconds())
 		longestConsecutiveUptimeStart := s.LongestUp.Start.Format(time.DateTime)
 		longestConsecutiveUptimeEnd := s.LongestUp.End.Format(time.DateTime)
 
-		statistics = append(statistics, []string{"Longest Uptime", longestUptime})
-		statistics = append(statistics, []string{"Longest Consecutive Uptime Start", longestConsecutiveUptimeStart})
-		statistics = append(statistics, []string{"Longest Consecutive Uptime End", longestConsecutiveUptimeEnd})
+		stats = append(stats, []string{"Longest Uptime", longestUptime})
+		stats = append(stats, []string{"Longest Consecutive Uptime Start", longestConsecutiveUptimeStart})
+		stats = append(stats, []string{"Longest Consecutive Uptime End", longestConsecutiveUptimeEnd})
 	} else {
-		statistics = append(statistics, []string{"Longest Uptime", "Never"})
-		statistics = append(statistics, []string{"Longest Consecutive Uptime Start", "Never"})
-		statistics = append(statistics, []string{"Longest Consecutive Uptime End", "Never"})
+		stats = append(stats, []string{"Longest Uptime", "Never"})
+		stats = append(stats, []string{"Longest Consecutive Uptime Start", "Never"})
+		stats = append(stats, []string{"Longest Consecutive Uptime End", "Never"})
 	}
 
 	if s.LongestDown.Duration != 0 {
@@ -274,17 +280,17 @@ func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 		longestConsecutiveDowntimeStart := s.LongestDown.Start.Format(time.DateTime)
 		longestConsecutiveDowntimeEnd := s.LongestDown.End.Format(time.DateTime)
 
-		statistics = append(statistics, []string{"Longest Downtime", longestDowntime})
-		statistics = append(statistics, []string{"Longest Consecutive Downtime Start", longestConsecutiveDowntimeStart})
-		statistics = append(statistics, []string{"Longest Consecutive Downtime End", longestConsecutiveDowntimeEnd})
+		stats = append(stats, []string{"Longest Downtime", longestDowntime})
+		stats = append(stats, []string{"Longest Consecutive Downtime Start", longestConsecutiveDowntimeStart})
+		stats = append(stats, []string{"Longest Consecutive Downtime End", longestConsecutiveDowntimeEnd})
 	} else {
-		statistics = append(statistics, []string{"Longest Downtime", "Never"})
-		statistics = append(statistics, []string{"Longest Consecutive Downtime Start", "Never"})
-		statistics = append(statistics, []string{"Longest Consecutive Downtime End", "Never"})
+		stats = append(stats, []string{"Longest Downtime", "Never"})
+		stats = append(stats, []string{"Longest Consecutive Downtime Start", "Never"})
+		stats = append(stats, []string{"Longest Consecutive Downtime End", "Never"})
 	}
 
 	if s.RetriedHostnameLookups > 0 {
-		statistics = append(statistics, []string{"Hostname Resolve Retries", fmt.Sprintf("%d", s.RetriedHostnameLookups)})
+		stats = append(stats, []string{"Hostname Resolve Retries", fmt.Sprintf("%d", s.RetriedHostnameLookups)})
 	}
 
 	if len(s.HostnameChanges) > 1 {
@@ -302,40 +308,40 @@ func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 			)
 		}
 	} else {
-		statistics = append(statistics, []string{"Hostname Changes", "Never changed"})
+		stats = append(stats, []string{"Hostname Changes", "Never changed"})
 	}
 
 	if s.LastSuccessfulProbe.IsZero() {
-		statistics = append(statistics, []string{"Last Successful Probe", "Never succeeded"})
+		stats = append(stats, []string{"Last Successful Probe", "Never succeeded"})
 	} else {
-		statistics = append(statistics, []string{"Last Successful Probe", s.LastSuccessfulProbe.Format(time.DateTime)})
+		stats = append(stats, []string{"Last Successful Probe", s.LastSuccessfulProbe.Format(time.DateTime)})
 	}
 
 	if s.LastUnsuccessfulProbe.IsZero() {
-		statistics = append(statistics, []string{"Last Unsuccessful Probe", "Never failed"})
+		stats = append(stats, []string{"Last Unsuccessful Probe", "Never failed"})
 	} else {
-		statistics = append(statistics, []string{"Last Unsuccessful Probe", s.LastUnsuccessfulProbe.Format(time.DateTime)})
+		stats = append(stats, []string{"Last Unsuccessful Probe", s.LastUnsuccessfulProbe.Format(time.DateTime)})
 	}
 
 	if s.RTTResults.HasResults {
-		statistics = append(statistics, []string{"Latency Min", fmt.Sprintf("%.3f", s.RTTResults.Min)})
-		statistics = append(statistics, []string{"Latency Avg", fmt.Sprintf("%.3f", s.RTTResults.Average)})
-		statistics = append(statistics, []string{"Latency Max", fmt.Sprintf("%.3f", s.RTTResults.Max)})
+		stats = append(stats, []string{"Latency Min", fmt.Sprintf("%.3f", s.RTTResults.Min)})
+		stats = append(stats, []string{"Latency Avg", fmt.Sprintf("%.3f", s.RTTResults.Average)})
+		stats = append(stats, []string{"Latency Max", fmt.Sprintf("%.3f", s.RTTResults.Max)})
 	} else {
-		statistics = append(statistics, []string{"Latency Min", "N/A"})
-		statistics = append(statistics, []string{"Latency Avg", "N/A"})
-		statistics = append(statistics, []string{"Latency Max", "N/A"})
+		stats = append(stats, []string{"Latency Min", "N/A"})
+		stats = append(stats, []string{"Latency Avg", "N/A"})
+		stats = append(stats, []string{"Latency Max", "N/A"})
 	}
 
-	statistics = append(statistics, []string{"Start Timestamp", s.StartTime.Format(time.DateTime)})
+	stats = append(stats, []string{"Start Timestamp", s.StartTime.Format(time.DateTime)})
 
 	if !s.EndTime.IsZero() {
-		statistics = append(statistics, []string{"End Timestamp", s.EndTime.Format(time.DateTime)})
+		stats = append(stats, []string{"End Timestamp", s.EndTime.Format(time.DateTime)})
 	} else {
-		statistics = append(statistics, []string{"End Timestamp", "In progress"})
+		stats = append(stats, []string{"End Timestamp", "In progress"})
 	}
 
-	for _, record := range statistics {
+	for _, record := range stats {
 		if err := p.StatsWriter.Write(record); err != nil {
 			p.PrintError("Failed to write statistics record: %v", err)
 			return

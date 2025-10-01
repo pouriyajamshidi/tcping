@@ -6,8 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
 // PlainPrinter is a printer that prints the TCPing results in a simple, plain text format.
@@ -21,7 +20,14 @@ func NewPlainPrinter() *PlainPrinter {
 // Shutdown sets the end time, prints statistics, and exits the program.
 func (p *PlainPrinter) Shutdown(s *statistics.Statistics) {
 	s.EndTime = time.Now()
-	PrintStats(p, s)
+	if s.DestWasDown {
+		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
+	} else {
+		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
+	}
+
+	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
+	p.PrintStatistics(s)
 	os.Exit(0)
 }
 
@@ -152,7 +158,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *statistics.Statistics) {
 
 // PrintTotalDownTime prints the total downtime when no response is received.
 func (p *PlainPrinter) PrintTotalDownTime(s *statistics.Statistics) {
-	fmt.Printf("No response received for %s\n", utils.DurationToString(s.DownTime))
+	fmt.Printf("No response received for %s\n", statistics.DurationToString(s.DownTime))
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
@@ -206,11 +212,11 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 		fmt.Printf("%v\n", s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
-	fmt.Printf("total uptime: %s\n", utils.DurationToString(s.TotalUptime))
-	fmt.Printf("total downtime: %s\n", utils.DurationToString(s.TotalDowntime))
+	fmt.Printf("total uptime: %s\n", statistics.DurationToString(s.TotalUptime))
+	fmt.Printf("total downtime: %s\n", statistics.DurationToString(s.TotalDowntime))
 
 	if s.LongestUp.Duration != 0 {
-		uptime := utils.DurationToString(s.LongestUp.Duration)
+		uptime := statistics.DurationToString(s.LongestUp.Duration)
 
 		fmt.Printf("longest consecutive uptime:   ")
 		fmt.Printf("%v ", uptime)
@@ -219,7 +225,7 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 	}
 
 	if s.LongestDown.Duration != 0 {
-		downtime := utils.DurationToString(s.LongestDown.Duration)
+		downtime := statistics.DurationToString(s.LongestDown.Duration)
 
 		fmt.Printf("longest consecutive downtime: %v ", downtime)
 		fmt.Printf("from %v ", s.LongestDown.Start.Format(time.DateTime))

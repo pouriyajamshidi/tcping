@@ -1,17 +1,18 @@
-// Package printers contains the logic for printing information
-package printers
+package tcping
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"slices"
-	"syscall"
-	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
-	"github.com/pouriyajamshidi/tcping/v3/types"
+	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
+)
+
+var (
+	_ Printer = (*printers.ColorPrinter)(nil)
+	_ Printer = (*printers.JSONPrinter)(nil)
+	_ Printer = (*printers.CSVPrinter)(nil)
+	_ Printer = (*printers.DatabasePrinter)(nil)
+	_ Printer = (*printers.PlainPrinter)(nil)
 )
 
 // Printer defines a set of methods that any printer implementation must provide.
@@ -23,7 +24,7 @@ type Printer interface {
 
 	// PrintProbeSuccess should print a message after each successful probe.
 	// hostname could be empty, meaning it's pinging an address.
-	// streak is the number of successful consecuti`ve probes.
+	// streak is the number of successful consecutive probes.
 	PrintProbeSuccess(s *statistics.Statistics)
 
 	// PrintProbeFailure should print a message after each failed probe.
@@ -57,6 +58,30 @@ type Printer interface {
 	Shutdown(s *statistics.Statistics)
 }
 
+// NewPrinter creates and returns an appropriate printer based on configuration
+func NewPrinter(cfg PrinterConfig) (Printer, error) {
+	if cfg.PrettyJSON && !cfg.OutputJSON {
+		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
+	}
+
+	switch {
+	case cfg.OutputJSON:
+		return printers.NewJSONPrinter(cfg.PrettyJSON), nil
+
+	case cfg.OutputDBPath != "":
+		return printers.NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
+
+	case cfg.OutputCSVPath != "":
+		return printers.NewCSVPrinter(cfg.OutputCSVPath)
+
+	case cfg.NoColor:
+		return printers.NewPlainPrinter(), nil
+
+	default:
+		return printers.NewColorPrinter(), nil
+	}
+}
+
 // PrinterConfig holds all configuration options for Printer creation
 type PrinterConfig struct {
 	OutputJSON        bool
@@ -68,77 +93,4 @@ type PrinterConfig struct {
 	OutputCSVPath     string
 	Target            string
 	Port              string
-}
-
-// NewPrinter creates and returns an appropriate printer based on configuration
-func NewPrinter(cfg PrinterConfig) (Printer, error) {
-	if cfg.PrettyJSON && !cfg.OutputJSON {
-		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
-	}
-
-	switch {
-	case cfg.OutputJSON:
-		return NewJSONPrinter(cfg.PrettyJSON), nil
-
-	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
-
-	case cfg.OutputCSVPath != "":
-		return NewCSVPrinter(cfg.OutputCSVPath)
-
-	case cfg.NoColor:
-		return NewPlainPrinter(), nil
-
-	default:
-		return NewColorPrinter(), nil
-	}
-}
-
-// PrintStats is a helper method for PrintStatistics of the current printer.
-// This should be used instead of directly calling the PrintStatistics
-// as it makes the common calculations beforehand.
-func PrintStats(p Printer, s *statistics.Statistics) {
-	if s.DestWasDown {
-		utils.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		utils.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
-
-	s.RTTResults = calcMinAvgMaxRttTime(s.RTT)
-
-	p.PrintStatistics(s)
-}
-
-// SignalHandler catches SIGINT and SIGTERM then prints tcping stats
-func SignalHandler(p Printer, s *statistics.Statistics) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		p.Shutdown(s)
-	}()
-}
-
-// calcMinAvgMaxRttTime calculates min, avg and max RTT values
-func calcMinAvgMaxRttTime(timeArr []float32) types.RttResult {
-	var result types.RttResult
-
-	arrLen := len(timeArr)
-	if arrLen == 0 {
-		return result
-	}
-
-	var sum float32
-
-	for _, t := range timeArr {
-		sum += t
-	}
-
-	result.Min = slices.Min(timeArr)
-	result.Max = slices.Max(timeArr)
-	result.Average = sum / float32(arrLen)
-	result.HasResults = true
-
-	return result
 }
