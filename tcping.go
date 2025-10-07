@@ -100,8 +100,11 @@ type tcping struct {
 	totalUnsuccessfulProbes   uint
 	retriedHostnameLookups    uint
 	rttResults                rttResult
-	destWasDown               bool // destWasDown is used to determine the duration of a downtime
-	destIsIP                  bool // destIsIP suppresses printing the IP information twice when hostname is not provided
+	destWasDown               bool   // destWasDown is used to determine the duration of a downtime
+	destIsIP                  bool   // destIsIP suppresses printing the IP information twice when hostname is not provided
+	proxy                     bool   // If the connection passes through a proxy or tunnel, we need to make sure that the connection was established on the other side
+	proxyWriteBuffer          []byte // Bytes to be written on buffer
+	proxyReadLen              uint   // Tamanho do buffer a ser lido
 }
 
 type userInput struct {
@@ -128,6 +131,9 @@ type genericUserInputArgs struct {
 	intName              *string
 	showFailuresOnly     *bool
 	showSourceAddress    *bool
+	proxy                *bool
+	proxyWriteBuffer     *string
+	proxyReadLen         *uint
 	args                 []string
 }
 
@@ -306,6 +312,13 @@ func setGenericArgs(tcping *tcping, genericArgs genericUserInputArgs) {
 	tcping.startTime = time.Now()
 	tcping.userInput.probesBeforeQuit = *genericArgs.probesBeforeQuit
 	tcping.userInput.timeout = secondsToDuration(*genericArgs.timeout)
+	tcping.proxy = genericArgs.proxy != nil && *genericArgs.proxy
+	if genericArgs.proxyWriteBuffer != nil {
+		tcping.proxyWriteBuffer = []byte(*genericArgs.proxyWriteBuffer)
+	} else {
+		tcping.proxyWriteBuffer = []byte{}
+	}
+	tcping.proxyReadLen = max(0, uint(*genericArgs.proxyReadLen))
 
 	tcping.userInput.intervalBetweenProbes = secondsToDuration(*genericArgs.secondsBetweenProbes)
 	if tcping.userInput.intervalBetweenProbes < 2*time.Millisecond {
@@ -350,6 +363,9 @@ func processUserInput(tcping *tcping) {
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
+	proxy := flag.Bool("proxy", false, "make sure that the connection was established on the other side of the proxy/tunnel by sending and receiving data through the socket. The server response latency will influence the result.")
+	proxyWriteBuffer := flag.String("proxy-write-buffer", "", "buffer to be written on the socket.")
+	proxyReadLen := flag.Uint("proxy-read-len", 1, "the number of bytes to be read from the socket.")
 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
 	interfaceName := flag.String("I", "", "interface name or address.")
 	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
@@ -403,6 +419,9 @@ func processUserInput(tcping *tcping) {
 		intName:              interfaceName,
 		showFailuresOnly:     showFailuresOnly,
 		showSourceAddress:    showSourceAddress,
+		proxy:                proxy,
+		proxyWriteBuffer:     proxyWriteBuffer,
+		proxyReadLen:         proxyReadLen,
 		args:                 args,
 	}
 
@@ -439,6 +458,10 @@ func permuteArgs(args []string) {
 			case "i":
 				fallthrough
 			case "csv":
+				fallthrough
+			case "proxy-buffer":
+				fallthrough
+			case "proxy-read-len":
 				fallthrough
 			case "r":
 				/* out of index */
@@ -879,6 +902,24 @@ func tcpProbe(tcping *tcping) {
 	} else {
 		ipAndPort := netip.AddrPortFrom(tcping.userInput.ip, tcping.userInput.port)
 		conn, err = net.DialTimeout("tcp", ipAndPort.String(), tcping.userInput.timeout)
+	}
+
+	if err == nil && tcping.proxy {
+		// A buffer to be sent/received
+		var buffer = make([]byte, tcping.proxyReadLen)
+		var write bool = len(tcping.proxyWriteBuffer) > 0
+		// Set the read/write deadline to the timeout
+		conn.SetDeadline(time.Now().Add(tcping.userInput.timeout))
+		// Restarts the timer
+		connStart = time.Now()
+		if write {
+			// Write the proxy-write-buffer
+			_, err = conn.Write(tcping.proxyWriteBuffer)
+		}
+		// Read something
+		if err == nil {
+			_, err = conn.Read(buffer)
+		}
 	}
 
 	connDuration := time.Since(connStart)
