@@ -363,7 +363,9 @@ func processUserInput(tcping *tcping) {
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
 	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
-	proxy := flag.Bool("proxy", false, "make sure that the connection was established on the other side of the proxy/tunnel by sending and receiving data through the socket. The server response latency will influence the result.")
+	proxy := flag.Bool(
+		"proxy", false,
+		"make sure that the connection was established on the other side of the proxy/tunnel by sending and receiving data through the socket. The server response latency will influence the result.")
 	proxyWriteBuffer := flag.String("proxy-write-buffer", "", "buffer to be written on the socket.")
 	proxyReadLen := flag.Uint("proxy-read-len", 1, "the number of bytes to be read from the socket.")
 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
@@ -906,8 +908,8 @@ func tcpProbe(tcping *tcping) {
 
 	if err == nil && tcping.proxy {
 		// A buffer to be sent/received
-		var buffer = make([]byte, tcping.proxyReadLen)
-		var write bool = len(tcping.proxyWriteBuffer) > 0
+		buffer := make([]byte, tcping.proxyReadLen)
+		write := len(tcping.proxyWriteBuffer) > 0
 		// Set the read/write deadline to the timeout
 		conn.SetDeadline(time.Now().Add(tcping.userInput.timeout))
 		// Restarts the timer
@@ -931,6 +933,8 @@ func tcpProbe(tcping *tcping) {
 		tcping.handleConnError(connStart, elapsed)
 	} else {
 		tcping.handleConnSuccess(conn.LocalAddr().String(), rtt, connStart, elapsed)
+	}
+	if conn != nil {
 		conn.Close()
 	}
 	<-tcping.ticker.C
