@@ -221,6 +221,8 @@ func usage() {
 	colorRed("Try running %s like:\n", executableName)
 	colorRed("%s <hostname/ip> <port number>. For example:\n", executableName)
 	colorRed("%s www.example.com 443\n", executableName)
+	colorRed("Or use the <hostname/ip:port> format:\n")
+	colorRed("%s www.example.com:443\n", executableName)
 	colorYellow("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
@@ -293,6 +295,32 @@ func setPort(tcping *tcping, args []string) {
 		os.Exit(1)
 	}
 	tcping.userInput.port = uint16(port)
+}
+
+// parseHostPortArgs handles both "host port" and "host:port" formats
+// It returns a slice with exactly 2 elements [host, port] if successful
+func parseHostPortArgs(args []string) []string {
+	if len(args) == 1 {
+		// Check if the single argument is in "host:port" format
+		parts := strings.Split(args[0], ":")
+		if len(parts) == 2 {
+			// Valid "host:port" format
+			return parts
+		} else if len(parts) > 2 {
+			// Could be IPv6 address with port like [::1]:8080 or ::1:8080
+			// Try to find the last colon as port separator
+			lastColonIndex := strings.LastIndex(args[0], ":")
+			if lastColonIndex > 0 {
+				host := args[0][:lastColonIndex]
+				port := args[0][lastColonIndex+1:]
+				// Remove brackets if present for IPv6
+				host = strings.TrimPrefix(host, "[")
+				host = strings.TrimSuffix(host, "]")
+				return []string{host, port}
+			}
+		}
+	}
+	return args
 }
 
 // setGenericArgs assigns the generic flags after sanity checks
@@ -384,6 +412,9 @@ func processUserInput(tcping *tcping) {
 	}
 
 	// host and port must be specified
+	// Support both "host port" and "host:port" formats
+	args = parseHostPortArgs(args)
+	
 	if len(args) != 2 {
 		usage()
 	}
