@@ -193,7 +193,7 @@ These are some additional ways in which **tcping** can be installed:
 tcping www.example.com 443
 ```
 
-2. You can also use the `host:port` format for convenience:
+2. You can also use the `host:port` format for convenience (this will be available in version 3):
 
 ```bash
 tcping www.example.com:443
