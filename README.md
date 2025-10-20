@@ -193,13 +193,23 @@ These are some additional ways in which **tcping** can be installed:
 tcping www.example.com 443
 ```
 
-2. Specify the interval between probes (2 seconds), the timeout (5 seconds) and source interface:
+2. You can also use the `host:port` format for convenience:
+
+```bash
+tcping www.example.com:443
+# Or with an IP address
+tcping 192.168.1.1:80
+# IPv6 addresses (use quotes to prevent shell interpretation)
+tcping '[2001:db8::1]:443'
+```
+
+3. Specify the interval between probes (2 seconds), the timeout (5 seconds) and source interface:
 
 ```bash
 tcping www.example.com 443 -i 2 -t 5 -I eth2
 ```
 
-3. Enforce using IPv4 or IPv6 only:
+4. Enforce using IPv4 or IPv6 only:
 
 ```bash
   tcping www.example.com 443 -4
@@ -207,26 +217,26 @@ tcping www.example.com 443 -i 2 -t 5 -I eth2
   tcping www.example.com 443 -6
 ```
 
-4. Show timestamp of probes:
+5. Show timestamp of probes:
 
 ```bash
 tcping www.example.com 443 -D
 ```
 
-5. Retry resolving the hostname after 5 failures:
+6. Retry resolving the hostname after 5 failures:
 
 ```bash
 tcping www.example.com 443 -r 5
 
 ```
 
-6. Stop after 5 probes:
+7. Stop after 5 probes:
 
 ```bash
 tcping www.example.com 443 -c 5
 ```
 
-7. Change the default output from colored to:
+8. Change the default output from colored to:
 
 ```bash
 # Save the output in CSV format:
@@ -249,9 +259,13 @@ The Docker image can be used with the same set of flags, like:
 ```bash
 # If downloaded from Docker Hub
 docker run -it pouriyajamshidi/tcping:latest example.com 443
+# Or using host:port format
+docker run -it pouriyajamshidi/tcping:latest example.com:443
 
 # If downloaded from GitHub container registry:
 docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+# Or using host:port format
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 ```
 
 > [!TIP]

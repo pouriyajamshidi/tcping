@@ -230,6 +230,16 @@ tcping www.example.com 443
 tcping 10.10.10.1 22
 ```
 
+您还可以使用 `主机:端口` 格式：
+
+```bash
+tcping www.example.com:443
+# 或使用 IP 地址
+tcping 192.168.1.1:80
+# IPv6 地址（使用引号防止 shell 解析）
+tcping '[2001:db8::1]:443'
+```
+
 ### Windows
 
 我们建议使用 [Windows 终端](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) 以获得最佳体验和正确的颜色显示。
@@ -238,6 +248,8 @@ tcping 10.10.10.1 22
 
 ```powershell
 tcping www.example.com 443
+# 或使用 主机:端口 格式
+tcping www.example.com:443
 # 或提供 -r 标志以
 # 在一定次数的失败后启用名称解析重试：
 tcping www.example.com 443 -r 10
@@ -252,9 +264,13 @@ Docker 镜像可以像这样使用：
 ```bash
 # 使用 Docker Hub
 docker run -it pouriyajamshidi/tcping:latest example.com 443
+# 或使用 主机:端口 格式
+docker run -it pouriyajamshidi/tcping:latest example.com:443
 
 # 使用 GitHub 容器注册表：
 docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+# 或使用 主机:端口 格式
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 ```
 
 ---
