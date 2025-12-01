@@ -1,6 +1,6 @@
 # Build stage
 ##################################################
-FROM docker.io/golang:1.23-alpine3.20 AS build
+FROM docker.io/golang:1.24.10-alpine3.22 AS build
 
 WORKDIR /build
 
