@@ -3,6 +3,7 @@ package tcping
 
 import (
 	"context"
+	"net/netip"
 
 	"github.com/pouriyajamshidi/tcping/v3/pingers"
 )
@@ -15,6 +16,6 @@ var (
 // Pinger defines the interface for network connectivity testing implementations.
 type Pinger interface {
 	Ping(ctx context.Context) error
-	IP() string
+	IP() netip.Addr
 	Port() uint16
 }
