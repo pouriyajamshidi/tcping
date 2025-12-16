@@ -1,20 +1,67 @@
-// Package options handles the user input
-package options
+package app
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"net"
 	"net/netip"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/printers"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
-	"github.com/pouriyajamshidi/tcping/v3/types"
+	"github.com/pouriyajamshidi/tcping/v3"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
+
+var (
+	// ErrUsageRequested indicates usage help was requested
+	ErrUsageRequested = errors.New("usage requested")
+
+	// ErrVersionRequested indicates version display was requested
+	ErrVersionRequested = errors.New("version requested")
+
+	// ErrUpdateCheckRequested indicates update check was requested
+	ErrUpdateCheckRequested = errors.New("update check requested")
+
+	// ErrInvalidPort indicates an invalid port number was provided
+	ErrInvalidPort = errors.New("invalid port number")
+
+	// ErrPortOutOfRange indicates port number is outside valid range (1-65535)
+	ErrPortOutOfRange = errors.New("port should be in 1..65535 range")
+)
+
+// ProberConfig contains all configuration needed to create and run a prober.
+type ProberConfig struct {
+	// Target configuration
+	Hostname string
+	Port     uint16
+
+	// Network options
+	UseIPv4          bool
+	UseIPv6          bool
+	InterfaceName    string
+	InterfaceDialer  *net.Dialer
+	ShowSourceAddress bool
+
+	// Timing options
+	Timeout  time.Duration
+	Interval time.Duration
+
+	// Probe control
+	ProbeCountLimit uint
+	ShowFailuresOnly bool
+
+	// DNS options
+	RetryResolveAfter uint
+
+	// Output options
+	PrinterConfig tcping.PrinterConfig
+
+	// Runtime options
+	NonInteractive bool
+}
 
 type options struct {
 	useIPv4               *bool
@@ -32,15 +79,14 @@ type options struct {
 
 // newNetworkInterface uses the given IP address or a NIC to find the first IP address
 // to use as the source of the probes. The given IP address must exist on the system.
-func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkInterface {
+func newNetworkInterface(ipAddress string, useIPv4, useIPv6 bool) (*net.Dialer, error) {
 	interfaceAddress := net.ParseIP(ipAddress)
 	isInvalid := true
 
 	if interfaceAddress != nil {
 		addrs, err := net.InterfaceAddrs()
 		if err != nil {
-			fmt.Println("Unable to get IP addresses")
-			os.Exit(1)
+			return nil, fmt.Errorf("get ip addresses: %w", err)
 		}
 
 		for _, addr := range addrs {
@@ -53,14 +99,12 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 	} else { // we are probably given an interface name
 		iface, err := net.InterfaceByName(ipAddress)
 		if err != nil {
-			fmt.Printf("Interface %s not found\n", ipAddress)
-			os.Exit(1)
+			return nil, fmt.Errorf("interface %s not found: %w", ipAddress, err)
 		}
 
 		addrs, err := iface.Addrs()
 		if err != nil {
-			fmt.Println("Unable to get Interface addresses")
-			os.Exit(1)
+			return nil, fmt.Errorf("get interface addresses: %w", err)
 		}
 
 		for _, addr := range addrs {
@@ -70,11 +114,11 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 					continue
 				}
 
-				if nipAddr.Is4() && !tcping.Options.UseIPv6 {
+				if nipAddr.Is4() && !useIPv6 {
 					interfaceAddress = ip
 					isInvalid = false
 					break
-				} else if nipAddr.Is6() && !tcping.Options.UseIPv4 {
+				} else if nipAddr.Is6() && !useIPv4 {
 					if nipAddr.IsLinkLocalUnicast() {
 						continue
 					}
@@ -86,106 +130,82 @@ func newNetworkInterface(tcping *types.Tcping, ipAddress string) types.NetworkIn
 		}
 
 		if interfaceAddress == nil {
-			fmt.Println("Unable to get interface's IP address")
-			os.Exit(1)
+			return nil, fmt.Errorf("get interface ip address")
 		}
 	}
 
 	if isInvalid {
-		fmt.Printf("IP address %s is not assigned to any interface\n", ipAddress)
-		os.Exit(1)
+		return nil, fmt.Errorf("ip address %s not assigned to any interface", ipAddress)
 	}
 
-	netIface := types.NetworkInterface{
-		Use: true,
-	}
-
-	netIface.RemoteAddr = &net.TCPAddr{
-		IP:   net.ParseIP(tcping.Options.IP.String()),
-		Port: int(tcping.Options.Port),
-	}
-
-	netIface.Dialer = net.Dialer{
+	return &net.Dialer{
 		LocalAddr: &net.TCPAddr{
 			IP: interfaceAddress,
 		},
-		Timeout: tcping.Options.Timeout, // Set the timeout duration
-	}
-
-	return netIface
+	}, nil
 }
 
 // setOptions assigns the user provided flags after sanity checks
-func setOptions(t *types.Tcping, s *statistics.Statistics, opts options) {
-	if *opts.retryResolve > 0 {
-		t.Options.RetryHostnameLookupAfter = *opts.retryResolve
-	}
+func setOptions(config *ProberConfig, opts options) error {
+	config.RetryResolveAfter = *opts.retryResolve
 
 	if *opts.useIPv4 {
-		t.Options.UseIPv4 = true
+		config.UseIPv4 = true
 	} else if *opts.useIPv6 {
-		t.Options.UseIPv6 = true
+		config.UseIPv6 = true
 	}
 
-	t.Options.Hostname = opts.args[0]
-	s.Hostname = opts.args[0]
-	t.Options.Port = convertAndValidatePort(opts.args[1])
-	s.Port = t.Options.Port
-	// t.Options.IP = dns.ResolveHostname(t)
-	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
-	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
+	config.Hostname = opts.args[0]
 
-	t.Options.NonInteractive = *opts.nonInteractive
-
-	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
-	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
-		fmt.Println("Wait interval should be more than 2 ms")
-		os.Exit(1)
+	port, err := convertAndValidatePort(opts.args[1])
+	if err != nil {
+		return fmt.Errorf("validate port: %w", err)
 	}
+	config.Port = port
 
-	if t.Options.Hostname == t.Options.IP.String() {
-		t.DestIsIP = true
-	} else {
-		// The default starting value for tracking IP changes.
-		t.HostnameChanges = []types.HostnameChange{
-			{Addr: t.Options.IP, When: time.Now()},
-		}
-	}
+	config.ProbeCountLimit = *opts.probesBeforeQuit
+	config.Timeout = statistics.SecondsToDuration(*opts.timeout)
+	config.NonInteractive = *opts.nonInteractive
+	config.Interval = statistics.SecondsToDuration(*opts.intervalBetweenProbes)
 
-	if t.Options.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
-		t.Options.ShouldRetryResolve = true
+	if config.Interval < 2*time.Millisecond {
+		return fmt.Errorf("wait interval should be more than 2 ms")
 	}
 
 	if *opts.intName != "" {
-		t.Options.NetworkInterface = newNetworkInterface(t, *opts.intName)
+		dialer, err := newNetworkInterface(*opts.intName, config.UseIPv4, config.UseIPv6)
+		if err != nil {
+			return fmt.Errorf("setup network interface: %w", err)
+		}
+		config.InterfaceDialer = dialer
+		config.InterfaceName = *opts.intName
 	}
 
-	t.Options.ShowFailuresOnly = *opts.showFailuresOnly
+	config.ShowFailuresOnly = *opts.showFailuresOnly
+	return nil
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
-func convertAndValidatePort(portStr string) uint16 {
+func convertAndValidatePort(portStr string) (uint16, error) {
 	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
-		fmt.Printf("Invalid port number: %s\n", portStr)
-		os.Exit(1)
+		return 0, fmt.Errorf("%w: %s", ErrInvalidPort, portStr)
 	}
 
 	if port < 1 || port > 65535 {
-		fmt.Println("Port should be in 1..65535 range")
-		os.Exit(1)
+		return 0, fmt.Errorf("%w: got %d", ErrPortOutOfRange, port)
 	}
 
-	return uint16(port)
+	return uint16(port), nil
 }
 
 // permuteArgs permute args for flag parsing stops just before the first non-flag argument.
 // see: https://pkg.go.dev/flag
-func permuteArgs(args []string) {
+func permuteArgs(args []string) error {
 	var flagArgs []string
 	var nonFlagArgs []string
 
-	for i := 0; i < len(args); i++ {
+	for i := range len(args) {
 		v := args[i]
 		if v[0] == '-' {
 			var optionName string
@@ -208,14 +228,14 @@ func permuteArgs(args []string) {
 			case "csv":
 				fallthrough
 			case "r":
-				/* out of index */
+				// out of index
 				if len(args) <= i+1 {
-					utils.Usage()
+					return ErrUsageRequested
 				}
-				/* the next flag has come */
+				// the next flag has come
 				optionVal := args[i+1]
 				if optionVal[0] == '-' {
-					utils.Usage()
+					return ErrUsageRequested
 				}
 				flagArgs = append(flagArgs, args[i:i+2]...)
 				i++
@@ -226,16 +246,19 @@ func permuteArgs(args []string) {
 			nonFlagArgs = append(nonFlagArgs, args[i])
 		}
 	}
-	permutedArgs := append(flagArgs, nonFlagArgs...)
+	permutedArgs := slices.Concat(flagArgs, nonFlagArgs)
 
-	/* replace args */
+	// replace args in place
 	for i := range len(args) {
 		args[i] = permutedArgs[i]
 	}
+
+	return nil
 }
 
-// ProcessUserInput gets and validate user input
-func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.Printer {
+// ProcessUserInput parses command-line flags. Returns ErrUsageRequested,
+// ErrVersionRequested, or ErrUpdateCheckRequested for special control flow.
+func ProcessUserInput() (ProberConfig, error) {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
 	probesBeforeQuit := flag.Uint("c",
@@ -271,30 +294,32 @@ func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.P
 	showVer := flag.Bool("v", false, "show version and exit.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 
-	flag.CommandLine.Usage = utils.Usage
+	flag.CommandLine.Usage = func() {
+		// no-op, we'll handle usage in app package
+	}
 
-	permuteArgs(os.Args[1:])
+	if err := permuteArgs(os.Args[1:]); err != nil {
+		return ProberConfig{}, err
+	}
 
 	flag.Parse()
 
 	args := flag.Args()
 
 	if *showVer {
-		utils.ShowVersion()
+		return ProberConfig{}, ErrVersionRequested
 	}
 
 	if *checkUpdates {
-		utils.CheckForUpdates()
+		return ProberConfig{}, ErrUpdateCheckRequested
 	}
 
-	// At least the host and port must be specified
 	if len(args) != 2 {
-		utils.Usage()
+		return ProberConfig{}, ErrUsageRequested
 	}
 
 	if *useIPv4 && *useIPv6 {
-		printers.ColorRed("Only one IP version can be specified")
-		utils.Usage()
+		return ProberConfig{}, fmt.Errorf("%w: only one IP version can be specified", ErrUsageRequested)
 	}
 
 	opts := options{
@@ -310,25 +335,24 @@ func ProcessUserInput(tcping *types.Tcping, s *statistics.Statistics) printers.P
 		args:                  args,
 	}
 
-	setOptions(tcping, s, opts)
-
-	config := printers.PrinterConfig{
-		OutputJSON:        *outputJSON,
-		PrettyJSON:        *prettyJSON,
-		NoColor:           *noColor,
-		WithTimestamp:     *showTimestamp,
-		WithSourceAddress: *showSourceAddress,
-		OutputDBPath:      *saveToDB,
-		OutputCSVPath:     *saveToCSV,
-		Target:            args[0],
-		Port:              args[1],
+	config := ProberConfig{
+		ShowSourceAddress: *showSourceAddress,
+		PrinterConfig: tcping.PrinterConfig{
+			OutputJSON:        *outputJSON,
+			PrettyJSON:        *prettyJSON,
+			NoColor:           *noColor,
+			WithTimestamp:     *showTimestamp,
+			WithSourceAddress: *showSourceAddress,
+			OutputDBPath:      *saveToDB,
+			OutputCSVPath:     *saveToCSV,
+			Target:            args[0],
+			Port:              args[1],
+		},
 	}
 
-	printer, err := printers.NewPrinter(config)
-	if err != nil {
-		fmt.Printf("Failed to create printer: %s\n", err)
-		os.Exit(1)
+	if err := setOptions(&config, opts); err != nil {
+		return ProberConfig{}, fmt.Errorf("set options: %w", err)
 	}
 
-	return printer
+	return config, nil
 }

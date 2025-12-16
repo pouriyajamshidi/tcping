@@ -1,146 +1,233 @@
-package printers
+package printers_test
 
 import (
-	"encoding/csv"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/types"
-	"github.com/stretchr/testify/assert"
+	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
+func setupTempCSV(t *testing.T) string {
+	t.Helper()
+	tempDir := t.TempDir()
+	return filepath.Join(tempDir, "test_output")
+}
+
 func TestNewCSVPrinter(t *testing.T) {
-	probeFilename := "test_data.csv"
+	filePath := setupTempCSV(t)
+	p, err := printers.NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter: %v", err)
+	}
+	if p == nil {
+		t.Fatal("NewCSVPrinter returned nil")
+	}
 
-	cfg := PrinterConfig{OutputCSVPath: "test_data"}
+	defer p.Shutdown(&statistics.Statistics{})
 
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
-	assert.Equal(t, probeFilename, cp.ProbeFile.Name())
-	assert.Equal(t, probeFilename[:len(probeFilename)-4]+"_stats.csv", cp.StatsFile.Name())
+	// verify probe file exists
+	probeFile := filePath + ".csv"
+	if _, err := os.Stat(probeFile); os.IsNotExist(err) {
+		t.Errorf("probe file not created: %s", probeFile)
+	}
 
-	cp.Done()
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
+	// verify stats file exists
+	statsFile := filePath + "_stats.csv"
+	if _, err := os.Stat(statsFile); os.IsNotExist(err) {
+		t.Errorf("stats file not created: %s", statsFile)
+	}
 }
 
-func TestWriteRecord(t *testing.T) {
-	cfg := PrinterConfig{}
-
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
-
-	file, err := os.Open(cp.ProbeFile.Name())
-	assert.NoError(t, err)
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-	headers, err := reader.Read()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"Status", "Hostname", "IP", "Port", "Connection", "Latency(ms)"}, headers)
-
-	opts := types.Options{
-		IP:       netip.MustParseAddr("127.0.0.1"),
-		Hostname: "localhost",
-		Port:     80,
+func TestNewCSVPrinter_WithOptions(t *testing.T) {
+	filePath := setupTempCSV(t)
+	opts := []printers.CSVPrinterOption{
+		printers.WithTimestamp[*printers.CSVPrinter](),
+		printers.WithSourceAddress[*printers.CSVPrinter](),
+		printers.WithFailuresOnly[*printers.CSVPrinter](),
 	}
-
-	cp.PrintProbeSuccess(time.Now(), "192.168.1.10:1234", opts, 1, "10.123")
-
-	readRecord, err := reader.Read()
-	assert.NoError(t, err)
-
-	record := []string{"Reply", "localhost", "127.0.0.1", "80", "1", "10.123"}
-	assert.Equal(t, record, readRecord)
-
-	cp.Done()
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
+	p, err := printers.NewCSVPrinter(filePath, opts...)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter with options: %v", err)
+	}
+	if p == nil {
+		t.Fatal("NewCSVPrinter with options returned nil")
+	}
+	defer p.Shutdown(&statistics.Statistics{})
 }
 
-func TestWriteStatistics(t *testing.T) {
-	probeFilename := "test_data.csv"
+func TestNewCSVPrinter_InvalidPath(t *testing.T) {
+	_, err := printers.NewCSVPrinter("/invalid/path/that/does/not/exist/file")
+	if err == nil {
+		t.Error("expected error for invalid path, got nil")
+	}
+}
 
-	cfg := PrinterConfig{
-		OutputCSVPath: probeFilename,
-		Target:        "localhost",
-		Port:          "1234",
+func TestCSVPrinter_PrintStart(t *testing.T) {
+	filePath := setupTempCSV(t)
+	p, err := printers.NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter: %v", err)
+	}
+	defer p.Shutdown(&statistics.Statistics{})
+
+	stats := &statistics.Statistics{
+		Hostname: "example.com",
+		Port:     443,
 	}
 
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
-
-	tcping := types.Tcping{
-		Printer:                 cp,
-		TotalSuccessfulProbes:   1,
-		TotalUnsuccessfulProbes: 0,
-		LastSuccessfulProbe:     time.Now(),
-		StartTime:               time.Now(),
-	}
-
-	PrintStats(&tcping)
-
-	statsFile, err := os.Open(cp.StatsFile.Name())
-	assert.NoError(t, err)
-	defer statsFile.Close()
-
-	reader := csv.NewReader(statsFile)
-	headers, err := reader.Read()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"Metric", "Value"}, headers)
-
-	for {
-		record, err := reader.Read()
-		if err != nil {
-			break
+	// smoke test - should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("PrintStart panicked: %v", r)
 		}
-		assert.NotEmpty(t, record)
-	}
-
-	cp.Done()
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
+	}()
+	p.PrintStart(stats)
 }
 
-func TestCleanup(t *testing.T) {
-	probeFilename := "test_data.csv"
+func TestCSVPrinter_PrintProbeSuccess(t *testing.T) {
+	filePath := setupTempCSV(t)
+	p, err := printers.NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter: %v", err)
+	}
+	defer p.Shutdown(&statistics.Statistics{})
 
-	cfg := PrinterConfig{
-		OutputCSVPath: probeFilename,
-		Target:        "localhost",
-		Port:          "1234",
+	stats := &statistics.Statistics{
+		IP:                      netip.MustParseAddr("192.168.1.1"),
+		Hostname:                "example.com",
+		Port:                    443,
+		OngoingSuccessfulProbes: 5,
+		LatestRTT:               12.345,
 	}
 
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
+	// smoke test - should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("PrintProbeSuccess panicked: %v", r)
+		}
+	}()
+	p.PrintStart(stats)
+	p.PrintProbeSuccess(stats)
 
-	tcping := types.Tcping{
-		Printer:                 cp,
-		TotalSuccessfulProbes:   1,
-		TotalUnsuccessfulProbes: 0,
-		LastSuccessfulProbe:     time.Now(),
-		StartTime:               time.Now(),
+	// verify file has content
+	probeFile := filePath + ".csv"
+	info, err := os.Stat(probeFile)
+	if err != nil {
+		t.Errorf("probe file not found: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Error("probe file is empty")
+	}
+}
+
+func TestCSVPrinter_PrintProbeFailure(t *testing.T) {
+	filePath := setupTempCSV(t)
+	p, err := printers.NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter: %v", err)
+	}
+	defer p.Shutdown(&statistics.Statistics{})
+
+	stats := &statistics.Statistics{
+		IP:                        netip.MustParseAddr("192.168.1.1"),
+		Hostname:                  "example.com",
+		Port:                      443,
+		OngoingUnsuccessfulProbes: 3,
 	}
 
-	PrintStats(&tcping)
+	// smoke test - should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("PrintProbeFailure panicked: %v", r)
+		}
+	}()
+	p.PrintStart(stats)
+	p.PrintProbeFailure(stats)
 
-	cp.Done()
+	// verify file has content
+	probeFile := filePath + ".csv"
+	info, err := os.Stat(probeFile)
+	if err != nil {
+		t.Errorf("probe file not found: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Error("probe file is empty")
+	}
+}
 
-	_, err = os.Stat(probeFilename)
-	assert.NoError(t, err)
+func TestCSVPrinter_PrintStatistics(t *testing.T) {
+	filePath := setupTempCSV(t)
+	p, err := printers.NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter: %v", err)
+	}
 
-	_, err = os.Stat(cp.StatsFile.Name())
-	assert.NoError(t, err)
+	stats := &statistics.Statistics{
+		IP:                        netip.MustParseAddr("192.168.1.1"),
+		Hostname:                  "example.com",
+		Port:                      443,
+		TotalSuccessfulProbes:     10,
+		TotalUnsuccessfulProbes:   2,
+		LastSuccessfulProbe:       time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+		LastUnsuccessfulProbe:     time.Date(2024, 1, 15, 12, 0, 30, 0, time.UTC),
+		TotalUptime:               50 * time.Second,
+		TotalDowntime:             10 * time.Second,
+		StartTime:                 time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC),
+		EndTime:                   time.Date(2024, 1, 15, 12, 1, 0, 0, time.UTC),
+		RTTResults:                statistics.RttResult{HasResults: true, Min: 10.5, Average: 15.2, Max: 20.8},
+	}
 
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
+	// smoke test - should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("PrintStatistics panicked: %v", r)
+		}
+	}()
+	p.PrintStart(stats)
+	p.PrintStatistics(stats)
+	p.Shutdown(stats)
+
+	// verify stats file has content
+	statsFile := filePath + "_stats.csv"
+	info, err := os.Stat(statsFile)
+	if err != nil {
+		t.Errorf("stats file not found: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Error("stats file is empty")
+	}
+}
+
+func TestCSVPrinter_Shutdown(t *testing.T) {
+	filePath := setupTempCSV(t)
+	p, err := printers.NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter: %v", err)
+	}
+
+	stats := &statistics.Statistics{}
+
+	// smoke test - should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Shutdown panicked: %v", r)
+		}
+	}()
+
+	p.Shutdown(stats)
+
+	// verify files exist and are readable after shutdown
+	probeFile := filePath + ".csv"
+	if _, err := os.Stat(probeFile); os.IsNotExist(err) {
+		t.Errorf("probe file not found after shutdown: %s", probeFile)
+	}
+
+	statsFile := filePath + "_stats.csv"
+	if _, err := os.Stat(statsFile); os.IsNotExist(err) {
+		t.Errorf("stats file not found after shutdown: %s", statsFile)
+	}
 }

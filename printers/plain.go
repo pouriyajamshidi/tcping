@@ -3,26 +3,36 @@ package printers
 import (
 	"fmt"
 	"math"
-	"os"
+	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-	"github.com/pouriyajamshidi/tcping/v3/probes/statistics"
+	"github.com/pouriyajamshidi/tcping/v3/option"
+	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
 // PlainPrinter is a printer that prints the TCPing results in a simple, plain text format.
-type PlainPrinter struct{}
-
-// NewPlainPrinter creates a new PlainPrinter instance with an optional timestamp setting.
-func NewPlainPrinter() *PlainPrinter {
-	return &PlainPrinter{}
+type PlainPrinter struct {
+	opt options
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
+type PlainPrinterOption = option.Option[PlainPrinter]
+
+func (p *PlainPrinter) options() *options {
+	return &p.opt
+}
+
+// NewPlainPrinter creates a new PlainPrinter instance with an optional timestamp setting.
+func NewPlainPrinter(opts ...PlainPrinterOption) *PlainPrinter {
+	p := &PlainPrinter{}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
+// Shutdown performs final cleanup for the printer.
 func (p *PlainPrinter) Shutdown(s *statistics.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
-	os.Exit(0)
+	// no cleanup needed for plain printer
 }
 
 // PrintStart prints the start message indicating the TCPing operation on the given hostname and port.
@@ -32,127 +42,81 @@ func (p *PlainPrinter) PrintStart(s *statistics.Statistics) {
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
 func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
-	timestamp := ""
-	if s.WithTimestamp {
-		timestamp = s.StartTimeFormatted()
+	if p.opt.ShowFailuresOnly {
+		return
 	}
 
-	if s.Hostname == "" {
-		if timestamp == "" {
-			if s.WithSourceAddress {
-				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%s ms\n",
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			if s.WithSourceAddress {
-				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
-	} else {
-		if timestamp == "" {
-			if s.WithSourceAddress {
-				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			if s.WithSourceAddress {
-				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
+	if p.opt.ShowTimestamp {
+		format.WriteString("%s ")
+		args = append(args, s.LastSuccessfulProbe.Format(time.DateTime))
 	}
+
+	// reply from
+	format.WriteString("Reply from ")
+
+	// hostname/IP
+	if s.Hostname == "" {
+		format.WriteString("%s")
+		args = append(args, s.IP.String())
+	} else {
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP.String())
+	}
+
+	// port
+	format.WriteString(" on port %d")
+	args = append(args, s.Port)
+
+	// source address (optional)
+	if p.opt.ShowSourceAddress {
+		format.WriteString(" using %s")
+		args = append(args, s.SourceAddr())
+	}
+
+	// connection count and RTT
+	format.WriteString(" TCP_conn=%d time=%s ms\n")
+	args = append(args, s.OngoingSuccessfulProbes, s.RTTStr())
+
+	fmt.Printf(format.String(), args...)
 }
 
 // PrintProbeFailure prints a failure message for a probe.
 func (p *PlainPrinter) PrintProbeFailure(s *statistics.Statistics) {
-	timestamp := ""
-	if s.WithTimestamp {
-		timestamp = s.StartTimeFormatted()
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
+	if p.opt.ShowTimestamp {
+		format.WriteString("%s ")
+		args = append(args, s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
+	// no reply from
+	format.WriteString("No reply from ")
+
+	// hostname/IP
 	if s.Hostname == "" {
-		if timestamp == "" {
-			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n",
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		} else {
-			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n",
-				timestamp,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		}
+		format.WriteString("%s")
+		args = append(args, s.IP)
 	} else {
-		if timestamp == "" {
-			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n",
-				s.Hostname,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		} else {
-			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n",
-				timestamp,
-				s.Hostname,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		}
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP)
 	}
+
+	// port and connection count
+	format.WriteString(" on port %d TCP_conn=%d\n")
+	args = append(args, s.Port, s.OngoingUnsuccessfulProbes)
+
+	fmt.Printf(format.String(), args...)
 }
 
 // PrintTotalDownTime prints the total downtime when no response is received.
 func (p *PlainPrinter) PrintTotalDownTime(s *statistics.Statistics) {
-	fmt.Printf("No response received for %s\n", utils.DurationToString(s.DownTime))
+	fmt.Printf("No response received for %s\n", statistics.DurationToString(s.DownTime))
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
@@ -206,11 +170,11 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 		fmt.Printf("%v\n", s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
-	fmt.Printf("total uptime: %s\n", utils.DurationToString(s.TotalUptime))
-	fmt.Printf("total downtime: %s\n", utils.DurationToString(s.TotalDowntime))
+	fmt.Printf("total uptime: %s\n", statistics.DurationToString(s.TotalUptime))
+	fmt.Printf("total downtime: %s\n", statistics.DurationToString(s.TotalDowntime))
 
 	if s.LongestUp.Duration != 0 {
-		uptime := utils.DurationToString(s.LongestUp.Duration)
+		uptime := statistics.DurationToString(s.LongestUp.Duration)
 
 		fmt.Printf("longest consecutive uptime:   ")
 		fmt.Printf("%v ", uptime)
@@ -219,7 +183,7 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 	}
 
 	if s.LongestDown.Duration != 0 {
-		downtime := utils.DurationToString(s.LongestDown.Duration)
+		downtime := statistics.DurationToString(s.LongestDown.Duration)
 
 		fmt.Printf("longest consecutive downtime: %v ", downtime)
 		fmt.Printf("from %v ", s.LongestDown.Start.Format(time.DateTime))
@@ -238,7 +202,7 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 
 		if len(s.HostnameChanges) >= 2 {
 			fmt.Printf("IP address changes:\n")
-			for i := 0; i < len(s.HostnameChanges)-1; i++ {
+			for i := range len(s.HostnameChanges) - 1 {
 				fmt.Printf("  from %s", s.HostnameChanges[i].Addr.String())
 				fmt.Printf(" to %s", s.HostnameChanges[i+1].Addr.String())
 				fmt.Printf(" at %v\n", s.HostnameChanges[i+1].When.Format(time.DateTime))
@@ -257,7 +221,7 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 	fmt.Printf("--------------------------------------\n")
 	fmt.Printf("TCPing started at: %v\n", s.StartTime.Format(time.DateTime))
 
-	/* If the program was not terminated, no need to show the end time */
+	// if the program was not terminated, no need to show the end time
 	if !s.EndTime.IsZero() {
 		fmt.Printf("TCPing ended at:   %v\n", s.EndTime.Format(time.DateTime))
 	}
