@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/option"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
@@ -34,22 +36,44 @@ type CSVPrinter struct {
 	StatsWriter *csv.Writer
 	ProbeFile   *os.File
 	StatsFile   *os.File
+	opt         options
+}
+
+type CSVPrinterOption = option.Option[CSVPrinter]
+
+func (p *CSVPrinter) options() *options {
+	return &p.opt
+}
+
+// WithFilePath configures the CSV file path for output.
+func WithFilePath(filePath string) CSVPrinterOption {
+	return func(p *CSVPrinter) {
+		probeFilename := addCSVExtension(filePath, false)
+		probeFile, _ := os.OpenFile(probeFilename, fileFlag, filePermission)
+		p.ProbeFile = probeFile
+		p.ProbeWriter = csv.NewWriter(probeFile)
+
+		statsFilename := addCSVExtension(filePath, true)
+		statsFile, _ := os.OpenFile(statsFilename, fileFlag, filePermission)
+		p.StatsFile = statsFile
+		p.StatsWriter = csv.NewWriter(statsFile)
+	}
 }
 
 // NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
-func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
+func NewCSVPrinter(filePath string, opts ...CSVPrinterOption) (*CSVPrinter, error) {
 	probeFilename := addCSVExtension(filePath, false)
 
 	probeFile, err := os.OpenFile(probeFilename, fileFlag, filePermission)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating the probe CSV file %s: %w", probeFilename, err)
+		return nil, fmt.Errorf("create probe CSV file %s: %w", probeFilename, err)
 	}
 
 	statsFilename := addCSVExtension(filePath, true)
 
 	statsFile, err := os.OpenFile(statsFilename, fileFlag, filePermission)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating the probe CSV file %s: %w", statsFilename, err)
+		return nil, fmt.Errorf("create stats CSV file %s: %w", statsFilename, err)
 	}
 
 	p := &CSVPrinter{
@@ -59,13 +83,18 @@ func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
 		StatsFile:   statsFile,
 	}
 
+	for _, opt := range opts {
+		opt(p)
+	}
+
 	return p, nil
 }
 
 func addCSVExtension(filename string, withStatsExt bool) string {
 	if withStatsExt {
-		// TODO: account for when there are more than one dots
-		return strings.Split(filename, ".")[0] + "_stats.csv"
+		// Remove .csv extension if present, then add _stats.csv
+		base := strings.TrimSuffix(filename, ".csv")
+		return base + "_stats.csv"
 	}
 
 	if strings.HasSuffix(filename, ".csv") {
@@ -94,31 +123,21 @@ func (p *CSVPrinter) Done() {
 	}
 }
 
-// Shutdown sets the end time, prints statistics, calls Done() and exits the program.
+// Shutdown performs final cleanup for the printer.
 func (p *CSVPrinter) Shutdown(s *statistics.Statistics) {
-	s.EndTime = time.Now()
-	if s.DestWasDown {
-		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
-
-	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
-	p.PrintStatistics(s)
 	p.Done()
-	os.Exit(0)
 }
 
 func (p *CSVPrinter) writeProbeHeader(s *statistics.Statistics) error {
 	headers := []string{}
 
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		headers = append(headers, colTimestamp)
 	}
 
 	headers = append(headers, colStatus, colHostname, colIP, colPort)
 
-	if s.WithSourceAddress {
+	if p.opt.ShowSourceAddress {
 		headers = append(headers, colSourceAddress)
 	}
 
@@ -150,7 +169,6 @@ func (p *CSVPrinter) writeStatsHeader() error {
 
 // PrintStart logs the beginning of a TCPing session.
 func (p *CSVPrinter) PrintStart(s *statistics.Statistics) {
-	// TODO: Is this a good place to put these?
 	p.writeProbeHeader(s)
 	p.writeStatsHeader()
 
@@ -159,9 +177,13 @@ func (p *CSVPrinter) PrintStart(s *statistics.Statistics) {
 
 // PrintProbeSuccess logs a successful probe to the CSV file.
 func (p *CSVPrinter) PrintProbeSuccess(s *statistics.Statistics) {
+	if p.opt.ShowFailuresOnly {
+		return
+	}
+
 	record := []string{}
 
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		record = append(record, s.StartTimeFormatted())
 	}
 
@@ -170,16 +192,14 @@ func (p *CSVPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		"Reply",
 		s.Hostname,
 		s.IP.String(),
-		fmt.Sprint(s.Port),
+		strconv.FormatUint(uint64(s.Port), 10),
 	)
 
-	if s.WithSourceAddress {
-		// TODO: Is there a better way than Sprint?
-		record = append(record, s.SourceAddr(), fmt.Sprint(s.OngoingSuccessfulProbes), s.RTTStr())
+	if p.opt.ShowSourceAddress {
+		record = append(record, s.SourceAddr(), strconv.FormatUint(uint64(s.OngoingSuccessfulProbes), 10), s.RTTStr())
 	}
 
-	// TODO: Is there a better way than Sprint?
-	record = append(record, fmt.Sprint(s.OngoingSuccessfulProbes), s.RTTStr())
+	record = append(record, strconv.FormatUint(uint64(s.OngoingSuccessfulProbes), 10), s.RTTStr())
 
 	if err := p.ProbeWriter.Write(record); err != nil {
 		p.PrintError("Failed to write success record: %w", err)
@@ -192,7 +212,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 func (p *CSVPrinter) PrintProbeFailure(s *statistics.Statistics) {
 	record := []string{}
 
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		record = append(record, s.StartTimeFormatted())
 	}
 
@@ -228,10 +248,10 @@ func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 
 	stats := [][]string{
 		{"Timestamp", timestamp},
-		{"IP Address", s.IPStr()},
+		{"IP Address", s.IP.String()},
 	}
 
-	if s.IPStr() != s.Hostname {
+	if s.IP.String() != s.Hostname {
 		stats = append(stats, []string{"Hostname", s.Hostname})
 	}
 

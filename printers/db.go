@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/pouriyajamshidi/tcping/v3/option"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -133,8 +134,8 @@ type dbData struct {
 	ongoingUnsuccessfulProbes uint
 }
 
-func (d *dbData) toArgs() []interface{} {
-	return []interface{}{
+func (d *dbData) toArgs() []any {
+	return []any{
 		d.eventType,
 		d.success,
 		d.timestamp,
@@ -179,8 +180,8 @@ type dbStats struct {
 	endTimestamp                    string
 }
 
-func (d *dbStats) toArgs() []interface{} {
-	return []interface{}{
+func (d *dbStats) toArgs() []any {
+	return []any{
 		d.eventType,
 		d.timestamp,
 		d.ipAddr,
@@ -217,11 +218,18 @@ type DatabasePrinter struct {
 	probeTableName string
 	statsTableName string
 	FilePath       string
+	opt            options
+}
+
+type DatabasePrinterOption = option.Option[DatabasePrinter]
+
+func (p *DatabasePrinter) options() *options {
+	return &p.opt
 }
 
 // NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data table, and returns a pointer to it.
 // If any error occurs during database creation or table initialization, the function exits the program.
-func NewDatabasePrinter(target, port, filePath string) (*DatabasePrinter, error) {
+func NewDatabasePrinter(target, port, filePath string, opts ...DatabasePrinterOption) (*DatabasePrinter, error) {
 	probeTableName := sanitizeTableName(target, port)
 	statsTableName := probeTableName + "_stats"
 
@@ -229,26 +237,31 @@ func NewDatabasePrinter(target, port, filePath string) (*DatabasePrinter, error)
 
 	conn, err := sqlite.OpenConn(filePath, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
-		return nil, fmt.Errorf("\nError creating the database %q: %s", filePath, err)
+		return nil, fmt.Errorf("\ncreate database %q: %w", filePath, err)
 	}
 
 	tableSchema := fmt.Sprintf(dataTableSchema, probeTableName)
 	if err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{}); err != nil {
-		fmt.Printf("\nError creating the data table: %s\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("\ncreate data table: %w", err)
 	}
 
 	statsTableSchema := fmt.Sprintf(statsTableSchema, statsTableName)
 	if err = sqlitex.Execute(conn, statsTableSchema, &sqlitex.ExecOptions{}); err != nil {
-		return nil, fmt.Errorf("\nError creating the statistics table: %s", err)
+		return nil, fmt.Errorf("\ncreate statistics table: %w", err)
 	}
 
-	return &DatabasePrinter{
+	p := &DatabasePrinter{
 		Conn:           conn,
 		probeTableName: probeTableName,
 		statsTableName: statsTableName,
 		FilePath:       filePath,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p, nil
 }
 
 func addDbExtension(filename string) string {
@@ -288,19 +301,9 @@ func (p *DatabasePrinter) Done() {
 	p.Conn.Close()
 }
 
-// Shutdown sets the end time, prints statistics, calls Done() and exits the program.
+// Shutdown performs final cleanup for the printer.
 func (p *DatabasePrinter) Shutdown(s *statistics.Statistics) {
-	s.EndTime = time.Now()
-	if s.DestWasDown {
-		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
-
-	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
-	p.PrintStatistics(s)
 	p.Done()
-	os.Exit(0)
 }
 
 // PrintStart prints a message indicating that TCPing has started for the given hostname and port.
@@ -310,8 +313,12 @@ func (p *DatabasePrinter) PrintStart(s *statistics.Statistics) {
 
 // PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintProbeSuccess(s *statistics.Statistics) {
+	if p.opt.ShowFailuresOnly {
+		return
+	}
+
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
@@ -321,30 +328,30 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		ongoingSuccessfulProbes: s.OngoingSuccessfulProbes,
 	}
 
-	if s.Hostname == s.IPStr() {
+	if s.Hostname == s.IP.String() {
 		data.destIsIP = "true"
 
 		if timestamp == "" {
-			if s.WithSourceAddress {
-				data.ipAddr = s.IPStr()
+			if p.opt.ShowSourceAddress {
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.sourceAddr = s.SourceAddr()
 				data.time = s.RTTStr()
 			} else {
-				data.ipAddr = s.IPStr()
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.time = s.RTTStr()
 			}
 		} else {
 			data.timestamp = timestamp
 
-			if s.WithSourceAddress {
-				data.ipAddr = s.IPStr()
+			if p.opt.ShowSourceAddress {
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.sourceAddr = s.SourceAddr()
 				data.time = s.RTTStr()
 			} else {
-				data.ipAddr = s.IPStr()
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.time = s.RTTStr()
 			}
@@ -353,28 +360,28 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		data.destIsIP = "false"
 
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				data.hostname = s.Hostname
-				data.ipAddr = s.IPStr()
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.sourceAddr = s.SourceAddr()
 				data.time = s.RTTStr()
 			} else {
 				data.hostname = s.Hostname
-				data.ipAddr = s.IPStr()
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.time = s.RTTStr()
 			}
 		} else {
 			data.timestamp = timestamp
 
-			if s.WithSourceAddress {
-				data.ipAddr = s.IPStr()
+			if p.opt.ShowSourceAddress {
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.sourceAddr = s.SourceAddr()
 				data.time = s.RTTStr()
 			} else {
-				data.ipAddr = s.IPStr()
+				data.ipAddr = s.IP.String()
 				data.port = s.Port
 				data.time = s.RTTStr()
 			}
@@ -393,7 +400,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *statistics.Statistics) {
 // PrintProbeFailure satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintProbeFailure(s *statistics.Statistics) {
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
@@ -403,15 +410,15 @@ func (p *DatabasePrinter) PrintProbeFailure(s *statistics.Statistics) {
 		ongoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
 	}
 
-	if s.Hostname == s.IPStr() {
+	if s.Hostname == s.IP.String() {
 		data.destIsIP = "true"
 
 		if timestamp == "" {
-			data.ipAddr = s.IPStr()
+			data.ipAddr = s.IP.String()
 			data.port = s.Port
 		} else {
 			data.timestamp = timestamp
-			data.ipAddr = s.IPStr()
+			data.ipAddr = s.IP.String()
 			data.port = s.Port
 		}
 	} else {
@@ -419,12 +426,12 @@ func (p *DatabasePrinter) PrintProbeFailure(s *statistics.Statistics) {
 
 		if timestamp == "" {
 			data.hostname = s.Hostname
-			data.ipAddr = s.IPStr()
+			data.ipAddr = s.IP.String()
 			data.port = s.Port
 		} else {
 			data.timestamp = timestamp
 			data.hostname = s.Hostname
-			data.ipAddr = s.IPStr()
+			data.ipAddr = s.IP.String()
 			data.port = s.Port
 		}
 	}
@@ -455,7 +462,7 @@ func (p *DatabasePrinter) PrintStatistics(s *statistics.Statistics) {
 	data := dbStats{
 		eventType:                StatisticsEvent,
 		timestamp:                time.Now().Format(time.DateTime),
-		ipAddr:                   s.IPStr(),
+		ipAddr:                   s.IP.String(),
 		hostname:                 s.Hostname,
 		port:                     s.Port,
 		totalSuccessfulPackets:   s.TotalSuccessfulProbes,

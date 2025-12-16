@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/option"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
@@ -74,32 +75,36 @@ type JSONData struct {
 // JSONPrinter is a struct that holds a JSON encoder to print structured JSON output.
 type JSONPrinter struct {
 	encoder *json.Encoder
+	opt     options
+}
+
+type JSONPrinterOption = option.Option[JSONPrinter]
+
+func (p *JSONPrinter) options() *options {
+	return &p.opt
+}
+
+// WithPrettyJSON enables pretty-printed JSON output with indentation.
+func WithPrettyJSON() JSONPrinterOption {
+	return func(p *JSONPrinter) {
+		p.encoder.SetIndent("", "\t")
+	}
 }
 
 // NewJSONPrinter creates a new JSONPrinter instance.
-// If prettify is true, the JSON output will be formatted with indentation.
-func NewJSONPrinter(pretty bool) *JSONPrinter {
-	encoder := json.NewEncoder(os.Stdout)
-
-	if pretty {
-		encoder.SetIndent("", "\t")
+func NewJSONPrinter(opts ...JSONPrinterOption) *JSONPrinter {
+	p := &JSONPrinter{
+		encoder: json.NewEncoder(os.Stdout),
 	}
-
-	return &JSONPrinter{encoder: encoder}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
+// Shutdown performs final cleanup for the printer.
 func (p *JSONPrinter) Shutdown(s *statistics.Statistics) {
-	s.EndTime = time.Now()
-	if s.DestWasDown {
-		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
-
-	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
-	p.PrintStatistics(s)
-	os.Exit(0)
+	// no cleanup needed for JSON printer
 }
 
 // PrintStart prints the initial message before doing probes.
@@ -114,6 +119,10 @@ func (p *JSONPrinter) PrintStart(s *statistics.Statistics) {
 
 // PrintProbeSuccess prints successful TCP probe replies in JSON format.
 func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
+	if p.opt.ShowFailuresOnly {
+		return
+	}
+
 	// so that *bool fields do not get omitted
 	f := false
 	t := true
@@ -121,7 +130,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 	data := JSONData{
 		Type:                    probeEvent,
 		Hostname:                s.Hostname,
-		IPAddr:                  s.IPStr(),
+		IPAddr:                  s.IP.String(),
 		Port:                    s.Port,
 		Time:                    s.RTTStr(),
 		DestIsIP:                &t,
@@ -130,15 +139,15 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 	}
 
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
-	if s.Hostname == s.IPStr() {
+	if s.Hostname == s.IP.String() {
 		data.Hostname = "" // to omit it from the output
 
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				data.Message = fmt.Sprintf("Reply from %s on port %d using %s TCP_conn=%d time=%s ms",
 					s.IP.String(),
 					s.Port,
@@ -155,7 +164,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		} else {
 			data.Timestamp = timestamp
 
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				data.Message = fmt.Sprintf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms",
 					timestamp,
 					s.IP.String(),
@@ -176,7 +185,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		data.DestIsIP = &f
 
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				data.Message = fmt.Sprintf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms",
 					s.Hostname,
 					s.IP.String(),
@@ -195,7 +204,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		} else {
 			data.Timestamp = timestamp
 
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				data.Message = fmt.Sprintf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms",
 					timestamp,
 					s.Hostname,
@@ -236,7 +245,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *statistics.Statistics) {
 	}
 
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
@@ -305,7 +314,7 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 func (p *JSONPrinter) PrintStatistics(s *statistics.Statistics) {
 	data := JSONData{
 		Type:                     statisticsEvent,
-		IPAddr:                   s.IPStr(),
+		IPAddr:                   s.IP.String(),
 		Port:                     s.Port,
 		Hostname:                 s.Hostname,
 		TotalSuccessfulPackets:   s.TotalSuccessfulProbes,

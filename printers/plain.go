@@ -3,32 +3,35 @@ package printers
 import (
 	"fmt"
 	"math"
-	"os"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/option"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
 // PlainPrinter is a printer that prints the TCPing results in a simple, plain text format.
-type PlainPrinter struct{}
-
-// NewPlainPrinter creates a new PlainPrinter instance with an optional timestamp setting.
-func NewPlainPrinter() *PlainPrinter {
-	return &PlainPrinter{}
+type PlainPrinter struct {
+	opt options
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
-func (p *PlainPrinter) Shutdown(s *statistics.Statistics) {
-	s.EndTime = time.Now()
-	if s.DestWasDown {
-		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
+type PlainPrinterOption = option.Option[PlainPrinter]
 
-	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
-	p.PrintStatistics(s)
-	os.Exit(0)
+func (p *PlainPrinter) options() *options {
+	return &p.opt
+}
+
+// NewPlainPrinter creates a new PlainPrinter instance with an optional timestamp setting.
+func NewPlainPrinter(opts ...PlainPrinterOption) *PlainPrinter {
+	p := &PlainPrinter{}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
+// Shutdown performs final cleanup for the printer.
+func (p *PlainPrinter) Shutdown(s *statistics.Statistics) {
+	// no cleanup needed for plain printer
 }
 
 // PrintStart prints the start message indicating the TCPing operation on the given hostname and port.
@@ -38,14 +41,18 @@ func (p *PlainPrinter) PrintStart(s *statistics.Statistics) {
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
 func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
+	if p.opt.ShowFailuresOnly {
+		return
+	}
+
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
 	if s.Hostname == "" {
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 					s.IP.String(),
 					s.Port,
@@ -60,7 +67,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 					s.RTTStr())
 			}
 		} else {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 					timestamp,
 					s.IP.String(),
@@ -79,7 +86,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		}
 	} else {
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 					s.Hostname,
 					s.IP.String(),
@@ -96,7 +103,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 					s.RTTStr())
 			}
 		} else {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 					timestamp,
 					s.Hostname,
@@ -121,7 +128,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 // PrintProbeFailure prints a failure message for a probe.
 func (p *PlainPrinter) PrintProbeFailure(s *statistics.Statistics) {
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
@@ -263,7 +270,7 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 	fmt.Printf("--------------------------------------\n")
 	fmt.Printf("TCPing started at: %v\n", s.StartTime.Format(time.DateTime))
 
-	/* If the program was not terminated, no need to show the end time */
+	// if the program was not terminated, no need to show the end time
 	if !s.EndTime.IsZero() {
 		fmt.Printf("TCPing ended at:   %v\n", s.EndTime.Format(time.DateTime))
 	}

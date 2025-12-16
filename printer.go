@@ -66,19 +66,57 @@ func NewPrinter(cfg PrinterConfig) (Printer, error) {
 
 	switch {
 	case cfg.OutputJSON:
-		return printers.NewJSONPrinter(cfg.PrettyJSON), nil
+		opts := []printers.JSONPrinterOption{}
+		if cfg.PrettyJSON {
+			opts = append(opts, printers.WithPrettyJSON())
+		}
+		if cfg.WithTimestamp {
+			opts = append(opts, printers.WithTimestamp[*printers.JSONPrinter]())
+		}
+		if cfg.WithSourceAddress {
+			opts = append(opts, printers.WithSourceAddress[*printers.JSONPrinter]())
+		}
+		return printers.NewJSONPrinter(opts...), nil
 
 	case cfg.OutputDBPath != "":
-		return printers.NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
+		opts := []printers.DatabasePrinterOption{}
+		if cfg.WithTimestamp {
+			opts = append(opts, printers.WithTimestamp[*printers.DatabasePrinter]())
+		}
+		if cfg.WithSourceAddress {
+			opts = append(opts, printers.WithSourceAddress[*printers.DatabasePrinter]())
+		}
+		return printers.NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath, opts...)
 
 	case cfg.OutputCSVPath != "":
-		return printers.NewCSVPrinter(cfg.OutputCSVPath)
+		opts := []printers.CSVPrinterOption{}
+		if cfg.WithTimestamp {
+			opts = append(opts, printers.WithTimestamp[*printers.CSVPrinter]())
+		}
+		if cfg.WithSourceAddress {
+			opts = append(opts, printers.WithSourceAddress[*printers.CSVPrinter]())
+		}
+		return printers.NewCSVPrinter(cfg.OutputCSVPath, opts...)
 
 	case cfg.NoColor:
-		return printers.NewPlainPrinter(), nil
+		opts := []printers.PlainPrinterOption{}
+		if cfg.WithTimestamp {
+			opts = append(opts, printers.WithTimestamp[*printers.PlainPrinter]())
+		}
+		if cfg.WithSourceAddress {
+			opts = append(opts, printers.WithSourceAddress[*printers.PlainPrinter]())
+		}
+		return printers.NewPlainPrinter(opts...), nil
 
 	default:
-		return printers.NewColorPrinter(), nil
+		opts := []printers.ColorPrinterOption{}
+		if cfg.WithTimestamp {
+			opts = append(opts, printers.WithTimestamp[*printers.ColorPrinter]())
+		}
+		if cfg.WithSourceAddress {
+			opts = append(opts, printers.WithSourceAddress[*printers.ColorPrinter]())
+		}
+		return printers.NewColorPrinter(opts...), nil
 	}
 }
 

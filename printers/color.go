@@ -3,10 +3,10 @@ package printers
 
 import (
 	"math"
-	"os"
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/pouriyajamshidi/tcping/v3/option"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
@@ -24,26 +24,28 @@ var (
 
 // ColorPrinter provides functionality for printing messages with color support.
 // It optionally includes a timestamp in the output if ShowTimestamp is enabled.
-type ColorPrinter struct{}
-
-// NewColorPrinter creates a new ColorPrinter instance.
-// The showTimestamp parameter controls whether timestamps should be included in printed messages.
-func NewColorPrinter() *ColorPrinter {
-	return &ColorPrinter{}
+type ColorPrinter struct {
+	opt options
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
-func (p *ColorPrinter) Shutdown(s *statistics.Statistics) {
-	s.EndTime = time.Now()
-	if s.DestWasDown {
-		statistics.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		statistics.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
+type ColorPrinterOption = option.Option[ColorPrinter]
 
-	s.RTTResults = statistics.CalcMinAvgMaxRttTime(s.RTT)
-	p.PrintStatistics(s)
-	os.Exit(0)
+func (p *ColorPrinter) options() *options {
+	return &p.opt
+}
+
+// NewColorPrinter creates a new ColorPrinter instance.
+func NewColorPrinter(opts ...ColorPrinterOption) *ColorPrinter {
+	p := &ColorPrinter{}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
+// Shutdown performs final cleanup for the printer.
+func (p *ColorPrinter) Shutdown(s *statistics.Statistics) {
+	// no cleanup needed for color printer
 }
 
 // PrintStart prints a message indicating the start of a TCP ping attempt.
@@ -65,14 +67,18 @@ func (p *ColorPrinter) PrintStart(s *statistics.Statistics) {
 //   - streak: The number of consecutive successful probes.
 //   - rtt: The round-trip time of the probe in milliseconds (3 decimal points).
 func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
+	if p.opt.ShowFailuresOnly {
+		return
+	}
+
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
-	if s.Hostname == s.IPStr() {
+	if s.Hostname == s.IP.String() {
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				ColorLightGreen("Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 					s.IP.String(),
 					s.Port,
@@ -87,7 +93,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 					s.RTTStr())
 			}
 		} else {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				ColorLightGreen("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
 					timestamp,
 					s.IP.String(),
@@ -106,7 +112,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		}
 	} else {
 		if timestamp == "" {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				ColorLightGreen("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 					s.Hostname,
 					s.IP.String(),
@@ -123,7 +129,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 					s.RTTStr())
 			}
 		} else {
-			if s.WithSourceAddress {
+			if p.opt.ShowSourceAddress {
 				ColorLightGreen("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
 					timestamp,
 					s.Hostname,
@@ -153,7 +159,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 //   - streak: The number of consecutive failed probes.
 func (p *ColorPrinter) PrintProbeFailure(s *statistics.Statistics) {
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.opt.ShowTimestamp {
 		timestamp = s.StartTimeFormatted()
 	}
 
@@ -221,7 +227,7 @@ func (p *ColorPrinter) PrintStatistics(s *statistics.Statistics) {
 	if !s.DestIsIP {
 		ColorYellow("\n--- %s (%s) TCPing statistics ---\n",
 			s.Hostname,
-			s.IPStr())
+			s.IP.String())
 	} else {
 		ColorYellow("\n--- %s TCPing statistics ---\n", s.Hostname)
 	}
@@ -336,7 +342,7 @@ func (p *ColorPrinter) PrintStatistics(s *statistics.Statistics) {
 	ColorYellow("--------------------------------------\n")
 	ColorYellow("TCPing started at: %v\n", s.StartTimeFormatted())
 
-	/* If the program was not terminated, no need to show the end time */
+	// if the program was not terminated, no need to show the end time
 	if !s.EndTime.IsZero() {
 		ColorYellow("TCPing ended at:   %v\n", s.EndTimeFormatted())
 	}

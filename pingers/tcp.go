@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/options"
+	"github.com/pouriyajamshidi/tcping/v3/option"
 )
 
 // TCPPinger implements the Pinger interface for TCP connectivity testing.
@@ -19,8 +19,8 @@ type TCPPinger struct {
 }
 
 // IP implements Pinger.
-func (t *TCPPinger) IP() string {
-	return t.ip.String()
+func (t *TCPPinger) IP() netip.Addr {
+	return t.ip
 }
 
 const tcp = "tcp"
@@ -44,7 +44,7 @@ func (t *TCPPinger) Port() uint16 {
 	return t.port
 }
 
-type TCPOptions = options.Option[TCPPinger]
+type TCPOptions = option.Option[TCPPinger]
 
 // NewTCPPinger creates a new TCP pinger for the specified IP address and port with optional configuration.
 func NewTCPPinger(ip netip.Addr, port uint16, opts ...TCPOptions) *TCPPinger {

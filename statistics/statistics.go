@@ -20,46 +20,55 @@ const (
 )
 
 type Statistics struct {
-	IP                        netip.Addr
-	Port                      uint16
-	Protocol                  protocol
-	Hostname                  string
-	DestWasDown               bool
-	DestIsIP                  bool
-	LocalAddr                 net.Addr
-	StartTime                 time.Time
-	EndTime                   time.Time
-	UpTime                    time.Duration
-	DownTime                  time.Duration
+	// Target information
+	IP       netip.Addr
+	Port     uint16
+	Protocol protocol
+	Hostname string
+	DestIsIP bool
+
+	// Network information
+	LocalAddr net.Addr
+
+	// Time tracking
+	StartTime             time.Time
+	EndTime               time.Time
+	UpTime                time.Duration
+	StartOfUptime         time.Time
+	StartOfDowntime       time.Time
+	LastSuccessfulProbe   time.Time
+	LastUnsuccessfulProbe time.Time
+
+	// Uptime/Downtime tracking
+	DestWasDown   bool
+	TotalUptime   time.Duration
+	TotalDowntime time.Duration
+	DownTime      time.Duration // most recent downtime period (for printing)
+	LongestUp     LongestTime
+	LongestDown   LongestTime
+
+	// Probe counters
 	Successful                int
 	Failed                    int
 	TotalSuccessfulProbes     uint
 	TotalUnsuccessfulProbes   uint
-	LastSuccessfulProbe       time.Time     // Timestamp of the last successful probe.
-	LastUnsuccessfulProbe     time.Time     // Timestamp of the last unsuccessful probe.
-	TotalDowntime             time.Duration // Total accumulated downtime.
-	TotalUptime               time.Duration // Total accumulated uptime.
-	StartOfUptime             time.Time     // Timestamp when the current uptime started.
-	StartOfDowntime           time.Time     // Timestamp when the current downtime started.
-	LongestUptime             LongestTime   // Data structure holding information about the longest uptime.
-	LongestDowntime           LongestTime   // Data structure holding information about the longest downtime.
-	HostnameChanges           []HostnameChange
-	RetriedHostnameLookups    uint
-	OngoingSuccessfulProbes   uint // Count of ongoing successful probes.
-	OngoingUnsuccessfulProbes uint // Count of ongoing unsuccessful probes.
-	LongestUp                 LongestTime
-	LongestDown               LongestTime
-	RTT                       []float32
-	LatestRTT                 float32
-	RTTResults                RttResult
-	HostChanges               []HostnameChange
-	HasResults                bool
-	WithTimestamp             bool
-	WithSourceAddress         bool
-}
+	OngoingSuccessfulProbes   uint
+	OngoingUnsuccessfulProbes uint
 
-func (s *Statistics) IPStr() string {
-	return s.IP.String()
+	// RTT tracking
+	RTT        []float32
+	LatestRTT  float32
+	RTTResults RttResult
+
+	// DNS tracking
+	HostnameChanges        []HostnameChange
+	RetriedHostnameLookups uint
+
+	// Display options
+	HasResults        bool
+	WithTimestamp     bool
+	WithSourceAddress bool
+	ShowFailuresOnly  bool
 }
 
 func (s *Statistics) PortStr() string {
@@ -112,8 +121,8 @@ type RttResult struct {
 
 // HostnameChange represents a change in the IP address associated with a hostname.
 type HostnameChange struct {
-	Addr netip.Addr `json:"addr,omitempty"` // New IP address associated with the hostname.
-	When time.Time  `json:"when,omitempty"` // Timestamp of when the change occurred.
+	Addr netip.Addr `json:"addr"` // New IP address associated with the hostname.
+	When time.Time  `json:"when"` // Timestamp of when the change occurred.
 }
 
 // calcMinAvgMaxRttTime calculates min, avg and max RTT values

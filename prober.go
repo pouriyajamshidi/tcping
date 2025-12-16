@@ -3,10 +3,9 @@ package tcping
 import (
 	"context"
 	"errors"
-	"net/netip"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/options"
+	"github.com/pouriyajamshidi/tcping/v3/option"
 	"github.com/pouriyajamshidi/tcping/v3/printers"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
@@ -17,15 +16,16 @@ var (
 
 // Prober orchestrates periodic connectivity testing with configurable timing and output.
 type Prober struct {
-	pinger     Pinger
-	printer    Printer
-	Ticker     *time.Ticker
-	Timeout    time.Duration
-	Interval   time.Duration
-	Statistics statistics.Statistics
+	pinger          Pinger
+	printer         Printer
+	Ticker          *time.Ticker
+	Timeout         time.Duration
+	Interval        time.Duration
+	ProbeCountLimit uint
+	Statistics      statistics.Statistics
 }
 
-type ProberOption = options.Option[Prober]
+type ProberOption = option.Option[Prober]
 
 // WithInterval configures the interval between probe attempts.
 func WithInterval(interval time.Duration) ProberOption {
@@ -48,6 +48,30 @@ func WithPrinter(printer Printer) ProberOption {
 	}
 }
 
+// WithProbeCount configures the maximum number of probes before stopping.
+// If set to 0, probing continues indefinitely.
+func WithProbeCount(count uint) ProberOption {
+	return func(p *Prober) {
+		p.ProbeCountLimit = count
+	}
+}
+
+// WithHostname configures the hostname for the statistics tracking.
+// This is used when the target is a hostname that needs DNS resolution.
+func WithHostname(hostname string) ProberOption {
+	return func(p *Prober) {
+		p.Statistics.Hostname = hostname
+		p.Statistics.DestIsIP = false
+	}
+}
+
+// WithShowFailuresOnly configures the prober to only print failed probes.
+func WithShowFailuresOnly(show bool) ProberOption {
+	return func(p *Prober) {
+		p.Statistics.ShowFailuresOnly = show
+	}
+}
+
 // NewProber creates a new prober with the given pinger and optional configuration.
 func NewProber(p Pinger, opts ...ProberOption) *Prober {
 	pr := Prober{
@@ -58,15 +82,11 @@ func NewProber(p Pinger, opts ...ProberOption) *Prober {
 	}
 
 	// Initialize statistics with pinger details
-	pr.Statistics.Hostname = p.IP()
+	pr.Statistics.IP = p.IP()
+	pr.Statistics.Hostname = p.IP().String()
 	pr.Statistics.Port = p.Port()
 	pr.Statistics.Protocol = "TCP"
-
-	// Parse and set the IP address
-	if ip, err := netip.ParseAddr(p.IP()); err == nil {
-		pr.Statistics.IP = ip
-		pr.Statistics.DestIsIP = true
-	}
+	pr.Statistics.DestIsIP = true
 
 	for _, opt := range opts {
 		opt(&pr)
@@ -87,6 +107,9 @@ func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 	defer timeoutTimer.Stop()
 
 	p.Statistics.StartTime = time.Now()
+	p.printer.PrintStart(&p.Statistics)
+
+	var probeCount uint
 
 	for {
 		select {
@@ -148,35 +171,58 @@ func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 				}
 
 				p.printer.PrintProbeFailure(&p.Statistics)
-				continue
+			} else {
+				// Handle success
+				rttMs := statistics.NanoToMillisecond(rtt.Nanoseconds())
+				p.Statistics.RTT = append(p.Statistics.RTT, rttMs)
+				p.Statistics.LatestRTT = rttMs
+				p.Statistics.HasResults = true
+				p.Statistics.Successful++
+				p.Statistics.TotalSuccessfulProbes++
+				p.Statistics.OngoingSuccessfulProbes++
+				p.Statistics.OngoingUnsuccessfulProbes = 0
+				p.Statistics.LastSuccessfulProbe = pingTime
+
+				// Track uptime periods
+				if p.Statistics.DestWasDown {
+					// Transitioning from down to up
+					p.Statistics.DestWasDown = false
+					downDuration := pingTime.Sub(p.Statistics.StartOfDowntime)
+					p.Statistics.TotalDowntime += downDuration
+					p.Statistics.DownTime = downDuration
+					statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+					p.Statistics.StartOfUptime = pingTime
+					p.printer.PrintTotalDownTime(&p.Statistics)
+				}
+
+				if p.Statistics.StartOfUptime.IsZero() {
+					p.Statistics.StartOfUptime = pingTime
+				}
+
+				p.printer.PrintProbeSuccess(&p.Statistics)
 			}
 
-			// Handle success
-			rttMs := statistics.NanoToMillisecond(rtt.Nanoseconds())
-			p.Statistics.RTT = append(p.Statistics.RTT, rttMs)
-			p.Statistics.LatestRTT = rttMs
-			p.Statistics.HasResults = true
-			p.Statistics.Successful++
-			p.Statistics.TotalSuccessfulProbes++
-			p.Statistics.OngoingSuccessfulProbes++
-			p.Statistics.OngoingUnsuccessfulProbes = 0
-			p.Statistics.LastSuccessfulProbe = pingTime
+			// Check probe count limit
+			if p.ProbeCountLimit > 0 {
+				probeCount++
+				if probeCount >= p.ProbeCountLimit {
+					p.Statistics.EndTime = time.Now()
+					p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
 
-			// Track uptime periods
-			if p.Statistics.DestWasDown {
-				// Transitioning from down to up
-				p.Statistics.DestWasDown = false
-				downDuration := pingTime.Sub(p.Statistics.StartOfDowntime)
-				p.Statistics.TotalDowntime += downDuration
-				statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDowntime)
-				p.Statistics.StartOfUptime = pingTime
+					// Finalize uptime/downtime tracking
+					if p.Statistics.DestWasDown {
+						downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
+						p.Statistics.TotalDowntime += downDuration
+						statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+					} else if !p.Statistics.StartOfUptime.IsZero() {
+						upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
+						p.Statistics.TotalUptime += upDuration
+						statistics.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
+					}
+
+					return p.Statistics, nil
+				}
 			}
-
-			if p.Statistics.StartOfUptime.IsZero() {
-				p.Statistics.StartOfUptime = pingTime
-			}
-
-			p.printer.PrintProbeSuccess(&p.Statistics)
 		}
 	}
 }
