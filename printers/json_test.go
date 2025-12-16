@@ -1,46 +1,16 @@
 package printers_test
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
 	"net/netip"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/testdata"
 	"github.com/pouriyajamshidi/tcping/v3/printers"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
-// captureJSONOutput captures and parses JSON output
-func captureJSONOutput(t *testing.T, fn func()) printers.JSONData {
-	t.Helper()
-
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	done := make(chan []byte)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		done <- buf.Bytes()
-	}()
-
-	fn()
-	w.Close()
-	output := <-done
-	os.Stdout = oldStdout
-
-	var data printers.JSONData
-	if err := json.Unmarshal(output, &data); err != nil {
-		t.Fatalf("parse JSON: %v\nOutput: %s", err, string(output))
-	}
-
-	return data
-}
 
 func TestNewJSONPrinter(t *testing.T) {
 	p := printers.NewJSONPrinter()
@@ -62,7 +32,7 @@ func TestJSONPrinter_PrintStart(t *testing.T) {
 		Port:     443,
 	}
 
-	data := captureJSONOutput(t, func() {
+	data := testdata.CaptureJSONOutput(t, func() {
 		p := printers.NewJSONPrinter()
 		p.PrintStart(stats)
 	})
@@ -97,7 +67,7 @@ func TestJSONPrinter_PrintProbeSuccess(t *testing.T) {
 				OngoingSuccessfulProbes: 5,
 				LatestRTT:               12.345,
 			},
-			wantSuccess: boolPtr(true),
+			wantSuccess: testdata.ToPtr(true),
 		},
 		{
 			name: "success with IP only",
@@ -107,7 +77,7 @@ func TestJSONPrinter_PrintProbeSuccess(t *testing.T) {
 				OngoingSuccessfulProbes: 10,
 				LatestRTT:               1.234,
 			},
-			wantSuccess: boolPtr(true),
+			wantSuccess: testdata.ToPtr(true),
 		},
 		{
 			name: "with timestamp option",
@@ -118,11 +88,12 @@ func TestJSONPrinter_PrintProbeSuccess(t *testing.T) {
 				OngoingSuccessfulProbes: 3,
 				LatestRTT:               8.901,
 				StartTime:               time.Date(2024, 1, 15, 10, 30, 45, 0, time.UTC),
+				LastSuccessfulProbe:     time.Date(2024, 1, 15, 10, 30, 45, 0, time.UTC),
 			},
 			opts: []printers.JSONPrinterOption{
 				printers.WithTimestamp[*printers.JSONPrinter](),
 			},
-			wantSuccess:   boolPtr(true),
+			wantSuccess:   testdata.ToPtr(true),
 			wantTimestamp: true,
 		},
 		{
@@ -133,12 +104,12 @@ func TestJSONPrinter_PrintProbeSuccess(t *testing.T) {
 				Port:                    443,
 				OngoingSuccessfulProbes: 3,
 				LatestRTT:               8.901,
-				LocalAddr:               mockAddr{"10.0.0.1:12345"},
+				LocalAddr:               testdata.MockAddr{Addr: "10.0.0.1:12345"},
 			},
 			opts: []printers.JSONPrinterOption{
 				printers.WithSourceAddress[*printers.JSONPrinter](),
 			},
-			wantSuccess: boolPtr(true),
+			wantSuccess: testdata.ToPtr(true),
 			wantSource:  true,
 		},
 		{
@@ -161,7 +132,7 @@ func TestJSONPrinter_PrintProbeSuccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.wantEmpty {
 				// capture raw output to verify nothing was printed
-				output := captureOutput(func() {
+				output := testdata.CaptureOutput(t, func() {
 					p := printers.NewJSONPrinter(tt.opts...)
 					p.PrintProbeSuccess(tt.stats)
 				})
@@ -171,7 +142,7 @@ func TestJSONPrinter_PrintProbeSuccess(t *testing.T) {
 				return
 			}
 
-			data := captureJSONOutput(t, func() {
+			data := testdata.CaptureJSONOutput(t, func() {
 				p := printers.NewJSONPrinter(tt.opts...)
 				p.PrintProbeSuccess(tt.stats)
 			})
@@ -209,7 +180,7 @@ func TestJSONPrinter_PrintProbeFailure(t *testing.T) {
 		OngoingUnsuccessfulProbes: 3,
 	}
 
-	data := captureJSONOutput(t, func() {
+	data := testdata.CaptureJSONOutput(t, func() {
 		p := printers.NewJSONPrinter()
 		p.PrintProbeFailure(stats)
 	})
@@ -244,7 +215,7 @@ func TestJSONPrinter_PrintStatistics(t *testing.T) {
 		RTTResults:                statistics.RttResult{HasResults: true, Min: 10.5, Average: 15.2, Max: 20.8},
 	}
 
-	data := captureJSONOutput(t, func() {
+	data := testdata.CaptureJSONOutput(t, func() {
 		p := printers.NewJSONPrinter()
 		p.PrintStatistics(stats)
 	})
@@ -283,6 +254,3 @@ func TestJSONPrinter_Shutdown(t *testing.T) {
 	p.Shutdown(stats)
 }
 
-func boolPtr(b bool) *bool {
-	return &b
-}

@@ -144,7 +144,7 @@ func (p *CSVPrinter) writeProbeHeader(s *statistics.Statistics) error {
 	headers = append(headers, colConnection, colLatency)
 
 	if err := p.ProbeWriter.Write(headers); err != nil {
-		return fmt.Errorf("Failed to write headers: %w", err)
+		return fmt.Errorf("write headers: %w", err)
 	}
 
 	p.ProbeWriter.Flush()
@@ -159,7 +159,7 @@ func (p *CSVPrinter) writeStatsHeader() error {
 	}
 
 	if err := p.ProbeWriter.Write(headers); err != nil {
-		return fmt.Errorf("Failed to write statistics headers: %w", err)
+		return fmt.Errorf("write statistics headers: %w", err)
 	}
 
 	p.ProbeWriter.Flush()
@@ -196,13 +196,13 @@ func (p *CSVPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 	)
 
 	if p.opt.ShowSourceAddress {
-		record = append(record, s.SourceAddr(), strconv.FormatUint(uint64(s.OngoingSuccessfulProbes), 10), s.RTTStr())
+		record = append(record, s.SourceAddr())
 	}
 
 	record = append(record, strconv.FormatUint(uint64(s.OngoingSuccessfulProbes), 10), s.RTTStr())
 
 	if err := p.ProbeWriter.Write(record); err != nil {
-		p.PrintError("Failed to write success record: %w", err)
+		p.PrintError("write success record: %w", err)
 	}
 
 	p.ProbeWriter.Flush()
@@ -226,7 +226,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *statistics.Statistics) {
 	)
 
 	if err := p.ProbeWriter.Write(record); err != nil {
-		p.PrintError("Failed to write failure record: %v", err)
+		p.PrintError("write failure record: %v", err)
 	}
 
 	p.ProbeWriter.Flush()
@@ -314,19 +314,20 @@ func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 	}
 
 	if len(s.HostnameChanges) > 1 {
-		hostnameChanges := ""
+		var hostnameChanges strings.Builder
 
-		for i := 0; i < len(s.HostnameChanges)-1; i++ {
+		for i := range len(s.HostnameChanges) - 1 {
 			if s.HostnameChanges[i].Addr.String() == "" {
 				continue
 			}
 
-			hostnameChanges += fmt.Sprintf("from %s to %s at %v - ",
+			fmt.Fprintf(&hostnameChanges, "from %s to %s at %v - ",
 				s.HostnameChanges[i].Addr.String(),
 				s.HostnameChanges[i+1].Addr.String(),
 				s.HostnameChanges[i+1].When.Format(time.DateTime),
 			)
 		}
+		stats = append(stats, []string{"Hostname Changes", hostnameChanges.String()})
 	} else {
 		stats = append(stats, []string{"Hostname Changes", "Never changed"})
 	}
@@ -363,7 +364,7 @@ func (p *CSVPrinter) PrintStatistics(s *statistics.Statistics) {
 
 	for _, record := range stats {
 		if err := p.StatsWriter.Write(record); err != nil {
-			p.PrintError("Failed to write statistics record: %v", err)
+			p.PrintError("write statistics record: %v", err)
 			return
 		}
 	}

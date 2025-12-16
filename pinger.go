@@ -18,4 +18,5 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 	IP() netip.Addr
 	Port() uint16
+	SetIP(ip netip.Addr)
 }

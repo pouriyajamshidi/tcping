@@ -1,50 +1,16 @@
 package printers_test
 
 import (
-	"bytes"
-	"io"
-	"net"
 	"net/netip"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/testdata"
 	"github.com/pouriyajamshidi/tcping/v3/printers"
 	"github.com/pouriyajamshidi/tcping/v3/statistics"
 )
 
-// mockAddr implements net.Addr for testing
-type mockAddr struct {
-	addr string
-}
-
-func (m mockAddr) Network() string { return "tcp" }
-func (m mockAddr) String() string  { return m.addr }
-
-var _ net.Addr = (*mockAddr)(nil)
-
-// captureOutput captures stdout during function execution
-func captureOutput(fn func()) string {
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	done := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		done <- buf.String()
-	}()
-
-	fn()
-
-	w.Close()
-	output := <-done
-	os.Stdout = oldStdout
-
-	return output
-}
 
 func TestNewPlainPrinter(t *testing.T) {
 	p := printers.NewPlainPrinter()
@@ -60,7 +26,7 @@ func TestPlainPrinter_PrintStart(t *testing.T) {
 		Port:     443,
 	}
 
-	output := captureOutput(func() {
+	output := testdata.CaptureOutput(t, func() {
 		p.PrintStart(stats)
 	})
 
@@ -123,6 +89,7 @@ func TestPlainPrinter_PrintProbeSuccess(t *testing.T) {
 				Port:                    8080,
 				Hostname:                "test.local",
 				StartTime:               time.Date(2024, 1, 15, 10, 30, 45, 0, time.UTC),
+				LastSuccessfulProbe:     time.Date(2024, 1, 15, 10, 30, 45, 0, time.UTC),
 				OngoingSuccessfulProbes: 10,
 				LatestRTT:               1.234,
 			},
@@ -141,7 +108,7 @@ func TestPlainPrinter_PrintProbeSuccess(t *testing.T) {
 				IP:                      netip.MustParseAddr("192.168.1.1"),
 				Port:                    443,
 				Hostname:                "example.com",
-				LocalAddr:               mockAddr{addr: "10.0.0.1:12345"},
+				LocalAddr:               testdata.MockAddr{Addr: "10.0.0.1:12345"},
 				OngoingSuccessfulProbes: 3,
 				LatestRTT:               8.901,
 			},
@@ -174,7 +141,7 @@ func TestPlainPrinter_PrintProbeSuccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := printers.NewPlainPrinter(tt.opts...)
 
-			output := captureOutput(func() {
+			output := testdata.CaptureOutput(t, func() {
 				p.PrintProbeSuccess(tt.stats)
 			})
 
@@ -236,6 +203,7 @@ func TestPlainPrinter_PrintProbeFailure(t *testing.T) {
 				Port:                      443,
 				Hostname:                  "test.local",
 				StartTime:                 time.Date(2024, 1, 15, 14, 22, 10, 0, time.UTC),
+				LastUnsuccessfulProbe:     time.Date(2024, 1, 15, 14, 22, 10, 0, time.UTC),
 				OngoingUnsuccessfulProbes: 5,
 			},
 			opts: []printers.PlainPrinterOption{
@@ -253,7 +221,7 @@ func TestPlainPrinter_PrintProbeFailure(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := printers.NewPlainPrinter(tt.opts...)
 
-			output := captureOutput(func() {
+			output := testdata.CaptureOutput(t, func() {
 				p.PrintProbeFailure(tt.stats)
 			})
 
@@ -272,7 +240,7 @@ func TestPlainPrinter_PrintTotalDownTime(t *testing.T) {
 		DownTime: 5 * time.Second,
 	}
 
-	output := captureOutput(func() {
+	output := testdata.CaptureOutput(t, func() {
 		p.PrintTotalDownTime(stats)
 	})
 
@@ -290,7 +258,7 @@ func TestPlainPrinter_PrintRetryingToResolve(t *testing.T) {
 		Hostname: "flaky.example.com",
 	}
 
-	output := captureOutput(func() {
+	output := testdata.CaptureOutput(t, func() {
 		p.PrintRetryingToResolve(stats)
 	})
 
@@ -305,7 +273,7 @@ func TestPlainPrinter_PrintRetryingToResolve(t *testing.T) {
 func TestPlainPrinter_PrintError(t *testing.T) {
 	p := printers.NewPlainPrinter()
 
-	output := captureOutput(func() {
+	output := testdata.CaptureOutput(t, func() {
 		p.PrintError("connection timeout: %s", "deadline exceeded")
 	})
 
@@ -420,7 +388,7 @@ func TestPlainPrinter_PrintStatistics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := printers.NewPlainPrinter()
 
-			output := captureOutput(func() {
+			output := testdata.CaptureOutput(t, func() {
 				p.PrintStatistics(tt.stats)
 			})
 

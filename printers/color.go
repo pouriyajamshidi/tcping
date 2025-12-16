@@ -3,6 +3,7 @@ package printers
 
 import (
 	"math"
+	"strings"
 	"time"
 
 	"github.com/gookit/color"
@@ -71,84 +72,42 @@ func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		return
 	}
 
-	timestamp := ""
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
 	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
+		format.WriteString("%s ")
+		args = append(args, s.LastSuccessfulProbe.Format(time.DateTime))
 	}
 
+	// reply from
+	format.WriteString("Reply from ")
+
+	// hostname/IP
 	if s.Hostname == s.IP.String() {
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				ColorLightGreen("Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				ColorLightGreen("Reply from %s on port %d TCP_conn=%d time=%s ms\n",
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			if p.opt.ShowSourceAddress {
-				ColorLightGreen("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				ColorLightGreen("%s Reply from %s on port %d TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
+		format.WriteString("%s")
+		args = append(args, s.IP.String())
 	} else {
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				ColorLightGreen("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				ColorLightGreen("Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			if p.opt.ShowSourceAddress {
-				ColorLightGreen("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				ColorLightGreen("%s Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP.String())
 	}
+
+	// port
+	format.WriteString(" on port %d")
+	args = append(args, s.Port)
+
+	// source address (optional)
+	if p.opt.ShowSourceAddress {
+		format.WriteString(" using %s")
+		args = append(args, s.SourceAddr())
+	}
+
+	// connection count and RTT
+	format.WriteString(" TCP_conn=%d time=%s ms\n")
+	args = append(args, s.OngoingSuccessfulProbes, s.RTTStr())
+
+	ColorLightGreen(format.String(), args...)
 }
 
 // PrintProbeFailure prints a message indicating a failed probe attempt.
@@ -158,40 +117,32 @@ func (p *ColorPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive failed probes.
 func (p *ColorPrinter) PrintProbeFailure(s *statistics.Statistics) {
-	timestamp := ""
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
 	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
+		format.WriteString("%s ")
+		args = append(args, s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
+	// no reply from
+	format.WriteString("No reply from ")
+
+	// hostname/IP
 	if s.Hostname == "" {
-		if timestamp == "" {
-			ColorRed("No reply from %s on port %d TCP_conn=%d\n",
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		} else {
-			ColorRed("%s No reply from %s on port %d TCP_conn=%d\n",
-				timestamp,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		}
+		format.WriteString("%s")
+		args = append(args, s.IP)
 	} else {
-		if timestamp == "" {
-			ColorRed("No reply from %s (%s) on port %d TCP_conn=%d\n",
-				s.Hostname,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		} else {
-			ColorRed("%s No reply from %s (%s) on port %d TCP_conn=%d\n",
-				timestamp,
-				s.Hostname,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		}
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP)
 	}
+
+	// port and connection count
+	format.WriteString(" on port %d TCP_conn=%d\n")
+	args = append(args, s.Port, s.OngoingUnsuccessfulProbes)
+
+	ColorRed(format.String(), args...)
 }
 
 // PrintTotalDownTime prints the total duration of downtime when no response was received.
@@ -313,7 +264,7 @@ func (p *ColorPrinter) PrintStatistics(s *statistics.Statistics) {
 
 		if len(s.HostnameChanges) > 1 {
 			ColorYellow("IP address changes:\n")
-			for i := 0; i < len(s.HostnameChanges)-1; i++ {
+			for i := range len(s.HostnameChanges) - 1 {
 				ColorYellow("  from ")
 				ColorRed(s.HostnameChanges[i].Addr.String())
 				ColorYellow(" to ")

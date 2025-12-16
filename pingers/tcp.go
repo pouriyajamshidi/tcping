@@ -23,6 +23,11 @@ func (t *TCPPinger) IP() netip.Addr {
 	return t.ip
 }
 
+// SetIP updates the target IP address for the pinger.
+func (t *TCPPinger) SetIP(ip netip.Addr) {
+	t.ip = ip
+}
+
 const tcp = "tcp"
 
 func (t *TCPPinger) address() string {

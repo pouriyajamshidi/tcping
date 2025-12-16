@@ -3,6 +3,7 @@ package printers
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/option"
@@ -45,122 +46,72 @@ func (p *PlainPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		return
 	}
 
-	timestamp := ""
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
 	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
+		format.WriteString("%s ")
+		args = append(args, s.LastSuccessfulProbe.Format(time.DateTime))
 	}
 
+	// reply from
+	format.WriteString("Reply from ")
+
+	// hostname/IP
 	if s.Hostname == "" {
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				fmt.Printf("Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("Reply from %s on port %d TCP_conn=%d time=%s ms\n",
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			if p.opt.ShowSourceAddress {
-				fmt.Printf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("%s Reply from %s on port %d TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
+		format.WriteString("%s")
+		args = append(args, s.IP.String())
 	} else {
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				fmt.Printf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			if p.opt.ShowSourceAddress {
-				fmt.Printf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				fmt.Printf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%s ms\n",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP.String())
 	}
+
+	// port
+	format.WriteString(" on port %d")
+	args = append(args, s.Port)
+
+	// source address (optional)
+	if p.opt.ShowSourceAddress {
+		format.WriteString(" using %s")
+		args = append(args, s.SourceAddr())
+	}
+
+	// connection count and RTT
+	format.WriteString(" TCP_conn=%d time=%s ms\n")
+	args = append(args, s.OngoingSuccessfulProbes, s.RTTStr())
+
+	fmt.Printf(format.String(), args...)
 }
 
 // PrintProbeFailure prints a failure message for a probe.
 func (p *PlainPrinter) PrintProbeFailure(s *statistics.Statistics) {
-	timestamp := ""
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
 	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
+		format.WriteString("%s ")
+		args = append(args, s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
+	// no reply from
+	format.WriteString("No reply from ")
+
+	// hostname/IP
 	if s.Hostname == "" {
-		if timestamp == "" {
-			fmt.Printf("No reply from %s on port %d TCP_conn=%d\n",
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		} else {
-			fmt.Printf("%s No reply from %s on port %d TCP_conn=%d\n",
-				timestamp,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		}
+		format.WriteString("%s")
+		args = append(args, s.IP)
 	} else {
-		if timestamp == "" {
-			fmt.Printf("No reply from %s (%s) on port %d TCP_conn=%d\n",
-				s.Hostname,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		} else {
-			fmt.Printf("%s No reply from %s (%s) on port %d TCP_conn=%d\n",
-				timestamp,
-				s.Hostname,
-				s.IP,
-				s.Port,
-				s.OngoingUnsuccessfulProbes)
-		}
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP)
 	}
+
+	// port and connection count
+	format.WriteString(" on port %d TCP_conn=%d\n")
+	args = append(args, s.Port, s.OngoingUnsuccessfulProbes)
+
+	fmt.Printf(format.String(), args...)
 }
 
 // PrintTotalDownTime prints the total downtime when no response is received.
@@ -251,7 +202,7 @@ func (p *PlainPrinter) PrintStatistics(s *statistics.Statistics) {
 
 		if len(s.HostnameChanges) >= 2 {
 			fmt.Printf("IP address changes:\n")
-			for i := 0; i < len(s.HostnameChanges)-1; i++ {
+			for i := range len(s.HostnameChanges) - 1 {
 				fmt.Printf("  from %s", s.HostnameChanges[i].Addr.String())
 				fmt.Printf(" to %s", s.HostnameChanges[i+1].Addr.String())
 				fmt.Printf(" at %v\n", s.HostnameChanges[i+1].When.Format(time.DateTime))

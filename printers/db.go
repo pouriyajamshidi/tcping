@@ -317,75 +317,31 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		return
 	}
 
-	timestamp := ""
-	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
-	}
-
 	data := dbData{
 		eventType:               ProbeEvent,
 		success:                 "true",
 		ongoingSuccessfulProbes: s.OngoingSuccessfulProbes,
+		ipAddr:                  s.IP.String(),
+		port:                    s.Port,
+		time:                    s.RTTStr(),
 	}
 
+	// timestamp (optional)
+	if p.opt.ShowTimestamp {
+		data.timestamp = s.LastSuccessfulProbe.Format(time.DateTime)
+	}
+
+	// hostname handling
 	if s.Hostname == s.IP.String() {
 		data.destIsIP = "true"
-
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		} else {
-			data.timestamp = timestamp
-
-			if p.opt.ShowSourceAddress {
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		}
 	} else {
 		data.destIsIP = "false"
+		data.hostname = s.Hostname
+	}
 
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				data.hostname = s.Hostname
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.hostname = s.Hostname
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		} else {
-			data.timestamp = timestamp
-
-			if p.opt.ShowSourceAddress {
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.ipAddr = s.IP.String()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		}
+	// source address (optional)
+	if p.opt.ShowSourceAddress {
+		data.sourceAddr = s.SourceAddr()
 	}
 
 	if err := sqlitex.Execute(
@@ -393,47 +349,31 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
-		p.PrintError("Failed writing probe success data to database: %s\n", err)
+		p.PrintError("write probe success data to database: %s\n", err)
 	}
 }
 
 // PrintProbeFailure satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintProbeFailure(s *statistics.Statistics) {
-	timestamp := ""
-	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
-	}
-
 	data := dbData{
 		eventType:                 ProbeEvent,
 		success:                   "false",
 		ongoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
+		ipAddr:                    s.IP.String(),
+		port:                      s.Port,
 	}
 
+	// timestamp (optional)
+	if p.opt.ShowTimestamp {
+		data.timestamp = s.LastUnsuccessfulProbe.Format(time.DateTime)
+	}
+
+	// hostname handling
 	if s.Hostname == s.IP.String() {
 		data.destIsIP = "true"
-
-		if timestamp == "" {
-			data.ipAddr = s.IP.String()
-			data.port = s.Port
-		} else {
-			data.timestamp = timestamp
-			data.ipAddr = s.IP.String()
-			data.port = s.Port
-		}
 	} else {
 		data.destIsIP = "false"
-
-		if timestamp == "" {
-			data.hostname = s.Hostname
-			data.ipAddr = s.IP.String()
-			data.port = s.Port
-		} else {
-			data.timestamp = timestamp
-			data.hostname = s.Hostname
-			data.ipAddr = s.IP.String()
-			data.port = s.Port
-		}
+		data.hostname = s.Hostname
 	}
 
 	if err := sqlitex.Execute(
@@ -441,14 +381,13 @@ func (p *DatabasePrinter) PrintProbeFailure(s *statistics.Statistics) {
 		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
-		p.PrintError("Failed writing probe failure data to database: %s\n", err)
+		p.PrintError("write probe failure data to database: %s\n", err)
 	}
 }
 
-// PrintError prints an error message to stderr and exits the program.
+// PrintError prints an error message to stderr.
 func (p *DatabasePrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
-	os.Exit(1)
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
@@ -474,17 +413,19 @@ func (p *DatabasePrinter) PrintStatistics(s *statistics.Statistics) {
 	}
 
 	if len(s.HostnameChanges) > 1 {
-		for i := 0; i < len(s.HostnameChanges)-1; i++ {
+		var hostnameChanges strings.Builder
+		for i := range len(s.HostnameChanges) - 1 {
 			if s.HostnameChanges[i].Addr.String() == "" {
 				continue
 			}
 
-			data.hostnameChanges += fmt.Sprintf("from %s to %s at %v\n",
+			fmt.Fprintf(&hostnameChanges, "from %s to %s at %v\n",
 				s.HostnameChanges[i].Addr.String(),
 				s.HostnameChanges[i+1].Addr.String(),
 				s.HostnameChanges[i+1].When.Format(time.DateTime),
 			)
 		}
+		data.hostnameChanges = hostnameChanges.String()
 	}
 
 	totalPackets := s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
@@ -538,7 +479,7 @@ func (p *DatabasePrinter) PrintStatistics(s *statistics.Statistics) {
 		fmt.Sprintf(statsTableInsertSchema, p.statsTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
-		p.PrintError("Failed writing statistics to database: %s\n", err)
+		p.PrintError("write statistics to database: %s\n", err)
 	}
 
 	fmt.Printf("\nProbe and statistics data for %q have been saved to the table %q and %q, respectively\n",

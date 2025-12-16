@@ -52,6 +52,7 @@ type Printer interface {
 
 	// PrintError should print an error message.
 	// Printer should also apply \n to the given string, if needed.
+	// PrintError should NOT exit the program - exit decisions belong to the application layer.
 	PrintError(format string, args ...any)
 
 	// Shutdown sets the EndTime, calls PrintStatistics() and Done() then exits the program.

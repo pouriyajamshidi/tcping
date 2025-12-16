@@ -79,6 +79,7 @@ func buildProber(pinger *pingers.TCPPinger, printer tcping.Printer, config Probe
 		tcping.WithTimeout(config.Timeout),
 		tcping.WithProbeCount(config.ProbeCountLimit),
 		tcping.WithShowFailuresOnly(config.ShowFailuresOnly),
+		tcping.WithRetryResolveAfter(config.RetryResolveAfter),
 	}
 
 	if config.Hostname != ip.String() {

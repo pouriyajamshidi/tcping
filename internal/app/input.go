@@ -24,6 +24,12 @@ var (
 
 	// ErrUpdateCheckRequested indicates update check was requested
 	ErrUpdateCheckRequested = errors.New("update check requested")
+
+	// ErrInvalidPort indicates an invalid port number was provided
+	ErrInvalidPort = errors.New("invalid port number")
+
+	// ErrPortOutOfRange indicates port number is outside valid range (1-65535)
+	ErrPortOutOfRange = errors.New("port should be in 1..65535 range")
 )
 
 // ProberConfig contains all configuration needed to create and run a prober.
@@ -150,7 +156,13 @@ func setOptions(config *ProberConfig, opts options) error {
 	}
 
 	config.Hostname = opts.args[0]
-	config.Port = convertAndValidatePort(opts.args[1])
+
+	port, err := convertAndValidatePort(opts.args[1])
+	if err != nil {
+		return fmt.Errorf("validate port: %w", err)
+	}
+	config.Port = port
+
 	config.ProbeCountLimit = *opts.probesBeforeQuit
 	config.Timeout = statistics.SecondsToDuration(*opts.timeout)
 	config.NonInteractive = *opts.nonInteractive
@@ -174,19 +186,17 @@ func setOptions(config *ProberConfig, opts options) error {
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
-func convertAndValidatePort(portStr string) uint16 {
+func convertAndValidatePort(portStr string) (uint16, error) {
 	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
-		fmt.Printf("Invalid port number: %s\n", portStr)
-		os.Exit(1)
+		return 0, fmt.Errorf("%w: %s", ErrInvalidPort, portStr)
 	}
 
 	if port < 1 || port > 65535 {
-		fmt.Println("Port should be in 1..65535 range")
-		os.Exit(1)
+		return 0, fmt.Errorf("%w: got %d", ErrPortOutOfRange, port)
 	}
 
-	return uint16(port)
+	return uint16(port), nil
 }
 
 // permuteArgs permute args for flag parsing stops just before the first non-flag argument.
@@ -195,7 +205,7 @@ func permuteArgs(args []string) error {
 	var flagArgs []string
 	var nonFlagArgs []string
 
-	for i := 0; i < len(args); i++ {
+	for i := range len(args) {
 		v := args[i]
 		if v[0] == '-' {
 			var optionName string

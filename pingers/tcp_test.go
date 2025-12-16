@@ -60,7 +60,7 @@ func TestTCPPinger_Ping_Localhost(t *testing.T) {
 	// start a test TCP server
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("Failed to start test server: %v", err)
+		t.Fatalf("start test server: %v", err)
 	}
 	defer listener.Close()
 

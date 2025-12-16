@@ -36,6 +36,10 @@ func (m *mockPinger) Port() uint16 {
 	return m.port
 }
 
+func (m *mockPinger) SetIP(ip netip.Addr) {
+	m.ip = ip
+}
+
 // mockPrinter implements Printer interface for testing
 type mockPrinter struct {
 	startCalls           int

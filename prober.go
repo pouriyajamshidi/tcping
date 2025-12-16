@@ -3,6 +3,7 @@ package tcping
 import (
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/option"
@@ -16,13 +17,15 @@ var (
 
 // Prober orchestrates periodic connectivity testing with configurable timing and output.
 type Prober struct {
-	pinger          Pinger
-	printer         Printer
-	Ticker          *time.Ticker
-	Timeout         time.Duration
-	Interval        time.Duration
-	ProbeCountLimit uint
-	Statistics      statistics.Statistics
+	pinger           Pinger
+	printer          Printer
+	Ticker           *time.Ticker
+	Timeout          time.Duration
+	Interval         time.Duration
+	ProbeCountLimit  uint
+	RetryResolveAfter uint
+	hostname         string
+	Statistics       statistics.Statistics
 }
 
 type ProberOption = option.Option[Prober]
@@ -37,7 +40,7 @@ func WithInterval(interval time.Duration) ProberOption {
 // WithTimeout configures the timeout duration for probe attempts.
 func WithTimeout(timeout time.Duration) ProberOption {
 	return func(p *Prober) {
-		p.Timeout = timeout + p.Interval
+		p.Timeout = timeout
 	}
 }
 
@@ -60,8 +63,16 @@ func WithProbeCount(count uint) ProberOption {
 // This is used when the target is a hostname that needs DNS resolution.
 func WithHostname(hostname string) ProberOption {
 	return func(p *Prober) {
+		p.hostname = hostname
 		p.Statistics.Hostname = hostname
 		p.Statistics.DestIsIP = false
+	}
+}
+
+// WithRetryResolveAfter configures after how many consecutive failures to retry hostname resolution.
+func WithRetryResolveAfter(count uint) ProberOption {
+	return func(p *Prober) {
+		p.RetryResolveAfter = count
 	}
 }
 
@@ -99,6 +110,65 @@ const (
 	DefaultTimeout  = 5 * time.Second
 )
 
+// finalizeStatistics sets the end time and finalizes uptime/downtime tracking
+// retryResolveHostname attempts to re-resolve the hostname and update the pinger's IP.
+// Returns true if resolution was successful and IP was updated.
+func (p *Prober) retryResolveHostname(ctx context.Context) bool {
+	// Only retry if we have a hostname (not IP-only)
+	if p.hostname == "" || p.Statistics.DestIsIP {
+		return false
+	}
+
+	// Only retry if RetryResolveAfter is configured
+	if p.RetryResolveAfter == 0 {
+		return false
+	}
+
+	p.printer.PrintRetryingToResolve(&p.Statistics)
+	p.Statistics.RetriedHostnameLookups++
+
+	// Attempt to resolve the hostname
+	resolver := &net.Resolver{}
+	ips, err := resolver.LookupNetIP(ctx, "ip", p.hostname)
+	if err != nil || len(ips) == 0 {
+		return false
+	}
+
+	newIP := ips[0]
+	oldIP := p.pinger.IP()
+
+	// Track hostname change if IP changed
+	if !oldIP.IsValid() || oldIP != newIP {
+		p.Statistics.HostnameChanges = append(p.Statistics.HostnameChanges, statistics.HostnameChange{
+			Addr: newIP,
+			When: time.Now(),
+		})
+	}
+
+	// Update pinger IP
+	p.pinger.SetIP(newIP)
+	p.Statistics.IP = newIP
+	return true
+}
+
+func (p *Prober) finalizeStatistics() {
+	p.Statistics.EndTime = time.Now()
+	p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
+
+	if p.Statistics.DestWasDown {
+		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
+		p.Statistics.TotalDowntime += downDuration
+		statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+		return
+	}
+
+	if !p.Statistics.StartOfUptime.IsZero() {
+		upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
+		p.Statistics.TotalUptime += upDuration
+		statistics.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
+	}
+}
+
 func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 	p.Ticker = time.NewTicker(p.Interval)
 	defer p.Ticker.Stop()
@@ -115,36 +185,11 @@ func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 		select {
 
 		case <-ctx.Done():
-			p.Statistics.EndTime = time.Now()
-			p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
-
-			// Finalize uptime/downtime tracking
-			if p.Statistics.DestWasDown {
-				downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
-				p.Statistics.TotalDowntime += downDuration
-				statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
-			} else if !p.Statistics.StartOfUptime.IsZero() {
-				upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
-				p.Statistics.TotalUptime += upDuration
-				statistics.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
-			}
-
+			p.finalizeStatistics()
 			return p.Statistics, nil
 
 		case <-timeoutTimer.C:
-			p.Statistics.EndTime = time.Now()
-			p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
-
-			// Finalize uptime/downtime tracking
-			if p.Statistics.DestWasDown {
-				downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
-				p.Statistics.TotalDowntime += downDuration
-				statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
-			} else if !p.Statistics.StartOfUptime.IsZero() {
-				upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
-				p.Statistics.TotalUptime += upDuration
-				statistics.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
-			}
+			p.finalizeStatistics()
 
 			// Graceful completion if we got successful results
 			if p.Statistics.Successful > 0 {
@@ -171,6 +216,11 @@ func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 				}
 
 				p.printer.PrintProbeFailure(&p.Statistics)
+
+				// Retry hostname resolution if threshold reached
+				if p.RetryResolveAfter > 0 && p.Statistics.OngoingUnsuccessfulProbes == p.RetryResolveAfter {
+					p.retryResolveHostname(ctx)
+				}
 			} else {
 				// Handle success
 				rttMs := statistics.NanoToMillisecond(rtt.Nanoseconds())
@@ -206,20 +256,7 @@ func (p *Prober) Probe(ctx context.Context) (statistics.Statistics, error) {
 			if p.ProbeCountLimit > 0 {
 				probeCount++
 				if probeCount >= p.ProbeCountLimit {
-					p.Statistics.EndTime = time.Now()
-					p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
-
-					// Finalize uptime/downtime tracking
-					if p.Statistics.DestWasDown {
-						downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
-						p.Statistics.TotalDowntime += downDuration
-						statistics.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
-					} else if !p.Statistics.StartOfUptime.IsZero() {
-						upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
-						p.Statistics.TotalUptime += upDuration
-						statistics.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
-					}
-
+					p.finalizeStatistics()
 					return p.Statistics, nil
 				}
 			}

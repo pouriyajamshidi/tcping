@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/option"
@@ -127,9 +128,11 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 	f := false
 	t := true
 
+	// determine if destination is IP-only or has hostname
+	destIsIP := s.Hostname == s.IP.String()
+
 	data := JSONData{
 		Type:                    probeEvent,
-		Hostname:                s.Hostname,
 		IPAddr:                  s.IP.String(),
 		Port:                    s.Port,
 		Time:                    s.RTTStr(),
@@ -138,92 +141,49 @@ func (p *JSONPrinter) PrintProbeSuccess(s *statistics.Statistics) {
 		OngoingSuccessfulProbes: s.OngoingSuccessfulProbes,
 	}
 
-	timestamp := ""
-	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
-	}
-
-	if s.Hostname == s.IP.String() {
-		data.Hostname = "" // to omit it from the output
-
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				data.Message = fmt.Sprintf("Reply from %s on port %d using %s TCP_conn=%d time=%s ms",
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				data.Message = fmt.Sprintf("Reply from %s on port %d TCP_conn=%d time=%s ms",
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			data.Timestamp = timestamp
-
-			if p.opt.ShowSourceAddress {
-				data.Message = fmt.Sprintf("%s Reply from %s on port %d using %s TCP_conn=%d time=%s ms",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				data.Message = fmt.Sprintf("%s Reply from %s on port %d TCP_conn=%d time=%s ms",
-					timestamp,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
-	} else {
+	if !destIsIP {
+		data.Hostname = s.Hostname
 		data.DestIsIP = &f
-
-		if timestamp == "" {
-			if p.opt.ShowSourceAddress {
-				data.Message = fmt.Sprintf("Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				data.Message = fmt.Sprintf("Reply from %s (%s) on port %d TCP_conn=%d time=%s ms",
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		} else {
-			data.Timestamp = timestamp
-
-			if p.opt.ShowSourceAddress {
-				data.Message = fmt.Sprintf("%s Reply from %s (%s) on port %d using %s TCP_conn=%d time=%s ms",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.SourceAddr(),
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			} else {
-				data.Message = fmt.Sprintf("%s Reply from %s (%s) on port %d TCP_conn=%d time=%s ms",
-					timestamp,
-					s.Hostname,
-					s.IP.String(),
-					s.Port,
-					s.OngoingSuccessfulProbes,
-					s.RTTStr())
-			}
-		}
 	}
+
+	// build message
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
+	if p.opt.ShowTimestamp {
+		data.Timestamp = s.LastSuccessfulProbe.Format(time.DateTime)
+		format.WriteString("%s ")
+		args = append(args, data.Timestamp)
+	}
+
+	// reply from
+	format.WriteString("Reply from ")
+
+	// hostname/IP
+	if destIsIP {
+		format.WriteString("%s")
+		args = append(args, s.IP.String())
+	} else {
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP.String())
+	}
+
+	// port
+	format.WriteString(" on port %d")
+	args = append(args, s.Port)
+
+	// source address (optional)
+	if p.opt.ShowSourceAddress {
+		format.WriteString(" using %s")
+		args = append(args, s.SourceAddr())
+	}
+
+	// connection count and RTT
+	format.WriteString(" TCP_conn=%d time=%s ms")
+	args = append(args, s.OngoingSuccessfulProbes, s.RTTStr())
+
+	data.Message = fmt.Sprintf(format.String(), args...)
 
 	p.encoder.Encode(data)
 }
@@ -234,9 +194,11 @@ func (p *JSONPrinter) PrintProbeFailure(s *statistics.Statistics) {
 	f := false
 	t := true
 
+	// determine if destination is IP-only or has hostname
+	destIsIP := s.Hostname == s.IP.String()
+
 	data := JSONData{
 		Type:                      probeEvent,
-		Hostname:                  s.Hostname,
 		IPAddr:                    s.IP.String(),
 		Port:                      s.Port,
 		DestIsIP:                  &t,
@@ -244,40 +206,39 @@ func (p *JSONPrinter) PrintProbeFailure(s *statistics.Statistics) {
 		OngoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
 	}
 
-	timestamp := ""
-	if p.opt.ShowTimestamp {
-		timestamp = s.StartTimeFormatted()
-	}
-
-	if s.Hostname == s.IP.String() {
-		data.Hostname = "" // to omit it from the output
-
-		if timestamp == "" {
-			data.Message = fmt.Sprintf("No reply from %s on port %d",
-				s.IP.String(),
-				s.Port)
-		} else {
-			data.Message = fmt.Sprintf("%s No reply from %s on port %d",
-				timestamp,
-				s.IP.String(),
-				s.Port)
-		}
-	} else {
+	if !destIsIP {
+		data.Hostname = s.Hostname
 		data.DestIsIP = &f
-
-		if timestamp == "" {
-			data.Message = fmt.Sprintf("No reply from %s (%s) on port %d",
-				s.Hostname,
-				s.IP.String(),
-				s.Port)
-		} else {
-			data.Message = fmt.Sprintf("%s No reply from %s (%s) on port %d",
-				timestamp,
-				s.Hostname,
-				s.IP.String(),
-				s.Port)
-		}
 	}
+
+	// build message
+	var format strings.Builder
+	var args []any
+
+	// timestamp prefix
+	if p.opt.ShowTimestamp {
+		data.Timestamp = s.LastUnsuccessfulProbe.Format(time.DateTime)
+		format.WriteString("%s ")
+		args = append(args, data.Timestamp)
+	}
+
+	// no reply from
+	format.WriteString("No reply from ")
+
+	// hostname/IP
+	if destIsIP {
+		format.WriteString("%s")
+		args = append(args, s.IP.String())
+	} else {
+		format.WriteString("%s (%s)")
+		args = append(args, s.Hostname, s.IP.String())
+	}
+
+	// port
+	format.WriteString(" on port %d")
+	args = append(args, s.Port)
+
+	data.Message = fmt.Sprintf(format.String(), args...)
 
 	p.encoder.Encode(data)
 }

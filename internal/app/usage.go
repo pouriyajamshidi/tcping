@@ -44,7 +44,7 @@ func compareVersions(v1, v2 string) int {
 	parts1 := strings.Split(v1, ".")
 	parts2 := strings.Split(v2, ".")
 
-	for i := 0; i < len(parts1) && i < len(parts2); i++ {
+	for i := range min(len(parts1), len(parts2)) {
 		n1, _ := strconv.Atoi(parts1[i])
 		n2, _ := strconv.Atoi(parts2[i])
 
