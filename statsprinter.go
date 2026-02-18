@@ -271,7 +271,7 @@ func (p *plainPrinter) printStatistics(t tcping) {
 	} else {
 		fmt.Printf("\n--- %s TCPing statistics ---\n", t.userInput.hostname)
 	}
-	fmt.Printf("%d probes transmitted on port %d | %d received", totalPackets, t.userInput.port, t.totalSuccessfulProbes)
+	fmt.Printf("%d probes transmitted on port %d | %d received, ", totalPackets, t.userInput.port, t.totalSuccessfulProbes)
 
 	/* packet loss stats */
 	fmt.Printf("%.2f%% packet loss\n", packetLoss)
