@@ -179,7 +179,7 @@
 在 **Debian** 及其衍生版本（如 **Ubuntu**）上，下载 `.deb` 软件包：
 
 ```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_amd64.deb -O /tmp/tcping.deb
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.deb -O /tmp/tcping.deb
 ```
 
 并安装它：
