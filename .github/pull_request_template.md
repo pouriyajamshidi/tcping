@@ -1,10 +1,12 @@
-# Important
+# Summary
 
-**Please provide the requested parameters below to help us review your pull request.**
+Please describe what your pull request is about.
 
-**Pull requests without a body or explanation will be rejected.**
+## NOTE
 
-## Describe your changes
+1. **Pull requests without opening an issue first will be rejected.**
+2. **Pull requests that do not respect this guide will be rejected.**
+3. **Please provide the requested parameters below to help us review your pull request.**
 
 ## Issue ticket number and link
 
@@ -13,14 +15,14 @@ Closes #
 ## Checklist before requesting a review
 
 - [ ] I have performed a self-review of my code
-- [ ] If it is a core feature, I have added tests.
-- [ ] I have run `make check` and there are no failures.
+- [ ] If it is a core feature or changes the output, I have added tests.
+- [ ] I have run `make check` or run `go fmt && go test` and there are no failures.
 
 ## Type of change
 
-Please delete options that are not relevant.
+Please select options that are relevant.
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected or changes the output)
 - [ ] This change requires a documentation update
