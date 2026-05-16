@@ -1,12 +1,12 @@
-# Summary
-
-Please describe what your pull request is about.
-
-## NOTE
+# NOTE
 
 1. **Pull requests without opening an issue first will be rejected.**
 2. **Pull requests that do not respect this guide will be rejected.**
-3. **Please provide the requested parameters below to help us review your pull request.**
+3. **Please tick and provide the requested information below to help us review your pull request easier and to avoid wasting your generous efforts.**
+
+## Summary
+
+Please describe what your pull request is about.
 
 ## Issue ticket number and link
 
@@ -14,6 +14,7 @@ Closes #
 
 ## Checklist before requesting a review
 
+- [ ] I have read this guide
 - [ ] I have performed a self-review of my code
 - [ ] If it is a core feature or changes the output, I have added tests.
 - [ ] I have run `make check` or run `go fmt && go test` and there are no failures.
