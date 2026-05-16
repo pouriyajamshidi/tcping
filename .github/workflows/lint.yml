@@ -1,4 +1,5 @@
 name: Lint
+
 on:
   workflow_dispatch:
   pull_request:
@@ -16,3 +17,4 @@ jobs:
         uses: morphy2k/revive-action@v2.7.8
         with:
           config: revive.toml
+          fail-on-any: true
