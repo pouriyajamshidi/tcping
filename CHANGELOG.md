@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.0.0 - Unreleased (Work in progress)
+
+- build: bump stale days before close from 7 to 14
+- build: ensure to fail on any linting issues
+- build: simplify container publish workflow
+- build: general cleanups
+- templates: improve pull and bug report templates
+
 ## v2.8.0 - 2026-05-11
 
 - feat: add a _non-interactive_ mode through `--non-interactive` flag so that tcping can run in the background using `nohup` or `disown`
