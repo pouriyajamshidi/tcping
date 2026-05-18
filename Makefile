@@ -4,15 +4,15 @@
 
 # Meta
 SHELL := /bin/bash
-VERSION := 2.8.0
+VERSION := 3.0.0_beta
 MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
 # IO directories
 TARGET_DIR := target
 OUTPUT_DIR := output
-TAPES_DIR := Images/tapes
-GIFS_DIR := Images/gifs
+TAPES_DIR := docs/Images/tapes
+GIFS_DIR := docs/Images/gifs
 
 # File lists
 RELEASE_ARTIFACTS := \
