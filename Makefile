@@ -144,13 +144,13 @@ $(OUTPUT_DIR)/:
 $(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
 	@tar -C $$(dirname $<) -czvf $@ tcping >/dev/null
-	@sha256sum $@
+	@sha256sum $@ | awk '{print $$2 ": " $$1}'
 
 # .zip archive (Windows)
 $(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
 	@zip -j $@ $< >/dev/null
-	@sha256sum $@
+	@sha256sum $@ | awk '{print $$2 ": " $$1}'
 
 # .deb package (Linux)
 $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
