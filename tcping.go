@@ -153,8 +153,8 @@ type rttResult struct {
 }
 
 type hostnameChange struct {
-	Addr netip.Addr `json:"addr,omitempty"`
-	When time.Time  `json:"when,omitempty"`
+	Addr netip.Addr `json:"addr"`
+	When time.Time  `json:"when"`
 }
 
 // signalHandler catches SIGINT and SIGTERM then prints tcping stats
@@ -497,7 +497,7 @@ func permuteArgs(args []string) {
 	permutedArgs := append(flagArgs, nonFlagArgs...)
 
 	/* replace args */
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		args[i] = permutedArgs[i]
 	}
 }
@@ -769,7 +769,7 @@ func calcMinAvgMaxRttTime(timeArr []float32) rttResult {
 		result.min = timeArr[0]
 	}
 
-	for i := 0; i < arrLen; i++ {
+	for i := range arrLen {
 		sum += timeArr[i]
 
 		if timeArr[i] > result.max {

@@ -71,7 +71,7 @@ func TestProbeSuccess(t *testing.T) {
 
 	expectedSuccessful := 100
 
-	for i := 0; i < expectedSuccessful; i++ {
+	for range expectedSuccessful {
 		tcpProbe(stats)
 	}
 
@@ -94,7 +94,7 @@ func TestProbeSuccessInterval(t *testing.T) {
 
 	expectedSuccessful := 100
 
-	for i := 0; i < expectedSuccessful; i++ {
+	for range expectedSuccessful {
 		tcpProbe(stats)
 	}
 
@@ -110,7 +110,7 @@ func TestProbeFail(t *testing.T) {
 
 	expectedFailed := 100
 
-	for i := 0; i < expectedFailed; i++ {
+	for range expectedFailed {
 		tcpProbe(stats)
 	}
 
@@ -127,7 +127,7 @@ func TestProbeFailInterval(t *testing.T) {
 
 	expectedFailed := 100
 
-	for i := 0; i < expectedFailed; i++ {
+	for range expectedFailed {
 		tcpProbe(stats)
 	}
 
@@ -251,7 +251,6 @@ func TestNanoToMilliseconds(t *testing.T) {
 		{d: time.Second + 100*time.Nanosecond, want: 1000.000123},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.d.String(), func(t *testing.T) {
 			t.Parallel()
 			got := nanoToMillisecond(tt.d.Nanoseconds())

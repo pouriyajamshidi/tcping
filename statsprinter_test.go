@@ -23,8 +23,8 @@ func (fp *dummyPrinter) printRetryingToResolve(_ string)                        
 func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                         {}
 func (fp *dummyPrinter) printStatistics(_ tcping)                                   {}
 func (fp *dummyPrinter) printVersion()                                              {}
-func (fp *dummyPrinter) printInfo(_ string, _ ...interface{})                       {}
-func (fp *dummyPrinter) printError(_ string, _ ...interface{})                      {}
+func (fp *dummyPrinter) printInfo(_ string, _ ...any)                               {}
+func (fp *dummyPrinter) printError(_ string, _ ...any)                              {}
 
 func TestDurationToString(t *testing.T) {
 	t.Parallel()

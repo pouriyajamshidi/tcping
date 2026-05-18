@@ -185,7 +185,7 @@ func (db *database) saveStats(tcping tcping) error {
 	// TODO: Find a clean way to include source address
 	// other printers utilize printProbeSuccess which takes the net.Conn
 	// whereas DB is having its own way
-	args := []interface{}{
+	args := []any{
 		eventTypeStatistics,
 		time.Now().Format(timeFormat),
 		tcping.userInput.ip.String(),
@@ -237,7 +237,7 @@ func (db *database) saveHostNameChange(h []hostnameChange) error {
 			continue
 		}
 		err := sqlitex.Execute(db.conn, fmt.Sprintf(schema, db.tableName), &sqlitex.ExecOptions{
-			Args: []interface{}{eventTypeHostnameChange, host.Addr.String(), host.When.Format(timeFormat)}})
+			Args: []any{eventTypeHostnameChange, host.Addr.String(), host.When.Format(timeFormat)}})
 		if err != nil {
 			return err
 		}
