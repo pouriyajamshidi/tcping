@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="Artwork/tcping_logo3.jpeg" style="width:70%;">
+ <img alt="tcping" src="docs/Artwork/tcping_logo_v3.png" style="width:70%;">
 </div>
 
 # TCPING
@@ -195,7 +195,7 @@ These are some additional ways in which **tcping** can be installed:
 tcping www.example.com 443
 ```
 
-1. You can also use the `host:port` format for convenience:
+2. You can also use the `host:port` format:
 
 ```bash
 tcping www.example.com:443
@@ -271,7 +271,7 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 ```
 
 > [!TIP]
-> Press the `Enter` key while the program is running to examine the summary of all probes without terminating the program, as shown in the [demos](#demos) section.
+> Press the `Enter` key while the program is running to see the summary of all probes without stopping the program, as shown in the [demos](#demos) section.
 
 ---
 
@@ -310,19 +310,19 @@ The following flags are available to control the behavior of **tcping**:
 
 ### Basic usage
 
-![tcping](Images/gifs/tcping.gif)
+![tcping](docs/Images/gifs/tcping.gif)
 
 ---
 
 ### Retry hostname lookup (`-r`) flag
 
-![tcping resolve example](Images/gifs/tcping_resolve.gif)
+![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON output (`-j --pretty`) flag
 
-![tcping json example](Images/gifs/tcping_json_pretty.gif)
+![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
 
 ---
 
@@ -334,27 +334,29 @@ Pull requests are welcome to solve bugs, add new features and to help with the o
 1. Fork the repository.
 1. Create a branch.
 1. Commit your work.
-1. Add tests if possible.
+1. Add tests.
 1. Run the tests `go test` or `make test` and ensure they are successful.
 1. Create a pull request
 
 Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
 
-Please make sure that your pull request **only covers one specific issue/feature** and doesn't handle two or more tickets. This makes it simpler for us to examine your pull request and helps keeping a clean git history.
+Please make sure that your pull request **only covers one specific issue/feature** and doesn't handle two or more issues. This makes it simpler for us to review your pull request and helps keeping a clean git history.
 
 ## Feature Requests and Issues
 
-Should you need a new feature or find a bug, please feel free to [open a pull request](#contributing) or submit an issue.
+Do you wish that tcping could do more? Or maybe you have faced a bug?
 
-For larger features/contributions, please make sure to first communicate it on a **discussion** before starting your work.
+Please feel free to open an issue and if you can, you are welcome to [open a pull request](#contributing) to contribute.
+
+Although, keep in mind that unless you are fixing a really tiny issue, please ensure to first communicate your intention on an **issue** before starting your work.
 
 ## Help The Project
 
-If tcping proves to be useful for you, consider sharing it with your network to extend its reach and help other people to also benefit from it.
+If tcping is useful for you, consider sharing it with your network to extend its reach and help other people to also benefit from it.
 
 Furthermore, you can support the project using the links below:
 
-- Buy me a coffee: ["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)
+- Buy me a coffee: ["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/docs/custom_images/orange_img.png)
 
 - GitHub Sponsors: [sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)
 

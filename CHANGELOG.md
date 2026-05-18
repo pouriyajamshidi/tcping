@@ -6,7 +6,9 @@
 - build: ensure to fail on any linting issues
 - build: simplify container publish workflow
 - build: general cleanups
+- build: support more container architectures
 - templates: improve pull and bug report templates
+- docs: new logo!
 
 ## v2.8.0 - 2026-05-11
 
