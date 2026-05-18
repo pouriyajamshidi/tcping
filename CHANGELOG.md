@@ -8,7 +8,7 @@
 - build: general cleanups
 - build: support more container architectures
 - templates: improve pull and bug report templates
-- docs: new logo!
+- docs: we have a new logo!
 
 ## v2.8.0 - 2026-05-11
 
