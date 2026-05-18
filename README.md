@@ -16,7 +16,7 @@
 A cross-platform ping program using `TCP` instead of `ICMP`, inspired by Linux's ping utility.
 
 > [!TIP]
-> This document is also available in [Chinese | 中文](README.cn.md).
+> This document is also available in [中文](README.cn.md).
 
 Here are some of the features of **TCPING**:
 
