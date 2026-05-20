@@ -10,3 +10,13 @@ patches/
 .tool-versions
 /target/
 /output/
+
+# secrets / credentials
+.env
+.env.*
+*.key
+*.pem
+secrets/
+credentials/
+.aws/
+.ssh/
