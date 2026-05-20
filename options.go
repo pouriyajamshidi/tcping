@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"net"
+	"net/http"
 	"net/netip"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/google/go-github/v45/github"
 )
 
 type userInput struct {
@@ -215,9 +216,9 @@ func processUserInput(tcping *tcping) {
 	showVer := flag.Bool("v", false, "show version.")
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
-	timeout := flag.Float64("t", 1, "time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
+	timeout := flag.Float64("t", 1, "time to wait for a response in seconds. Real number allowed. 0 means infinite timeout.")
 	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
-	interfaceName := flag.String("I", "", "interface name or address.")
+	interfaceName := flag.String("I", "", "source interface name or address.")
 	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
 	showHelp := flag.Bool("h", false, "show help message.")
@@ -436,36 +437,65 @@ func compareVersions(v1, v2 string) int {
 	return 0
 }
 
+// minimal subset of the GitHub release JSON
+type release struct {
+	TagName string `json:"tag_name"`
+}
+
 // checkForUpdates checks for newer versions of tcping
 func checkForUpdates(tcping *tcping) {
-	c := github.NewClient(nil)
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
 
-	/* unauthenticated requests from the same IP are limited to 60 per hour. */
-	latestRelease, _, err := c.Repositories.GetLatestRelease(context.Background(), owner, repo)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
-		tcping.printError("Failed to check for updates %s", err.Error())
+		tcping.printError("Could not create request: %s", err)
+		os.Exit(1)
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	// optional (GitHub recommends)
+	req.Header.Set("User-Agent", "pouriyajamshidi-tcping-update-check")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		tcping.printError("Failed to check for updates %s", err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		tcping.printError("Failed to check for updates: HTTP %d", resp.StatusCode)
+		os.Exit(1)
+	}
+
+	var rel release
+	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		tcping.printError("Failed to parse release info: %s", err)
 		os.Exit(1)
 	}
 
 	reg := `^v?(\d+\.\d+\.\d+)$`
-	latestTagName := latestRelease.GetTagName()
-	latestVersion := regexp.MustCompile(reg).FindStringSubmatch(latestTagName)
-
-	if len(latestVersion) == 0 {
+	latestTagName := rel.TagName
+	re := regexp.MustCompile(reg)
+	m := re.FindStringSubmatch(latestTagName)
+	if len(m) == 0 {
 		tcping.printError("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
 		os.Exit(1)
 	}
 
-	comparison := compareVersions(version, latestVersion[1])
+	latestVer := m[1]
+
+	comparison := compareVersions(version, latestVer)
 
 	if comparison < 0 {
-		tcping.printInfo("Found newer version %s", latestVersion[1])
+		tcping.printInfo("Found newer version %s", latestVer)
 		tcping.printInfo("Please update TCPING from the URL below:")
 		tcping.printInfo("https://github.com/%s/%s/releases/tag/%s",
 			owner, repo, latestTagName)
 	} else if comparison > 0 {
 		tcping.printInfo("Current version %s is newer than the latest release %s",
-			version, latestVersion[1])
+			version, latestVer)
 	} else {
 		tcping.printInfo("You have the latest version: %s", version)
 	}
