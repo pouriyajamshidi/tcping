@@ -23,7 +23,7 @@ Here are some of the features of **TCPING**:
 - An alternative to `ping` in environments that `ICMP` is blocked.
 - Outputs information in **colored**, **plain**, **JSON**, **CSV** and **sqlite3** formats.
 - Monitor and audit your or your peers network latency, packet loss, and connection quality.
-- Let's you specify the **source interface**, **timeout**, and **interval** between probes.
+- Lets you specify the **source interface**, **timeout**, and **interval** between probes.
 - Supports both `IPv4` or `IPv6` and lets you enforce using either.
 - Prints total connection statistics by pressing the `Enter` key, without stopping the program.
 - Reports the longest encountered `downtime` and `uptime` duration and time.
