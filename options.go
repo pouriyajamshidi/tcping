@@ -437,11 +437,6 @@ func compareVersions(v1, v2 string) int {
 	return 0
 }
 
-// minimal subset of the GitHub release JSON
-type release struct {
-	TagName string `json:"tag_name"`
-}
-
 // checkForUpdates checks for newer versions of tcping
 func checkForUpdates(tcping *tcping) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
@@ -469,14 +464,17 @@ func checkForUpdates(tcping *tcping) {
 		os.Exit(1)
 	}
 
-	var rel release
-	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+	release := struct {
+		TagName string `json:"tag_name"`
+	}{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		tcping.printError("Failed to parse release info: %s", err)
 		os.Exit(1)
 	}
 
 	reg := `^v?(\d+\.\d+\.\d+)$`
-	latestTagName := rel.TagName
+	latestTagName := release.TagName
 	re := regexp.MustCompile(reg)
 	m := re.FindStringSubmatch(latestTagName)
 	if len(m) == 0 {
