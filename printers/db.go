@@ -1,5 +1,5 @@
 // db.go outputs data in sqlite3 format
-package main
+package printers
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-type database struct {
+type Database struct {
 	conn      *sqlite.Conn
 	dbPath    string
 	tableName string
@@ -100,23 +100,23 @@ CREATE TABLE %s (
 	total_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-// newDB creates a newDB with the given path and returns a pointer to the `database` struct
-func newDB(dbPath string, args []string) *database {
+// NewDB creates a NewDB with the given path and returns a pointer to the `database` struct
+func NewDB(dbPath string, args []string) *Database {
 	tableName := newTableName(args)
 	tableSchema := fmt.Sprintf(tableSchema, tableName)
 
 	conn, err := sqlite.OpenConn(dbPath, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
-		colorRed("\nError while creating the database %q: %s\n", dbPath, err)
+		fmt.Printf("\nError while creating the database %q: %s\n", dbPath, err)
 		os.Exit(1)
 	}
 
 	err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{})
 	if err != nil {
-		colorRed("\nError writing to the database %q \nerr: %s\n", dbPath, err)
+		fmt.Printf("\nError writing to the database %q \nerr: %s\n", dbPath, err)
 		os.Exit(1)
 	}
-	return &database{conn, dbPath, tableName}
+	return &Database{conn, dbPath, tableName}
 }
 
 // newTableName will return correctly formatted table name
@@ -135,7 +135,7 @@ func newTableName(args []string) string {
 }
 
 // saveStats saves stats to the database with proper formatting
-func (db *database) saveStats(tcping tcping) error {
+func (db *Database) saveStats(tcping tcping) error {
 	totalPackets := tcping.totalSuccessfulProbes + tcping.totalUnsuccessfulProbes
 	packetLoss := (float32(tcping.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
 	if math.IsNaN(float64(packetLoss)) {
@@ -226,7 +226,7 @@ func (db *database) saveStats(tcping tcping) error {
 
 // saveHostNameChang saves the hostname changes
 // in multiple rows with event_type = eventTypeHostnameChange
-func (db *database) saveHostNameChange(h []hostnameChange) error {
+func (db *Database) saveHostNameChange(h []hostnameChange) error {
 	// %s will be replaced by the table name
 	schema := `INSERT INTO %s
 	(event_type, hostname_changed_to, hostname_change_time)
@@ -248,13 +248,13 @@ func (db *database) saveHostNameChange(h []hostnameChange) error {
 
 // printStart will let the user know the program is running by
 // printing a msg with the hostname, and port number to stdout
-func (db *database) printStart(hostname string, port uint16) {
+func (db *Database) printStart(hostname string, port uint16) {
 	fmt.Printf("TCPinging %s on port %d\n", hostname, port)
 }
 
 // printStatistics saves the statistics to the given database
 // calls stat.printer.printError() on err
-func (db *database) printStatistics(tcping tcping) {
+func (db *Database) printStatistics(tcping tcping) {
 	err := db.saveStats(tcping)
 	if err != nil {
 		db.printError("\nError while writing stats to the database %q\nerr: %s", db.dbPath, err)
@@ -273,15 +273,15 @@ func (db *database) printStatistics(tcping tcping) {
 }
 
 // printError prints the err to the stderr and exits with status code 1
-func (db *database) printError(format string, args ...any) {
+func (db *Database) printError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 	os.Exit(1)
 }
 
 // Satisfying the "printer" interface.
-func (db *database) printProbeSuccess(_ string, _ userInput, _ uint, _ float32) {}
-func (db *database) printProbeFail(_ userInput, _ uint)                         {}
-func (db *database) printRetryingToResolve(_ string)                            {}
-func (db *database) printTotalDownTime(_ time.Duration)                         {}
-func (db *database) printVersion()                                              {}
-func (db *database) printInfo(_ string, _ ...any)                               {}
+func (db *Database) printProbeSuccess(_ string, _ userInput, _ uint, _ float32) {}
+func (db *Database) printProbeFail(_ userInput, _ uint)                         {}
+func (db *Database) printRetryingToResolve(_ string)                            {}
+func (db *Database) printTotalDownTime(_ time.Duration)                         {}
+func (db *Database) printVersion()                                              {}
+func (db *Database) printInfo(_ string, _ ...any)                               {}

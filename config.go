@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/printers"
 )
 
 type userInput struct {
@@ -54,13 +56,13 @@ type networkInterface struct {
 func usage() {
 	executableName := os.Args[0]
 
-	colorLightCyan("\nTCPING version %s\n\n", version)
-	colorRed("Try running %s like:\n", executableName)
-	colorRed("%s <hostname/ip> <port number>. For example:\n", executableName)
-	colorRed("%s www.example.com 443\n", executableName)
-	colorRed("Or use the <hostname/ip:port> format:\n")
-	colorRed("%s www.example.com:443\n", executableName)
-	colorYellow("\n[optional flags]\n")
+	fmt.Printf("\nTCPING version %s\n\n", version)
+	fmt.Printf("Try running %s like:\n", executableName)
+	fmt.Printf("%s <hostname/ip> <port number>. For example:\n", executableName)
+	fmt.Printf("%s www.example.com 443\n", executableName)
+	fmt.Printf("Or use the <hostname/ip:port> format:\n")
+	fmt.Printf("%s www.example.com:443\n", executableName)
+	fmt.Printf("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
 		flagName := f.Name
@@ -68,7 +70,7 @@ func usage() {
 			flagName = "-" + flagName
 		}
 
-		colorYellow("  -%s : %s\n", flagName, f.Usage)
+		fmt.Printf("  -%s : %s\n", flagName, f.Usage)
 	})
 
 	os.Exit(1)
@@ -77,25 +79,25 @@ func usage() {
 // setPrinter selects the printer
 func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, sourceAddress *bool, outputDb *string, outputCSV *string, args []string) {
 	if *prettyJSON && !*outputJSON {
-		colorRed("--pretty has no effect without the -j flag.")
+		fmt.Println("--pretty has no effect without the -j flag.")
 		usage()
 	}
 
 	if *outputJSON {
-		tcping.printer = newJSONPrinter(*prettyJSON)
+		tcping.printer = printers.NewJSONPrinter(*prettyJSON)
 	} else if *outputDb != "" {
-		tcping.printer = newDB(*outputDb, args)
+		tcping.printer = printers.NewDB(*outputDb, args)
 	} else if *outputCSV != "" {
 		var err error
-		tcping.printer, err = newCSVPrinter(*outputCSV, timeStamp, sourceAddress)
+		tcping.printer, err = printers.NewCSVPrinter(*outputCSV, timeStamp, sourceAddress)
 		if err != nil {
 			tcping.printError("Failed to create CSV file: %s", err)
 			os.Exit(1)
 		}
 	} else if *noColor {
-		tcping.printer = newPlainPrinter(timeStamp)
+		tcping.printer = printers.NewPlainPrinter(timeStamp)
 	} else {
-		tcping.printer = newColorPrinter(timeStamp)
+		tcping.printer = printers.NewColorPrinter(timeStamp)
 	}
 }
 
