@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/printers"
 )
 
 var version = "" // set at compile time through the Makefile
@@ -160,12 +162,12 @@ func shutdown(tcping *tcping) {
 	tcping.printStats()
 
 	// if the printer type is `database`, close it before exiting
-	if db, ok := tcping.printer.(*database); ok {
+	if db, ok := tcping.printer.(*printers.Database); ok {
 		db.conn.Close()
 	}
 
 	// if the printer type is `csvPrinter`, call the cleanup function before exiting
-	if cp, ok := tcping.printer.(*csvPrinter); ok {
+	if cp, ok := tcping.printer.(*printers.CSVPrinter); ok {
 		cp.cleanup()
 	}
 

@@ -1,4 +1,4 @@
-package main
+package printers
 
 import (
 	"bytes"
@@ -168,7 +168,7 @@ func TestPrintProbeSuccess(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := newPlainPrinter(&tc.showTimestamp)
+			pp := NewPlainPrinter(&tc.showTimestamp)
 
 			read, write, _ := os.Pipe()
 			os.Stdout = write
@@ -263,7 +263,7 @@ func TestPrintProbeFail(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := newColorPrinter(&tc.showTimestamp)
+			pp := NewColorPrinter(&tc.showTimestamp)
 
 			read, write, _ := os.Pipe()
 			os.Stdout = write

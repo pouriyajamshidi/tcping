@@ -1,4 +1,4 @@
-package main
+package printers
 
 import (
 	"encoding/csv"
@@ -14,7 +14,7 @@ func TestNewCSVPrinter(t *testing.T) {
 	showTimestamp := true
 	showSourceAddress := true
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
+	cp, err := NewCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 	assert.Equal(t, dataFilename, cp.probeFilename)
@@ -30,7 +30,7 @@ func TestWriteRecord(t *testing.T) {
 	showTimestamp := false
 	showSourceAddress := true
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
+	cp, err := NewCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
@@ -63,7 +63,7 @@ func TestWriteStatistics(t *testing.T) {
 	showTimestamp := true
 	showSourceAddress := false
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
+	cp, err := NewCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
@@ -103,7 +103,7 @@ func TestCleanup(t *testing.T) {
 	showTimestamp := true
 	showSourceAddress := false
 
-	cp, err := newCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
+	cp, err := NewCSVPrinter(dataFilename, &showTimestamp, &showSourceAddress)
 	assert.NoError(t, err)
 	assert.NotNil(t, cp)
 
