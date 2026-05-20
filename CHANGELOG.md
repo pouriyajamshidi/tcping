@@ -9,6 +9,8 @@
 - build: support more container architectures
 - templates: improve pull and bug report templates
 - docs: we have a new logo!
+- refactor: modernize with `go fix`
+- dependencies: replace `github.com/google/go-github` with Go's built-in HTTP library
 
 ## v2.8.0 - 2026-05-11
 
