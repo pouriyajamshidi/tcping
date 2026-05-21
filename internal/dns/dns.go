@@ -1,4 +1,5 @@
-package main
+// Package dns handles all the name resolution logic
+package dns
 
 import (
 	"context"
@@ -7,6 +8,10 @@ import (
 	"net/netip"
 	"os"
 	"time"
+)
+
+const (
+	dnsTimeout = 2 * time.Second
 )
 
 // selectResolvedIP returns a single IPv4 or IPv6 address from the net.IP slice of resolved addresses

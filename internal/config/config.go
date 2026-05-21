@@ -1,4 +1,5 @@
-package main
+// Package config handles user input and the defaults to run tcping
+package config
 
 import (
 	"context"
@@ -17,6 +18,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/printers"
 )
 
+var version = "" // set at compile time through the Makefile
 type userInput struct {
 	ip                       netip.Addr
 	hostname                 string
