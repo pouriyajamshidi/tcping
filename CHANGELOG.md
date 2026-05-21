@@ -8,9 +8,10 @@
 - build: general cleanups
 - build: support more container architectures
 - templates: improve pull and bug report templates
-- docs: we have a new logo!
+- docs: we have a new logo thanks to Gemini!
 - refactor: modernize with `go fix`
 - dependencies: replace `github.com/google/go-github` with Go's built-in HTTP library
+- docs: grammar fix in the README.md thanks to @taiman724
 
 ## v2.8.0 - 2026-05-11
 
