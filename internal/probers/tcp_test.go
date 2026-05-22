@@ -7,8 +7,22 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+// dummyPrinter is a fake test implementation
+// of a printer that does nothing.
+type dummyPrinter struct{}
+
+func (fp *dummyPrinter) PrintStart(_ string, _ uint16) {}
+func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ models.Options, _ uint, _ string) {
+}
+func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ models.Options, _ uint) {}
+func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                         {}
+func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                      {}
+func (fp *dummyPrinter) PrintStatistics(_ models.Tcping)                         {}
+func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                   {}
 
 // createTestStats should be used to create new stats structs.
 // it uses "127.0.0.1:12345" as default values, because
@@ -16,15 +30,15 @@ import (
 // It'll call t.Errorf if netip.ParseAddr has failed.
 func createTestStats(t *testing.T) *models.Tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
-	s := tcping{
-		printer: &dummyPrinter{},
-		userInput: userInput{
-			ip:                    addr,
-			port:                  12345,
-			intervalBetweenProbes: time.Second,
-			timeout:               time.Second,
+	s := models.Tcping{
+		Printer: &dummyPrinter{},
+		Options: models.Options{
+			IP:                    addr,
+			Port:                  12345,
+			IntervalBetweenProbes: time.Second,
+			Timeout:               time.Second,
 		},
-		ticker: time.NewTicker(time.Second),
+		Ticker: time.NewTicker(time.Second),
 	}
 	if err != nil {
 		t.Errorf("ip parse: %v", err)
@@ -62,7 +76,7 @@ func testServerListen(t *testing.T) net.Listener {
 
 func TestProbeSuccess(t *testing.T) {
 	stats := createTestStats(t)
-	stats.ticker = time.NewTicker(time.Nanosecond)
+	stats.Ticker = time.NewTicker(time.Nanosecond)
 	srv := testServerListen(t)
 	t.Cleanup(func() {
 		if err := srv.Close(); err != nil {
@@ -72,20 +86,20 @@ func TestProbeSuccess(t *testing.T) {
 
 	expectedSuccessful := 100
 
-	for range expectedSuccessful {
-		tcpProbe(stats)
+	for i := 0; i < expectedSuccessful; i++ {
+		Ping(stats)
 	}
 
-	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessful))
-	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessful))
+	assert.Equal(t, stats.TotalSuccessfulProbes, uint(expectedSuccessful))
+	assert.Equal(t, stats.OngoingSuccessfulProbes, uint(expectedSuccessful))
 
-	assert.Equal(t, stats.totalUptime, 100*time.Second)
+	assert.Equal(t, stats.TotalUptime, 100*time.Second)
 }
 
 func TestProbeSuccessInterval(t *testing.T) {
 	stats := createTestStats(t)
-	stats.userInput.intervalBetweenProbes = 10 * time.Second
-	stats.ticker = time.NewTicker(time.Nanosecond)
+	stats.Options.IntervalBetweenProbes = 10 * time.Second
+	stats.Ticker = time.NewTicker(time.Nanosecond)
 	srv := testServerListen(t)
 	t.Cleanup(func() {
 		if err := srv.Close(); err != nil {
@@ -95,149 +109,47 @@ func TestProbeSuccessInterval(t *testing.T) {
 
 	expectedSuccessful := 100
 
-	for range expectedSuccessful {
-		tcpProbe(stats)
+	for i := 0; i < expectedSuccessful; i++ {
+		Ping(stats)
 	}
 
-	assert.Equal(t, stats.totalSuccessfulProbes, uint(expectedSuccessful))
-	assert.Equal(t, stats.ongoingSuccessfulProbes, uint(expectedSuccessful))
+	assert.Equal(t, stats.TotalSuccessfulProbes, uint(expectedSuccessful))
+	assert.Equal(t, stats.OngoingSuccessfulProbes, uint(expectedSuccessful))
 
-	assert.Equal(t, stats.totalUptime, 16*time.Minute+40*time.Second)
+	assert.Equal(t, stats.TotalUptime, 16*time.Minute+40*time.Second)
 }
 
 func TestProbeFail(t *testing.T) {
 	stats := createTestStats(t)
-	stats.ticker = time.NewTicker(time.Nanosecond)
+	stats.Ticker = time.NewTicker(time.Nanosecond)
 
 	expectedFailed := 100
 
-	for range expectedFailed {
-		tcpProbe(stats)
+	for i := 0; i < expectedFailed; i++ {
+		Ping(stats)
 	}
 
-	assert.Equal(t, stats.totalUnsuccessfulProbes, uint(expectedFailed))
-	assert.Equal(t, stats.ongoingUnsuccessfulProbes, uint(expectedFailed))
+	assert.Equal(t, stats.TotalUnsuccessfulProbes, uint(expectedFailed))
+	assert.Equal(t, stats.OngoingUnsuccessfulProbes, uint(expectedFailed))
 
-	assert.Equal(t, stats.totalDowntime, 100*time.Second)
+	assert.Equal(t, stats.TotalDowntime, 100*time.Second)
 }
 
 func TestProbeFailInterval(t *testing.T) {
 	stats := createTestStats(t)
-	stats.userInput.intervalBetweenProbes = 10 * time.Second
-	stats.ticker = time.NewTicker(time.Nanosecond)
+	stats.Options.IntervalBetweenProbes = 10 * time.Second
+	stats.Ticker = time.NewTicker(time.Nanosecond)
 
 	expectedFailed := 100
 
-	for range expectedFailed {
-		tcpProbe(stats)
+	for i := 0; i < expectedFailed; i++ {
+		Ping(stats)
 	}
 
-	assert.Equal(t, stats.totalUnsuccessfulProbes, uint(expectedFailed))
-	assert.Equal(t, stats.ongoingUnsuccessfulProbes, uint(expectedFailed))
+	assert.Equal(t, stats.TotalUnsuccessfulProbes, uint(expectedFailed))
+	assert.Equal(t, stats.OngoingUnsuccessfulProbes, uint(expectedFailed))
 
-	assert.Equal(t, stats.totalDowntime, 16*time.Minute+40*time.Second)
-}
-
-func TestParseHostPortArgs(t *testing.T) {
-	tests := []struct {
-		name string
-		args []string
-		want []string
-	}{
-		{
-			name: "traditional format: host port",
-			args: []string{"example.com", "8080"},
-			want: []string{"example.com", "8080"},
-		},
-		{
-			name: "host:port format",
-			args: []string{"example.com:8080"},
-			want: []string{"example.com", "8080"},
-		},
-		{
-			name: "IPv4:port format",
-			args: []string{"192.168.1.1:443"},
-			want: []string{"192.168.1.1", "443"},
-		},
-		{
-			name: "IPv6 with brackets and port",
-			args: []string{"[2001:db8::1]:8080"},
-			want: []string{"2001:db8::1", "8080"},
-		},
-		{
-			name: "IPv6 without brackets and port",
-			args: []string{"2001:db8::1:8080"},
-			want: []string{"2001:db8::1", "8080"},
-		},
-		{
-			name: "localhost:port format",
-			args: []string{"localhost:80"},
-			want: []string{"localhost", "80"},
-		},
-		{
-			name: "IPv6 localhost with brackets",
-			args: []string{"[::1]:22"},
-			want: []string{"::1", "22"},
-		},
-		{
-			name: "IPv6 localhost without brackets",
-			args: []string{"::1:22"},
-			want: []string{"::1", "22"},
-		},
-		{
-			name: "single argument without colon",
-			args: []string{"example.com"},
-			want: []string{"example.com"},
-		},
-		{
-			name: "three arguments unchanged",
-			args: []string{"example.com", "8080", "extra"},
-			want: []string{"example.com", "8080", "extra"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parseHostPortArgs(tt.args)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestPermuteArgs(t *testing.T) {
-	type args struct {
-		args []string
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		{
-			"host/ip before option",
-			args{args: []string{"127.0.0.1", "8080", "-r", "3"}},
-			[]string{"-r", "3", "127.0.0.1", "8080"},
-		},
-		{
-			"host/ip after option",
-			args{args: []string{"-r", "3", "127.0.0.1", "8080"}},
-			[]string{"-r", "3", "127.0.0.1", "8080"},
-		},
-		{
-			"check for updates",
-			args{args: []string{"-u"}},
-			[]string{"-u"},
-		},
-		/**
-		 * cases in which the value of the option does not exist are not listed.
-		 * they call directly usage() and exit with code 1.
-		 */
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			permuteArgs(tt.args.args)
-			assert.Equal(t, tt.want, tt.args.args)
-		})
-	}
+	assert.Equal(t, stats.TotalDowntime, 16*time.Minute+40*time.Second)
 }
 
 func TestNanoToMilliseconds(t *testing.T) {
@@ -252,93 +164,11 @@ func TestNanoToMilliseconds(t *testing.T) {
 		{d: time.Second + 100*time.Nanosecond, want: 1000.000123},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.d.String(), func(t *testing.T) {
 			t.Parallel()
-			got := nanoToMillisecond(tt.d.Nanoseconds())
+			got := utils.NanoToMillisecond(tt.d.Nanoseconds())
 			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestSelectResolvedIPv4(t *testing.T) {
-	userInputV4 := userInput{
-		useIPv4: true,
-	}
-
-	stats := createTestStats(t)
-	stats.userInput = userInputV4
-
-	var (
-		ip1 = netip.MustParseAddr("172.20.10.238")
-		ip2 = netip.MustParseAddr("8.8.8.8")
-	)
-
-	t.Run("IPv4 Selection", func(t *testing.T) {
-		actual := selectResolvedIP(stats, []netip.Addr{ip1, ip2})
-
-		if !actual.IsValid() {
-			t.Errorf("Expected an IP but got invalid address")
-		}
-		if actual != ip1 && actual != ip2 {
-			t.Errorf("Expected an IP but got invalid address")
-		}
-	})
-}
-
-func TestSelectResolvedIPv6(t *testing.T) {
-	userInputV6 := userInput{
-		useIPv6: true,
-	}
-
-	stats := createTestStats(t)
-	stats.userInput = userInputV6
-
-	var (
-		ip1 = netip.MustParseAddr("2001:0db8:85a3:0000:0000:8a2e:0370:7334")
-		ip2 = netip.MustParseAddr("2001:4860:4860::8888")
-	)
-
-	t.Run("IPv6 Selection", func(t *testing.T) {
-		actual := selectResolvedIP(stats, []netip.Addr{ip1, ip2})
-		if !actual.IsValid() {
-			t.Errorf("Expected an IP but got invalid address")
-		}
-		if actual != ip1 && actual != ip2 {
-			t.Errorf("Expected an IP but got invalid address")
-		}
-	})
-}
-
-func TestSecondsToDuration(t *testing.T) {
-	tests := []struct {
-		name     string
-		seconds  float64
-		duration time.Duration
-	}{
-		{
-			name:     "positive integer",
-			seconds:  2,
-			duration: 2 * time.Second,
-		},
-		{
-			name:     "positive float",
-			seconds:  1.5, // 1.5 = 3 / 2
-			duration: time.Second * 3 / 2,
-		},
-		{
-			name:     "negative integer",
-			seconds:  -3,
-			duration: -3 * time.Second,
-		},
-		{
-			name:     "negative float",
-			seconds:  -2.5, // -2.5 = -5 / 2
-			duration: time.Second * -5 / 2,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.duration, secondsToDuration(tt.seconds))
 		})
 	}
 }
