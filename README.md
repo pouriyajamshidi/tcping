@@ -13,7 +13,8 @@
 ![Download](https://img.shields.io/github/downloads/pouriyajamshidi/tcping/total.svg?label=DOWNLOADS&logo=github)
 ![Docker Pulls](https://img.shields.io/docker/pulls/pouriyajamshidi/tcping)
 
-**NOTE: You are viewing a broken and a work in progress branch. head to the [MAIN BRANCH](https://github.com/pouriyajamshidi/tcping/tree/master) for the latest release**.
+**NOTE: You are viewing a broken and a work in progress branch. head to the [MAIN BRANCH](https://github.com/pouriyajamshidi/tcping/tree/master) for the latest release.**
+**This branch has become the default for now to ensure our contributors are not basing their work on version 2 mistakenly.**
 
 A cross-platform ping program using `TCP` instead of `ICMP`, inspired by Linux's ping utility.
 
