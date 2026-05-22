@@ -130,7 +130,7 @@ $(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
 	@export GOOS=windows; \
 	export GOARCH=$(word 1, $(subst -, ,$*)); \
 	[ $(word 2, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
-	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+	go build -ldflags "-s -w -X github.com/you/repo/internal/consts.Version=$(VERSION)" -o $@;
 
 # ==================================================
 # Release outputs
