@@ -3,218 +3,261 @@ package printers
 import (
 	"fmt"
 	"math"
+	"os"
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
+	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
+// Color functions used when printing information
 var (
-	colorYellow      = color.Yellow.Printf
-	colorGreen       = color.Green.Printf
-	colorRed         = color.Red.Printf
-	colorCyan        = color.Cyan.Printf
-	colorLightYellow = color.LightYellow.Printf
-	colorLightBlue   = color.FgLightBlue.Printf
-	colorLightGreen  = color.LightGreen.Printf
-	colorLightCyan   = color.LightCyan.Printf
+	ColorCyan        = color.Cyan.Printf
+	ColorLightCyan   = color.LightCyan.Printf
+	ColorGreen       = color.Green.Printf
+	ColorLightGreen  = color.LightGreen.Printf
+	ColorYellow      = color.Yellow.Printf
+	ColorLightYellow = color.LightYellow.Printf
+	ColorRed         = color.Red.Printf
+	ColorLightBlue   = color.FgLightBlue.Printf
 )
 
-type ColorPrinter struct {
-	showTimestamp *bool
+// ColorPrinter provides functionality for printing messages with color support.
+// It optionally includes a timestamp in the output if ShowTimestamp is enabled.
+type ColorPrinter struct{}
+
+// NewColorPrinter creates a new ColorPrinter instance.
+// The showTimestamp parameter controls whether timestamps should be included in printed messages.
+func NewColorPrinter() *ColorPrinter {
+	return &ColorPrinter{}
 }
 
-func NewColorPrinter(showTimestamp *bool) *ColorPrinter {
-	return &ColorPrinter{showTimestamp: showTimestamp}
+// Shutdown sets the end time, prints statistics, and exits the program.
+func (p *ColorPrinter) Shutdown(s *stats.Statistics) {
+	s.EndTime = time.Now()
+	PrintStats(p, s)
+	os.Exit(0)
 }
 
-func (p *ColorPrinter) printStart(hostname string, port uint16) {
-	colorLightCyan("TCPinging %s on port %d\n", hostname, port)
+// PrintStart prints a message indicating the start of a TCP ping attempt.
+// The message is printed in light cyan and includes the target hostname and port.
+//
+// Parameters:
+//   - hostname: The target host for the TCP ping.
+//   - port: The target port number.
+func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
+	ColorLightCyan("TCPinging %s on port %d\n", s.Hostname, s.Port)
 }
 
-func (p *ColorPrinter) printStatistics(t tcping) {
-	totalPackets := t.totalSuccessfulProbes + t.totalUnsuccessfulProbes
-	packetLoss := (float32(t.totalUnsuccessfulProbes) / float32(totalPackets)) * 100
+// PrintProbeSuccess prints a message indicating a successful probe response.
+// It includes the source IP (if shown), target IP/hostname, port, connection streak, and RTT.
+//
+// Parameters:
+//   - sourceAddr: The local address used for the TCP connection.
+//   - userInput: The user-provided input data (hostname, IP, port, etc.).
+//   - streak: The number of consecutive successful probes.
+//   - rtt: The round-trip time of the probe in milliseconds (3 decimal points).
+func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
+	msg := "Reply from "
+
+	if s.WithTimestamp {
+		timestamp := s.StartTimeFormatted()
+		msg = fmt.Sprintf("%v %v", timestamp, msg)
+	}
+
+	hostnameAndIP := s.IPStr()
+	if s.Hostname != hostnameAndIP {
+		hostnameAndIP = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
+	}
+
+	msg += fmt.Sprintf("%s on port %d", hostnameAndIP, s.Port)
+
+	if s.WithSourceAddress {
+		msg += fmt.Sprintf(" using %s", s.SourceAddr())
+	}
+
+	msg += fmt.Sprintf(" TCP_conn=%d time=%.3f ms\n", s.OngoingSuccessfulProbes, s.RTTStr())
+
+	ColorLightGreen(msg)
+}
+
+// PrintProbeFailure prints a message indicating a failed probe attempt.
+// It includes the target hostname/IP, port, and failed connection streak.
+//
+// Parameters:
+//   - userInput: The user-provided input data (hostname, IP, port, etc.).
+//   - streak: The number of consecutive failed probes.
+func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
+	msg := "No reply from "
+
+	if s.WithTimestamp {
+		timestamp := time.Now().Format(s.StartTimeFormatted())
+		msg = fmt.Sprintf("%v %v", timestamp, msg)
+	}
+
+	hostnameAndIP := s.IPStr()
+	if s.Hostname != hostnameAndIP {
+		hostnameAndIP = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
+	}
+
+	msg += fmt.Sprintf("%s on port %d TCP_conn=%d\n", hostnameAndIP, s.PortStr(), s.OngoingUnsuccessfulProbes)
+
+	ColorRed(msg)
+}
+
+// PrintTotalDownTime prints the total duration of downtime when no response was received.
+//
+// Parameters:
+//   - downtime: The total duration of downtime.
+func (p *ColorPrinter) PrintTotalDownTime(s *stats.Statistics) {
+	ColorYellow("No response received for %s\n", utils.DurationToString(s.DownTime))
+}
+
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
+//
+// Parameters:
+//   - hostname: The hostname that is being resolved.
+func (p *ColorPrinter) PrintRetryingToResolve(s *stats.Statistics) {
+	ColorLightYellow("Retrying to resolve %s\n", s.Hostname)
+}
+
+// PrintError prints an error message in red.
+//
+// Parameters:
+//   - format: A format string for the error message.
+//   - args: Arguments to format the message.
+func (p *ColorPrinter) PrintError(format string, args ...any) {
+	ColorRed(format+"\n", args...)
+}
+
+// PrintStatistics prints a summary of TCP ping statistics.
+// It includes transmitted and received packets, packet loss percentage,
+// successful and unsuccessful probes, uptime/downtime durations,
+// longest uptime/downtime, IP address changes, and RTT statistics.
+func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
+	if !s.DestIsIP {
+		ColorYellow("\n--- %s (%s) TCPing statistics ---\n",
+			s.Hostname,
+			s.IPStr())
+	} else {
+		ColorYellow("\n--- %s TCPing statistics ---\n", s.Hostname)
+	}
+
+	totalPackets := s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
+
+	ColorYellow("%d probes transmitted on port %d | ", totalPackets, s.Port)
+	ColorYellow("%d received, ", s.TotalSuccessfulProbes)
+
+	packetLoss := (float32(s.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
 
 	if math.IsNaN(float64(packetLoss)) {
 		packetLoss = 0
 	}
 
-	/* general stats */
-	if !t.destIsIP {
-		colorYellow("\n--- %s (%s) TCPing statistics ---\n", t.userInput.hostname, t.userInput.ip)
-	} else {
-		colorYellow("\n--- %s TCPing statistics ---\n", t.userInput.hostname)
-	}
-	colorYellow("%d probes transmitted on port %d | ", totalPackets, t.userInput.port)
-	colorYellow("%d received, ", t.totalSuccessfulProbes)
-
-	/* packet loss stats */
 	if packetLoss == 0 {
-		colorGreen("%.2f%%", packetLoss)
+		ColorGreen("%.2f%%", packetLoss)
 	} else if packetLoss > 0 && packetLoss <= 30 {
-		colorLightYellow("%.2f%%", packetLoss)
+		ColorLightYellow("%.2f%%", packetLoss)
 	} else {
-		colorRed("%.2f%%", packetLoss)
+		ColorRed("%.2f%%", packetLoss)
 	}
 
-	colorYellow(" packet loss\n")
+	ColorYellow(" packet loss\n")
 
-	/* successful packet stats */
-	colorYellow("successful probes:   ")
-	colorGreen("%d\n", t.totalSuccessfulProbes)
+	ColorYellow("successful probes:   ")
+	ColorGreen("%d\n", s.TotalSuccessfulProbes)
 
-	/* unsuccessful packet stats */
-	colorYellow("unsuccessful probes: ")
-	colorRed("%d\n", t.totalUnsuccessfulProbes)
+	ColorYellow("unsuccessful probes: ")
+	ColorRed("%d\n", s.TotalUnsuccessfulProbes)
 
-	colorYellow("last successful probe:   ")
-	if t.lastSuccessfulProbe.IsZero() {
-		colorRed("Never succeeded\n")
+	ColorYellow("last successful probe:   ")
+	if s.LastSuccessfulProbe.IsZero() {
+		ColorRed("Never succeeded\n")
 	} else {
-		colorGreen("%v\n", t.lastSuccessfulProbe.Format(timeFormat))
+		ColorGreen("%v\n", s.LastSuccessfulProbe.Format(time.DateTime))
 	}
 
-	colorYellow("last unsuccessful probe: ")
-	if t.lastUnsuccessfulProbe.IsZero() {
-		colorGreen("Never failed\n")
+	ColorYellow("last unsuccessful probe: ")
+	if s.LastUnsuccessfulProbe.IsZero() {
+		ColorGreen("Never failed\n")
 	} else {
-		colorRed("%v\n", t.lastUnsuccessfulProbe.Format(timeFormat))
+		ColorRed("%v\n", s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
-	/* uptime and downtime stats */
-	colorYellow("total uptime: ")
-	colorGreen("  %s\n", durationToString(t.totalUptime))
-	colorYellow("total downtime: ")
-	colorRed("%s\n", durationToString(t.totalDowntime))
+	ColorYellow("total uptime: ")
+	ColorGreen("  %s\n", utils.DurationToString(s.TotalUptime))
+	ColorYellow("total downtime: ")
+	ColorRed("%s\n", utils.DurationToString(s.TotalDowntime))
 
-	/* longest uptime stats */
-	if t.longestUptime.duration != 0 {
-		uptime := durationToString(t.longestUptime.duration)
+	if s.LongestUp.Duration != 0 {
+		uptime := utils.DurationToString(s.LongestUp.Duration)
 
-		colorYellow("longest consecutive uptime:   ")
-		colorGreen("%v ", uptime)
-		colorYellow("from ")
-		colorLightBlue("%v ", t.longestUptime.start.Format(timeFormat))
-		colorYellow("to ")
-		colorLightBlue("%v\n", t.longestUptime.end.Format(timeFormat))
+		ColorYellow("longest consecutive uptime:   ")
+		ColorGreen("%v ", uptime)
+		ColorYellow("from ")
+		ColorLightBlue("%v ", s.LongestUp.Start.Format(time.DateTime))
+		ColorYellow("to ")
+		ColorLightBlue("%v\n", s.LongestUp.End.Format(time.DateTime))
 	}
 
-	/* longest downtime stats */
-	if t.longestDowntime.duration != 0 {
-		downtime := durationToString(t.longestDowntime.duration)
+	if s.LongestDown.Duration != 0 {
+		downtime := utils.DurationToString(s.LongestDown.Duration)
 
-		colorYellow("longest consecutive downtime: ")
-		colorRed("%v ", downtime)
-		colorYellow("from ")
-		colorLightBlue("%v ", t.longestDowntime.start.Format(timeFormat))
-		colorYellow("to ")
-		colorLightBlue("%v\n", t.longestDowntime.end.Format(timeFormat))
+		ColorYellow("longest consecutive downtime: ")
+		ColorRed("%v ", downtime)
+		ColorYellow("from ")
+		ColorLightBlue("%v ", s.LongestDown.Start.Format(time.DateTime))
+		ColorYellow("to ")
+		ColorLightBlue("%v\n", s.LongestDown.End.Format(time.DateTime))
 	}
 
-	/* resolve retry stats */
-	if !t.destIsIP {
-		colorYellow("retried to resolve hostname ")
-		colorRed("%d ", t.retriedHostnameLookups)
-		colorYellow("times\n")
+	if !s.DestIsIP {
+		timeNoun := "time"
+		if s.RetriedHostnameLookups > 1 {
+			timeNoun = "times"
+		}
 
-		if len(t.hostnameChanges) >= 2 {
-			colorYellow("IP address changes:\n")
-			for i := 0; i < len(t.hostnameChanges)-1; i++ {
-				colorYellow("  from ")
-				colorRed(t.hostnameChanges[i].Addr.String())
-				colorYellow(" to ")
-				colorGreen(t.hostnameChanges[i+1].Addr.String())
-				colorYellow(" at ")
-				colorLightBlue("%v\n", t.hostnameChanges[i+1].When.Format(timeFormat))
+		ColorYellow("retried to resolve hostname ")
+		ColorRed("%d ", s.RetriedHostnameLookups)
+		ColorYellow("%s\n", timeNoun)
+
+		if len(s.HostnameChanges) > 1 {
+			ColorYellow("IP address changes:\n")
+			for i := 0; i < len(s.HostnameChanges)-1; i++ {
+				ColorYellow("  from ")
+				ColorRed(s.HostnameChanges[i].Addr.String())
+				ColorYellow(" to ")
+				ColorGreen(s.HostnameChanges[i+1].Addr.String())
+				ColorYellow(" at ")
+				ColorLightBlue("%v\n", s.HostnameChanges[i+1].When.Format(time.DateTime))
 			}
 		}
 	}
 
-	if t.rttResults.hasResults {
-		colorYellow("rtt ")
-		colorGreen("min")
-		colorYellow("/")
-		colorCyan("avg")
-		colorYellow("/")
-		colorRed("max: ")
-		colorGreen("%.3f", t.rttResults.min)
-		colorYellow("/")
-		colorCyan("%.3f", t.rttResults.average)
-		colorYellow("/")
-		colorRed("%.3f", t.rttResults.max)
-		colorYellow(" ms\n")
+	if s.RTTResults.HasResults {
+		ColorYellow("rtt ")
+		ColorGreen("min")
+		ColorYellow("/")
+		ColorCyan("avg")
+		ColorYellow("/")
+		ColorRed("max: ")
+		ColorGreen("%.3f", s.RTTResults.Min)
+		ColorYellow("/")
+		ColorCyan("%.3f", s.RTTResults.Average)
+		ColorYellow("/")
+		ColorRed("%.3f", s.RTTResults.Max)
+		ColorYellow(" ms\n")
 	}
 
-	colorYellow("--------------------------------------\n")
-	colorYellow("TCPing started at: %v\n", t.startTime.Format(timeFormat))
+	ColorYellow("--------------------------------------\n")
+	ColorYellow("TCPing started at: %v\n", s.StartTimeFormatted())
 
 	/* If the program was not terminated, no need to show the end time */
-	if !t.endTime.IsZero() {
-		colorYellow("TCPing ended at:   %v\n", t.endTime.Format(timeFormat))
+	if !s.EndTime.IsZero() {
+		ColorYellow("TCPing ended at:   %v\n", s.EndTimeFormatted())
 	}
 
-	durationTime := time.Time{}.Add(t.totalDowntime + t.totalUptime)
-	colorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(hourFormat))
-}
-
-func (p *ColorPrinter) printProbeSuccess(sourceAddr string, userInput userInput, streak uint, rtt float32) {
-	msg := "Reply from "
-
-	if *p.showTimestamp {
-		timestamp := time.Now().Format(timeFormat)
-		msg = fmt.Sprintf("%v %v", timestamp, msg)
-	}
-
-	hostnameAndIP := userInput.ip.String()
-	if userInput.hostname != hostnameAndIP {
-		hostnameAndIP = fmt.Sprintf("%s (%s)", userInput.hostname, userInput.ip)
-	}
-
-	msg += fmt.Sprintf("%s on port %d", hostnameAndIP, userInput.port)
-
-	if userInput.showSourceAddress {
-		msg += fmt.Sprintf(" using %s", sourceAddr)
-	}
-
-	msg += fmt.Sprintf(" TCP_conn=%d time=%.3f ms\n", streak, rtt)
-
-	colorLightGreen(msg)
-}
-
-func (p *ColorPrinter) printProbeFail(userInput userInput, streak uint) {
-	msg := "No reply from "
-
-	if *p.showTimestamp {
-		timestamp := time.Now().Format(timeFormat)
-		msg = fmt.Sprintf("%v %v", timestamp, msg)
-	}
-
-	hostnameAndIP := userInput.ip.String()
-	if userInput.hostname != hostnameAndIP {
-		hostnameAndIP = fmt.Sprintf("%s (%s)", userInput.hostname, userInput.ip)
-	}
-
-	msg += fmt.Sprintf("%s on port %d TCP_conn=%d\n", hostnameAndIP, userInput.port, streak)
-
-	colorRed(msg)
-}
-
-func (p *ColorPrinter) printTotalDownTime(downtime time.Duration) {
-	colorYellow("No response received for %s\n", durationToString(downtime))
-}
-
-func (p *ColorPrinter) printRetryingToResolve(hostname string) {
-	colorLightYellow("retrying to resolve %s\n", hostname)
-}
-
-func (p *ColorPrinter) printInfo(format string, args ...any) {
-	colorLightBlue(format+"\n", args...)
-}
-
-func (p *ColorPrinter) printError(format string, args ...any) {
-	colorRed(format+"\n", args...)
-}
-
-func (p *ColorPrinter) printVersion() {
-	colorGreen("TCPING version %s\n", version)
+	durationTime := time.Time{}.Add(s.TotalDowntime + s.TotalUptime)
+	ColorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
 }
