@@ -1,4 +1,4 @@
-package main
+package probers
 
 import (
 	"net"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +14,7 @@ import (
 // it uses "127.0.0.1:12345" as default values, because
 // [testServerListen] use the same values.
 // It'll call t.Errorf if netip.ParseAddr has failed.
-func createTestStats(t *testing.T) *tcping {
+func createTestStats(t *testing.T) *models.Tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := tcping{
 		printer: &dummyPrinter{},

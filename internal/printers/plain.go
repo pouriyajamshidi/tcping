@@ -50,7 +50,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		msg += fmt.Sprintf(" using %s", s.SourceAddr())
 	}
 
-	msg += fmt.Sprintf(" TCP_conn=%d time=%.3f ms\n", s.OngoingSuccessfulProbes, s.RTTStr())
+	msg += fmt.Sprintf(" TCP_conn=%d time=%s ms\n", s.OngoingSuccessfulProbes, s.RTTStr())
 
 	fmt.Print(msg)
 }
@@ -69,7 +69,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 		hostnameAndIP = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
-	msg += fmt.Sprintf("%s on port %d TCP_conn=%d\n", hostnameAndIP, s.PortStr(), s.OngoingUnsuccessfulProbes)
+	msg += fmt.Sprintf("%s on port %s TCP_conn=%d\n", hostnameAndIP, s.PortStr(), s.OngoingUnsuccessfulProbes)
 
 	fmt.Print(msg)
 }

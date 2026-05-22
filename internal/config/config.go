@@ -238,37 +238,51 @@ func permuteArgs(args []string) {
 func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Printer {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
+
 	probesBeforeQuit := flag.Uint("c",
 		0,
 		"stop after <n> probes, regardless of the result. By default, no limit will be applied.")
+
 	showTimestamp := flag.Bool("D", false, "show timestamp for each probe in the output.")
+
 	outputJSON := flag.Bool("j", false, "output in JSON format.")
 	prettyJSON := flag.Bool("pretty",
 		false,
 		"use indentation when using json output format. No effect without the '-j' flag.")
+
 	nonInteractive := flag.Bool("non-interactive",
 		false,
 		"let tcping run in the background, for instance using nohup or disown")
+
 	noColor := flag.Bool("no-color", false, "do not colorize output.")
+
 	saveToCSV := flag.String("csv",
 		"",
 		"path and file name to store output to a CSV file. The stats will be saved with the same name and `_stats` suffix.")
 	saveToDB := flag.String("db", "", "path and file name to store output to a sqlite3 database.")
+
 	intervalBetweenProbes := flag.Float64("i",
 		1,
 		"interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
+
 	timeout := flag.Float64("t",
 		1,
 		"time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
+
 	interfaceName := flag.String("I",
 		"",
 		"Enforce using a specific interface name or IP address to initiate probes.")
+
 	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
+
 	retryHostnameResolveAfter := flag.Uint("r",
 		0,
 		"retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
+
 	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
+
 	showVer := flag.Bool("v", false, "show version and exit.")
+
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 
 	flag.CommandLine.Usage = utils.Usage
@@ -293,7 +307,7 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Print
 	}
 
 	if *useIPv4 && *useIPv6 {
-		printers.ColorRed("Only one IP version can be specified")
+		fmt.Println("Only one IP version can be specified")
 		utils.Usage()
 	}
 
