@@ -1,4 +1,4 @@
-// Package dns handles all the name resolution logic
+// Package dns handles all the name resolution logic for the program to function
 package dns
 
 import (

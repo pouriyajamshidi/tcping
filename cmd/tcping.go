@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 )
 
 var version = "" // set at compile time through the Makefile

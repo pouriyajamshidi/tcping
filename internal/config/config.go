@@ -2,292 +2,185 @@
 package config
 
 import (
-	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
-	"net/http"
 	"net/netip"
 	"os"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
+	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
-var version = "" // set at compile time through the Makefile
-type userInput struct {
-	ip                       netip.Addr
-	hostname                 string
-	networkInterface         networkInterface
-	retryHostnameLookupAfter uint // Retry resolving target's hostname after a certain number of failed requests
-	probesBeforeQuit         uint
-	timeout                  time.Duration
-	intervalBetweenProbes    time.Duration
-	port                     uint16
-	useIPv4                  bool
-	useIPv6                  bool
-	shouldRetryResolve       bool
-	showFailuresOnly         bool
-	showSourceAddress        bool
-	nonInteractive           bool // Enable the program to run in the background. e.g. nohup, disown
+type options struct {
+	useIPv4               *bool
+	useIPv6               *bool
+	showFailuresOnly      *bool
+	showSourceAddress     *bool
+	nonInteractive        *bool
+	retryResolve          *uint
+	probesBeforeQuit      *uint
+	intName               *string
+	timeout               *float64
+	intervalBetweenProbes *float64
+	args                  []string
 }
 
-type genericUserInputArgs struct {
-	retryResolve         *uint
-	probesBeforeQuit     *uint
-	timeout              *float64
-	secondsBetweenProbes *float64
-	intName              *string
-	showFailuresOnly     *bool
-	showSourceAddress    *bool
-	nonInteractive       *bool
-	args                 []string
-}
+// newNetworkInterface uses the given IP address or a NIC to find the first IP address
+// to use as the source of the probes. The given IP address must exist on the system.
+func newNetworkInterface(tcping *models.Tcping, ipAddress string) models.NetworkInterface {
+	interfaceAddress := net.ParseIP(ipAddress)
+	isInvalid := true
 
-type networkInterface struct {
-	remoteAddr *net.TCPAddr
-	dialer     net.Dialer
-	use        bool
-}
-
-// usage prints how tcping should be run
-func usage() {
-	executableName := os.Args[0]
-
-	fmt.Printf("\nTCPING version %s\n\n", version)
-	fmt.Printf("Try running %s like:\n", executableName)
-	fmt.Printf("%s <hostname/ip> <port number>. For example:\n", executableName)
-	fmt.Printf("%s www.example.com 443\n", executableName)
-	fmt.Printf("Or use the <hostname/ip:port> format:\n")
-	fmt.Printf("%s www.example.com:443\n", executableName)
-	fmt.Printf("\n[optional flags]\n")
-
-	flag.VisitAll(func(f *flag.Flag) {
-		flagName := f.Name
-		if len(f.Name) > 1 {
-			flagName = "-" + flagName
-		}
-
-		fmt.Printf("  -%s : %s\n", flagName, f.Usage)
-	})
-
-	os.Exit(1)
-}
-
-// setPrinter selects the printer
-func setPrinter(tcping *tcping, outputJSON, prettyJSON *bool, noColor *bool, timeStamp *bool, sourceAddress *bool, outputDb *string, outputCSV *string, args []string) {
-	if *prettyJSON && !*outputJSON {
-		fmt.Println("--pretty has no effect without the -j flag.")
-		usage()
-	}
-
-	if *outputJSON {
-		tcping.printer = printers.NewJSONPrinter(*prettyJSON)
-	} else if *outputDb != "" {
-		tcping.printer = printers.NewDB(*outputDb, args)
-	} else if *outputCSV != "" {
-		var err error
-		tcping.printer, err = printers.NewCSVPrinter(*outputCSV, timeStamp, sourceAddress)
+	if interfaceAddress != nil {
+		addrs, err := net.InterfaceAddrs()
 		if err != nil {
-			tcping.printError("Failed to create CSV file: %s", err)
+			fmt.Println("Unable to get IP addresses")
 			os.Exit(1)
 		}
-	} else if *noColor {
-		tcping.printer = printers.NewPlainPrinter(timeStamp)
+
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if ok && interfaceAddress.Equal(ipNet.IP) {
+				isInvalid = false
+				break
+			}
+		}
+	} else { // we are probably given an interface name
+		iface, err := net.InterfaceByName(ipAddress)
+		if err != nil {
+			fmt.Printf("Interface %s not found\n", ipAddress)
+			os.Exit(1)
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			fmt.Println("Unable to get Interface addresses")
+			os.Exit(1)
+		}
+
+		for _, addr := range addrs {
+			if ip := addr.(*net.IPNet).IP; ip != nil {
+				nipAddr, err := netip.ParseAddr(ip.String())
+				if err != nil {
+					continue
+				}
+
+				if nipAddr.Is4() && !tcping.Options.UseIPv6 {
+					interfaceAddress = ip
+					isInvalid = false
+					break
+				} else if nipAddr.Is6() && !tcping.Options.UseIPv4 {
+					if nipAddr.IsLinkLocalUnicast() {
+						continue
+					}
+					interfaceAddress = ip
+					isInvalid = false
+					break
+				}
+			}
+		}
+
+		if interfaceAddress == nil {
+			fmt.Println("Unable to get interface's IP address")
+			os.Exit(1)
+		}
+	}
+
+	if isInvalid {
+		fmt.Printf("IP address %s is not assigned to any interface\n", ipAddress)
+		os.Exit(1)
+	}
+
+	netIface := models.NetworkInterface{
+		Use: true,
+	}
+
+	netIface.RemoteAddr = &net.TCPAddr{
+		IP:   net.ParseIP(tcping.Options.IP.String()),
+		Port: int(tcping.Options.Port),
+	}
+
+	netIface.Dialer = net.Dialer{
+		LocalAddr: &net.TCPAddr{
+			IP: interfaceAddress,
+		},
+		Timeout: tcping.Options.Timeout, // Set the timeout duration
+	}
+
+	return netIface
+}
+
+// setOptions assigns the user provided flags after sanity checks
+func setOptions(t *models.Tcping, s *stats.Statistics, opts options) {
+	if *opts.retryResolve > 0 {
+		t.Options.RetryHostnameLookupAfter = *opts.retryResolve
+	}
+
+	if *opts.useIPv4 {
+		t.Options.UseIPv4 = true
+	} else if *opts.useIPv6 {
+		t.Options.UseIPv6 = true
+	}
+
+	t.Options.Hostname = opts.args[0]
+	s.Hostname = opts.args[0]
+	t.Options.Port = convertAndValidatePort(opts.args[1])
+	s.Port = t.Options.Port
+	// t.Options.IP = dns.ResolveHostname(t)
+	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
+	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
+
+	t.Options.NonInteractive = *opts.nonInteractive
+
+	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
+	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
+		fmt.Println("Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
+
+	if t.Options.Hostname == t.Options.IP.String() {
+		t.DestIsIP = true
 	} else {
-		tcping.printer = printers.NewColorPrinter(timeStamp)
+		// The default starting value for tracking IP changes.
+		t.HostnameChanges = []models.HostnameChange{
+			{Addr: t.Options.IP, When: time.Now()},
+		}
 	}
+
+	if t.Options.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
+		t.Options.ShouldRetryResolve = true
+	}
+
+	if *opts.intName != "" {
+		t.Options.NetworkInterface = newNetworkInterface(t, *opts.intName)
+	}
+
+	t.Options.ShowFailuresOnly = *opts.showFailuresOnly
 }
 
-// showVersion displays the version and exits
-func showVersion(tcping *tcping) {
-	tcping.printVersion()
-	os.Exit(0)
-}
-
-// setIPFlags ensures that either IPv4 or IPv6 is specified by the user and not both and sets it
-func setIPFlags(tcping *tcping, ip4, ip6 *bool) {
-	if *ip4 && *ip6 {
-		tcping.printError("Only one IP version can be specified")
-		usage()
-	}
-	if *ip4 {
-		tcping.userInput.useIPv4 = true
-	}
-	if *ip6 {
-		tcping.userInput.useIPv6 = true
-	}
-}
-
-// setPort validates and sets the TCP/UDP port range
-func setPort(tcping *tcping, args []string) {
-	port, err := strconv.ParseUint(args[1], 10, 16)
+// convertAndValidatePort validates and returns the TCP/UDP port
+func convertAndValidatePort(portStr string) uint16 {
+	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
-		tcping.printError("Invalid port number: %s", args[1])
+		fmt.Printf("Invalid port number: %s\n", portStr)
 		os.Exit(1)
 	}
 
 	if port < 1 || port > 65535 {
-		tcping.printError("Port should be in 1..65535 range")
-		os.Exit(1)
-	}
-	tcping.userInput.port = uint16(port)
-}
-
-// parseHostPortArgs handles both "host port" and "host:port" formats
-// It returns a slice with exactly 2 elements [host, port] if successful
-func parseHostPortArgs(args []string) []string {
-	if len(args) == 1 {
-		// Check if the single argument is in "host:port" format
-		parts := strings.Split(args[0], ":")
-		if len(parts) == 2 {
-			// Valid "host:port" format
-			return parts
-		} else if len(parts) > 2 {
-			// Could be IPv6 address with port like [::1]:8080 or ::1:8080
-			// Try to find the last colon as port separator
-			lastColonIndex := strings.LastIndex(args[0], ":")
-			if lastColonIndex > 0 {
-				host := args[0][:lastColonIndex]
-				port := args[0][lastColonIndex+1:]
-				// Remove brackets if present for IPv6
-				host = strings.TrimPrefix(host, "[")
-				host = strings.TrimSuffix(host, "]")
-				return []string{host, port}
-			}
-		}
-	}
-	return args
-}
-
-// setGenericArgs assigns the generic flags after sanity checks
-func setGenericArgs(tcping *tcping, genericArgs genericUserInputArgs) {
-	if *genericArgs.retryResolve > 0 {
-		tcping.userInput.retryHostnameLookupAfter = *genericArgs.retryResolve
-	}
-
-	tcping.userInput.hostname = genericArgs.args[0]
-	tcping.userInput.ip = resolveHostname(tcping)
-	tcping.startTime = time.Now()
-	tcping.userInput.probesBeforeQuit = *genericArgs.probesBeforeQuit
-	tcping.userInput.timeout = secondsToDuration(*genericArgs.timeout)
-
-	tcping.userInput.intervalBetweenProbes = secondsToDuration(*genericArgs.secondsBetweenProbes)
-	if tcping.userInput.intervalBetweenProbes < 2*time.Millisecond {
-		tcping.printError("Wait interval should be more than 2 ms")
+		fmt.Println("Port should be in 1..65535 range")
 		os.Exit(1)
 	}
 
-	// this serves as a default starting value for tracking IP changes.
-	tcping.hostnameChanges = []hostnameChange{
-		{tcping.userInput.ip, time.Now()},
-	}
-
-	if tcping.userInput.hostname == tcping.userInput.ip.String() {
-		tcping.destIsIP = true
-	}
-
-	if tcping.userInput.retryHostnameLookupAfter > 0 && !tcping.destIsIP {
-		tcping.userInput.shouldRetryResolve = true
-	}
-
-	if *genericArgs.intName != "" {
-		tcping.userInput.networkInterface = newNetworkInterface(tcping, *genericArgs.intName)
-	}
-
-	tcping.userInput.showFailuresOnly = *genericArgs.showFailuresOnly
-
-	tcping.userInput.showSourceAddress = *genericArgs.showSourceAddress
-	tcping.userInput.nonInteractive = *genericArgs.nonInteractive
+	return uint16(port)
 }
 
-// processUserInput gets and validate user input
-func processUserInput(tcping *tcping) {
-	useIPv4 := flag.Bool("4", false, "only use IPv4.")
-	useIPv6 := flag.Bool("6", false, "only use IPv6.")
-	retryHostnameResolveAfter := flag.Uint("r", 0, "retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
-	probesBeforeQuit := flag.Uint("c", 0, "stop after <n> probes, regardless of the result. By default, no limit will be applied.")
-	outputJSON := flag.Bool("j", false, "output in JSON format.")
-	prettyJSON := flag.Bool("pretty", false, "use indentation when using json output format. No effect without the '-j' flag.")
-	nonInteractive := flag.Bool("non-interactive", false, "let tcping run in the background, for instance using nohup or disown")
-	noColor := flag.Bool("no-color", false, "do not colorize output.")
-	showTimestamp := flag.Bool("D", false, "show timestamp in output.")
-	saveToCSV := flag.String("csv", "", "path and file name to store tcping output to CSV file...If user prompts for stats, it will be saved to a file with the same name and _stats appended.")
-	showVer := flag.Bool("v", false, "show version.")
-	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
-	secondsBetweenProbes := flag.Float64("i", 1, "interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
-	timeout := flag.Float64("t", 1, "time to wait for a response in seconds. Real number allowed. 0 means infinite timeout.")
-	outputDB := flag.String("db", "", "path and file name to store tcping output to sqlite database.")
-	interfaceName := flag.String("I", "", "source interface name or address.")
-	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
-	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
-	showHelp := flag.Bool("h", false, "show help message.")
-
-	flag.CommandLine.Usage = usage
-
-	permuteArgs(os.Args[1:])
-	flag.Parse()
-
-	// validation for flag and args
-	args := flag.Args()
-
-	// we need to set printers first, because they're used for
-	// error reporting and other output.
-	setPrinter(tcping, outputJSON, prettyJSON, noColor, showTimestamp, showSourceAddress, outputDB, saveToCSV, args)
-
-	// Handle -v flag
-	if *showVer {
-		showVersion(tcping)
-	}
-
-	// Handle -h flag
-	if *showHelp {
-		usage()
-	}
-
-	// Handle -u flag
-	if *checkUpdates {
-		checkForUpdates(tcping)
-	}
-
-	// host and port must be specified
-	// Support both "host port" and "host:port" formats
-	args = parseHostPortArgs(args)
-	if len(args) != 2 {
-		usage()
-	}
-
-	// Check whether both the ipv4 and ipv6 flags are attempted set if ony one, error otherwise.
-	setIPFlags(tcping, useIPv4, useIPv6)
-
-	// Check if the port is valid and set it.
-	setPort(tcping, args)
-
-	// set generic args
-	genericArgs := genericUserInputArgs{
-		retryResolve:         retryHostnameResolveAfter,
-		probesBeforeQuit:     probesBeforeQuit,
-		timeout:              timeout,
-		secondsBetweenProbes: secondsBetweenProbes,
-		intName:              interfaceName,
-		showFailuresOnly:     showFailuresOnly,
-		showSourceAddress:    showSourceAddress,
-		nonInteractive:       nonInteractive,
-		args:                 args,
-	}
-
-	setGenericArgs(tcping, genericArgs)
-}
-
-/*
-permuteArgs permute args for flag parsing stops just before the first non-flag argument.
-
-see: https://pkg.go.dev/flag
-*/
+// permuteArgs permute args for flag parsing stops just before the first non-flag argument.
+// see: https://pkg.go.dev/flag
 func permuteArgs(args []string) {
 	var flagArgs []string
 	var nonFlagArgs []string
@@ -317,12 +210,12 @@ func permuteArgs(args []string) {
 			case "r":
 				/* out of index */
 				if len(args) <= i+1 {
-					usage()
+					utils.Usage()
 				}
 				/* the next flag has come */
 				optionVal := args[i+1]
 				if optionVal[0] == '-' {
-					usage()
+					utils.Usage()
 				}
 				flagArgs = append(flagArgs, args[i:i+2]...)
 				i++
@@ -336,171 +229,106 @@ func permuteArgs(args []string) {
 	permutedArgs := append(flagArgs, nonFlagArgs...)
 
 	/* replace args */
-	for i := range args {
+	for i := range len(args) {
 		args[i] = permutedArgs[i]
 	}
 }
 
-// newNetworkInterface uses the 1st ip address of the interface
-// if any err occurs it calls `tcpStats.printError` and exits with status code 1.
-// or return `networkInterface`
-func newNetworkInterface(tcping *tcping, netInterface string) networkInterface {
-	var interfaceAddress net.IP
+// ProcessUserInput gets and validate user input
+func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Printer {
+	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
+	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
+	probesBeforeQuit := flag.Uint("c",
+		0,
+		"stop after <n> probes, regardless of the result. By default, no limit will be applied.")
+	showTimestamp := flag.Bool("D", false, "show timestamp for each probe in the output.")
+	outputJSON := flag.Bool("j", false, "output in JSON format.")
+	prettyJSON := flag.Bool("pretty",
+		false,
+		"use indentation when using json output format. No effect without the '-j' flag.")
+	nonInteractive := flag.Bool("non-interactive",
+		false,
+		"let tcping run in the background, for instance using nohup or disown")
+	noColor := flag.Bool("no-color", false, "do not colorize output.")
+	saveToCSV := flag.String("csv",
+		"",
+		"path and file name to store output to a CSV file. The stats will be saved with the same name and `_stats` suffix.")
+	saveToDB := flag.String("db", "", "path and file name to store output to a sqlite3 database.")
+	intervalBetweenProbes := flag.Float64("i",
+		1,
+		"interval between sending probes. Real number allowed with dot as a decimal separator. The default is one second")
+	timeout := flag.Float64("t",
+		1,
+		"time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout.")
+	interfaceName := flag.String("I",
+		"",
+		"Enforce using a specific interface name or IP address to initiate probes.")
+	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
+	retryHostnameResolveAfter := flag.Uint("r",
+		0,
+		"retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
+	showFailuresOnly := flag.Bool("show-failures-only", false, "Show only the failed probes.")
+	showVer := flag.Bool("v", false, "show version and exit.")
+	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 
-	interfaceAddress = net.ParseIP(netInterface)
+	flag.CommandLine.Usage = utils.Usage
 
-	if interfaceAddress == nil {
-		ief, err := net.InterfaceByName(netInterface)
-		if err != nil {
-			tcping.printError("Interface %s not found", netInterface)
-			os.Exit(1)
-		}
+	permuteArgs(os.Args[1:])
 
-		addrs, err := ief.Addrs()
-		if err != nil {
-			tcping.printError("Unable to get Interface addresses")
-			os.Exit(1)
-		}
+	flag.Parse()
 
-		// Iterating through the available addresses to identify valid IP configurations
-		for _, addr := range addrs {
-			if ip := addr.(*net.IPNet).IP; ip != nil {
-				// netip.Addr
-				nipAddr, err := netip.ParseAddr(ip.String())
-				if err != nil {
-					continue
-				}
+	args := flag.Args()
 
-				if nipAddr.Is4() && !tcping.userInput.useIPv6 {
-					interfaceAddress = ip
-					break
-				} else if nipAddr.Is6() && !tcping.userInput.useIPv4 {
-					if nipAddr.IsLinkLocalUnicast() {
-						continue
-					}
-					interfaceAddress = ip
-					break
-				}
-			}
-		}
-
-		if interfaceAddress == nil {
-			tcping.printError("Unable to get Interface's IP Address")
-			os.Exit(1)
-		}
+	if *showVer {
+		utils.ShowVersion()
 	}
 
-	// Initializing a networkInterface struct and setting the 'use' field to true
-	ni := networkInterface{
-		use: true,
+	if *checkUpdates {
+		utils.CheckForUpdates()
 	}
 
-	ni.remoteAddr = &net.TCPAddr{
-		IP:   net.ParseIP(tcping.userInput.ip.String()),
-		Port: int(tcping.userInput.port),
+	// At least the host and port must be specified
+	if len(args) != 2 {
+		utils.Usage()
 	}
 
-	sourceAddr := &net.TCPAddr{
-		IP: interfaceAddress,
+	if *useIPv4 && *useIPv6 {
+		printers.ColorRed("Only one IP version can be specified")
+		utils.Usage()
 	}
 
-	ni.dialer = net.Dialer{
-		LocalAddr: sourceAddr,
-		Timeout:   tcping.userInput.timeout, // Set the timeout duration
+	opts := options{
+		useIPv4:               useIPv4,
+		useIPv6:               useIPv6,
+		nonInteractive:        nonInteractive,
+		retryResolve:          retryHostnameResolveAfter,
+		probesBeforeQuit:      probesBeforeQuit,
+		timeout:               timeout,
+		intervalBetweenProbes: intervalBetweenProbes,
+		intName:               interfaceName,
+		showFailuresOnly:      showFailuresOnly,
+		args:                  args,
 	}
 
-	return ni
-}
+	setOptions(tcping, s, opts)
 
-// compareVersions is used to compare tcping versions
-func compareVersions(v1, v2 string) int {
-	parts1 := strings.Split(v1, ".")
-	parts2 := strings.Split(v2, ".")
-
-	for i := 0; i < len(parts1) && i < len(parts2); i++ {
-		n1, _ := strconv.Atoi(parts1[i])
-		n2, _ := strconv.Atoi(parts2[i])
-
-		if n1 < n2 {
-			return -1
-		}
-		if n1 > n2 {
-			return 1
-		}
+	config := printers.PrinterConfig{
+		OutputJSON:        *outputJSON,
+		PrettyJSON:        *prettyJSON,
+		NoColor:           *noColor,
+		WithTimestamp:     *showTimestamp,
+		WithSourceAddress: *showSourceAddress,
+		OutputDBPath:      *saveToDB,
+		OutputCSVPath:     *saveToCSV,
+		Target:            args[0],
+		Port:              args[1],
 	}
 
-	// for cases in which version numbers differ in length
-	if len(parts1) < len(parts2) {
-		return -1
-	}
-
-	if len(parts1) > len(parts2) {
-		return 1
-	}
-
-	return 0
-}
-
-// checkForUpdates checks for newer versions of tcping
-func checkForUpdates(tcping *tcping) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
-
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	printer, err := printers.NewPrinter(config)
 	if err != nil {
-		tcping.printError("Could not create request: %s", err)
+		fmt.Printf("Failed to create printer: %s\n", err)
 		os.Exit(1)
 	}
 
-	client := &http.Client{Timeout: 5 * time.Second}
-
-	// optional (GitHub recommends)
-	req.Header.Set("User-Agent", "pouriyajamshidi-tcping-update-check")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		tcping.printError("Failed to check for updates %s", err)
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		tcping.printError("Failed to check for updates: HTTP %d", resp.StatusCode)
-		os.Exit(1)
-	}
-
-	release := struct {
-		TagName string `json:"tag_name"`
-	}{}
-
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		tcping.printError("Failed to parse release info: %s", err)
-		os.Exit(1)
-	}
-
-	reg := `^v?(\d+\.\d+\.\d+)$`
-	latestTagName := release.TagName
-	re := regexp.MustCompile(reg)
-	m := re.FindStringSubmatch(latestTagName)
-	if len(m) == 0 {
-		tcping.printError("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
-		os.Exit(1)
-	}
-
-	latestVer := m[1]
-
-	comparison := compareVersions(version, latestVer)
-
-	if comparison < 0 {
-		tcping.printInfo("Found newer version %s", latestVer)
-		tcping.printInfo("Please update TCPING from the URL below:")
-		tcping.printInfo("https://github.com/%s/%s/releases/tag/%s",
-			owner, repo, latestTagName)
-	} else if comparison > 0 {
-		tcping.printInfo("Current version %s is newer than the latest release %s",
-			version, latestVer)
-	} else {
-		tcping.printInfo("You have the latest version: %s", version)
-	}
-
-	os.Exit(0)
+	return printer
 }
