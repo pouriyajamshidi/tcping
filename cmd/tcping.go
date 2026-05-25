@@ -30,9 +30,9 @@ import (
 - Read the entire code once everything is done for "code smells"
 */
 
-// monitorStatsRequest checks stdin to see whether the 'Enter' key was pressed
-// if so, prints the statistics
-func monitorStatsRequest(p printers.Printer, s *stats.Statistics) {
+// monitorSummaryRequest checks stdin to see whether the 'Enter' key was pressed
+// if so, it prints the statistics
+func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 	reader := bufio.NewReader(os.Stdin)
 
 	stdinChan := make(chan bool, 1)
@@ -81,14 +81,14 @@ func main() {
 	printers.SignalHandler(printer, stats)
 
 	if !tcping.Options.NonInteractive {
-		go monitorStatsRequest(printer, stats)
+		go monitorSummaryRequest(printer, stats)
 	}
 
 	var probeCount uint
 
 	for {
 		if tcping.Options.ShouldRetryResolve {
-			dns.RetryResolveHostname(printer, stats, 300, true, false)
+			dns.RetryResolveHostname(printer, stats, *cfg.RetryResolveAfter, *cfg.UseIPv4, *cfg.UseIPv6)
 		}
 
 		probers.Ping(stats, printer, tcping, cfg)

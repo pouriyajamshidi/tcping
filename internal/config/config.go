@@ -18,30 +18,31 @@ import (
 
 // Config holds all user provided settings
 type Config struct {
-	useIPv4               *bool
-	useIPv6               *bool
-	showFailuresOnly      *bool
-	showSourceAddress     *bool
-	nonInteractive        *bool
-	retryResolve          *uint
-	probesBeforeQuit      *uint
-	intNameOrIPAddress    *string
-	timeout               *float64
-	intervalBetweenProbes *float64
-	args                  []string
-	PrinterConfig         printers.PrinterConfig
-	NetworkInterface      models.NetworkInterface
+	UseIPv4                  *bool
+	UseIPv6                  *bool
+	showFailuresOnly         *bool
+	showSourceAddress        *bool
+	nonInteractive           *bool
+	RetryResolveAfter        *uint
+	probesBeforeQuit         *uint
+	ifaceNameOrIPAddress     *string
+	timeout                  *float64
+	intervalBetweenProbes    *float64
+	args                     []string
+	PrinterConfig            printers.PrinterConfig
+	NetworkInterface         models.NetworkInterface
+	RetryHostnameLookupAfter uint // Number of failed requests before retrying to resolve the hostname.
 }
 
 // newNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
 // to use as the source IP address for the probes. The given IP address must exist on a NIC.
 func newNetworkInterface(
+	sourceAddress,
 	target string,
 	port uint16,
-	timeout time.Duration,
-	useIPv4 bool,
+	useIPv4,
 	useIPv6 bool,
-	sourceAddress string,
+	timeout time.Duration,
 ) models.NetworkInterface {
 	interfaceAddress := net.ParseIP(sourceAddress)
 	isInvalid := true
@@ -129,13 +130,13 @@ func newNetworkInterface(
 
 // setOptions assigns the user provided flags after sanity checks
 func setOptions(t *models.Tcping, s *stats.Statistics, cfg Config) {
-	if *cfg.retryResolve > 0 {
-		t.Options.RetryHostnameLookupAfter = *cfg.retryResolve
+	if *cfg.RetryResolveAfter > 0 {
+		t.Options.RetryHostnameLookupAfter = *cfg.RetryResolveAfter
 	}
 
-	if *cfg.useIPv4 {
+	if *cfg.UseIPv4 {
 		t.Options.UseIPv4 = true
-	} else if *cfg.useIPv6 {
+	} else if *cfg.UseIPv6 {
 		t.Options.UseIPv6 = true
 	}
 
@@ -168,14 +169,14 @@ func setOptions(t *models.Tcping, s *stats.Statistics, cfg Config) {
 		t.Options.ShouldRetryResolve = true
 	}
 
-	if *cfg.intNameOrIPAddress != "" {
+	if *cfg.ifaceNameOrIPAddress != "" {
 		cfg.NetworkInterface = newNetworkInterface(
+			*cfg.ifaceNameOrIPAddress,
 			t.Options.IP.String(),
 			t.Options.Port,
-			t.Options.Timeout,
 			t.Options.UseIPv4,
 			t.Options.UseIPv6,
-			*cfg.intNameOrIPAddress,
+			t.Options.Timeout,
 		)
 	}
 
@@ -343,14 +344,14 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 	}
 
 	cfg := Config{
-		useIPv4:               useIPv4,
-		useIPv6:               useIPv6,
+		UseIPv4:               useIPv4,
+		UseIPv6:               useIPv6,
 		nonInteractive:        nonInteractive,
-		retryResolve:          retryHostnameResolveAfter,
+		RetryResolveAfter:     retryHostnameResolveAfter,
 		probesBeforeQuit:      probesBeforeQuit,
 		timeout:               timeout,
 		intervalBetweenProbes: intervalBetweenProbes,
-		intNameOrIPAddress:    interfaceName,
+		ifaceNameOrIPAddress:  interfaceName,
 		showFailuresOnly:      showFailuresOnly,
 		args:                  args,
 		PrinterConfig:         printerConfig,
