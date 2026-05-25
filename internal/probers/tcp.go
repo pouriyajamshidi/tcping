@@ -5,6 +5,7 @@ import (
 	"net/netip"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -64,15 +65,15 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 }
 
 // Ping checks target's availability using TCP
-func Ping(s *stats.Statistics, p printers.Printer, tcping *models.Tcping) {
+func Ping(s *stats.Statistics, p printers.Printer, tcping *models.Tcping, cfg config.Config) {
 	var err error
 	var conn net.Conn
 
 	connStart := time.Now()
 
-	if tcping.Options.NetworkInterface.Use {
+	if cfg.NetworkInterface.Use {
 		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
-		conn, err = tcping.Options.NetworkInterface.Dialer.Dial("tcp", tcping.Options.NetworkInterface.RemoteAddr.String())
+		conn, err = cfg.NetworkInterface.Dialer.Dial("tcp", cfg.NetworkInterface.RemoteAddr.String())
 	} else {
 		ipAndPort := netip.AddrPortFrom(s.IP, s.Port)
 		conn, err = net.DialTimeout("tcp", ipAndPort.String(), tcping.Options.Timeout)

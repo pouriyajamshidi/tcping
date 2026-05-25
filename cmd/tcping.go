@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"time"
 
@@ -60,7 +61,13 @@ func main() {
 	tcping := &models.Tcping{}
 	stats := &stats.Statistics{}
 
-	printer := config.ProcessUserInput(tcping, stats)
+	cfg := config.ProcessUserInput(tcping, stats)
+
+	printer, err := printers.NewPrinter(cfg.PrinterConfig)
+	if err != nil {
+		fmt.Printf("Failed to create printer: %s\n", err)
+		os.Exit(1)
+	}
 
 	printer.PrintStart(stats)
 
@@ -84,7 +91,7 @@ func main() {
 			dns.RetryResolveHostname(printer, stats, 300, true, false)
 		}
 
-		probers.Ping(stats, printer, tcping)
+		probers.Ping(stats, printer, tcping, cfg)
 
 		if tcping.Options.ProbesBeforeQuit != 0 {
 			probeCount++

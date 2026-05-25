@@ -25,58 +25,74 @@ type Config struct {
 	nonInteractive        *bool
 	retryResolve          *uint
 	probesBeforeQuit      *uint
-	intName               *string
+	intNameOrIPAddress    *string
 	timeout               *float64
 	intervalBetweenProbes *float64
 	args                  []string
+	PrinterConfig         printers.PrinterConfig
+	NetworkInterface      models.NetworkInterface
 }
 
-// newNetworkInterface uses the given IP address or a NIC to find the first IP address
-// to use as the source of the probes. The given IP address must exist on the system.
-func newNetworkInterface(tcping *models.Tcping, ipAddress string) models.NetworkInterface {
-	interfaceAddress := net.ParseIP(ipAddress)
+// newNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
+// to use as the source IP address for the probes. The given IP address must exist on a NIC.
+func newNetworkInterface(
+	target string,
+	port uint16,
+	timeout time.Duration,
+	useIPv4 bool,
+	useIPv6 bool,
+	sourceAddress string,
+) models.NetworkInterface {
+	interfaceAddress := net.ParseIP(sourceAddress)
 	isInvalid := true
 
-	if interfaceAddress != nil {
-		addrs, err := net.InterfaceAddrs()
+	if interfaceAddress != nil { // we are given an IP address
+		ifaceAddrs, err := net.InterfaceAddrs()
 		if err != nil {
-			fmt.Println("Unable to get IP addresses")
+			fmt.Println("Unable to get interface IP addresses")
 			os.Exit(1)
 		}
 
-		for _, addr := range addrs {
-			ipNet, ok := addr.(*net.IPNet)
+		for _, ifaceAddr := range ifaceAddrs {
+			ipNet, ok := ifaceAddr.(*net.IPNet)
 			if ok && interfaceAddress.Equal(ipNet.IP) {
+				// we don't need to set anything here
+				// just validating that the given IP belongs to an interface
 				isInvalid = false
 				break
 			}
 		}
+
+		if isInvalid {
+			fmt.Printf("IP address %s is not assigned to any interfaces\n", sourceAddress)
+			os.Exit(1)
+		}
 	} else { // we are probably given an interface name
-		iface, err := net.InterfaceByName(ipAddress)
+		iface, err := net.InterfaceByName(sourceAddress)
 		if err != nil {
-			fmt.Printf("Interface %s not found\n", ipAddress)
+			fmt.Printf("Interface %s was not found\n", sourceAddress)
 			os.Exit(1)
 		}
 
-		addrs, err := iface.Addrs()
+		netAddrs, err := iface.Addrs()
 		if err != nil {
-			fmt.Println("Unable to get Interface addresses")
+			fmt.Printf("Unable to get IP addresses of %s", iface.Name)
 			os.Exit(1)
 		}
 
-		for _, addr := range addrs {
-			if ip := addr.(*net.IPNet).IP; ip != nil {
-				nipAddr, err := netip.ParseAddr(ip.String())
+		for _, netAddr := range netAddrs {
+			if ip := netAddr.(*net.IPNet).IP; ip != nil {
+				netIPAddr, err := netip.ParseAddr(ip.String())
 				if err != nil {
 					continue
 				}
 
-				if nipAddr.Is4() && !tcping.Options.UseIPv6 {
+				if netIPAddr.Is4() && !useIPv6 {
 					interfaceAddress = ip
 					isInvalid = false
 					break
-				} else if nipAddr.Is6() && !tcping.Options.UseIPv4 {
-					if nipAddr.IsLinkLocalUnicast() {
+				} else if netIPAddr.Is6() && !useIPv4 {
+					if netIPAddr.IsLinkLocalUnicast() {
 						continue
 					}
 					interfaceAddress = ip
@@ -87,14 +103,9 @@ func newNetworkInterface(tcping *models.Tcping, ipAddress string) models.Network
 		}
 
 		if interfaceAddress == nil {
-			fmt.Println("Unable to get interface's IP address")
+			fmt.Printf("Unable to find an IP address associated with %s", iface.Name)
 			os.Exit(1)
 		}
-	}
-
-	if isInvalid {
-		fmt.Printf("IP address %s is not assigned to any interface\n", ipAddress)
-		os.Exit(1)
 	}
 
 	netIface := models.NetworkInterface{
@@ -102,15 +113,15 @@ func newNetworkInterface(tcping *models.Tcping, ipAddress string) models.Network
 	}
 
 	netIface.RemoteAddr = &net.TCPAddr{
-		IP:   net.ParseIP(tcping.Options.IP.String()),
-		Port: int(tcping.Options.Port),
+		IP:   net.ParseIP(target),
+		Port: int(port),
 	}
 
 	netIface.Dialer = net.Dialer{
 		LocalAddr: &net.TCPAddr{
 			IP: interfaceAddress,
 		},
-		Timeout: tcping.Options.Timeout, // Set the timeout duration
+		Timeout: timeout, // Set the timeout duration
 	}
 
 	return netIface
@@ -157,8 +168,15 @@ func setOptions(t *models.Tcping, s *stats.Statistics, cfg Config) {
 		t.Options.ShouldRetryResolve = true
 	}
 
-	if *cfg.intName != "" {
-		t.Options.NetworkInterface = newNetworkInterface(t, *cfg.intName)
+	if *cfg.intNameOrIPAddress != "" {
+		cfg.NetworkInterface = newNetworkInterface(
+			t.Options.IP.String(),
+			t.Options.Port,
+			t.Options.Timeout,
+			t.Options.UseIPv4,
+			t.Options.UseIPv6,
+			*cfg.intNameOrIPAddress,
+		)
 	}
 
 	t.Options.ShowFailuresOnly = *cfg.showFailuresOnly
@@ -180,7 +198,7 @@ func convertAndValidatePort(portStr string) uint16 {
 	return uint16(port)
 }
 
-// permuteArgs permute args for flag parsing stops just before the first non-flag argument.
+// permuteArgs rearranges args for flag parsing, it stops just before the first non-flag argument.
 // see: https://pkg.go.dev/flag
 func permuteArgs(args []string) {
 	var flagArgs []string
@@ -236,7 +254,7 @@ func permuteArgs(args []string) {
 }
 
 // ProcessUserInput gets and validate user input
-func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Printer {
+func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
 
@@ -312,22 +330,7 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Print
 		utils.Usage()
 	}
 
-	cfg := Config{
-		useIPv4:               useIPv4,
-		useIPv6:               useIPv6,
-		nonInteractive:        nonInteractive,
-		retryResolve:          retryHostnameResolveAfter,
-		probesBeforeQuit:      probesBeforeQuit,
-		timeout:               timeout,
-		intervalBetweenProbes: intervalBetweenProbes,
-		intName:               interfaceName,
-		showFailuresOnly:      showFailuresOnly,
-		args:                  args,
-	}
-
-	setOptions(tcping, s, cfg)
-
-	config := printers.PrinterConfig{
+	printerConfig := printers.PrinterConfig{
 		OutputJSON:        *outputJSON,
 		PrettyJSON:        *prettyJSON,
 		NoColor:           *noColor,
@@ -339,11 +342,21 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Print
 		Port:              args[1],
 	}
 
-	printer, err := printers.NewPrinter(config)
-	if err != nil {
-		fmt.Printf("Failed to create printer: %s\n", err)
-		os.Exit(1)
+	cfg := Config{
+		useIPv4:               useIPv4,
+		useIPv6:               useIPv6,
+		nonInteractive:        nonInteractive,
+		retryResolve:          retryHostnameResolveAfter,
+		probesBeforeQuit:      probesBeforeQuit,
+		timeout:               timeout,
+		intervalBetweenProbes: intervalBetweenProbes,
+		intNameOrIPAddress:    interfaceName,
+		showFailuresOnly:      showFailuresOnly,
+		args:                  args,
+		PrinterConfig:         printerConfig,
 	}
 
-	return printer
+	setOptions(tcping, s, cfg)
+
+	return cfg
 }
