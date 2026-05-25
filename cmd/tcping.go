@@ -18,7 +18,6 @@ import (
 - Pass `Prober` instead of tcping to printers, helpers, etc
 - Implement functional pattern to chose the prober
 - Probably it is better to move SignalHandler to probes.go instead of printers
-- I think there are some overlaps in printer success and probe failure conditionals
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 - Cross-check the printer implementations to see how much they differ
 - See what printer methods are not used

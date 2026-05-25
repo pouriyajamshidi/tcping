@@ -16,7 +16,8 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
-type options struct {
+// Config holds all user provided settings
+type Config struct {
 	useIPv4               *bool
 	useIPv6               *bool
 	showFailuresOnly      *bool
@@ -116,28 +117,28 @@ func newNetworkInterface(tcping *models.Tcping, ipAddress string) models.Network
 }
 
 // setOptions assigns the user provided flags after sanity checks
-func setOptions(t *models.Tcping, s *stats.Statistics, opts options) {
-	if *opts.retryResolve > 0 {
-		t.Options.RetryHostnameLookupAfter = *opts.retryResolve
+func setOptions(t *models.Tcping, s *stats.Statistics, cfg Config) {
+	if *cfg.retryResolve > 0 {
+		t.Options.RetryHostnameLookupAfter = *cfg.retryResolve
 	}
 
-	if *opts.useIPv4 {
+	if *cfg.useIPv4 {
 		t.Options.UseIPv4 = true
-	} else if *opts.useIPv6 {
+	} else if *cfg.useIPv6 {
 		t.Options.UseIPv6 = true
 	}
 
-	t.Options.Hostname = opts.args[0]
-	s.Hostname = opts.args[0]
-	t.Options.Port = convertAndValidatePort(opts.args[1])
+	t.Options.Hostname = cfg.args[0]
+	s.Hostname = cfg.args[0]
+	t.Options.Port = convertAndValidatePort(cfg.args[1])
 	s.Port = t.Options.Port
 	// t.Options.IP = dns.ResolveHostname(t)
-	t.Options.ProbesBeforeQuit = *opts.probesBeforeQuit
-	t.Options.Timeout = utils.SecondsToDuration(*opts.timeout)
+	t.Options.ProbesBeforeQuit = *cfg.probesBeforeQuit
+	t.Options.Timeout = utils.SecondsToDuration(*cfg.timeout)
 
-	t.Options.NonInteractive = *opts.nonInteractive
+	t.Options.NonInteractive = *cfg.nonInteractive
 
-	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*opts.intervalBetweenProbes)
+	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*cfg.intervalBetweenProbes)
 	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
 		fmt.Println("Wait interval should be more than 2 ms")
 		os.Exit(1)
@@ -156,11 +157,11 @@ func setOptions(t *models.Tcping, s *stats.Statistics, opts options) {
 		t.Options.ShouldRetryResolve = true
 	}
 
-	if *opts.intName != "" {
-		t.Options.NetworkInterface = newNetworkInterface(t, *opts.intName)
+	if *cfg.intName != "" {
+		t.Options.NetworkInterface = newNetworkInterface(t, *cfg.intName)
 	}
 
-	t.Options.ShowFailuresOnly = *opts.showFailuresOnly
+	t.Options.ShowFailuresOnly = *cfg.showFailuresOnly
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
@@ -311,7 +312,7 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Print
 		utils.Usage()
 	}
 
-	opts := options{
+	cfg := Config{
 		useIPv4:               useIPv4,
 		useIPv6:               useIPv6,
 		nonInteractive:        nonInteractive,
@@ -324,7 +325,7 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) printers.Print
 		args:                  args,
 	}
 
-	setOptions(tcping, s, opts)
+	setOptions(tcping, s, cfg)
 
 	config := printers.PrinterConfig{
 		OutputJSON:        *outputJSON,
