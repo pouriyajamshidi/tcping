@@ -199,7 +199,8 @@ func convertAndValidatePort(portStr string) uint16 {
 	return uint16(port)
 }
 
-// permuteArgs rearranges args for flag parsing, it stops just before the first non-flag argument.
+// permuteArgs rearranges user provided args for flag parsing,
+// it stops just before the first non-flag argument.
 // see: https://pkg.go.dev/flag
 func permuteArgs(args []string) {
 	var flagArgs []string
@@ -279,6 +280,7 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 	saveToCSV := flag.String("csv",
 		"",
 		"path and file name to store output to a CSV file. The stats will be saved with the same name and `_stats` suffix.")
+
 	saveToDB := flag.String("db", "", "path and file name to store output to a sqlite3 database.")
 
 	intervalBetweenProbes := flag.Float64("i",
@@ -291,7 +293,7 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 
 	interfaceName := flag.String("I",
 		"",
-		"Enforce using a specific interface name or IP address to initiate probes.")
+		"use a specific interface name or IP address to initiate probes.")
 
 	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
 
