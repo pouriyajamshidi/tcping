@@ -150,7 +150,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 		name       string
 		startTime  time.Time
 		sourceAddr string
-		opts       models.Options
+		opts       models.ProbeOptions
 		streak     uint
 		rtt        string
 	}{
@@ -158,7 +158,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 			name:       "IP destination",
 			startTime:  time.Now(),
 			sourceAddr: "192.168.1.2",
-			opts: models.Options{
+			opts: models.ProbeOptions{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "192.168.1.1",
 				Port:     80,
@@ -170,7 +170,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 			name:       "hostname destination",
 			startTime:  time.Now(),
 			sourceAddr: "192.168.1.2",
-			opts: models.Options{
+			opts: models.ProbeOptions{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "example.com",
 				Port:     80,
@@ -221,13 +221,13 @@ func TestDatabasePrinter_PrintProbeFailure(t *testing.T) {
 	tests := []struct {
 		name      string
 		startTime time.Time
-		opts      models.Options
+		opts      models.ProbeOptions
 		streak    uint
 	}{
 		{
 			name:      "IP destination failure",
 			startTime: time.Now(),
-			opts: models.Options{
+			opts: models.ProbeOptions{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "192.168.1.1",
 				Port:     80,
@@ -237,7 +237,7 @@ func TestDatabasePrinter_PrintProbeFailure(t *testing.T) {
 		{
 			name:      "hostname destination failure",
 			startTime: time.Now(),
-			opts: models.Options{
+			opts: models.ProbeOptions{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "example.com",
 				Port:     80,
@@ -385,7 +385,7 @@ func createMockStats() models.Tcping {
 			End:      now.Add(140 * time.Second),
 			Duration: time.Minute * 2,
 		},
-		Options: models.Options{
+		Options: models.ProbeOptions{
 			IP:       netip.MustParseAddr("192.168.1.1"),
 			Hostname: "example.com",
 			Port:     1234,

@@ -16,13 +16,13 @@ import (
 type dummyPrinter struct{}
 
 func (fp *dummyPrinter) PrintStart(_ string, _ uint16) {}
-func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ models.Options, _ uint, _ string) {
+func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ models.ProbeOptions, _ uint, _ string) {
 }
-func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ models.Options, _ uint) {}
-func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                         {}
-func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                      {}
-func (fp *dummyPrinter) PrintStatistics(_ models.Tcping)                         {}
-func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                   {}
+func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ models.ProbeOptions, _ uint) {}
+func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                              {}
+func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                           {}
+func (fp *dummyPrinter) PrintStatistics(_ models.Tcping)                              {}
+func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                        {}
 
 // createTestStats should be used to create new stats structs.
 // it uses "127.0.0.1:12345" as default values, because
@@ -32,7 +32,7 @@ func createTestStats(t *testing.T) *models.Tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := models.Tcping{
 		Printer: &dummyPrinter{},
-		Options: models.Options{
+		Options: models.ProbeOptions{
 			IP:                    addr,
 			Port:                  12345,
 			IntervalBetweenProbes: time.Second,

@@ -10,7 +10,7 @@ import (
 // Tcping contains the main data structure for the TCPing program.
 // It holds statistics and state about the ongoing pinging process.
 type Tcping struct {
-	Options                   Options          // User-specified settings and configuration.
+	Options                   ProbeOptions     // User-specified settings and configuration.
 	StartTime                 time.Time        // Start time of the TCPing operation.
 	EndTime                   time.Time        // End time of the TCPing operation.
 	StartOfUptime             time.Time        // Timestamp when the current uptime started.
@@ -34,8 +34,8 @@ type Tcping struct {
 	DestIsIP                  bool             // Flag indicating whether the destination is an IP address (not a hostname).
 }
 
-// Options holds the configuration provided by the user for the TCPing operation.
-type Options struct {
+// ProbeOptions holds the configuration provided by the user for the TCPing operation.
+type ProbeOptions struct {
 	IP                       netip.Addr       // IP address to ping.
 	Hostname                 string           // Hostname to resolve and ping.
 	NetworkInterface         NetworkInterface // Network interface settings for the operation.

@@ -18,20 +18,26 @@ import (
 
 // Config holds all user provided settings
 type Config struct {
+	Hostname                 string
+	IP                       netip.Addr
+	Port                     uint16
 	UseIPv4                  *bool
 	UseIPv6                  *bool
 	showFailuresOnly         *bool
 	showSourceAddress        *bool
-	nonInteractive           *bool
+	NonInteractive           *bool
 	RetryResolveAfter        *uint
 	probesBeforeQuit         *uint
 	ifaceNameOrIPAddress     *string
-	timeout                  *float64
-	intervalBetweenProbes    *float64
+	Timeout                  time.Duration
+	IntervalBetweenProbes    time.Duration
 	args                     []string
 	PrinterConfig            printers.PrinterConfig
+	ProbeOptions             models.ProbeOptions
 	NetworkInterface         models.NetworkInterface
 	RetryHostnameLookupAfter uint // Number of failed requests before retrying to resolve the hostname.
+	ShouldRetryResolve       bool
+	ShowFailuresOnly         bool
 }
 
 // newNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
@@ -146,11 +152,11 @@ func setOptions(t *models.Tcping, s *stats.Statistics, cfg Config) {
 	s.Port = t.Options.Port
 	// t.Options.IP = dns.ResolveHostname(t)
 	t.Options.ProbesBeforeQuit = *cfg.probesBeforeQuit
-	t.Options.Timeout = utils.SecondsToDuration(*cfg.timeout)
+	t.Options.Timeout = utils.SecondsToDuration(*cfg.Timeout)
 
-	t.Options.NonInteractive = *cfg.nonInteractive
+	t.Options.NonInteractive = *cfg.NonInteractive
 
-	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*cfg.intervalBetweenProbes)
+	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*cfg.IntervalBetweenProbes)
 	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
 		fmt.Println("Wait interval should be more than 2 ms")
 		os.Exit(1)
@@ -345,18 +351,63 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 		Port:              args[1],
 	}
 
+	intervalBetweenProbesConv := utils.SecondsToDuration(*intervalBetweenProbes)
+	if intervalBetweenProbesConv < 2*time.Millisecond {
+		// TODO: Do we keep this constraint?
+		fmt.Println("Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
+
+	// TODO:
+	// hostname := dns.ResolveHostname() {
+	// 	t.DestIsIP = true
+	// } else {
+	// 	// The default starting value for tracking IP changes.
+	// 	t.HostnameChanges = []models.HostnameChange{
+	// 		{Addr: t.Options.IP, When: time.Now()},
+	// 	}
+	// }
+
+	// if t.Options.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
+	// 	t.Options.ShouldRetryResolve = true
+	// }
+	//
+	// t.Options.IP = dns.ResolveHostname(t)
+
+	// TODO: double check
+	var networkInterface models.NetworkInterface
+	if *interfaceName != "" {
+		networkInterface = newNetworkInterface(
+			*interfaceName,
+			args[0],
+			convertAndValidatePort(args[1]),
+			*useIPv4,
+			*useIPv6,
+			utils.SecondsToDuration(*timeout),
+		)
+	}
+
+	probeOptions := models.ProbeOptions{}
+
 	cfg := Config{
+		// IP: ,
+		Hostname:              args[0],
+		Port:                  convertAndValidatePort(args[1]),
 		UseIPv4:               useIPv4,
 		UseIPv6:               useIPv6,
-		nonInteractive:        nonInteractive,
+		NonInteractive:        nonInteractive,
 		RetryResolveAfter:     retryHostnameResolveAfter,
 		probesBeforeQuit:      probesBeforeQuit,
-		timeout:               timeout,
-		intervalBetweenProbes: intervalBetweenProbes,
+		Timeout:               utils.SecondsToDuration(*timeout),
+		IntervalBetweenProbes: intervalBetweenProbesConv,
 		ifaceNameOrIPAddress:  interfaceName,
 		showFailuresOnly:      showFailuresOnly,
 		args:                  args,
 		PrinterConfig:         printerConfig,
+		ProbeOptions:          probeOptions,
+		NetworkInterface:      networkInterface,
+		ShowFailuresOnly:      *showFailuresOnly,
+		// ShouldRetryResolve: ,
 	}
 
 	setOptions(tcping, s, cfg)
