@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -157,7 +158,7 @@ func permuteArgs(args []string) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
-	for i := 0; i < len(args); i++ {
+	for i := range len(args) {
 		v := args[i]
 		if v[0] == '-' {
 			var optionName string
@@ -180,11 +181,11 @@ func permuteArgs(args []string) {
 			case "csv":
 				fallthrough
 			case "r":
-				/* out of index */
+				// out of index
 				if len(args) <= i+1 {
 					utils.Usage()
 				}
-				/* the next flag has come */
+				// the next flag has come
 				optionVal := args[i+1]
 				if optionVal[0] == '-' {
 					utils.Usage()
@@ -198,9 +199,10 @@ func permuteArgs(args []string) {
 			nonFlagArgs = append(nonFlagArgs, args[i])
 		}
 	}
-	permutedArgs := append(flagArgs, nonFlagArgs...)
 
-	/* replace args */
+	permutedArgs := slices.Concat(flagArgs, nonFlagArgs)
+
+	// replace args in place
 	for i := range len(args) {
 		args[i] = permutedArgs[i]
 	}
