@@ -13,7 +13,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -208,7 +207,7 @@ func permuteArgs(args []string) {
 }
 
 // ProcessUserInput gets and validate user input
-func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
+func ProcessUserInput() Config {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
 

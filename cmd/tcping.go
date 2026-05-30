@@ -58,10 +58,7 @@ func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 }
 
 func main() {
-	tcping := &models.Tcping{}
-	stats := &stats.Statistics{}
-
-	cfg := config.ProcessUserInput(tcping, stats)
+	cfg := config.ProcessUserInput()
 
 	printer, err := printers.NewPrinter(cfg.PrinterConfig)
 	if err != nil {
@@ -69,8 +66,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	stats := &stats.Statistics{}
 	printer.PrintStart(stats)
 
+	tcping := &models.Tcping{}
 	tcping.StartTime = time.Now()
 
 	stats.IP = dns.ResolveHostname(printer, stats, true, false)
