@@ -49,6 +49,8 @@ type ProbeOptions struct {
 	NonInteractive           bool             // Flag the program will run in the background.
 	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
 	ShowFailuresOnly         bool             // Flag indicating whether to only show failed probes.
+	TargetIsIP               bool             // Flag indicating whether the destination is an IP address (not a hostname).
+	HostnameChanges          []HostnameChange // List of hostname changes encountered.
 }
 
 // RttResult holds statistics for round-trip times (RTT) results.

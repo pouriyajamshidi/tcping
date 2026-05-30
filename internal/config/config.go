@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -132,61 +133,6 @@ func newNetworkInterface(
 	}
 
 	return netIface
-}
-
-// setOptions assigns the user provided flags after sanity checks
-func setOptions(t *models.Tcping, s *stats.Statistics, cfg Config) {
-	if *cfg.RetryResolveAfter > 0 {
-		t.Options.RetryHostnameLookupAfter = *cfg.RetryResolveAfter
-	}
-
-	if *cfg.UseIPv4 {
-		t.Options.UseIPv4 = true
-	} else if *cfg.UseIPv6 {
-		t.Options.UseIPv6 = true
-	}
-
-	t.Options.Hostname = cfg.args[0]
-	s.Hostname = cfg.args[0]
-	t.Options.Port = convertAndValidatePort(cfg.args[1])
-	s.Port = t.Options.Port
-	// t.Options.IP = dns.ResolveHostname(t)
-	t.Options.ProbesBeforeQuit = *cfg.probesBeforeQuit
-	t.Options.Timeout = utils.SecondsToDuration(*cfg.Timeout)
-
-	t.Options.NonInteractive = *cfg.NonInteractive
-
-	t.Options.IntervalBetweenProbes = utils.SecondsToDuration(*cfg.IntervalBetweenProbes)
-	if t.Options.IntervalBetweenProbes < 2*time.Millisecond {
-		fmt.Println("Wait interval should be more than 2 ms")
-		os.Exit(1)
-	}
-
-	if t.Options.Hostname == t.Options.IP.String() {
-		t.DestIsIP = true
-	} else {
-		// The default starting value for tracking IP changes.
-		t.HostnameChanges = []models.HostnameChange{
-			{Addr: t.Options.IP, When: time.Now()},
-		}
-	}
-
-	if t.Options.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
-		t.Options.ShouldRetryResolve = true
-	}
-
-	if *cfg.ifaceNameOrIPAddress != "" {
-		cfg.NetworkInterface = newNetworkInterface(
-			*cfg.ifaceNameOrIPAddress,
-			t.Options.IP.String(),
-			t.Options.Port,
-			t.Options.UseIPv4,
-			t.Options.UseIPv6,
-			t.Options.Timeout,
-		)
-	}
-
-	t.Options.ShowFailuresOnly = *cfg.showFailuresOnly
 }
 
 // convertAndValidatePort validates and returns the TCP/UDP port
@@ -339,6 +285,9 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 		utils.Usage()
 	}
 
+	target := args[0]
+	validatedPort := convertAndValidatePort(args[1])
+
 	printerConfig := printers.PrinterConfig{
 		OutputJSON:        *outputJSON,
 		PrettyJSON:        *prettyJSON,
@@ -347,8 +296,8 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 		WithSourceAddress: *showSourceAddress,
 		OutputDBPath:      *saveToDB,
 		OutputCSVPath:     *saveToCSV,
-		Target:            args[0],
-		Port:              args[1],
+		Target:            target,
+		Port:              validatedPort,
 	}
 
 	intervalBetweenProbesConv := utils.SecondsToDuration(*intervalBetweenProbes)
@@ -358,41 +307,58 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 		os.Exit(1)
 	}
 
-	// TODO:
-	// hostname := dns.ResolveHostname() {
-	// 	t.DestIsIP = true
-	// } else {
-	// 	// The default starting value for tracking IP changes.
-	// 	t.HostnameChanges = []models.HostnameChange{
-	// 		{Addr: t.Options.IP, When: time.Now()},
-	// 	}
-	// }
+	var targetIsAlreadyIP bool
+	var hostnameChanges []models.HostnameChange
+	resolvedIP := dns.ResolveHostname2(target, *useIPv4, *useIPv6)
+	if resolvedIP.String() == target {
+		targetIsAlreadyIP = true
+	} else {
+		// track IP changes.
+		hostnameChanges = []models.HostnameChange{
+			{Addr: resolvedIP, When: time.Now()},
+		}
+	}
 
-	// if t.Options.RetryHostnameLookupAfter > 0 && !t.DestIsIP {
-	// 	t.Options.ShouldRetryResolve = true
-	// }
-	//
-	// t.Options.IP = dns.ResolveHostname(t)
+	var shouldRetryResolve bool
+	if *retryHostnameResolveAfter > 0 && !targetIsAlreadyIP {
+		shouldRetryResolve = true
+	}
 
 	// TODO: double check
 	var networkInterface models.NetworkInterface
 	if *interfaceName != "" {
 		networkInterface = newNetworkInterface(
 			*interfaceName,
-			args[0],
-			convertAndValidatePort(args[1]),
+			target,
+			validatedPort,
 			*useIPv4,
 			*useIPv6,
 			utils.SecondsToDuration(*timeout),
 		)
 	}
 
-	probeOptions := models.ProbeOptions{}
+	probeOptions := models.ProbeOptions{
+		IP:                       resolvedIP,
+		Hostname:                 target,
+		NetworkInterface:         networkInterface,
+		RetryHostnameLookupAfter: 0,
+		ProbesBeforeQuit:         *probesBeforeQuit,
+		Timeout:                  utils.SecondsToDuration(*timeout),
+		IntervalBetweenProbes:    intervalBetweenProbesConv,
+		Port:                     validatedPort,
+		UseIPv4:                  *useIPv4,
+		UseIPv6:                  *useIPv6,
+		NonInteractive:           *nonInteractive,
+		ShouldRetryResolve:       false,
+		ShowFailuresOnly:         *showFailuresOnly,
+		TargetIsIP:               targetIsAlreadyIP,
+		HostnameChanges:          hostnameChanges,
+	}
 
-	cfg := Config{
-		// IP: ,
-		Hostname:              args[0],
-		Port:                  convertAndValidatePort(args[1]),
+	return Config{
+		IP:                    resolvedIP,
+		Hostname:              target,
+		Port:                  validatedPort,
 		UseIPv4:               useIPv4,
 		UseIPv6:               useIPv6,
 		NonInteractive:        nonInteractive,
@@ -403,14 +369,10 @@ func ProcessUserInput(tcping *models.Tcping, s *stats.Statistics) Config {
 		ifaceNameOrIPAddress:  interfaceName,
 		showFailuresOnly:      showFailuresOnly,
 		args:                  args,
-		PrinterConfig:         printerConfig,
-		ProbeOptions:          probeOptions,
 		NetworkInterface:      networkInterface,
 		ShowFailuresOnly:      *showFailuresOnly,
-		// ShouldRetryResolve: ,
+		ShouldRetryResolve:    shouldRetryResolve,
+		PrinterConfig:         printerConfig,
+		ProbeOptions:          probeOptions,
 	}
-
-	setOptions(tcping, s, cfg)
-
-	return cfg
 }
