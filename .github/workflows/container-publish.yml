@@ -24,7 +24,7 @@ jobs:
           git branch --remote --contains $GITHUB_SHA | grep origin/master
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.1.2
