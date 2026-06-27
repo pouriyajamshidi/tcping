@@ -22,6 +22,7 @@ const IPv4OrIPv6 = "ip"
 
 // selectResolvedIP returns an IPv4, IPv6 or a random resolved address
 // if the IP version usage is not enforced from the `net.IP` slice of received addresses
+// TODO: The `os.exit`s here cause program to exit even if it has been running for a while, fix it
 func selectResolvedIP(p printers.Printer, s *stats.Statistics, useIPv4, useIPv6 bool, ipAddrs []netip.Addr) netip.Addr {
 	selectRandomIP := func(ipList []netip.Addr) netip.Addr {
 		var index int
