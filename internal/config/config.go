@@ -19,26 +19,26 @@ import (
 
 // Config holds all user provided settings
 type Config struct {
-	Hostname                 string
-	IP                       netip.Addr
-	Port                     uint16
-	UseIPv4                  *bool
-	UseIPv6                  *bool
-	showFailuresOnly         *bool
-	showSourceAddress        *bool
-	NonInteractive           *bool
-	RetryResolveAfter        *uint
-	probesBeforeQuit         *uint
-	ifaceNameOrIPAddress     *string
-	Timeout                  time.Duration
-	IntervalBetweenProbes    time.Duration
-	args                     []string
-	PrinterConfig            printers.PrinterConfig
-	ProbeOptions             models.ProbeOptions
-	NetworkInterface         models.NetworkInterface
-	RetryHostnameLookupAfter uint // Number of failed requests before retrying to resolve the hostname.
-	ShouldRetryResolve       bool
-	ShowFailuresOnly         bool
+	Hostname                   string
+	IP                         netip.Addr
+	Port                       uint16
+	UseIPv4                    *bool
+	UseIPv6                    *bool
+	showFailuresOnly           *bool
+	showSourceAddress          *bool
+	NonInteractive             *bool
+	RetryResolveAfterNFailures *uint
+	ProbesBeforeQuit           *uint
+	IfaceNameOrIPAddress       *string
+	Timeout                    time.Duration
+	IntervalBetweenProbes      time.Duration
+	args                       []string
+	PrinterConfig              printers.PrinterConfig
+	ProbeOptions               models.ProbeOptions
+	NetworkInterface           models.NetworkInterface
+	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
+	ShouldRetryResolve         bool
+	ShowFailuresOnly           bool
 }
 
 // newNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
@@ -250,7 +250,7 @@ func ProcessUserInput() Config {
 
 	showSourceAddress := flag.Bool("show-source-address", false, "Show source address and port used for probes.")
 
-	retryHostnameResolveAfter := flag.Uint("r",
+	retryHostnameResolveAfterNFailures := flag.Uint("r",
 		0,
 		"retry resolving target's hostname after <n> number of failed probes. e.g. -r 10 to retry after 10 failed probes.")
 
@@ -301,8 +301,8 @@ func ProcessUserInput() Config {
 		Port:              validatedPort,
 	}
 
-	intervalBetweenProbesConv := utils.SecondsToDuration(*intervalBetweenProbes)
-	if intervalBetweenProbesConv < 2*time.Millisecond {
+	intervalBetweenProbesDuration := utils.SecondsToDuration(*intervalBetweenProbes)
+	if intervalBetweenProbesDuration < 2*time.Millisecond {
 		// TODO: Do we keep this constraint?
 		fmt.Println("Wait interval should be more than 2 ms")
 		os.Exit(1)
@@ -310,7 +310,11 @@ func ProcessUserInput() Config {
 
 	var targetIsAlreadyIP bool
 	var hostnameChanges []models.HostnameChange
-	resolvedIP := dns.ResolveHostname2(target, *useIPv4, *useIPv6)
+	resolvedIP, err := dns.ResolveHostname(target, *useIPv4, *useIPv6)
+	if err != nil {
+		fmt.Printf("Could not resolve %s\n", target)
+		os.Exit(1)
+	}
 	if resolvedIP.String() == target {
 		targetIsAlreadyIP = true
 	} else {
@@ -321,7 +325,7 @@ func ProcessUserInput() Config {
 	}
 
 	var shouldRetryResolve bool
-	if *retryHostnameResolveAfter > 0 && !targetIsAlreadyIP {
+	if *retryHostnameResolveAfterNFailures > 0 && !targetIsAlreadyIP {
 		shouldRetryResolve = true
 	}
 
@@ -345,7 +349,7 @@ func ProcessUserInput() Config {
 		RetryHostnameLookupAfter: 0,
 		ProbesBeforeQuit:         *probesBeforeQuit,
 		Timeout:                  utils.SecondsToDuration(*timeout),
-		IntervalBetweenProbes:    intervalBetweenProbesConv,
+		IntervalBetweenProbes:    intervalBetweenProbesDuration,
 		Port:                     validatedPort,
 		UseIPv4:                  *useIPv4,
 		UseIPv6:                  *useIPv6,
@@ -357,23 +361,23 @@ func ProcessUserInput() Config {
 	}
 
 	return Config{
-		IP:                    resolvedIP,
-		Hostname:              target,
-		Port:                  validatedPort,
-		UseIPv4:               useIPv4,
-		UseIPv6:               useIPv6,
-		NonInteractive:        nonInteractive,
-		RetryResolveAfter:     retryHostnameResolveAfter,
-		probesBeforeQuit:      probesBeforeQuit,
-		Timeout:               utils.SecondsToDuration(*timeout),
-		IntervalBetweenProbes: intervalBetweenProbesConv,
-		ifaceNameOrIPAddress:  interfaceName,
-		showFailuresOnly:      showFailuresOnly,
-		args:                  args,
-		NetworkInterface:      networkInterface,
-		ShowFailuresOnly:      *showFailuresOnly,
-		ShouldRetryResolve:    shouldRetryResolve,
-		PrinterConfig:         printerConfig,
-		ProbeOptions:          probeOptions,
+		IP:                         resolvedIP,
+		Hostname:                   target,
+		Port:                       validatedPort,
+		UseIPv4:                    useIPv4,
+		UseIPv6:                    useIPv6,
+		NonInteractive:             nonInteractive,
+		RetryResolveAfterNFailures: retryHostnameResolveAfterNFailures,
+		ProbesBeforeQuit:           probesBeforeQuit,
+		Timeout:                    utils.SecondsToDuration(*timeout),
+		IntervalBetweenProbes:      intervalBetweenProbesDuration,
+		IfaceNameOrIPAddress:       interfaceName,
+		showFailuresOnly:           showFailuresOnly,
+		args:                       args,
+		NetworkInterface:           networkInterface,
+		ShowFailuresOnly:           *showFailuresOnly,
+		ShouldRetryResolve:         shouldRetryResolve,
+		PrinterConfig:              printerConfig,
+		ProbeOptions:               probeOptions,
 	}
 }

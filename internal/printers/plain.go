@@ -80,8 +80,8 @@ func (p *PlainPrinter) PrintTotalDownTime(s *stats.Statistics) {
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
-func (p *PlainPrinter) PrintRetryingToResolve(s *stats.Statistics) {
-	fmt.Printf("Retrying to resolve %s\n", s.Hostname)
+func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
 // PrintError prints error messages.

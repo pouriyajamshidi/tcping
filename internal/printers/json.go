@@ -280,11 +280,11 @@ func (p *JSONPrinter) PrintTotalDownTime(s *stats.Statistics) {
 
 // PrintRetryingToResolve print the message retrying to resolve,
 // after n failed probes.
-func (p *JSONPrinter) PrintRetryingToResolve(s *stats.Statistics) {
+func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
 	p.encoder.Encode(JSONData{
 		Type:     retryEvent,
-		Message:  fmt.Sprintf("Retrying to resolve %s", s.Hostname),
-		Hostname: s.Hostname,
+		Message:  fmt.Sprintf("Retrying to resolve %s", hostname),
+		Hostname: hostname,
 	})
 }
 

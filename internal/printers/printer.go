@@ -34,7 +34,7 @@ type Printer interface {
 	// it is trying to resolve an IP for.
 	//
 	// This is only being printed when the -r flag is applied.
-	PrintRetryingToResolve(s *stats.Statistics)
+	PrintRetryingToResolve(hostname string)
 
 	// PrintTotalDownTime should print a downtime duration.
 	//

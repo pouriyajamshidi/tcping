@@ -212,8 +212,8 @@ func (p *CSVPrinter) PrintError(format string, args ...any) {
 }
 
 // PrintRetryingToResolve logs an attempt to resolve a hostname.
-func (p *CSVPrinter) PrintRetryingToResolve(s *stats.Statistics) {
-	fmt.Printf("Retrying to resolve %s\n", s.Hostname)
+func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
 // PrintStatistics logs TCPing statistics to a CSV file.

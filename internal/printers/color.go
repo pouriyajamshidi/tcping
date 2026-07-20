@@ -118,8 +118,8 @@ func (p *ColorPrinter) PrintTotalDownTime(s *stats.Statistics) {
 //
 // Parameters:
 //   - hostname: The hostname that is being resolved.
-func (p *ColorPrinter) PrintRetryingToResolve(s *stats.Statistics) {
-	ColorLightYellow("Retrying to resolve %s\n", s.Hostname)
+func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
+	ColorLightYellow("Retrying to resolve %s\n", hostname)
 }
 
 // PrintError prints an error message in red.

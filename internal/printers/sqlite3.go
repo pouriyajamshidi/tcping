@@ -438,8 +438,8 @@ func (p *DatabasePrinter) PrintError(format string, args ...any) {
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
-func (p *DatabasePrinter) PrintRetryingToResolve(s *stats.Statistics) {
-	fmt.Printf("Retrying to resolve %s\n", s.Hostname)
+func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
 // PrintStatistics saves TCPing statistics to the database.

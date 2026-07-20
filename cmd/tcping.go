@@ -66,35 +66,39 @@ func main() {
 		os.Exit(1)
 	}
 
-	stats := &stats.Statistics{}
+	stats := &stats.Statistics{
+		IP:       cfg.IP,
+		Port:     cfg.Port,
+		Protocol: "TCP",
+		Hostname: cfg.Hostname,
+		DestIsIP: cfg.ProbeOptions.TargetIsIP,
+	}
 	printer.PrintStart(stats)
+
+	printers.SignalHandler(printer, stats)
 
 	tcping := &models.Tcping{}
 	tcping.StartTime = time.Now()
 
-	stats.IP = dns.ResolveHostname(printer, stats, true, false)
-
-	tcping.Ticker = time.NewTicker(tcping.Options.IntervalBetweenProbes)
+	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer tcping.Ticker.Stop()
 
-	printers.SignalHandler(printer, stats)
-
-	if !tcping.Options.NonInteractive {
+	if !cfg.ProbeOptions.NonInteractive {
 		go monitorSummaryRequest(printer, stats)
 	}
 
 	var probeCount uint
 
 	for {
-		if tcping.Options.ShouldRetryResolve {
-			dns.RetryResolveHostname(printer, stats, *cfg.RetryResolveAfter, *cfg.UseIPv4, *cfg.UseIPv6)
+		if cfg.ProbeOptions.ShouldRetryResolve {
+			dns.RetryResolveHostname(printer, stats, *cfg.RetryResolveAfterNFailures, *cfg.UseIPv4, *cfg.UseIPv6)
 		}
 
 		probers.Ping(stats, printer, tcping, cfg)
 
-		if tcping.Options.ProbesBeforeQuit != 0 {
+		if *cfg.ProbesBeforeQuit != 0 {
 			probeCount++
-			if probeCount == tcping.Options.ProbesBeforeQuit {
+			if probeCount == *cfg.ProbesBeforeQuit {
 				printer.Shutdown(stats)
 			}
 		}
