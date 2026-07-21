@@ -7,11 +7,15 @@
 - build: simplify container publish workflow
 - build: general cleanups
 - build: support more container architectures
+- improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
+- refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
+- refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
 - docs: we have a new logo thanks to Gemini!
 - refactor: modernize with `go fix`
 - dependencies: replace `github.com/google/go-github` with Go's built-in HTTP library
 - docs: grammar fix in the README.md thanks to @taiman724
+- project structure: move Artwork and Images folders to the docs folder
 
 ## v2.8.0 - 2026-05-11
 
