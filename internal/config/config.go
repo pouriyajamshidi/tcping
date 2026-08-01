@@ -360,6 +360,7 @@ func ProcessUserInput() Config {
 		HostnameChanges:          hostnameChanges,
 	}
 
+	// TODO: Remove the duplicates from `probeOptions` and make field associations logical
 	return Config{
 		IP:                         resolvedIP,
 		Hostname:                   target,
