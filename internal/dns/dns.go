@@ -38,8 +38,17 @@ func RetryResolveHostname(p printers.Printer, s *stats.Statistics, afterNFailure
 		}
 
 		// Track and display hostname changes in the stats
-		lastAddr := s.HostnameChanges[len(s.HostnameChanges)-1].Addr
-		if lastAddr != newIP {
+		if len(s.HostnameChanges) > 0 {
+			lastAddr := s.HostnameChanges[len(s.HostnameChanges)-1].Addr
+			if lastAddr != newIP {
+				s.HostnameChanges = append(s.HostnameChanges, models.HostnameChange{
+					Addr: newIP,
+					When: time.Now(),
+				})
+			}
+			// TODO: If we properly instantiate the `HostnameChanges` in the beginning,
+			// we will not need this `else` statement
+		} else {
 			s.HostnameChanges = append(s.HostnameChanges, models.HostnameChange{
 				Addr: newIP,
 				When: time.Now(),
@@ -111,7 +120,20 @@ func ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DNSTimeout)
 	defer cancel()
 
-	ipAddrs, err := net.DefaultResolver.LookupNetIP(ctx, IPv4OrIPv6, target)
+	resolver := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: DNSTimeout,
+			}
+			return d.DialContext(ctx, network, address)
+		},
+	}
+
+	ipAddrs, err := resolver.LookupNetIP(ctx, "ip", target)
+	if err != nil {
+		return ip, err
+	}
 
 	return selectResolvedIP(ipAddrs, useIPv4, useIPv6)
 }
