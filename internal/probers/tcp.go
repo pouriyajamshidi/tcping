@@ -20,7 +20,7 @@ func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.T
 		uptimeDuration := s.StartOfDowntime.Sub(s.StartOfUptime)
 		// set longest uptime since it is interrupted
 		utils.SetLongestDuration(s.StartOfUptime, uptimeDuration, &s.LongestUptime)
-		s.StartOfUptime = time.Time{}
+		s.StartOfUptime = time.Time{} // TODO: why are we doing this?
 		s.DestWasDown = true
 	}
 
@@ -40,7 +40,7 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 		// set longest downtime since it is interrupted
 		utils.SetLongestDuration(s.StartOfDowntime, downtimeDuration, &s.LongestDowntime)
 		p.PrintTotalDownTime(s)
-		s.StartOfDowntime = time.Time{}
+		s.StartOfDowntime = time.Time{} // TODO: why are we doing this?
 		s.DestWasDown = false
 		s.OngoingUnsuccessfulProbes = 0
 		s.OngoingSuccessfulProbes = 0
@@ -75,18 +75,18 @@ func Ping(s *stats.Statistics, p printers.Printer, tcping *models.Tcping, cfg co
 		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
 		conn, err = cfg.NetworkInterface.Dialer.Dial("tcp", cfg.NetworkInterface.RemoteAddr.String())
 	} else {
-		ipAndPort := netip.AddrPortFrom(s.IP, s.Port)
-		conn, err = net.DialTimeout("tcp", ipAndPort.String(), tcping.Options.Timeout)
+		ipAndPort := netip.AddrPortFrom(cfg.IP, cfg.Port)
+		conn, err = net.DialTimeout("tcp", ipAndPort.String(), cfg.Timeout)
 	}
 
 	connDuration := time.Since(connStart)
-	elapsed := utils.MaxDuration(connDuration, tcping.Options.IntervalBetweenProbes)
+	elapsed := utils.MaxDuration(connDuration, cfg.ProbeOptions.IntervalBetweenProbes)
 
 	if err != nil {
 		handleConnFailure(s, p, connStart, elapsed)
 	} else {
 		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
-		handleConnSuccess(s, p, connStart, elapsed, rtt, false)
+		handleConnSuccess(s, p, connStart, elapsed, rtt, cfg.ProbeOptions.ShowFailuresOnly)
 
 		conn.Close()
 	}

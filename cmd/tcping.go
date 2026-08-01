@@ -27,6 +27,7 @@ import (
 - Display name resolution times?
 - Perhaps unexport the Colors in ColorPrinter
 - Run modernize
+- Use built-in slice functions for min max avg, etc
 - Read the entire code once everything is done for "code smells"
 */
 
@@ -60,25 +61,30 @@ func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 func main() {
 	cfg := config.ProcessUserInput()
 
+	stats := &stats.Statistics{
+		Hostname:          cfg.Hostname,
+		IP:                cfg.IP,
+		Port:              cfg.Port,
+		Protocol:          "TCP",
+		DestIsIP:          cfg.ProbeOptions.TargetIsIP,
+		LocalAddr:         cfg.NetworkInterface.Dialer.LocalAddr,
+		StartTime:         time.Now(),
+		HostnameChanges:   []models.HostnameChange{},
+		WithTimestamp:     cfg.PrinterConfig.WithTimestamp,
+		WithSourceAddress: cfg.PrinterConfig.WithSourceAddress,
+	}
+
 	printer, err := printers.NewPrinter(cfg.PrinterConfig)
 	if err != nil {
 		fmt.Printf("Failed to create printer: %s\n", err)
 		os.Exit(1)
 	}
 
-	stats := &stats.Statistics{
-		IP:       cfg.IP,
-		Port:     cfg.Port,
-		Protocol: "TCP",
-		Hostname: cfg.Hostname,
-		DestIsIP: cfg.ProbeOptions.TargetIsIP,
-	}
 	printer.PrintStart(stats)
 
 	printers.SignalHandler(printer, stats)
 
 	tcping := &models.Tcping{}
-	tcping.StartTime = time.Now()
 
 	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer tcping.Ticker.Stop()
@@ -90,12 +96,13 @@ func main() {
 	var probeCount uint
 
 	for {
-		if cfg.ProbeOptions.ShouldRetryResolve {
+		if cfg.ShouldRetryResolve {
 			dns.RetryResolveHostname(printer, stats, *cfg.RetryResolveAfterNFailures, *cfg.UseIPv4, *cfg.UseIPv6)
 		}
 
 		probers.Ping(stats, printer, tcping, cfg)
 
+		// -c flag is provided
 		if *cfg.ProbesBeforeQuit != 0 {
 			probeCount++
 			if probeCount == *cfg.ProbesBeforeQuit {
