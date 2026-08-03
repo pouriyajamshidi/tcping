@@ -9,37 +9,13 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
-	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
-
-// Config holds all user provided settings
-type Config struct {
-	Hostname                   string
-	IP                         netip.Addr
-	Port                       uint16
-	UseIPv4                    *bool
-	UseIPv6                    *bool
-	showFailuresOnly           *bool
-	showSourceAddress          *bool
-	NonInteractive             *bool
-	RetryResolveAfterNFailures *uint
-	ProbesBeforeQuit           *uint
-	IfaceNameOrIPAddress       *string
-	Timeout                    time.Duration
-	IntervalBetweenProbes      time.Duration
-	args                       []string
-	PrinterConfig              printers.PrinterConfig
-	ProbeOptions               models.ProbeOptions
-	NetworkInterface           models.NetworkInterface
-	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
-	ShouldRetryResolve         bool
-	ShowFailuresOnly           bool
-}
 
 // newNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
 // to use as the source IP address for the probes. The given IP address must exist on a NIC.
@@ -151,6 +127,32 @@ func convertAndValidatePort(portStr string) uint16 {
 	return uint16(port)
 }
 
+// parseHostPortArgs handles both "host port" and "host:port" formats
+// It returns a slice with exactly 2 elements [host, port] if successful
+func parseHostPortArgs(args []string) []string {
+	if len(args) == 1 {
+		// Check if the single argument is in "host:port" format
+		parts := strings.Split(args[0], ":")
+		if len(parts) == 2 {
+			// Valid "host:port" format
+			return parts
+		} else if len(parts) > 2 {
+			// Could be IPv6 address with port like [::1]:8080 or ::1:8080
+			// Try to find the last colon as port separator
+			lastColonIndex := strings.LastIndex(args[0], ":")
+			if lastColonIndex > 0 {
+				host := args[0][:lastColonIndex]
+				port := args[0][lastColonIndex+1:]
+				// Remove brackets if present for IPv6
+				host = strings.TrimPrefix(host, "[")
+				host = strings.TrimSuffix(host, "]")
+				return []string{host, port}
+			}
+		}
+	}
+	return args
+}
+
 // permuteArgs rearranges user provided args for flag parsing,
 // it stops just before the first non-flag argument.
 // see: https://pkg.go.dev/flag
@@ -158,7 +160,10 @@ func permuteArgs(args []string) {
 	var flagArgs []string
 	var nonFlagArgs []string
 
-	for i := range len(args) {
+	// we cannot use the newer `for i := range len(args)` syntax here
+	// since we are mutating i, otherwise:
+	// `tcping example.com 443 -4` works but `tcping -4 cats.com 443` doens't
+	for i := 0; i < len(args); i++ {
 		v := args[i]
 		if v[0] == '-' {
 			var optionName string
@@ -209,7 +214,7 @@ func permuteArgs(args []string) {
 }
 
 // ProcessUserInput gets and validate user input
-func ProcessUserInput() Config {
+func ProcessUserInput() models.Config {
 	useIPv4 := flag.Bool("4", false, "only use IPv4 to initiate probes.")
 	useIPv6 := flag.Bool("6", false, "only use IPv6 to initiate probes.")
 
@@ -276,20 +281,24 @@ func ProcessUserInput() Config {
 		utils.CheckForUpdates()
 	}
 
-	// At least the host and port must be specified
-	if len(args) != 2 {
+	if *useIPv4 && *useIPv6 {
+		fmt.Println("Only one IP version can be specified")
 		utils.Usage()
 	}
 
-	if *useIPv4 && *useIPv6 {
-		fmt.Println("Only one IP version can be specified")
+	// host and port must be specified
+	// Support both "host port" and "host:port" formats
+	args = parseHostPortArgs(args)
+
+	// At least the host and port or host:port format must be specified
+	if len(args) != 2 && len(args) == 1 && !strings.Contains(args[0], ":") {
 		utils.Usage()
 	}
 
 	target := args[0]
 	validatedPort := convertAndValidatePort(args[1])
 
-	printerConfig := printers.PrinterConfig{
+	printerConfig := models.PrinterConfig{
 		OutputJSON:        *outputJSON,
 		PrettyJSON:        *prettyJSON,
 		NoColor:           *noColor,
@@ -361,7 +370,7 @@ func ProcessUserInput() Config {
 	}
 
 	// TODO: Remove the duplicates from `probeOptions` and make field associations logical
-	return Config{
+	return models.Config{
 		IP:                         resolvedIP,
 		Hostname:                   target,
 		Port:                       validatedPort,
@@ -373,10 +382,9 @@ func ProcessUserInput() Config {
 		Timeout:                    utils.SecondsToDuration(*timeout),
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		IfaceNameOrIPAddress:       interfaceName,
-		showFailuresOnly:           showFailuresOnly,
-		args:                       args,
+		ShowFailuresOnly:           showFailuresOnly,
+		Args:                       args,
 		NetworkInterface:           networkInterface,
-		ShowFailuresOnly:           *showFailuresOnly,
 		ShouldRetryResolve:         shouldRetryResolve,
 		PrinterConfig:              printerConfig,
 		ProbeOptions:               probeOptions,

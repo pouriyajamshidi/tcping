@@ -24,7 +24,7 @@ func Usage() {
 	fmt.Printf("\nTCPING version %s\n\n", consts.Version)
 	fmt.Printf("Try running %s like:\n", executableName)
 	fmt.Printf("%s www.example.com 443\n", executableName)
-	fmt.Println("or")
+	fmt.Println("Or use the <hostname/ip:port> format:\n")
 	fmt.Printf("%s www.example.com:443\n", executableName)
 	fmt.Printf("\n[optional flags]\n")
 

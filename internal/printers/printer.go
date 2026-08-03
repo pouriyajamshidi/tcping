@@ -56,21 +56,8 @@ type Printer interface {
 	Shutdown(s *stats.Statistics)
 }
 
-// PrinterConfig holds all configuration options for Printer creation
-type PrinterConfig struct {
-	OutputJSON        bool
-	PrettyJSON        bool
-	NoColor           bool
-	WithTimestamp     bool
-	WithSourceAddress bool
-	OutputDBPath      string
-	OutputCSVPath     string
-	Target            string
-	Port              uint16
-}
-
 // NewPrinter creates and returns an appropriate printer based on configuration
-func NewPrinter(cfg PrinterConfig) (Printer, error) {
+func NewPrinter(cfg models.PrinterConfig) (Printer, error) {
 	if cfg.PrettyJSON && !cfg.OutputJSON {
 		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
 	}

@@ -7,6 +7,42 @@ import (
 	"time"
 )
 
+// Config holds all user provided settings
+type Config struct {
+	Hostname                   string
+	IP                         netip.Addr
+	Port                       uint16
+	UseIPv4                    *bool
+	UseIPv6                    *bool
+	ShowSourceAddress          *bool
+	NonInteractive             *bool
+	RetryResolveAfterNFailures *uint
+	ProbesBeforeQuit           *uint
+	IfaceNameOrIPAddress       *string
+	Timeout                    time.Duration
+	IntervalBetweenProbes      time.Duration
+	Args                       []string
+	PrinterConfig              PrinterConfig
+	ProbeOptions               ProbeOptions
+	NetworkInterface           NetworkInterface
+	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
+	ShouldRetryResolve         bool
+	ShowFailuresOnly           *bool
+}
+
+// PrinterConfig holds all configuration options for Printer creation
+type PrinterConfig struct {
+	OutputJSON        bool
+	PrettyJSON        bool
+	NoColor           bool
+	WithTimestamp     bool
+	WithSourceAddress bool
+	OutputDBPath      string
+	OutputCSVPath     string
+	Target            string
+	Port              uint16
+}
+
 // Tcping contains the main data structure for the TCPing program.
 // It holds statistics and state about the ongoing pinging process.
 type Tcping struct {
