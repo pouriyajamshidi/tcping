@@ -7,12 +7,11 @@ import (
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 // handleConnFailure processes failed probes
-func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration) {
+func handleConnFailure(s *models.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration) {
 	// if the last probe had succeeded
 	if !s.DestWasDown {
 		s.StartOfDowntime = startTime
@@ -32,7 +31,7 @@ func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.T
 }
 
 // handleConnSuccess processes successful probes
-func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration, rtt float32, showFailuresOnly bool) {
+func handleConnSuccess(s *models.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration, rtt float32, showFailuresOnly bool) {
 	if s.DestWasDown {
 		s.StartOfUptime = startTime
 		downtimeDuration := s.StartOfUptime.Sub(s.StartOfDowntime)
@@ -64,7 +63,7 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 }
 
 // Ping checks target's availability using TCP
-func Ping(s *stats.Statistics, p printers.Printer, tcping *models.Tcping, cfg models.Config) {
+func Ping(s *models.Statistics, p printers.Printer, tcping *models.Tcping, cfg models.Config) {
 	var err error
 	var conn net.Conn
 

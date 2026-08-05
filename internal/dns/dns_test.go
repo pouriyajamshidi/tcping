@@ -28,7 +28,6 @@ func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                  
 func createTestStats(t *testing.T) *models.Tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := models.Tcping{
-		Printer: &dummyPrinter{},
 		Options: models.ProbeOptions{
 			IP:                    addr,
 			Port:                  12345,
@@ -58,7 +57,7 @@ func TestSelectResolvedIPv4(t *testing.T) {
 	)
 
 	t.Run("IPv4 Selection", func(t *testing.T) {
-		actual := selectResolvedIP(stats, []netip.Addr{ip1, ip2})
+		actual, _ := selectResolvedIP([]netip.Addr{ip1, ip2}, true, false)
 
 		if !actual.IsValid() {
 			t.Errorf("Expected an IP but got invalid address")
@@ -83,7 +82,7 @@ func TestSelectResolvedIPv6(t *testing.T) {
 	)
 
 	t.Run("IPv6 Selection", func(t *testing.T) {
-		actual := selectResolvedIP(stats, []netip.Addr{ip1, ip2})
+		actual, _ := selectResolvedIP([]netip.Addr{ip1, ip2}, false, true)
 		if !actual.IsValid() {
 			t.Errorf("Expected an IP but got invalid address")
 		}

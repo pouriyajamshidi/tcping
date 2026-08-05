@@ -265,6 +265,8 @@ func ProcessUserInput() models.Config {
 
 	checkUpdates := flag.Bool("u", false, "check for updates and exit.")
 
+	customDNSServer := flag.String("dns-server", "", "Custom DNS server IP to use. Defaults to system-wide server")
+
 	flag.CommandLine.Usage = utils.Usage
 
 	permuteArgs(os.Args[1:])
@@ -317,9 +319,12 @@ func ProcessUserInput() models.Config {
 		os.Exit(1)
 	}
 
+	DNSResolver := dns.NewDNSResolver(*customDNSServer)
+
 	var targetIsAlreadyIP bool
 	var hostnameChanges []models.HostnameChange
-	resolvedIP, err := dns.ResolveHostname(target, *useIPv4, *useIPv6)
+
+	resolvedIP, err := DNSResolver.ResolveHostname(target, *useIPv4, *useIPv6)
 	if err != nil {
 		fmt.Printf("Could not resolve %s\n", target)
 		os.Exit(1)
@@ -366,7 +371,6 @@ func ProcessUserInput() models.Config {
 		ShouldRetryResolve:       false,
 		ShowFailuresOnly:         *showFailuresOnly,
 		TargetIsIP:               targetIsAlreadyIP,
-		HostnameChanges:          hostnameChanges,
 	}
 
 	// TODO: Remove the duplicates from `probeOptions` and make field associations logical
@@ -388,5 +392,7 @@ func ProcessUserInput() models.Config {
 		ShouldRetryResolve:         shouldRetryResolve,
 		PrinterConfig:              printerConfig,
 		ProbeOptions:               probeOptions,
+		DNSResolver:                DNSResolver,
+		HostnameChanges:            hostnameChanges,
 	}
 }

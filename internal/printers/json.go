@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -91,14 +90,14 @@ func NewJSONPrinter(pretty bool) *JSONPrinter {
 }
 
 // Shutdown sets the end time, prints statistics, and exits the program.
-func (p *JSONPrinter) Shutdown(s *stats.Statistics) {
+func (p *JSONPrinter) Shutdown(s *models.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
 	os.Exit(0)
 }
 
 // PrintStart prints the initial message before doing probes.
-func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
+func (p *JSONPrinter) PrintStart(s *models.Statistics) {
 	p.encoder.Encode(JSONData{
 		Type:     startEvent,
 		Message:  fmt.Sprintf("TCPinging %s on port %d", s.Hostname, s.Port),
@@ -108,7 +107,7 @@ func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 }
 
 // PrintProbeSuccess prints successful TCP probe replies in JSON format.
-func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
+func (p *JSONPrinter) PrintProbeSuccess(s *models.Statistics) {
 	// so that *bool fields do not get omitted
 	f := false
 	t := true
@@ -215,7 +214,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 }
 
 // PrintProbeFailure prints a JSON message when a TCP probe fails.
-func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
+func (p *JSONPrinter) PrintProbeFailure(s *models.Statistics) {
 	// so that *bool fields not get omitted
 	f := false
 	t := true
@@ -270,7 +269,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 // PrintTotalDownTime prints the total downtime,
 // if the next retry was successful.
-func (p *JSONPrinter) PrintTotalDownTime(s *stats.Statistics) {
+func (p *JSONPrinter) PrintTotalDownTime(s *models.Statistics) {
 	p.encoder.Encode(JSONData{
 		Type:          retrySuccessEvent,
 		Message:       fmt.Sprintf("No response received for %s", utils.DurationToString(s.DownTime)),
@@ -297,7 +296,7 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 }
 
 // PrintStatistics prints all gathered stats when program exits.
-func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
+func (p *JSONPrinter) PrintStatistics(s *models.Statistics) {
 	data := JSONData{
 		Type:                     statisticsEvent,
 		IPAddr:                   s.IPStr(),

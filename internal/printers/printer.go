@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -18,17 +17,17 @@ import (
 type Printer interface {
 	// PrintStart prints the first message to indicate the target's address and port.
 	// This message is printed only once, at the very beginning.
-	PrintStart(s *stats.Statistics)
+	PrintStart(s *models.Statistics)
 
 	// PrintProbeSuccess should print a message after each successful probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecuti`ve probes.
-	PrintProbeSuccess(s *stats.Statistics)
+	PrintProbeSuccess(s *models.Statistics)
 
 	// PrintProbeFailure should print a message after each failed probe.
 	// hostname could be empty, meaning it's pinging an address.
 	// streak is the number of successful consecutive probes.
-	PrintProbeFailure(s *stats.Statistics)
+	PrintProbeFailure(s *models.Statistics)
 
 	// PrintRetryingToResolve should print a message with the hostname
 	// it is trying to resolve an IP for.
@@ -40,20 +39,20 @@ type Printer interface {
 	//
 	// This is being called when host was unavailable for some time
 	// but the latest probe was successful (became available).
-	PrintTotalDownTime(s *stats.Statistics)
+	PrintTotalDownTime(s *models.Statistics)
 
 	// PrintStatistics should print a message with
 	// helpful statistics information.
 	//
 	// This is being called on exit and when user hits "Enter".
-	PrintStatistics(s *stats.Statistics)
+	PrintStatistics(s *models.Statistics)
 
 	// PrintError should print an error message.
 	// Printer should also apply \n to the given string, if needed.
 	PrintError(format string, args ...any)
 
 	// Shutdown sets the EndTime, calls PrintStatistics() and Done() then exits the program.
-	Shutdown(s *stats.Statistics)
+	Shutdown(s *models.Statistics)
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration
@@ -83,7 +82,7 @@ func NewPrinter(cfg models.PrinterConfig) (Printer, error) {
 // PrintStats is a helper method for PrintStatistics of the current printer.
 // This should be used instead of directly calling the PrintStatistics
 // as it makes the common calculations beforehand.
-func PrintStats(p Printer, s *stats.Statistics) {
+func PrintStats(p Printer, s *models.Statistics) {
 	if s.DestWasDown {
 		utils.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
 	} else {
@@ -96,7 +95,7 @@ func PrintStats(p Printer, s *stats.Statistics) {
 }
 
 // SignalHandler catches SIGINT and SIGTERM then prints tcping stats
-func SignalHandler(p Printer, s *stats.Statistics) {
+func SignalHandler(p Printer, s *models.Statistics) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 

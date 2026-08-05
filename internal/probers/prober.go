@@ -8,7 +8,6 @@ import (
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -23,7 +22,7 @@ type Prober struct {
 	Ticker     *time.Ticker
 	Timeout    time.Duration
 	Interval   time.Duration
-	Statistics stats.Statistics
+	Statistics models.Statistics
 }
 
 type Pinger interface {
@@ -70,7 +69,7 @@ const (
 	DefaultTimeout  = 5 * time.Second
 )
 
-func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
+func (p *Prober) Probe(ctx context.Context) (models.Statistics, error) {
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithTimeout(ctx, p.Timeout)
 	defer cancel()

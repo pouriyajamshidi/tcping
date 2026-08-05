@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 /* TODO:
@@ -33,7 +31,7 @@ import (
 
 // monitorSummaryRequest checks stdin to see whether the 'Enter' key was pressed
 // if so, it prints the statistics
-func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
+func monitorSummaryRequest(p printers.Printer, s *models.Statistics) {
 	reader := bufio.NewReader(os.Stdin)
 
 	stdinChan := make(chan bool, 1)
@@ -61,7 +59,7 @@ func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 func main() {
 	cfg := config.ProcessUserInput()
 
-	stats := &stats.Statistics{
+	stats := &models.Statistics{
 		Hostname:          cfg.Hostname,
 		IP:                cfg.IP,
 		Port:              cfg.Port,
@@ -85,6 +83,7 @@ func main() {
 	printers.SignalHandler(printer, stats)
 
 	tcping := &models.Tcping{}
+	tcping.DNSResolver = cfg.DNSResolver
 
 	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer tcping.Ticker.Stop()
@@ -97,7 +96,16 @@ func main() {
 
 	for {
 		if cfg.ShouldRetryResolve {
-			dns.RetryResolveHostname(printer, stats, *cfg.RetryResolveAfterNFailures, *cfg.UseIPv4, *cfg.UseIPv6)
+			printer.PrintRetryingToResolve(stats.Hostname)
+			err := tcping.DNSResolver.RetryResolveHostname(
+				stats,
+				*cfg.RetryResolveAfterNFailures,
+				*cfg.UseIPv4,
+				*cfg.UseIPv6,
+			)
+			if err != nil {
+				printer.PrintError(err.Error())
+			}
 		}
 
 		probers.Ping(stats, printer, tcping, cfg)

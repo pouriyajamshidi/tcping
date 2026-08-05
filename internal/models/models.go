@@ -2,10 +2,88 @@
 package models
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
 	"time"
 )
+
+type protocol string
+
+const (
+	TCP   protocol = "TCP"
+	UDP   protocol = "UDP"
+	HTTP  protocol = "HTTP"
+	HTTPS protocol = "HTTPS"
+	ICMP  protocol = "ICMP"
+)
+
+type Statistics struct {
+	IP                        netip.Addr
+	Port                      uint16
+	Protocol                  protocol
+	Hostname                  string
+	DestWasDown               bool
+	DestIsIP                  bool
+	LocalAddr                 net.Addr
+	StartTime                 time.Time
+	EndTime                   time.Time
+	UpTime                    time.Duration
+	DownTime                  time.Duration
+	Successful                int
+	Failed                    int
+	TotalSuccessfulProbes     uint
+	TotalUnsuccessfulProbes   uint
+	LastSuccessfulProbe       time.Time     // Timestamp of the last successful probe.
+	LastUnsuccessfulProbe     time.Time     // Timestamp of the last unsuccessful probe.
+	TotalDowntime             time.Duration // Total accumulated downtime.
+	TotalUptime               time.Duration // Total accumulated uptime.
+	StartOfUptime             time.Time     // Timestamp when the current uptime started.
+	StartOfDowntime           time.Time     // Timestamp when the current downtime started.
+	LongestUptime             LongestTime   // Data structure holding information about the longest uptime.
+	LongestDowntime           LongestTime   // Data structure holding information about the longest downtime.
+	HostnameChanges           []HostnameChange
+	RetriedHostnameLookups    uint
+	OngoingSuccessfulProbes   uint // Count of ongoing successful probes.
+	OngoingUnsuccessfulProbes uint // Count of ongoing unsuccessful probes.
+	LongestUp                 LongestTime
+	LongestDown               LongestTime
+	RTT                       []float32
+	LatestRTT                 float32
+	RTTResults                RttResult
+	HostChanges               []HostnameChange
+	HasResults                bool
+	WithTimestamp             bool
+	WithSourceAddress         bool
+}
+
+func (s *Statistics) IPStr() string {
+	return s.IP.String()
+}
+
+func (s *Statistics) PortStr() string {
+	return fmt.Sprint(s.Port)
+}
+
+func (s *Statistics) SourceAddr() string {
+	return s.LocalAddr.String()
+}
+
+func (s *Statistics) StartTimeFormatted() string {
+	return s.StartTime.Format(time.DateTime)
+}
+
+func (s *Statistics) EndTimeFormatted() string {
+	return s.EndTime.Format(time.DateTime)
+}
+
+func (s *Statistics) ProtocolStr() string {
+	return string(s.Protocol)
+}
+
+func (s *Statistics) RTTStr() string {
+	return fmt.Sprintf("%.3f", s.LatestRTT)
+}
 
 // Config holds all user provided settings
 type Config struct {
@@ -28,6 +106,8 @@ type Config struct {
 	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
 	ShouldRetryResolve         bool
 	ShowFailuresOnly           *bool
+	DNSResolver                DomainResolver
+	HostnameChanges            []HostnameChange
 }
 
 // PrinterConfig holds all configuration options for Printer creation
@@ -41,6 +121,11 @@ type PrinterConfig struct {
 	OutputCSVPath     string
 	Target            string
 	Port              uint16
+}
+
+type DomainResolver interface {
+	ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error)
+	RetryResolveHostname(s *Statistics, afterNFailures uint, useIPv4, useIPv6 bool) error
 }
 
 // Tcping contains the main data structure for the TCPing program.
@@ -68,6 +153,7 @@ type Tcping struct {
 	RttResults                RttResult        // Struct holding the minimum, average, and maximum RTT values.
 	DestWasDown               bool             // Flag indicating if the destination was unreachable previously.
 	DestIsIP                  bool             // Flag indicating whether the destination is an IP address (not a hostname).
+	DNSResolver               DomainResolver   // Custom DNS resolver to override or leave system-wide DNS settings
 }
 
 // ProbeOptions holds the configuration provided by the user for the TCPing operation.
@@ -86,7 +172,6 @@ type ProbeOptions struct {
 	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
 	ShowFailuresOnly         bool             // Flag indicating whether to only show failed probes.
 	TargetIsIP               bool             // Flag indicating whether the destination is an IP address (not a hostname).
-	HostnameChanges          []HostnameChange // List of hostname changes encountered.
 }
 
 // RttResult holds statistics for round-trip times (RTT) results.

@@ -313,7 +313,11 @@ The following flags are available to control the behavior of **tcping**:
 
 ### Basic usage
 
-![tcping](docs/Images/gifs/tcping.gif)
+<details>
+    <summary>Basic Usage<summary/>
+        <img src="docs/Images/gifs/tcping.gif"/>
+<!--![tcping](docs/Images/gifs/tcping.gif)-->
+</details>
 
 ---
 
