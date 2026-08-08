@@ -87,30 +87,6 @@ func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
 }
 
-// Config holds all user provided settings
-type Config struct {
-	Hostname                   string
-	IP                         netip.Addr
-	Port                       uint16
-	UseIPv4                    bool
-	UseIPv6                    bool
-	ShowSourceAddress          bool
-	NonInteractive             bool
-	RetryResolveAfterNFailures uint
-	ProbesBeforeQuit           uint
-	IfaceNameOrIPAddress       string
-	Timeout                    time.Duration
-	IntervalBetweenProbes      time.Duration
-	PrinterConfig              PrinterConfig
-	NetworkInterface           nic.NetworkInterface
-	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
-	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
-	ShouldRetryResolve         bool
-	ShowFailuresOnly           bool
-	DNSResolver                DomainResolver
-	HostnameChanges            []HostnameChange
-}
-
 // PrinterConfig holds all configuration options for Printer creation
 type PrinterConfig struct {
 	OutputJSON        bool

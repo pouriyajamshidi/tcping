@@ -4,6 +4,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"net/netip"
 	"os"
 	"strings"
 	"time"
@@ -111,8 +112,32 @@ func permuteArgs(args []string) {
 	copy(args, append(flagArgs, nonFlagArgs...))
 }
 
+// Config holds all user provided settings
+type Config struct {
+	Hostname                   string
+	IP                         netip.Addr
+	Port                       uint16
+	UseIPv4                    bool
+	UseIPv6                    bool
+	ShowSourceAddress          bool
+	NonInteractive             bool
+	RetryResolveAfterNFailures uint
+	ProbesBeforeQuit           uint
+	IfaceNameOrIPAddress       string
+	Timeout                    time.Duration
+	IntervalBetweenProbes      time.Duration
+	PrinterConfig              models.PrinterConfig
+	NetworkInterface           nic.NetworkInterface
+	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
+	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
+	ShouldRetryResolve         bool
+	ShowFailuresOnly           bool
+	DNSResolver                models.DomainResolver
+	HostnameChanges            []models.HostnameChange
+}
+
 // ProcessUserInput gets and validate user input
-func ProcessUserInput() models.Config {
+func ProcessUserInput() Config {
 	useIPv4 := flag.Bool("4", false, "Only use IPv4 to initiate probes.")
 
 	useIPv6 := flag.Bool("6", false, "Only use IPv6 to initiate probes.")
@@ -296,47 +321,29 @@ func ProcessUserInput() models.Config {
 		NoColor:           *noColor,
 		WithTimestamp:     *showTimestamp,
 		WithSourceAddress: *showSourceAddress,
-		OutputDBPath:      *saveToDB,
-		OutputCSVPath:     *saveToCSV,
-	}
-
-	probeOptions := models.ProbeOptions{
-		IP:                         resolvedIP,
-		Hostname:                   target,
-		NetworkInterface:           networkInterface,
-		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
-		ShouldRetryResolve:         shouldRetryResolve,
-		ProbesBeforeQuit:           *probesBeforeQuit,
-		Timeout:                    timeoutInDuration,
-		IntervalBetweenProbes:      intervalBetweenProbesDuration,
-		Port:                       validatedPort,
-		UseIPv4:                    *useIPv4,
-		UseIPv6:                    *useIPv6,
-		NonInteractive:             *nonInteractive,
-		ShowFailuresOnly:           *showFailuresOnly,
-		TargetIsIP:                 targetIsAlreadyIP,
+		OutputDBPath:      *DBPath,
+		OutputCSVPath:     *CSVPath,
 	}
 
 	// TODO: Remove the duplicates from `probeOptions` and make field associations logical
-	return models.Config{
-		IP:                         resolvedIP,
+	return Config{
 		Hostname:                   target,
+		IP:                         resolvedIP,
 		Port:                       validatedPort,
 		UseIPv4:                    *useIPv4,
 		UseIPv6:                    *useIPv6,
-		NonInteractive:             *nonInteractive,
-		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
-		ProbesBeforeQuit:           *probesBeforeQuit,
 		Timeout:                    timeoutInDuration,
+		ProbesBeforeQuit:           *probesBeforeQuit,
+		TargetIsIP:                 targetIsAlreadyIP,
+		NonInteractive:             *nonInteractive,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
-		IfaceNameOrIPAddress:       *interfaceName,
 		ShowFailuresOnly:           *showFailuresOnly,
-		Args:                       args,
-		NetworkInterface:           networkInterface,
-		ShouldRetryResolve:         shouldRetryResolve,
-		PrinterConfig:              printerConfig,
-		ProbeOptions:               probeOptions,
 		DNSResolver:                DNSResolver,
+		ShouldRetryResolve:         shouldRetryResolve,
+		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
 		HostnameChanges:            hostnameChanges,
+		IfaceNameOrIPAddress:       *interfaceName,
+		NetworkInterface:           networkInterface,
+		PrinterConfig:              printerConfig,
 	}
 }

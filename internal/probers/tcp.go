@@ -5,6 +5,7 @@ import (
 	"net/netip"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
@@ -63,7 +64,7 @@ func handleConnSuccess(s *models.Statistics, p printers.Printer, startTime time.
 }
 
 // Ping checks target's availability using TCP
-func Ping(s *models.Statistics, p printers.Printer, tcping *models.Tcping, cfg models.Config) {
+func Ping(s *models.Statistics, p printers.Printer, tcping *models.Tcping, cfg config.Config) {
 	var err error
 	var conn net.Conn
 
