@@ -78,13 +78,13 @@ func Ping(s *models.Statistics, p printers.Printer, tcping *models.Tcping, cfg m
 	}
 
 	connDuration := time.Since(connStart)
-	elapsed := utils.MaxDuration(connDuration, cfg.ProbeOptions.IntervalBetweenProbes)
+	elapsed := utils.MaxDuration(connDuration, cfg.IntervalBetweenProbes)
 
 	if err != nil {
 		handleConnFailure(s, p, connStart, elapsed)
 	} else {
 		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
-		handleConnSuccess(s, p, connStart, elapsed, rtt, cfg.ProbeOptions.ShowFailuresOnly)
+		handleConnSuccess(s, p, connStart, elapsed, rtt, cfg.ShowFailuresOnly)
 
 		conn.Close()
 	}
