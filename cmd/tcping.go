@@ -64,7 +64,7 @@ func main() {
 		IP:                cfg.IP,
 		Port:              cfg.Port,
 		Protocol:          "TCP",
-		DestIsIP:          cfg.ProbeOptions.TargetIsIP,
+		DestIsIP:          cfg.TargetIsIP,
 		LocalAddr:         cfg.NetworkInterface.Dialer.LocalAddr,
 		StartTime:         time.Now(),
 		HostnameChanges:   []models.HostnameChange{},
@@ -88,7 +88,7 @@ func main() {
 	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer tcping.Ticker.Stop()
 
-	if !cfg.ProbeOptions.NonInteractive {
+	if !cfg.NonInteractive {
 		go monitorSummaryRequest(printer, stats)
 	}
 
