@@ -31,7 +31,6 @@ func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                  
 func createTestStats(t *testing.T) *models.Tcping {
 	addr, err := netip.ParseAddr("127.0.0.1")
 	s := models.Tcping{
-		Printer: &dummyPrinter{},
 		Options: models.ProbeOptions{
 			IP:                    addr,
 			Port:                  12345,
