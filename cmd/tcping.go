@@ -93,7 +93,7 @@ func main() {
 				cfg.UseIPv6,
 			)
 			if err != nil {
-				printer.PrintError(err.Error())
+				printer.PrintError("%s", err.Error())
 			}
 		}
 
