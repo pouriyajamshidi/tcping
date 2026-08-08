@@ -4,6 +4,7 @@ tcping
 tcping.exe
 .DS_Store
 .vscode
+.zed
 *.code-workspace
 patches/
 *.db
