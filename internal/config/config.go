@@ -229,6 +229,10 @@ func ProcessUserInput() Config {
 
 	flag.CommandLine.Usage = usage
 
+	permuteArgs(os.Args[1:])
+
+	flag.Parse()
+
 	if *showVer {
 		showVersion()
 	}
@@ -241,10 +245,6 @@ func ProcessUserInput() Config {
 		fmt.Fprintln(os.Stderr, "Only one IP version can be specified")
 		usage()
 	}
-
-	permuteArgs(os.Args[1:])
-
-	flag.Parse()
 
 	args := flag.Args()
 
@@ -325,7 +325,6 @@ func ProcessUserInput() Config {
 		OutputCSVPath:     *CSVPath,
 	}
 
-	// TODO: Remove the duplicates from `probeOptions` and make field associations logical
 	return Config{
 		Hostname:                   target,
 		IP:                         resolvedIP,
