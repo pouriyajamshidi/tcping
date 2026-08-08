@@ -187,13 +187,13 @@ func ProcessUserInput() models.Config {
 		`Prettify the JSON output.
 		No effect without the '-j' flag.`)
 
-	saveToCSV := flag.String(
+	CSVPath := flag.String(
 		"csv",
 		"",
 		`Path and file name to store the output in a CSV file.
 		The stats will be automatically saved with the same name and '_stats' suffix.`)
 
-	saveToDB := flag.String(
+	DBPath := flag.String(
 		"db",
 		"",
 		"Path and file name to store the output in a sqlite3 database.")
