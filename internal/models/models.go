@@ -102,7 +102,6 @@ type Config struct {
 	Timeout                    time.Duration
 	IntervalBetweenProbes      time.Duration
 	PrinterConfig              PrinterConfig
-	ProbeOptions               ProbeOptions
 	NetworkInterface           nic.NetworkInterface
 	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
 	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
