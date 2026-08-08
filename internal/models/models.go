@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/netip"
 	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
 
 type protocol string
@@ -90,22 +92,22 @@ type Config struct {
 	Hostname                   string
 	IP                         netip.Addr
 	Port                       uint16
-	UseIPv4                    *bool
-	UseIPv6                    *bool
-	ShowSourceAddress          *bool
-	NonInteractive             *bool
-	RetryResolveAfterNFailures *uint
-	ProbesBeforeQuit           *uint
-	IfaceNameOrIPAddress       *string
+	UseIPv4                    bool
+	UseIPv6                    bool
+	ShowSourceAddress          bool
+	NonInteractive             bool
+	RetryResolveAfterNFailures uint
+	ProbesBeforeQuit           uint
+	IfaceNameOrIPAddress       string
 	Timeout                    time.Duration
 	IntervalBetweenProbes      time.Duration
 	Args                       []string
 	PrinterConfig              PrinterConfig
 	ProbeOptions               ProbeOptions
-	NetworkInterface           NetworkInterface
+	NetworkInterface           nic.NetworkInterface
 	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
 	ShouldRetryResolve         bool
-	ShowFailuresOnly           *bool
+	ShowFailuresOnly           bool
 	DNSResolver                DomainResolver
 	HostnameChanges            []HostnameChange
 }
@@ -158,20 +160,20 @@ type Tcping struct {
 
 // ProbeOptions holds the configuration provided by the user for the TCPing operation.
 type ProbeOptions struct {
-	IP                       netip.Addr       // IP address to ping.
-	Hostname                 string           // Hostname to resolve and ping.
-	NetworkInterface         NetworkInterface // Network interface settings for the operation.
-	RetryHostnameLookupAfter uint             // Number of failed requests before retrying to resolve the hostname.
-	ProbesBeforeQuit         uint             // Number of probes before the program stops.
-	Timeout                  time.Duration    // Timeout for each probe.
-	IntervalBetweenProbes    time.Duration    // Time between consecutive probes.
-	Port                     uint16           // Port number to connect to.
-	UseIPv4                  bool             // Flag indicating whether to use IPv4 addresses.
-	UseIPv6                  bool             // Flag indicating whether to use IPv6 addresses.
-	NonInteractive           bool             // Flag the program will run in the background.
-	ShouldRetryResolve       bool             // Flag indicating whether to retry resolving the hostname on failure.
-	ShowFailuresOnly         bool             // Flag indicating whether to only show failed probes.
-	TargetIsIP               bool             // Flag indicating whether the destination is an IP address (not a hostname).
+	IP                         netip.Addr           // IP address to ping.
+	Hostname                   string               // Hostname to resolve and ping.
+	NetworkInterface           nic.NetworkInterface // Network interface settings for the operation.
+	RetryResolveAfterNFailures uint                 // Number of failed requests before retrying to resolve the hostname.
+	ProbesBeforeQuit           uint                 // Number of probes before the program stops.
+	Timeout                    time.Duration        // Timeout for each probe.
+	IntervalBetweenProbes      time.Duration        // Time between consecutive probes.
+	Port                       uint16               // Port number to connect to.
+	UseIPv4                    bool                 // Flag indicating whether to use IPv4 addresses.
+	UseIPv6                    bool                 // Flag indicating whether to use IPv6 addresses.
+	NonInteractive             bool                 // Flag the program will run in the background.
+	ShouldRetryResolve         bool                 // Flag indicating whether to retry resolving the hostname on failure.
+	ShowFailuresOnly           bool                 // Flag indicating whether to only show failed probes.
+	TargetIsIP                 bool                 // Flag indicating whether the destination is an IP address (not a hostname).
 }
 
 // RttResult holds statistics for round-trip times (RTT) results.
@@ -196,13 +198,6 @@ func NewLongestTime(startTime time.Time, duration time.Duration) LongestTime {
 		End:      startTime.Add(duration),
 		Duration: duration,
 	}
-}
-
-// NetworkInterface represents a network interface used for connecting to the target.
-type NetworkInterface struct {
-	RemoteAddr *net.TCPAddr // Remote address for the network interface.
-	Dialer     net.Dialer   // Dialer used to make network connections.
-	Use        bool         // Flag indicating whether to use this network interface.
 }
 
 // HostnameChange represents a change in the IP address associated with a hostname.
