@@ -11,6 +11,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 /* TODO:
@@ -31,7 +32,7 @@ import (
 
 // monitorSummaryRequest checks stdin to see whether the 'Enter' key was pressed
 // if so, it prints the statistics
-func monitorSummaryRequest(p printers.Printer, s *models.Statistics) {
+func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 	reader := bufio.NewReader(os.Stdin)
 
 	stdinChan := make(chan bool, 1)
@@ -59,18 +60,7 @@ func monitorSummaryRequest(p printers.Printer, s *models.Statistics) {
 func main() {
 	cfg := config.ProcessUserInput()
 
-	stats := &models.Statistics{
-		Hostname:          cfg.Hostname,
-		IP:                cfg.IP,
-		Port:              cfg.Port,
-		Protocol:          "TCP",
-		DestIsIP:          cfg.TargetIsIP,
-		LocalAddr:         cfg.NetworkInterface.Dialer.LocalAddr,
-		StartTime:         time.Now(),
-		HostnameChanges:   []models.HostnameChange{},
-		WithTimestamp:     cfg.PrinterConfig.WithTimestamp,
-		WithSourceAddress: cfg.PrinterConfig.WithSourceAddress,
-	}
+	stats := stats.NewStatistics(cfg)
 
 	printer, err := printers.NewPrinter(cfg.PrinterConfig)
 	if err != nil {
@@ -83,7 +73,6 @@ func main() {
 	printers.SignalHandler(printer, stats)
 
 	tcping := &models.Tcping{}
-	tcping.DNSResolver = cfg.Resolver
 
 	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer tcping.Ticker.Stop()
@@ -97,7 +86,7 @@ func main() {
 	for {
 		if cfg.ShouldRetryResolve {
 			printer.PrintRetryingToResolve(stats.Hostname)
-			err := tcping.DNSResolver.RetryResolveHostname(
+			err := cfg.Resolver.RetryResolveHostname(
 				stats,
 				cfg.RetryResolveAfterNFailures,
 				cfg.UseIPv4,

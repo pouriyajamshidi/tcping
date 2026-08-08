@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -96,14 +96,14 @@ func (p *CSVPrinter) Done() {
 }
 
 // Shutdown sets the end time, prints statistics, calls Done() and exits the program.
-func (p *CSVPrinter) Shutdown(s *models.Statistics) {
+func (p *CSVPrinter) Shutdown(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
 	p.Done()
 	os.Exit(0)
 }
 
-func (p *CSVPrinter) writeProbeHeader(s *models.Statistics) error {
+func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 	headers := []string{}
 
 	if s.WithTimestamp {
@@ -143,7 +143,7 @@ func (p *CSVPrinter) writeStatsHeader() error {
 }
 
 // PrintStart logs the beginning of a TCPing session.
-func (p *CSVPrinter) PrintStart(s *models.Statistics) {
+func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 	// TODO: Is this a good place to put these?
 	p.writeProbeHeader(s)
 	p.writeStatsHeader()
@@ -152,7 +152,7 @@ func (p *CSVPrinter) PrintStart(s *models.Statistics) {
 }
 
 // PrintProbeSuccess logs a successful probe to the CSV file.
-func (p *CSVPrinter) PrintProbeSuccess(s *models.Statistics) {
+func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	record := []string{}
 
 	if s.WithTimestamp {
@@ -183,7 +183,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *models.Statistics) {
 }
 
 // PrintProbeFailure logs a failed probe attempt to the CSV file.
-func (p *CSVPrinter) PrintProbeFailure(s *models.Statistics) {
+func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 	record := []string{}
 
 	if s.WithTimestamp {
@@ -217,7 +217,7 @@ func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
 }
 
 // PrintStatistics logs TCPing statistics to a CSV file.
-func (p *CSVPrinter) PrintStatistics(s *models.Statistics) {
+func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	timestamp := time.Now().Format(time.DateTime)
 
 	statistics := [][]string{
@@ -346,4 +346,4 @@ func (p *CSVPrinter) PrintStatistics(s *models.Statistics) {
 }
 
 // PrintTotalDownTime is a no-op implementation to satisfy the Printer interface.
-func (p *CSVPrinter) PrintTotalDownTime(_ *models.Statistics) {}
+func (p *CSVPrinter) PrintTotalDownTime(_ *stats.Statistics) {}

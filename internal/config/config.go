@@ -12,6 +12,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -132,8 +133,54 @@ type Config struct {
 	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
 	ShouldRetryResolve         bool
 	ShowFailuresOnly           bool
-	Resolver                   models.DomainResolver
-	HostnameChanges            []models.HostnameChange
+	Resolver                   *dns.Resolver
+	HostnameChanges            []stats.HostnameChange
+}
+
+func (c Config) GetHostname() string {
+	return c.Hostname
+}
+func (c Config) GetIP() netip.Addr {
+	return c.IP
+}
+func (c Config) GetPort() uint16 {
+	return c.Port
+}
+func (c Config) GetUseIPv4() bool {
+	return c.UseIPv4
+}
+func (c Config) GetUseIPv6() bool {
+	return c.UseIPv6
+}
+func (c Config) GetTimeout() string {
+	return c.Timeout.String()
+}
+func (c Config) GetProbesBeforeQuit() uint {
+	return c.ProbesBeforeQuit
+}
+func (c Config) GetTargetIsIP() bool {
+	return c.TargetIsIP
+}
+func (c Config) GetNonInteractive() bool {
+	return c.NonInteractive
+}
+func (c Config) GetIntervalBetweenProbes() string {
+	return c.IntervalBetweenProbes.String()
+}
+func (c Config) GetShowFailuresOnly() bool {
+	return c.ShowFailuresOnly
+}
+func (c Config) GetShouldRetryResolve() bool {
+	return c.ShouldRetryResolve
+}
+func (c Config) GetRetryResolveAfterNFailures() uint {
+	return c.RetryHostnameLookupAfter
+}
+func (c Config) GetNetworkInterface() nic.NetworkInterface {
+	return c.NetworkInterface
+}
+func (c Config) GetPrinterConfig() models.PrinterConfig {
+	return c.PrinterConfig
 }
 
 // ProcessUserInput gets and validate user input
@@ -273,7 +320,7 @@ func ProcessUserInput() Config {
 	resolver := dns.NewResolver(*customDNSServer)
 
 	var targetIsAlreadyIP bool
-	var hostnameChanges []models.HostnameChange
+	var hostnameChanges []stats.HostnameChange
 
 	resolvedIP, err := resolver.ResolveHostname(target, *useIPv4, *useIPv6)
 	if err != nil {
@@ -284,7 +331,7 @@ func ProcessUserInput() Config {
 		targetIsAlreadyIP = true
 	} else {
 		// track IP changes.
-		hostnameChanges = []models.HostnameChange{
+		hostnameChanges = []stats.HostnameChange{
 			{Addr: resolvedIP, When: time.Now()},
 		}
 	}

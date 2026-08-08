@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gookit/color"
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -34,7 +34,7 @@ func NewColorPrinter() *ColorPrinter {
 }
 
 // Shutdown sets the end time, prints statistics, and exits the program.
-func (p *ColorPrinter) Shutdown(s *models.Statistics) {
+func (p *ColorPrinter) Shutdown(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
 	os.Exit(0)
@@ -46,7 +46,7 @@ func (p *ColorPrinter) Shutdown(s *models.Statistics) {
 // Parameters:
 //   - hostname: The target host for the TCP ping.
 //   - port: The target port number.
-func (p *ColorPrinter) PrintStart(s *models.Statistics) {
+func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
 	ColorLightCyan("TCPinging %s on port %d\n", s.Hostname, s.Port)
 }
 
@@ -58,7 +58,7 @@ func (p *ColorPrinter) PrintStart(s *models.Statistics) {
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive successful probes.
 //   - rtt: The round-trip time of the probe in milliseconds (3 decimal points).
-func (p *ColorPrinter) PrintProbeSuccess(s *models.Statistics) {
+func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
 	if s.WithTimestamp {
@@ -88,7 +88,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *models.Statistics) {
 // Parameters:
 //   - userInput: The user-provided input data (hostname, IP, port, etc.).
 //   - streak: The number of consecutive failed probes.
-func (p *ColorPrinter) PrintProbeFailure(s *models.Statistics) {
+func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
 	if s.WithTimestamp {
@@ -110,7 +110,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *models.Statistics) {
 //
 // Parameters:
 //   - downtime: The total duration of downtime.
-func (p *ColorPrinter) PrintTotalDownTime(s *models.Statistics) {
+func (p *ColorPrinter) PrintTotalDownTime(s *stats.Statistics) {
 	ColorYellow("No response received for %s\n", utils.DurationToString(s.DownTime))
 }
 
@@ -135,7 +135,7 @@ func (p *ColorPrinter) PrintError(format string, args ...any) {
 // It includes transmitted and received packets, packet loss percentage,
 // successful and unsuccessful probes, uptime/downtime durations,
 // longest uptime/downtime, IP address changes, and RTT statistics.
-func (p *ColorPrinter) PrintStatistics(s *models.Statistics) {
+func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	if !s.DestIsIP {
 		ColorYellow("\n--- %s (%s) TCPing statistics ---\n",
 			s.Hostname,

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -22,7 +22,7 @@ type Prober struct {
 	Ticker     *time.Ticker
 	Timeout    time.Duration
 	Interval   time.Duration
-	Statistics models.Statistics
+	Statistics stats.Statistics
 }
 
 type Pinger interface {
@@ -69,7 +69,7 @@ const (
 	DefaultTimeout  = 5 * time.Second
 )
 
-func (p *Prober) Probe(ctx context.Context) (models.Statistics, error) {
+func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithTimeout(ctx, p.Timeout)
 	defer cancel()
@@ -97,14 +97,14 @@ func (p *Prober) Probe(ctx context.Context) (models.Statistics, error) {
 				}
 				p.printer.PrintProbeFailure(&p.Statistics)
 				p.Statistics.Failed++
-				p.Statistics.LongestDown = models.NewLongestTime(pingTime, rtt)
+				p.Statistics.LongestDown = stats.NewLongestTime(pingTime, rtt)
 				continue
 			}
 
 			p.Statistics.RTT = append(p.Statistics.RTT, utils.NanoToMillisecond(rtt.Nanoseconds()))
 			p.Statistics.HasResults = true
 			p.Statistics.Successful++
-			p.Statistics.LongestUp = models.NewLongestTime(pingTime, rtt)
+			p.Statistics.LongestUp = stats.NewLongestTime(pingTime, rtt)
 			p.printer.PrintProbeSuccess(&p.Statistics)
 
 		case <-time.After(p.Timeout):

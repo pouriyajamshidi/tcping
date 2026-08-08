@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 // NanoToMillisecond returns an amount of milliseconds from nanoseconds.
@@ -76,12 +76,12 @@ func DurationToString(duration time.Duration) string {
 }
 
 // SetLongestDuration updates the longest uptime or downtime based on the given type.
-func SetLongestDuration(start time.Time, duration time.Duration, longest *models.LongestTime) {
+func SetLongestDuration(start time.Time, duration time.Duration, longest *stats.LongestTime) {
 	if start.IsZero() || duration == 0 {
 		return
 	}
 
-	newLongest := models.NewLongestTime(start, duration)
+	newLongest := stats.NewLongestTime(start, duration)
 
 	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
 		*longest = newLongest

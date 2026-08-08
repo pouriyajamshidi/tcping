@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -19,19 +19,19 @@ func NewPlainPrinter() *PlainPrinter {
 }
 
 // Shutdown sets the end time, prints statistics, and exits the program.
-func (p *PlainPrinter) Shutdown(s *models.Statistics) {
+func (p *PlainPrinter) Shutdown(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
 	os.Exit(0)
 }
 
 // PrintStart prints the start message indicating the TCPing operation on the given hostname and port.
-func (p *PlainPrinter) PrintStart(s *models.Statistics) {
+func (p *PlainPrinter) PrintStart(s *stats.Statistics) {
 	fmt.Printf("TCPinging %s on port %d\n", s.Hostname, s.Port)
 }
 
 // PrintProbeSuccess prints a success message for a probe, including round-trip time and streak info.
-func (p *PlainPrinter) PrintProbeSuccess(s *models.Statistics) {
+func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
 	if s.WithTimestamp {
@@ -56,7 +56,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *models.Statistics) {
 }
 
 // PrintProbeFailure prints a failure message for a probe.
-func (p *PlainPrinter) PrintProbeFailure(s *models.Statistics) {
+func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
 	if s.WithTimestamp {
@@ -75,7 +75,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *models.Statistics) {
 }
 
 // PrintTotalDownTime prints the total downtime when no response is received.
-func (p *PlainPrinter) PrintTotalDownTime(s *models.Statistics) {
+func (p *PlainPrinter) PrintTotalDownTime(s *stats.Statistics) {
 	fmt.Printf("No response received for %s\n", utils.DurationToString(s.DownTime))
 }
 
@@ -90,7 +90,7 @@ func (p *PlainPrinter) PrintError(format string, args ...any) {
 }
 
 // PrintStatistics prints detailed statistics about the TCPing session.
-func (p *PlainPrinter) PrintStatistics(s *models.Statistics) {
+func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	msg := fmt.Sprintf("\n--- %s TCPing statistics ---\n", s.Hostname)
 
 	if !s.DestIsIP {

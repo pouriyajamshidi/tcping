@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -289,7 +289,7 @@ func (p *DatabasePrinter) Done() {
 }
 
 // Shutdown sets the end time, prints statistics, calls Done() and exits the program.
-func (p *DatabasePrinter) Shutdown(s *models.Statistics) {
+func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
 	p.Done()
@@ -297,12 +297,12 @@ func (p *DatabasePrinter) Shutdown(s *models.Statistics) {
 }
 
 // PrintStart prints a message indicating that TCPing has started for the given hostname and port.
-func (p *DatabasePrinter) PrintStart(s *models.Statistics) {
+func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 	fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.FilePath)
 }
 
 // PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintProbeSuccess(s *models.Statistics) {
+func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
 	timestamp := ""
 	if s.WithTimestamp {
 		timestamp = s.StartTimeFormatted()
@@ -384,7 +384,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *models.Statistics) {
 }
 
 // PrintProbeFailure satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintProbeFailure(s *models.Statistics) {
+func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 	timestamp := ""
 	if s.WithTimestamp {
 		timestamp = s.StartTimeFormatted()
@@ -444,7 +444,7 @@ func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
 
 // PrintStatistics saves TCPing statistics to the database.
 // If an error occurs while saving, it logs the error.
-func (p *DatabasePrinter) PrintStatistics(s *models.Statistics) {
+func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	data := dbStats{
 		eventType:                StatisticsEvent,
 		timestamp:                time.Now().Format(time.DateTime),
@@ -535,4 +535,4 @@ func (p *DatabasePrinter) PrintStatistics(s *models.Statistics) {
 }
 
 // PrintTotalDownTime satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintTotalDownTime(_ *models.Statistics) {}
+func (p *DatabasePrinter) PrintTotalDownTime(_ *stats.Statistics) {}

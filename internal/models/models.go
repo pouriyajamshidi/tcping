@@ -2,8 +2,6 @@
 package models
 
 import (
-	"fmt"
-	"net"
 	"net/netip"
 	"time"
 
@@ -20,71 +18,14 @@ const (
 	ICMP  protocol = "ICMP"
 )
 
-type Statistics struct {
-	IP                        netip.Addr
-	Port                      uint16
-	Protocol                  protocol
-	Hostname                  string
-	DestWasDown               bool
-	DestIsIP                  bool
-	LocalAddr                 net.Addr
-	StartTime                 time.Time
-	EndTime                   time.Time
-	UpTime                    time.Duration
-	DownTime                  time.Duration
-	Successful                int
-	Failed                    int
-	TotalSuccessfulProbes     uint
-	TotalUnsuccessfulProbes   uint
-	LastSuccessfulProbe       time.Time     // Timestamp of the last successful probe.
-	LastUnsuccessfulProbe     time.Time     // Timestamp of the last unsuccessful probe.
-	TotalDowntime             time.Duration // Total accumulated downtime.
-	TotalUptime               time.Duration // Total accumulated uptime.
-	StartOfUptime             time.Time     // Timestamp when the current uptime started.
-	StartOfDowntime           time.Time     // Timestamp when the current downtime started.
-	LongestUptime             LongestTime   // Data structure holding information about the longest uptime.
-	LongestDowntime           LongestTime   // Data structure holding information about the longest downtime.
-	HostnameChanges           []HostnameChange
-	RetriedHostnameLookups    uint
-	OngoingSuccessfulProbes   uint // Count of ongoing successful probes.
-	OngoingUnsuccessfulProbes uint // Count of ongoing unsuccessful probes.
-	LongestUp                 LongestTime
-	LongestDown               LongestTime
-	RTT                       []float32
-	LatestRTT                 float32
-	RTTResults                RttResult
-	HostChanges               []HostnameChange
-	HasResults                bool
-	WithTimestamp             bool
-	WithSourceAddress         bool
-}
-
-func (s *Statistics) IPStr() string {
-	return s.IP.String()
-}
-
-func (s *Statistics) PortStr() string {
-	return fmt.Sprint(s.Port)
-}
-
-func (s *Statistics) SourceAddr() string {
-	return s.LocalAddr.String()
-}
-
-func (s *Statistics) StartTimeFormatted() string {
-	return s.StartTime.Format(time.DateTime)
-}
-
-func (s *Statistics) EndTimeFormatted() string {
-	return s.EndTime.Format(time.DateTime)
-}
-
-func (s *Statistics) ProtocolStr() string {
-	return string(s.Protocol)
-}
-
-func (s *Statistics) RTTStr() string {
-	return fmt.Sprintf("%.3f", s.LatestRTT)
+type Statistics interface {
+	IPStr() string
+	PortStr() string
+	SourceAddr() string
+	StartTimeFormatted() string
+	EndTimeFormatted() string
+	ProtocolStr() string
+	RTTStr() string
 }
 
 // PrinterConfig holds all configuration options for Printer creation
@@ -130,7 +71,6 @@ type Tcping struct {
 	RttResults                RttResult        // Struct holding the minimum, average, and maximum RTT values.
 	DestWasDown               bool             // Flag indicating if the destination was unreachable previously.
 	DestIsIP                  bool             // Flag indicating whether the destination is an IP address (not a hostname).
-	DNSResolver               DomainResolver   // Custom DNS resolver to override or leave system-wide DNS settings
 }
 
 // ProbeOptions holds the configuration provided by the user for the TCPing operation.

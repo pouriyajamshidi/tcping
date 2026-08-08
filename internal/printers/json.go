@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -36,40 +36,40 @@ type JSONData struct {
 	// whether request was successful or not.
 	// It's a pointer on purpose, otherwise success=false will be omitted,
 	// but we still need to omit it for non-probe messages.
-	Success                         *bool                   `json:"success,omitempty"`
-	Timestamp                       string                  `json:"timestamp,omitempty"`
-	Message                         string                  `json:"message"` // Message contains a message similar to other plain and colored printers.
-	IPAddr                          string                  `json:"ipAddress,omitempty"`
-	Hostname                        string                  `json:"hostname,omitempty"`
-	Port                            uint16                  `json:"port,omitempty"`
-	TotalDuration                   string                  `json:"totalDuration,omitempty"` // TotalDuration is a total amount of seconds that program was running
-	TotalUptime                     string                  `json:"totalUptime,omitempty"`   // TotalUptime in seconds.
-	TotalDowntime                   string                  `json:"totalDowntime,omitempty"` // TotalDowntime in seconds.
-	TotalPackets                    uint                    `json:"totalPackets,omitempty"`
-	TotalSuccessfulPackets          uint                    `json:"totalSuccessfulPackets,omitempty"`
-	TotalUnsuccessfulPackets        uint                    `json:"totalUnsuccessfulPackets,omitempty"`
-	TotalPacketLossPercent          string                  `json:"totalPacketLossPercent,omitempty"` // TotalPacketLoss in seconds.
-	LongestUp                       string                  `json:"longestUp,omitempty"`              // LongestUp is the longest uptime in seconds.
-	LongestDown                     string                  `json:"longestDowntime,omitempty"`        // LongestDown is the longest downtime in seconds.
-	SourceAddr                      string                  `json:"sourceAddress,omitempty"`
-	HostnameResolveRetries          uint                    `json:"hostnameResolveRetries,omitempty"`
-	HostnameChanges                 []models.HostnameChange `json:"hostnameChanges,omitempty"`
-	DestIsIP                        *bool                   `json:"destinationIsIP,omitempty"`
-	Time                            string                  `json:"time,omitempty"`
-	LastSuccessfulProbe             string                  `json:"lastSuccessfulProbe,omitempty"`
-	LastUnsuccessfulProbe           string                  `json:"lastUnsuccessfulProbe,omitempty"`
-	LongestConsecutiveUptimeStart   string                  `json:"longestConsecutiveUptimeStart,omitempty"`
-	LongestConsecutiveUptimeEnd     string                  `json:"longestConsecutiveUptimeEnd,omitempty"`
-	LongestConsecutiveDowntimeStart string                  `json:"longestConsecutiveDowntimeStart,omitempty"`
-	LongestConsecutiveDowntimeEnd   string                  `json:"longestConsecutiveDowntimeEnd,omitempty"`
-	Latency                         float32                 `json:"latency,omitempty"`    // Latency in ms for a successful probe messages.
-	LatencyMin                      string                  `json:"latencyMin,omitempty"` // LatencyMin is a stringified 3 decimal places min latency for the stats event.
-	LatencyAvg                      string                  `json:"latencyAvg,omitempty"` // LatencyAvg is a stringified 3 decimal places avg latency for the stats event.
-	LatencyMax                      string                  `json:"latencyMax,omitempty"` // LatencyMax is a stringified 3 decimal places max latency for the stats event.
-	OngoingSuccessfulProbes         uint                    `json:"ongoingSuccessfulProbes,omitempty"`
-	OngoingUnsuccessfulProbes       uint                    `json:"ongoingUnsuccessfulProbes,omitempty"`
-	StartTimestamp                  string                  `json:"startTime,omitempty"` // StartTime is used as a start time of TotalDuration for stats messages.
-	EndTimestamp                    string                  `json:"endTime,omitempty"`   // EndTime is used as an end of TotalDuration for stats messages.
+	Success                         *bool                  `json:"success,omitempty"`
+	Timestamp                       string                 `json:"timestamp,omitempty"`
+	Message                         string                 `json:"message"` // Message contains a message similar to other plain and colored printers.
+	IPAddr                          string                 `json:"ipAddress,omitempty"`
+	Hostname                        string                 `json:"hostname,omitempty"`
+	Port                            uint16                 `json:"port,omitempty"`
+	TotalDuration                   string                 `json:"totalDuration,omitempty"` // TotalDuration is a total amount of seconds that program was running
+	TotalUptime                     string                 `json:"totalUptime,omitempty"`   // TotalUptime in seconds.
+	TotalDowntime                   string                 `json:"totalDowntime,omitempty"` // TotalDowntime in seconds.
+	TotalPackets                    uint                   `json:"totalPackets,omitempty"`
+	TotalSuccessfulPackets          uint                   `json:"totalSuccessfulPackets,omitempty"`
+	TotalUnsuccessfulPackets        uint                   `json:"totalUnsuccessfulPackets,omitempty"`
+	TotalPacketLossPercent          string                 `json:"totalPacketLossPercent,omitempty"` // TotalPacketLoss in seconds.
+	LongestUp                       string                 `json:"longestUp,omitempty"`              // LongestUp is the longest uptime in seconds.
+	LongestDown                     string                 `json:"longestDowntime,omitempty"`        // LongestDown is the longest downtime in seconds.
+	SourceAddr                      string                 `json:"sourceAddress,omitempty"`
+	HostnameResolveRetries          uint                   `json:"hostnameResolveRetries,omitempty"`
+	HostnameChanges                 []stats.HostnameChange `json:"hostnameChanges,omitempty"`
+	DestIsIP                        *bool                  `json:"destinationIsIP,omitempty"`
+	Time                            string                 `json:"time,omitempty"`
+	LastSuccessfulProbe             string                 `json:"lastSuccessfulProbe,omitempty"`
+	LastUnsuccessfulProbe           string                 `json:"lastUnsuccessfulProbe,omitempty"`
+	LongestConsecutiveUptimeStart   string                 `json:"longestConsecutiveUptimeStart,omitempty"`
+	LongestConsecutiveUptimeEnd     string                 `json:"longestConsecutiveUptimeEnd,omitempty"`
+	LongestConsecutiveDowntimeStart string                 `json:"longestConsecutiveDowntimeStart,omitempty"`
+	LongestConsecutiveDowntimeEnd   string                 `json:"longestConsecutiveDowntimeEnd,omitempty"`
+	Latency                         float32                `json:"latency,omitempty"`    // Latency in ms for a successful probe messages.
+	LatencyMin                      string                 `json:"latencyMin,omitempty"` // LatencyMin is a stringified 3 decimal places min latency for the stats event.
+	LatencyAvg                      string                 `json:"latencyAvg,omitempty"` // LatencyAvg is a stringified 3 decimal places avg latency for the stats event.
+	LatencyMax                      string                 `json:"latencyMax,omitempty"` // LatencyMax is a stringified 3 decimal places max latency for the stats event.
+	OngoingSuccessfulProbes         uint                   `json:"ongoingSuccessfulProbes,omitempty"`
+	OngoingUnsuccessfulProbes       uint                   `json:"ongoingUnsuccessfulProbes,omitempty"`
+	StartTimestamp                  string                 `json:"startTime,omitempty"` // StartTime is used as a start time of TotalDuration for stats messages.
+	EndTimestamp                    string                 `json:"endTime,omitempty"`   // EndTime is used as an end of TotalDuration for stats messages.
 }
 
 // JSONPrinter is a struct that holds a JSON encoder to print structured JSON output.
@@ -90,14 +90,14 @@ func NewJSONPrinter(pretty bool) *JSONPrinter {
 }
 
 // Shutdown sets the end time, prints statistics, and exits the program.
-func (p *JSONPrinter) Shutdown(s *models.Statistics) {
+func (p *JSONPrinter) Shutdown(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
 	os.Exit(0)
 }
 
 // PrintStart prints the initial message before doing probes.
-func (p *JSONPrinter) PrintStart(s *models.Statistics) {
+func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 	p.encoder.Encode(JSONData{
 		Type:     startEvent,
 		Message:  fmt.Sprintf("TCPinging %s on port %d", s.Hostname, s.Port),
@@ -107,7 +107,7 @@ func (p *JSONPrinter) PrintStart(s *models.Statistics) {
 }
 
 // PrintProbeSuccess prints successful TCP probe replies in JSON format.
-func (p *JSONPrinter) PrintProbeSuccess(s *models.Statistics) {
+func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	// so that *bool fields do not get omitted
 	f := false
 	t := true
@@ -214,7 +214,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *models.Statistics) {
 }
 
 // PrintProbeFailure prints a JSON message when a TCP probe fails.
-func (p *JSONPrinter) PrintProbeFailure(s *models.Statistics) {
+func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 	// so that *bool fields not get omitted
 	f := false
 	t := true
@@ -269,7 +269,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *models.Statistics) {
 
 // PrintTotalDownTime prints the total downtime,
 // if the next retry was successful.
-func (p *JSONPrinter) PrintTotalDownTime(s *models.Statistics) {
+func (p *JSONPrinter) PrintTotalDownTime(s *stats.Statistics) {
 	p.encoder.Encode(JSONData{
 		Type:          retrySuccessEvent,
 		Message:       fmt.Sprintf("No response received for %s", utils.DurationToString(s.DownTime)),
@@ -296,7 +296,7 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 }
 
 // PrintStatistics prints all gathered stats when program exits.
-func (p *JSONPrinter) PrintStatistics(s *models.Statistics) {
+func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 	data := JSONData{
 		Type:                     statisticsEvent,
 		IPAddr:                   s.IPStr(),

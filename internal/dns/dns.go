@@ -9,7 +9,7 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 // DNSTimeout is the accepted duration when doing hostname resolution
@@ -53,7 +53,7 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures
-func (d *Resolver) RetryResolveHostname(s *models.Statistics, afterNFailures uint, useIPv4, useIPv6 bool) error {
+func (d *Resolver) RetryResolveHostname(s *stats.Statistics, afterNFailures uint, useIPv4, useIPv6 bool) error {
 	if s.OngoingUnsuccessfulProbes >= afterNFailures {
 		s.RetriedHostnameLookups++
 
@@ -70,7 +70,7 @@ func (d *Resolver) RetryResolveHostname(s *models.Statistics, afterNFailures uin
 		if len(s.HostnameChanges) > 0 {
 			lastAddr := s.HostnameChanges[len(s.HostnameChanges)-1].Addr
 			if lastAddr != newIP {
-				s.HostnameChanges = append(s.HostnameChanges, models.HostnameChange{
+				s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
 					Addr: newIP,
 					When: time.Now(),
 				})
@@ -78,7 +78,7 @@ func (d *Resolver) RetryResolveHostname(s *models.Statistics, afterNFailures uin
 			// TODO: If we properly instantiate the `HostnameChanges` in the beginning,
 			// we will not need this `else` statement
 		} else {
-			s.HostnameChanges = append(s.HostnameChanges, models.HostnameChange{
+			s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
 				Addr: newIP,
 				When: time.Now(),
 			})
