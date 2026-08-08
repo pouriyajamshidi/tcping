@@ -99,9 +99,9 @@ func main() {
 			printer.PrintRetryingToResolve(stats.Hostname)
 			err := tcping.DNSResolver.RetryResolveHostname(
 				stats,
-				*cfg.RetryResolveAfterNFailures,
-				*cfg.UseIPv4,
-				*cfg.UseIPv6,
+				cfg.RetryResolveAfterNFailures,
+				cfg.UseIPv4,
+				cfg.UseIPv6,
 			)
 			if err != nil {
 				printer.PrintError(err.Error())
@@ -111,9 +111,9 @@ func main() {
 		probers.Ping(stats, printer, tcping, cfg)
 
 		// -c flag is provided
-		if *cfg.ProbesBeforeQuit != 0 {
+		if cfg.ProbesBeforeQuit != 0 {
 			probeCount++
-			if probeCount == *cfg.ProbesBeforeQuit {
+			if probeCount == cfg.ProbesBeforeQuit {
 				printer.Shutdown(stats)
 			}
 		}
