@@ -18,12 +18,12 @@ const DNSTimeout = 2 * time.Second
 // IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
 const IPv4OrIPv6 = "ip"
 
-type DNSResolver struct {
+type Resolver struct {
 	Resolver *net.Resolver
 }
 
-func NewDNSResolver(DNSServer string) *DNSResolver {
-	return &DNSResolver{
+func NewResolver(DNSServer string) *Resolver {
+	return &Resolver{
 		Resolver: createDNSResolver(DNSServer),
 	}
 }
@@ -53,7 +53,7 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures
-func (d *DNSResolver) RetryResolveHostname(s *models.Statistics, afterNFailures uint, useIPv4, useIPv6 bool) error {
+func (d *Resolver) RetryResolveHostname(s *models.Statistics, afterNFailures uint, useIPv4, useIPv6 bool) error {
 	if s.OngoingUnsuccessfulProbes >= afterNFailures {
 		s.RetriedHostnameLookups++
 
@@ -141,7 +141,7 @@ func selectResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (netip.Addr, 
 }
 
 // ResolveHostname handles hostname resolution with a timeout value of `DNSTimeout (2 seconds)`
-func (d *DNSResolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error) {
+func (d *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error) {
 	// Ensure the target isn't already an IP address
 	ip, err := netip.ParseAddr(target)
 	if err == nil {

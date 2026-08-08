@@ -132,7 +132,7 @@ type Config struct {
 	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
 	ShouldRetryResolve         bool
 	ShowFailuresOnly           bool
-	DNSResolver                models.DomainResolver
+	Resolver                   models.DomainResolver
 	HostnameChanges            []models.HostnameChange
 }
 
@@ -270,12 +270,12 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
-	DNSResolver := dns.NewDNSResolver(*customDNSServer)
+	resolver := dns.NewResolver(*customDNSServer)
 
 	var targetIsAlreadyIP bool
 	var hostnameChanges []models.HostnameChange
 
-	resolvedIP, err := DNSResolver.ResolveHostname(target, *useIPv4, *useIPv6)
+	resolvedIP, err := resolver.ResolveHostname(target, *useIPv4, *useIPv6)
 	if err != nil {
 		fmt.Printf("Could not resolve %s\n", target)
 		os.Exit(1)
@@ -338,7 +338,7 @@ func ProcessUserInput() Config {
 		NonInteractive:             *nonInteractive,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
-		DNSResolver:                DNSResolver,
+		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
 		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
 		HostnameChanges:            hostnameChanges,

@@ -83,7 +83,7 @@ func main() {
 	printers.SignalHandler(printer, stats)
 
 	tcping := &models.Tcping{}
-	tcping.DNSResolver = cfg.DNSResolver
+	tcping.DNSResolver = cfg.Resolver
 
 	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer tcping.Ticker.Stop()
