@@ -238,7 +238,7 @@ func ProcessUserInput() Config {
 	}
 
 	if *useIPv4 && *useIPv6 {
-		fmt.Println("Only one IP version can be specified")
+		fmt.Fprintln(os.Stderr, "Only one IP version can be specified")
 		usage()
 	}
 
@@ -253,20 +253,20 @@ func ProcessUserInput() Config {
 	target, port := parseHostPortArgs(args)
 
 	if target == "" || port == "" {
-		fmt.Println("At least the host and port or host:port format must be specified")
+		fmt.Fprintln(os.Stderr, "At least the host and port or host:port format must be specified")
 		usage()
 	}
 
 	validatedPort, err := convertAndValidatePort(port)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
 	intervalBetweenProbesDuration := utils.SecondsToDuration(*intervalBetweenProbes)
 	if intervalBetweenProbesDuration < minProbeInterval {
 		// TODO: Do we keep this constraint?
-		fmt.Println("Wait interval should be more than 2 ms")
+		fmt.Fprintln(os.Stderr, "Wait interval should be more than 2 ms")
 		os.Exit(1)
 	}
 
@@ -277,7 +277,7 @@ func ProcessUserInput() Config {
 
 	resolvedIP, err := resolver.ResolveHostname(target, *useIPv4, *useIPv6)
 	if err != nil {
-		fmt.Printf("Could not resolve %s\n", target)
+		fmt.Fprintf(os.Stderr, "Could not resolve %s\n", target)
 		os.Exit(1)
 	}
 	if resolvedIP.String() == target {
@@ -308,7 +308,7 @@ func ProcessUserInput() Config {
 			timeoutInDuration,
 		)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
 	}
