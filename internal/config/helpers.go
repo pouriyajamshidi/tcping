@@ -46,13 +46,11 @@ func parseHostPortArgs(args []string) (host string, port string) {
 
 // usage prints how tcping should be run
 func usage() {
-	executableName := os.Args[0]
-
 	fmt.Printf("\nTCPING version %s\n\n", consts.Version)
-	fmt.Printf("Try running %s like:\n", executableName)
-	fmt.Printf("%s www.example.com 443\n", executableName)
+	fmt.Println("Try running tcping like:")
+	fmt.Println("tcping www.example.com 443")
 	fmt.Println("Or use the <hostname/ip:port> format:")
-	fmt.Printf("%s www.example.com:443\n", executableName)
+	fmt.Println("tcping www.example.com:443")
 	fmt.Printf("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
