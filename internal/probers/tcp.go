@@ -12,10 +12,19 @@ import (
 )
 
 type Tcping struct {
-	Dialer          func(network string, address string, timeout time.Duration) (net.Conn, error)
+	Dial            func(network string, address string) (net.Conn, error)
 	Ticker          *time.Ticker // Ticker used to manage the time between probes.
-	RTT             []float32    // List of RTT results for successful probes.
 	LastProbeFailed bool         // Flag indicating if the destination was unreachable previously.
+}
+
+func NewTcping(cfg config.Config) Tcping {
+	if cfg.NetworkInterface.Use {
+		return Tcping{Dial: cfg.NetworkInterface.Dialer.Dial}
+	}
+
+	return Tcping{
+		Dial: (&net.Dialer{Timeout: cfg.Timeout}).Dial,
+	}
 }
 
 // handleConnFailure processes failed probes
@@ -72,7 +81,6 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 
 // Ping checks target's availability using TCP
 func (t Tcping) Ping(s *stats.Statistics, p printers.Printer, cfg config.Config) {
-
 	t.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
 	defer t.Ticker.Stop()
 
@@ -102,4 +110,9 @@ func (t Tcping) Ping(s *stats.Statistics, p printers.Printer, cfg config.Config)
 	}
 
 	<-t.Ticker.C
+
+	// TODO: Possibly we can drop using Ticker. Need to think more...
+	// if wait := cfg.IntervalBetweenProbes - time.Since(start); wait > 0 {
+	// 	time.Sleep(wait)
+	// }
 }
