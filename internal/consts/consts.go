@@ -10,3 +10,13 @@ const (
 	Owner = "pouriyajamshidi"
 	Repo  = "tcping"
 )
+
+type Protocol string
+
+const (
+	TCP   Protocol = "TCP"
+	UDP   Protocol = "UDP"
+	HTTP  Protocol = "HTTP"
+	HTTPS Protocol = "HTTPS"
+	ICMP  Protocol = "ICMP"
+)
