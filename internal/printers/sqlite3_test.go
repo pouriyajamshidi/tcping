@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
+	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
@@ -150,7 +152,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 		name       string
 		startTime  time.Time
 		sourceAddr string
-		opts       models.ProbeOptions
+		opts       config.Config
 		streak     uint
 		rtt        string
 	}{
@@ -158,7 +160,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 			name:       "IP destination",
 			startTime:  time.Now(),
 			sourceAddr: "192.168.1.2",
-			opts: models.ProbeOptions{
+			opts: config.Config{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "192.168.1.1",
 				Port:     80,
@@ -170,7 +172,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 			name:       "hostname destination",
 			startTime:  time.Now(),
 			sourceAddr: "192.168.1.2",
-			opts: models.ProbeOptions{
+			opts: config.Config{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "example.com",
 				Port:     80,
@@ -221,13 +223,13 @@ func TestDatabasePrinter_PrintProbeFailure(t *testing.T) {
 	tests := []struct {
 		name      string
 		startTime time.Time
-		opts      models.ProbeOptions
+		opts      config.Config
 		streak    uint
 	}{
 		{
 			name:      "IP destination failure",
 			startTime: time.Now(),
-			opts: models.ProbeOptions{
+			opts: config.Config{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "192.168.1.1",
 				Port:     80,
@@ -237,7 +239,7 @@ func TestDatabasePrinter_PrintProbeFailure(t *testing.T) {
 		{
 			name:      "hostname destination failure",
 			startTime: time.Now(),
-			opts: models.ProbeOptions{
+			opts: config.Config{
 				IP:       netip.MustParseAddr("192.168.1.1"),
 				Hostname: "example.com",
 				Port:     80,
@@ -368,45 +370,14 @@ func TestSanitizeTableName(t *testing.T) {
 
 // Helper functions
 
-func createMockStats() models.Tcping {
-	now := time.Now()
-	return models.Tcping{
-		StartTime:              now,
-		EndTime:                now.Add(10 * time.Minute),
-		LastSuccessfulProbe:    now.Add(1 * time.Minute),
-		RetriedHostnameLookups: 10,
-		LongestUptime: models.LongestTime{
-			Start:    now.Add(20 * time.Second),
-			End:      now.Add(80 * time.Second),
-			Duration: time.Minute,
-		},
-		LongestDowntime: models.LongestTime{
-			Start:    now.Add(20 * time.Second),
-			End:      now.Add(140 * time.Second),
-			Duration: time.Minute * 2,
-		},
-		Options: models.ProbeOptions{
-			IP:       netip.MustParseAddr("192.168.1.1"),
-			Hostname: "example.com",
-			Port:     1234,
-		},
-		TotalUptime:             32 * time.Second,
-		TotalDowntime:           60 * time.Second,
-		TotalSuccessfulProbes:   201,
-		TotalUnsuccessfulProbes: 123,
-		RttResults: models.RttResult{
-			HasResults: true,
-			Min:        2.832,
-			Average:    3.8123,
-			Max:        4.0932,
-		},
-		HostnameChanges: createMockHostnameChanges(),
-	}
+func createMockStats() probers.Tcping {
+	// now := time.Now()
+	return probers.Tcping{}
 }
 
-func createMockHostnameChanges() []models.HostnameChange {
+func createMockHostnameChanges() []stats.HostnameChange {
 	now := time.Now()
-	return []models.HostnameChange{
+	return []stats.HostnameChange{
 		{
 			Addr: netip.MustParseAddr("192.168.1.1"),
 			When: now,

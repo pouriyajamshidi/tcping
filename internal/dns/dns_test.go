@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
+	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
 )
 
 // dummyPrinter is a fake test implementation
@@ -13,27 +14,21 @@ import (
 type dummyPrinter struct{}
 
 func (fp *dummyPrinter) PrintStart(_ string, _ uint16) {}
-func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ models.ProbeOptions, _ uint, _ string) {
+func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ config.Config, _ uint, _ string) {
 }
-func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ models.ProbeOptions, _ uint) {}
-func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                              {}
-func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                           {}
-func (fp *dummyPrinter) PrintStatistics(_ models.Tcping)                              {}
-func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                        {}
+func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ config.Config, _ uint) {}
+func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                        {}
+func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                     {}
+func (fp *dummyPrinter) PrintStatistics(_ probers.Tcping)                       {}
+func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                  {}
 
 // createTestStats should be used to create new stats structs.
 // it uses "127.0.0.1:12345" as default values, because
 // [testServerListen] use the same values.
 // It'll call t.Errorf if netip.ParseAddr has failed.
-func createTestStats(t *testing.T) *models.Tcping {
-	addr, err := netip.ParseAddr("127.0.0.1")
-	s := models.Tcping{
-		Options: models.ProbeOptions{
-			IP:                    addr,
-			Port:                  12345,
-			IntervalBetweenProbes: time.Second,
-			Timeout:               time.Second,
-		},
+func createTestStats(t *testing.T) *probers.Tcping {
+	_, err := netip.ParseAddr("127.0.0.1")
+	s := probers.Tcping{
 		Ticker: time.NewTicker(time.Second),
 	}
 	if err != nil {
@@ -44,7 +39,7 @@ func createTestStats(t *testing.T) *models.Tcping {
 }
 
 func TestSelectResolvedIPv4(t *testing.T) {
-	userInputV4 := models.ProbeOptions{
+	userInputV4 := config.Config{
 		UseIPv4: true,
 	}
 
@@ -69,7 +64,7 @@ func TestSelectResolvedIPv4(t *testing.T) {
 }
 
 func TestSelectResolvedIPv6(t *testing.T) {
-	userInputV6 := models.ProbeOptions{
+	userInputV6 := config.Config{
 		UseIPv6: true,
 	}
 
