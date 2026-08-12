@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
+	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
@@ -118,6 +118,7 @@ type Config struct {
 	Hostname                   string
 	IP                         netip.Addr
 	Port                       uint16
+	Protocol                   consts.Protocol
 	UseIPv4                    bool
 	UseIPv6                    bool
 	ShowSourceAddress          bool
@@ -127,14 +128,13 @@ type Config struct {
 	IfaceNameOrIPAddress       string
 	Timeout                    time.Duration
 	IntervalBetweenProbes      time.Duration
-	PrinterConfig              models.PrinterConfig
+	PrinterConfig              printers.PrinterConfig
 	NetworkInterface           nic.NetworkInterface
 	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
 	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
 	ShouldRetryResolve         bool
 	ShowFailuresOnly           bool
 	Resolver                   *dns.Resolver
-	HostnameChanges            []stats.HostnameChange
 }
 
 func (c Config) GetHostname() string {
@@ -145,6 +145,9 @@ func (c Config) GetIP() netip.Addr {
 }
 func (c Config) GetPort() uint16 {
 	return c.Port
+}
+func (c Config) GetProtocol() consts.Protocol {
+	return c.Protocol
 }
 func (c Config) GetUseIPv4() bool {
 	return c.UseIPv4
@@ -179,8 +182,14 @@ func (c Config) GetRetryResolveAfterNFailures() uint {
 func (c Config) GetNetworkInterface() nic.NetworkInterface {
 	return c.NetworkInterface
 }
-func (c Config) GetPrinterConfig() models.PrinterConfig {
+func (c Config) GetPrinterConfig() printers.PrinterConfig {
 	return c.PrinterConfig
+}
+func (c Config) GetWithTimestamp() bool {
+	return c.PrinterConfig.WithTimestamp
+}
+func (c Config) GetWithSourceAddress() bool {
+	return c.PrinterConfig.WithSourceAddress
 }
 
 // ProcessUserInput gets and validate user input
@@ -320,7 +329,6 @@ func ProcessUserInput() Config {
 	resolver := dns.NewResolver(*customDNSServer)
 
 	var targetIsAlreadyIP bool
-	var hostnameChanges []stats.HostnameChange
 
 	resolvedIP, err := resolver.ResolveHostname(target, *useIPv4, *useIPv6)
 	if err != nil {
@@ -329,11 +337,6 @@ func ProcessUserInput() Config {
 	}
 	if resolvedIP.String() == target {
 		targetIsAlreadyIP = true
-	} else {
-		// track IP changes.
-		hostnameChanges = []stats.HostnameChange{
-			{Addr: resolvedIP, When: time.Now()},
-		}
 	}
 
 	var shouldRetryResolve bool
@@ -360,7 +363,7 @@ func ProcessUserInput() Config {
 		}
 	}
 
-	printerConfig := models.PrinterConfig{
+	printerConfig := printers.PrinterConfig{
 		Target:            target,
 		Port:              validatedPort,
 		OutputJSON:        *outputJSON,
@@ -387,7 +390,6 @@ func ProcessUserInput() Config {
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
 		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
-		HostnameChanges:            hostnameChanges,
 		IfaceNameOrIPAddress:       *interfaceName,
 		NetworkInterface:           networkInterface,
 		PrinterConfig:              printerConfig,

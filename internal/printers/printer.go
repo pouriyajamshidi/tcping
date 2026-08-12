@@ -8,10 +8,30 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
+
+// PrinterConfig holds all configuration options for Printer creation
+type PrinterConfig struct {
+	OutputJSON        bool
+	PrettyJSON        bool
+	NoColor           bool
+	WithTimestamp     bool
+	WithSourceAddress bool
+	OutputDBPath      string
+	OutputCSVPath     string
+	Target            string
+	Port              uint16
+}
+
+func (p PrinterConfig) GetWithTimestamp() bool {
+	return p.WithTimestamp
+}
+
+func (p PrinterConfig) GetWithSourceAddress() bool {
+	return p.WithSourceAddress
+}
 
 // Printer defines a set of methods that any printer implementation must provide.
 // Printers are responsible for outputting information, but should not modify data or perform calculations.
@@ -57,7 +77,7 @@ type Printer interface {
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration
-func NewPrinter(cfg models.PrinterConfig) (Printer, error) {
+func NewPrinter(cfg PrinterConfig) (Printer, error) {
 	if cfg.PrettyJSON && !cfg.OutputJSON {
 		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
 	}
