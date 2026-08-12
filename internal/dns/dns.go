@@ -53,44 +53,27 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures
-func (d *Resolver) RetryResolveHostname(s *stats.Statistics, afterNFailures uint, useIPv4, useIPv6 bool) error {
-	if s.OngoingUnsuccessfulProbes >= afterNFailures {
-		s.RetriedHostnameLookups++
+func (d *Resolver) RetryResolveHostname(s *stats.Statistics, useIPv4, useIPv6 bool) error {
+	newIP, err := d.ResolveHostname(s.Hostname, useIPv4, useIPv6)
+	if err != nil {
+		return err
+	}
 
-		newIP, err := d.ResolveHostname(s.Hostname, useIPv4, useIPv6)
-		if err != nil {
-			return err
-		}
+	s.IP = newIP
 
-		if s.IP != newIP {
-			s.IP = newIP
-		}
-
-		// Track and display hostname changes in the stats
-		if len(s.HostnameChanges) > 0 {
-			lastAddr := s.HostnameChanges[len(s.HostnameChanges)-1].Addr
-			if lastAddr != newIP {
-				s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
-					Addr: newIP,
-					When: time.Now(),
-				})
-			}
-			// TODO: If we properly instantiate the `HostnameChanges` in the beginning,
-			// we will not need this `else` statement
-		} else {
-			s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
-				Addr: newIP,
-				When: time.Now(),
-			})
-		}
+	if len(s.HostnameChanges) == 0 || s.HostnameChanges[len(s.HostnameChanges)-1].Addr != newIP {
+		s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
+			Addr: newIP,
+			When: time.Now(),
+		})
 	}
 
 	return nil
 }
 
-// selectResolvedIP returns an IPv4, IPv6 or a random resolved address
+// selectRandomResolvedIP returns an IPv4, IPv6 or a random resolved address
 // if the IP version usage is not enforced from the `net.IP` slice of received addresses
-func selectResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (netip.Addr, error) {
+func selectRandomResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (netip.Addr, error) {
 	selectRandomIP := func(ipList []netip.Addr) netip.Addr {
 		var index int
 		if len(ipList) > 1 {
@@ -156,5 +139,5 @@ func (d *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.
 		return ip, err
 	}
 
-	return selectResolvedIP(ipAddrs, useIPv4, useIPv6)
+	return selectRandomResolvedIP(ipAddrs, useIPv4, useIPv6)
 }
