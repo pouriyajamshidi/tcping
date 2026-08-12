@@ -6,24 +6,34 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
 
-type protocol string
-
-const (
-	TCP   protocol = "TCP"
-	UDP   protocol = "UDP"
-	HTTP  protocol = "HTTP"
-	HTTPS protocol = "HTTPS"
-	ICMP  protocol = "ICMP"
-)
+type Config interface {
+	GetHostname() string
+	GetIP() netip.Addr
+	GetPort() uint16
+	GetProtocol() consts.Protocol
+	GetUseIPv4() bool
+	GetUseIPv6() bool
+	GetTimeout() string
+	GetProbesBeforeQuit() uint
+	GetTargetIsIP() bool
+	GetNonInteractive() bool
+	GetIntervalBetweenProbes() string
+	GetShowFailuresOnly() bool
+	GetShouldRetryResolve() bool
+	GetRetryResolveAfterNFailures() uint
+	GetNetworkInterface() nic.NetworkInterface
+	GetWithTimestamp() bool
+	GetWithSourceAddress() bool
+}
 
 type Statistics struct {
 	IP                        netip.Addr
 	Port                      uint16
-	Protocol                  protocol
+	Protocol                  consts.Protocol
 	Hostname                  string
 	DestWasDown               bool
 	DestIsIP                  bool
@@ -59,24 +69,6 @@ type Statistics struct {
 	WithSourceAddress         bool
 }
 
-type Config interface {
-	GetHostname() string
-	GetIP() netip.Addr
-	GetPort() uint16
-	GetUseIPv4() bool
-	GetUseIPv6() bool
-	GetTimeout() string
-	GetProbesBeforeQuit() uint
-	GetTargetIsIP() bool
-	GetNonInteractive() bool
-	GetIntervalBetweenProbes() string
-	GetShowFailuresOnly() bool
-	GetShouldRetryResolve() bool
-	GetRetryResolveAfterNFailures() uint
-	GetNetworkInterface() nic.NetworkInterface
-	GetPrinterConfig() models.PrinterConfig
-}
-
 func NewStatistics(cfg Config) *Statistics {
 	return &Statistics{
 		Hostname:          cfg.GetHostname(),
@@ -84,14 +76,17 @@ func NewStatistics(cfg Config) *Statistics {
 		Port:              cfg.GetPort(),
 		DestIsIP:          cfg.GetTargetIsIP(),
 		LocalAddr:         cfg.GetNetworkInterface().Dialer.LocalAddr,
-		WithTimestamp:     cfg.GetPrinterConfig().WithTimestamp,
-		WithSourceAddress: cfg.GetPrinterConfig().WithSourceAddress,
-		Protocol:          "TCP",
+		WithTimestamp:     cfg.GetWithTimestamp(),
+		WithSourceAddress: cfg.GetWithSourceAddress(),
+		Protocol:          consts.TCP,
 		RTTResults:        RTTResult{HasResults: false},
 		LongestUptime:     LongestTime{},
 		LongestDowntime:   LongestTime{},
-		HostnameChanges:   []HostnameChange{},
-		StartTime:         time.Now(),
+		HostnameChanges: []HostnameChange{{
+			Addr: cfg.GetIP(),
+			When: time.Now(),
+		}},
+		StartTime: time.Now(),
 	}
 }
 
