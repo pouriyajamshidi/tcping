@@ -6,11 +6,17 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
+
+type Tcping struct {
+	Dialer          func(network string, address string, timeout time.Duration) (net.Conn, error)
+	Ticker          *time.Ticker // Ticker used to manage the time between probes.
+	RTT             []float32    // List of RTT results for successful probes.
+	LastProbeFailed bool         // Flag indicating if the destination was unreachable previously.
+}
 
 // handleConnFailure processes failed probes
 func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration) {
@@ -65,7 +71,11 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 }
 
 // Ping checks target's availability using TCP
-func Ping(s *stats.Statistics, p printers.Printer, tcping *models.Tcping, cfg config.Config) {
+func (t Tcping) Ping(s *stats.Statistics, p printers.Printer, cfg config.Config) {
+
+	t.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
+	defer t.Ticker.Stop()
+
 	var err error
 	var conn net.Conn
 
@@ -91,5 +101,5 @@ func Ping(s *stats.Statistics, p printers.Printer, tcping *models.Tcping, cfg co
 		conn.Close()
 	}
 
-	<-tcping.Ticker.C
+	<-t.Ticker.C
 }

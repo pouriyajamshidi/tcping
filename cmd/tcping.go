@@ -5,10 +5,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -68,36 +67,41 @@ func main() {
 		os.Exit(1)
 	}
 
-	printer.PrintStart(stats)
-
 	printers.SignalHandler(printer, stats)
 
-	tcping := &models.Tcping{}
+	var pinger probers.Pinger
 
-	tcping.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
-	defer tcping.Ticker.Stop()
+	switch cfg.GetProtocol() {
+	case consts.TCP:
+		pinger = probers.Tcping{}
+	default:
+		pinger = probers.Tcping{}
+	}
 
 	if !cfg.NonInteractive {
 		go monitorSummaryRequest(printer, stats)
 	}
 
+	printer.PrintStart(stats)
+
 	var probeCount uint
 
 	for {
-		if cfg.ShouldRetryResolve {
+		if cfg.ShouldRetryResolve && stats.OngoingUnsuccessfulProbes >= cfg.RetryResolveAfterNFailures {
+			stats.RetriedHostnameLookups++
 			printer.PrintRetryingToResolve(stats.Hostname)
-			err := cfg.Resolver.RetryResolveHostname(
+			if err := cfg.Resolver.RetryResolveHostname(
 				stats,
-				cfg.RetryResolveAfterNFailures,
 				cfg.UseIPv4,
 				cfg.UseIPv6,
-			)
-			if err != nil {
+			); err != nil {
 				printer.PrintError("%s", err.Error())
 			}
 		}
 
-		probers.Ping(stats, printer, tcping, cfg)
+		pinger.Ping(stats, printer, cfg)
+
+		// probers.Ping(stats, printer, tcping, cfg)
 
 		// -c flag is provided
 		if cfg.ProbesBeforeQuit != 0 {

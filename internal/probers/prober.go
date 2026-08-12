@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
@@ -17,7 +18,7 @@ var (
 )
 
 type Prober struct {
-	pinger     Pinger
+	pinger     Pingerz
 	printer    printers.Printer
 	Ticker     *time.Ticker
 	Timeout    time.Duration
@@ -25,10 +26,12 @@ type Prober struct {
 	Statistics stats.Statistics
 }
 
-type Pinger interface {
+type Pingerz interface {
 	Ping(ctx context.Context) error
-	IP() string
-	Port() uint16
+}
+
+type Pinger interface {
+	Ping(s *stats.Statistics, p printers.Printer, cfg config.Config)
 }
 
 type ProberOption func(*Prober)
@@ -51,7 +54,7 @@ func WithPrinter(printer printers.Printer) ProberOption {
 	}
 }
 
-func NewProber(p Pinger, opts ...ProberOption) *Prober {
+func NewProber(p Pingerz, opts ...ProberOption) *Prober {
 	pr := Prober{
 		pinger:   p,
 		printer:  printers.NewColorPrinter(),
