@@ -30,19 +30,32 @@ func NewResolver(DNSServer string) *Resolver {
 	}
 }
 
+// getDialAddress computes the override address for the resolver's Dial func.
+// Returns "" if no override should happen.
+func getDialAddress(DNSServer string) string {
+	if DNSServer == "" {
+		return ""
+	}
+
+	host, port := DNSServer, DefaultPort
+	if h, p, err := net.SplitHostPort(DNSServer); err == nil {
+		host, port = h, p
+	}
+
+	if ip, err := netip.ParseAddr(host); err == nil {
+		return net.JoinHostPort(ip.String(), port)
+	}
+
+	return ""
+}
+
 // createDNSResolver creates a new net.Resolver and uses DNSServer as the DNS server IP
 // or falls back to what is configured on the device if DNSServer is empty.
 // It helps bypass incorrect OS DNS cache entries.
 // DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
 func createDNSResolver(DNSServer string) *net.Resolver {
-	DNSServerAddress := func(address string) string { return address }
-
-	if DNSServer != "" {
-		if serverIP, err := netip.ParseAddr(DNSServer); err == nil {
-			DNSServerAddress = func(_ string) string { return serverIP.String() }
-		}
-	}
+	dialAddress := getDialAddress(DNSServer)
 
 	return &net.Resolver{
 		PreferGo: true,
