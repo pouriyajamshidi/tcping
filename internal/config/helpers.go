@@ -125,13 +125,13 @@ func checkForUpdates() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Failed to check for updates %s", err)
+		fmt.Printf("Failed to check for updates %s\n", err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Failed to check for updates: HTTP %d", resp.StatusCode)
+		fmt.Printf("Failed to check for updates: HTTP %d\n", resp.StatusCode)
 		os.Exit(1)
 	}
 
@@ -140,7 +140,7 @@ func checkForUpdates() {
 	}{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		fmt.Printf("Failed to parse release info: %s", err)
+		fmt.Printf("Failed to parse release info: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -149,7 +149,7 @@ func checkForUpdates() {
 	re := regexp.MustCompile(reg)
 	m := re.FindStringSubmatch(latestTagName)
 	if len(m) == 0 {
-		fmt.Printf("Failed to check for updates. The version name does not match the rule: %s", latestTagName)
+		fmt.Printf("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
 		os.Exit(1)
 	}
 
@@ -158,15 +158,15 @@ func checkForUpdates() {
 	comparison := compareVersions(version, latestVer)
 
 	if comparison < 0 {
-		fmt.Printf("Found newer version %s", latestVer)
-		fmt.Printf("Please update TCPING from the URL below:")
-		fmt.Printf("https://github.com/%s/%s/releases/tag/%s",
-			consts.Owner, consts.Repo, latestTagName)
+		fmt.Printf("Found newer version: %s\n", latestVer)
+		fmt.Printf("Please update TCPING from the URL below:\n")
+		fmt.Printf("https://github.com/%s/%s/releases/tag/%s\n",
+			owner, repo, latestTagName)
 	} else if comparison > 0 {
-		fmt.Printf("Current version %s is newer than the latest release %s",
-			consts.Version, latestVer)
+		fmt.Printf("Current version %s is newer than the latest release %s\n",
+			version, latestVer)
 	} else {
-		fmt.Printf("You have the latest version: %s", consts.Version)
+		fmt.Printf("You have the latest version: %s\n", version)
 	}
 
 	os.Exit(0)
