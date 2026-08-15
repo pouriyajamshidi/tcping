@@ -70,8 +70,8 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures
-func (d *Resolver) RetryResolveHostname(s *stats.Statistics, useIPv4, useIPv6 bool) error {
-	newIP, err := d.ResolveHostname(s.Hostname, useIPv4, useIPv6)
+func (r *Resolver) RetryResolveHostname(s *stats.Statistics, useIPv4, useIPv6 bool) error {
+	newIP, err := r.ResolveHostname(s.Hostname, useIPv4, useIPv6)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func randomlySelectResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (neti
 }
 
 // ResolveHostname handles hostname resolution with a timeout value of `DNSTimeout (2 seconds)`
-func (d *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error) {
+func (r *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error) {
 	// Ensure the target isn't already an IP address
 	ip, err := netip.ParseAddr(target)
 	if err == nil {
@@ -151,7 +151,7 @@ func (d *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
 
-	ipAddrs, err := d.Resolver.LookupNetIP(ctx, IPv4OrIPv6, target)
+	ipAddrs, err := r.Resolver.LookupNetIP(ctx, IPv4OrIPv6, target)
 	if err != nil {
 		return ip, err
 	}
