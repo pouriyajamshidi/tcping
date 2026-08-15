@@ -327,11 +327,16 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
-	resolver := dns.NewResolver(*customDNSServer)
+	resolver := dns.NewResolver(
+		*customDNSServer,
+		2*time.Second, // TODO: make this configurable
+		*useIPv4,
+		*useIPv6,
+	)
 
 	var targetIsAlreadyIP bool
 
-	resolvedIP, err := resolver.ResolveHostname(target, *useIPv4, *useIPv6)
+	resolvedIP, err := resolver.ResolveHostname(target)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target, err)
 		os.Exit(1)
