@@ -33,6 +33,7 @@ func NewResolver(DNSServer string) *Resolver {
 // createDNSResolver creates a new net.Resolver and uses DNSServer as the DNS server IP
 // or falls back to what is configured on the device if DNSServer is empty.
 // It helps bypass incorrect OS DNS cache entries.
+// DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
 func createDNSResolver(DNSServer string) *net.Resolver {
 	DNSServerAddress := func(address string) string { return address }
