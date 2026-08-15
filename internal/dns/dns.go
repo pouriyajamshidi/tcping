@@ -4,6 +4,7 @@ package dns
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -20,6 +21,12 @@ const (
 // IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
 const IPv4OrIPv6 = "ip"
 
+var (
+	ErrNoIPv4Address = errors.New("no ipv4 address found")
+	ErrNoIPv6Address = errors.New("no ipv6 address found")
+	ErrNoIPAddresses = errors.New("no ip addresses")
+)
+
 // TODO: make use of these fields
 type Resolver struct {
 	Resolver *net.Resolver
@@ -31,6 +38,7 @@ type Resolver struct {
 func NewResolver(DNSServer string) *Resolver {
 	return &Resolver{
 		Resolver: createDNSResolver(DNSServer),
+		timeout:  DefaultTimeout,
 	}
 }
 
@@ -92,73 +100,79 @@ func (r *Resolver) RetryResolveHostname(s *stats.Statistics, useIPv4, useIPv6 bo
 	return nil
 }
 
-// randomlySelectResolvedIP returns an IPv4, IPv6 or a random resolved address
+// selectRandomIP returns an IPv4, IPv6 or a random resolved address,
 // if the IP version usage is not enforced from the `net.IP` slice of received addresses
-func randomlySelectResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (netip.Addr, error) {
-	selectRandomIP := func(ipList []netip.Addr) netip.Addr {
-		var index int
-		if len(ipList) > 1 {
-			index = rand.Intn(len(ipList))
-		} else {
-			index = 0
-		}
-
-		return netip.MustParseAddr(ipList[index].Unmap().String())
+func selectRandomIP(ipAddrs []netip.Addr) (netip.Addr, error) {
+	if len(ipAddrs) == 0 {
+		return netip.Addr{}, ErrNoIPAddresses
 	}
+	return ipAddrs[rand.Intn(len(ipAddrs))], nil
+}
 
+func filterIPv4(ipAddrs []netip.Addr) []netip.Addr {
 	var ipList []netip.Addr
 
-	switch {
-	case useIPv4:
-		for _, ip := range ipAddrs {
-			if ip.Is4() {
-				ipList = append(ipList, ip)
-			}
-			// static builds (CGO=0) return IPv4-mapped IPv6 addresses
-			if ip.Is4In6() {
-				ipList = append(ipList, ip.Unmap())
-			}
+	for _, ip := range ipAddrs {
+		// static builds (CGO=0) return IPv4-mapped IPv6 addresses
+		if ip.Is4() || ip.Is4In6() {
+			ipList = append(ipList, ip.Unmap())
 		}
-
-		if len(ipList) == 0 {
-			return netip.Addr{}, errors.New("Failed to find an IPv4 address")
-		}
-
-		return selectRandomIP(ipList), nil
-
-	case useIPv6:
-		for _, ip := range ipAddrs {
-			if ip.Is6() {
-				ipList = append(ipList, ip)
-			}
-		}
-
-		if len(ipList) == 0 {
-			return netip.Addr{}, errors.New("Failed to find an IPv6 address")
-		}
-
-		return selectRandomIP(ipList), nil
-
-	default:
-		return selectRandomIP(ipAddrs), nil
 	}
+	return ipList
+}
+
+func filterIPv6(ipAddrs []netip.Addr) []netip.Addr {
+	var ipList []netip.Addr
+
+	for _, ip := range ipAddrs {
+		if ip.Is6() && !ip.Is4In6() {
+			ipList = append(ipList, ip)
+		}
+	}
+	return ipList
+}
+
+func unmapAddresses(ipAddrs []netip.Addr) []netip.Addr {
+	ipList := make([]netip.Addr, len(ipAddrs))
+
+	for i, ip := range ipAddrs {
+		ipList[i] = ip.Unmap()
+	}
+	return ipList
 }
 
 // ResolveHostname handles hostname resolution with a timeout value of `DNSTimeout (2 seconds)`
-func (r *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.Addr, error) {
+func (r *Resolver) ResolveHostname(hostname string, useIPv4, useIPv6 bool) (netip.Addr, error) {
 	// Ensure the target isn't already an IP address
-	ip, err := netip.ParseAddr(target)
+	ip, err := netip.ParseAddr(hostname)
 	if err == nil {
 		return ip, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	ipAddrs, err := r.Resolver.LookupNetIP(ctx, IPv4OrIPv6, target)
+	ipAddrs, err := r.Resolver.LookupNetIP(ctx, IPv4OrIPv6, hostname)
 	if err != nil {
 		return ip, err
 	}
 
-	return randomlySelectResolvedIP(ipAddrs, useIPv4, useIPv6)
+	var filteredIPs []netip.Addr
+
+	switch {
+	case useIPv4:
+		filteredIPs = filterIPv4(ipAddrs)
+		if len(filteredIPs) == 0 {
+			return netip.Addr{}, fmt.Errorf("%w: %s", ErrNoIPv4Address, hostname)
+		}
+	case useIPv6:
+		filteredIPs = filterIPv6(ipAddrs)
+		if len(filteredIPs) == 0 {
+			return netip.Addr{}, fmt.Errorf("%w: %s", ErrNoIPv6Address, hostname)
+		}
+	default:
+		filteredIPs = unmapAddresses(ipAddrs)
+	}
+
+	return selectRandomIP(filteredIPs)
 }
