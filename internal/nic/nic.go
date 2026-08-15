@@ -84,21 +84,16 @@ func NewNetworkInterface(
 		}
 	}
 
-	netIface := NetworkInterface{
+	return NetworkInterface{
 		Use: true,
-	}
-
-	netIface.RemoteAddr = &net.TCPAddr{
-		IP:   target.AsSlice(),
-		Port: int(port),
-	}
-
-	netIface.Dialer = net.Dialer{
-		LocalAddr: &net.TCPAddr{
-			IP: interfaceAddress,
+		RemoteAddr: &net.TCPAddr{
+			IP:   target.AsSlice(),
+			Port: int(port),
 		},
-		Timeout: timeout, // Set the timeout duration
-	}
-
-	return netIface, nil
+		Dialer: net.Dialer{
+			LocalAddr: &net.TCPAddr{
+				IP: interfaceAddress,
+			},
+		},
+	}, nil
 }
