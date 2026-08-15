@@ -19,6 +19,7 @@ type Tcping struct {
 
 func NewTcping(cfg config.Config) Tcping {
 	if cfg.NetworkInterface.Use {
+		cfg.NetworkInterface.Dialer.Timeout = cfg.Timeout
 		return Tcping{Dial: cfg.NetworkInterface.Dialer.Dial}
 	}
 
