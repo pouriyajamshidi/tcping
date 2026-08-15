@@ -24,17 +24,17 @@ const (
 )
 
 // convertAndValidatePort validates and returns the TCP/UDP port
-func convertAndValidatePort(portStr string) (uint16, error) {
-	port, err := strconv.ParseUint(portStr, 10, 16)
+func convertAndValidatePort(port string) (uint16, error) {
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("invalid port number %q", portStr)
+		return 0, fmt.Errorf("invalid port number %q", port)
 	}
 
-	if port == 0 {
+	if parsedPort == 0 {
 		return 0, fmt.Errorf("port should be in 1..65535 range")
 	}
 
-	return uint16(port), nil
+	return uint16(parsedPort), nil
 }
 
 // parseHostPortArgs handles both "host port" and "host:port" formats
