@@ -20,8 +20,12 @@ const (
 // IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
 const IPv4OrIPv6 = "ip"
 
+// TODO: make use of these fields
 type Resolver struct {
 	Resolver *net.Resolver
+	timeout  time.Duration
+	useIPv4  bool
+	useIPv6  bool
 }
 
 func NewResolver(DNSServer string) *Resolver {
