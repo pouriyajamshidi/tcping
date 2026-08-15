@@ -148,7 +148,7 @@ func (d *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.
 		return ip, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), DNSTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
 
 	ipAddrs, err := d.Resolver.LookupNetIP(ctx, IPv4OrIPv6, target)
