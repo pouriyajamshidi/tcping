@@ -88,9 +88,9 @@ func (d *Resolver) RetryResolveHostname(s *stats.Statistics, useIPv4, useIPv6 bo
 	return nil
 }
 
-// selectRandomResolvedIP returns an IPv4, IPv6 or a random resolved address
+// randomlySelectResolvedIP returns an IPv4, IPv6 or a random resolved address
 // if the IP version usage is not enforced from the `net.IP` slice of received addresses
-func selectRandomResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (netip.Addr, error) {
+func randomlySelectResolvedIP(ipAddrs []netip.Addr, useIPv4, useIPv6 bool) (netip.Addr, error) {
 	selectRandomIP := func(ipList []netip.Addr) netip.Addr {
 		var index int
 		if len(ipList) > 1 {
@@ -156,5 +156,5 @@ func (d *Resolver) ResolveHostname(target string, useIPv4, useIPv6 bool) (netip.
 		return ip, err
 	}
 
-	return selectRandomResolvedIP(ipAddrs, useIPv4, useIPv6)
+	return randomlySelectResolvedIP(ipAddrs, useIPv4, useIPv6)
 }
