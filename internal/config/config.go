@@ -238,7 +238,8 @@ func ProcessUserInput() Config {
 	customDNSServer := flag.String(
 		"dns-server",
 		"",
-		"Custom DNS server IP to use. Defaults to the system-wide server")
+		`Custom DNS server IP to use. Defaults to the system-wide server.
+		IP and port combination is allowed: 1.1.1.1:53`)
 
 	interfaceName := flag.String(
 		"I",
