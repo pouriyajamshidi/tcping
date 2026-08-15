@@ -333,7 +333,7 @@ func ProcessUserInput() Config {
 
 	resolvedIP, err := resolver.ResolveHostname(target, *useIPv4, *useIPv6)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not resolve %s\n", target)
+		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target, err)
 		os.Exit(1)
 	}
 	if resolvedIP.String() == target {
