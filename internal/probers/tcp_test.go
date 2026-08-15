@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/models"
-	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,16 +21,16 @@ func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ config.Config
 func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ config.Config, _ uint) {}
 func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                        {}
 func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                     {}
-func (fp *dummyPrinter) PrintStatistics(_ probers.Tcping)                       {}
-func (fp *dummyPrinter) PrintError(_ string, _ ...interface{})                  {}
+func (fp *dummyPrinter) PrintStatistics(_ Tcping)                               {}
+func (fp *dummyPrinter) PrintError(_ string, _ ...any)                          {}
 
 // createTestStats should be used to create new stats structs.
 // it uses "127.0.0.1:12345" as default values, because
 // [testServerListen] use the same values.
 // It'll call t.Errorf if netip.ParseAddr has failed.
-func createTestStats(t *testing.T) *probers.Tcping {
+func createTestStats(t *testing.T) *Tcping {
 	_, err := netip.ParseAddr("127.0.0.1")
-	s := models.Tcping{
+	s := Tcping{
 		Ticker: time.NewTicker(time.Second),
 	}
 	if err != nil {
