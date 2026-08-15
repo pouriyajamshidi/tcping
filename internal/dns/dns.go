@@ -12,8 +12,10 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
-// DNSTimeout is the accepted duration when doing hostname resolution
-const DNSTimeout = 2 * time.Second
+const (
+	DefaultTimeout = 2 * time.Second
+	DefaultPort    = "53"
+)
 
 // IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
 const IPv4OrIPv6 = "ip"
