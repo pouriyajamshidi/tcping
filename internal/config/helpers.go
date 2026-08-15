@@ -17,7 +17,10 @@ import (
 // version is set at compile time via the Makefile
 var version = "beta"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
+// Used when checking for updates
+const (
+	owner = "pouriyajamshidi"
+	repo  = "tcping"
 )
 
 // convertAndValidatePort validates and returns the TCP/UDP port
@@ -50,7 +53,7 @@ func parseHostPortArgs(args []string) (host string, port string) {
 
 // usage prints how tcping should be run
 func usage() {
-	fmt.Printf("\nTCPING version %s\n\n", consts.Version)
+	fmt.Printf("\nTCPING version %s\n\n", version)
 	fmt.Println("Try running tcping like:")
 	fmt.Println("tcping www.example.com 443")
 	fmt.Println("Or use the <hostname/ip:port> format:")
@@ -71,7 +74,7 @@ func usage() {
 
 // showVersion displays the version and exits
 func showVersion() {
-	fmt.Printf("TCPING version %s\n", consts.Version)
+	fmt.Printf("TCPING version %s\n", version)
 	os.Exit(0)
 }
 
@@ -107,7 +110,7 @@ func compareVersions(v1, v2 string) int {
 
 // checkForUpdates checks for newer versions of tcping
 func checkForUpdates() {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", consts.Owner, consts.Repo)
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
@@ -152,7 +155,7 @@ func checkForUpdates() {
 
 	latestVer := m[1]
 
-	comparison := compareVersions(consts.Version, latestVer)
+	comparison := compareVersions(version, latestVer)
 
 	if comparison < 0 {
 		fmt.Printf("Found newer version %s", latestVer)
