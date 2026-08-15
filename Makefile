@@ -8,6 +8,10 @@ VERSION := 3.0.0_beta
 MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
+VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/internal/config
+GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).version=$(VERSION)"
+GO_MAIN_PATH := ./cmd/tcping.go
+
 # IO directories
 TARGET_DIR := target
 OUTPUT_DIR := output
@@ -107,7 +111,7 @@ $(TARGET_DIR)/:
 .PRECIOUS: $(TARGET_DIR)/$(BIN_NAME)
 $(TARGET_DIR)/$(BIN_NAME): $(TARGET_DIR)/
 	@echo "[+] Building binary for current platform: $@"
-	@go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+	@go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # Per-target output directory
 .PRECIOUS: $(TARGET_DIR)/%/
@@ -121,7 +125,7 @@ $(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
 	@export GOOS=$(word 1, $(subst -, ,$*)); \
 	export GOARCH=$(word 2, $(subst -, ,$*)); \
 	[ $(word 3, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
-	go build -ldflags "-s -w -X main.version=$(VERSION)" -o $@;
+	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # Per-target tcping.exe binary (Windows)
 .PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
@@ -130,7 +134,7 @@ $(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
 	@export GOOS=windows; \
 	export GOARCH=$(word 1, $(subst -, ,$*)); \
 	[ $(word 2, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
-	go build -ldflags "-s -w -X github.com/pouriyajamshidi/tcping/v3/internal/consts.Version=$(VERSION)" -o $@;
+	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # ==================================================
 # Release outputs
