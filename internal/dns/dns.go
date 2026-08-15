@@ -60,10 +60,11 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 	return &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{
-				Timeout: DNSTimeout,
+			if dialAddress != "" {
+				address = dialAddress
 			}
-			return d.DialContext(ctx, network, DNSServerAddress(address))
+			d := net.Dialer{Timeout: DefaultTimeout}
+			return d.DialContext(ctx, network, address)
 		},
 	}
 }
