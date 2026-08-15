@@ -35,10 +35,12 @@ type Resolver struct {
 	useIPv6  bool
 }
 
-func NewResolver(DNSServer string) *Resolver {
+func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool) *Resolver {
 	return &Resolver{
 		Resolver: createDNSResolver(DNSServer),
 		timeout:  DefaultTimeout,
+		useIPv4:  useIPv4,
+		useIPv6:  useIPv6,
 	}
 }
 
@@ -82,8 +84,8 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures
-func (r *Resolver) RetryResolveHostname(s *stats.Statistics, useIPv4, useIPv6 bool) error {
-	newIP, err := r.ResolveHostname(s.Hostname, useIPv4, useIPv6)
+func (r *Resolver) RetryResolveHostname(s *stats.Statistics) error {
+	newIP, err := r.ResolveHostname(s.Hostname)
 	if err != nil {
 		return err
 	}
@@ -142,7 +144,7 @@ func unmapAddresses(ipAddrs []netip.Addr) []netip.Addr {
 }
 
 // ResolveHostname handles hostname resolution with a timeout value of `DNSTimeout (2 seconds)`
-func (r *Resolver) ResolveHostname(hostname string, useIPv4, useIPv6 bool) (netip.Addr, error) {
+func (r *Resolver) ResolveHostname(hostname string) (netip.Addr, error) {
 	// Ensure the target isn't already an IP address
 	ip, err := netip.ParseAddr(hostname)
 	if err == nil {
@@ -160,12 +162,12 @@ func (r *Resolver) ResolveHostname(hostname string, useIPv4, useIPv6 bool) (neti
 	var filteredIPs []netip.Addr
 
 	switch {
-	case useIPv4:
+	case r.useIPv4:
 		filteredIPs = filterIPv4(ipAddrs)
 		if len(filteredIPs) == 0 {
 			return netip.Addr{}, fmt.Errorf("%w: %s", ErrNoIPv4Address, hostname)
 		}
-	case useIPv6:
+	case r.useIPv6:
 		filteredIPs = filterIPv6(ipAddrs)
 		if len(filteredIPs) == 0 {
 			return netip.Addr{}, fmt.Errorf("%w: %s", ErrNoIPv6Address, hostname)
