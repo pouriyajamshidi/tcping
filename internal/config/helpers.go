@@ -12,6 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+// version is set at compile time via the Makefile
+var version = "beta"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
