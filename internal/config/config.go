@@ -163,9 +163,6 @@ func (c Config) GetProbesBeforeQuit() uint {
 func (c Config) GetTargetIsIP() bool {
 	return c.TargetIsIP
 }
-func (c Config) GetNonInteractive() bool {
-	return c.NonInteractive
-}
 func (c Config) GetIntervalBetweenProbes() string {
 	return c.IntervalBetweenProbes.String()
 }
