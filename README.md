@@ -4,7 +4,6 @@
 
 # TCPING
 
-![Go Report Card](https://goreportcard.com/badge/github.com/pouriyajamshidi/tcping)
 ![CodeFactor](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping/badge)
 ![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/.github/workflows/codeql-analysis.yml/badge.svg)
 ![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)
