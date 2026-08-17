@@ -77,34 +77,4 @@ func main() {
 	}
 
 	probers.Run(pinger, printer, stats, cfg)
-
-	// printer.PrintStart(stats)
-
-	// var probeCount uint
-
-	// for {
-	// 	if cfg.ShouldRetryResolve && stats.OngoingUnsuccessfulProbes >= cfg.RetryResolveAfterNFailures {
-	// 		stats.RetriedHostnameLookups++
-	// 		printer.PrintRetryingToResolve(stats.Hostname)
-	// 		if err := cfg.Resolver.RetryResolveHostname(
-	// 			stats,
-	// 			cfg.UseIPv4,
-	// 			cfg.UseIPv6,
-	// 		); err != nil {
-	// 			printer.PrintError("%s", err.Error())
-	// 		}
-	// 	}
-
-	// 	pinger.Ping(stats, printer, cfg)
-
-	// 	// probers.Ping(stats, printer, tcping, cfg)
-
-	// 	// -c flag is provided
-	// 	if cfg.ProbesBeforeQuit != 0 {
-	// 		probeCount++
-	// 		if probeCount == cfg.ProbesBeforeQuit {
-	// 			printer.Shutdown(stats)
-	// 		}
-	// 	}
-	// }
 }
