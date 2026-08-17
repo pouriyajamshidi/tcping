@@ -122,7 +122,6 @@ type Config struct {
 	UseIPv4                    bool
 	UseIPv6                    bool
 	ShowSourceAddress          bool
-	NonInteractive             bool
 	RetryResolveAfterNFailures uint
 	ProbesBeforeQuit           uint
 	IfaceNameOrIPAddress       string
@@ -203,12 +202,6 @@ func ProcessUserInput() Config {
 		0,
 		`Stop after <n> probes, regardless of the result.
 		By default, no limit will be applied.`)
-
-	nonInteractive := flag.Bool(
-		"non-interactive",
-		false,
-		`Let tcping run in detach or background mode.
-		For instance by using nohup or disown`)
 
 	intervalBetweenProbes := flag.Float64(
 		"i",
@@ -390,7 +383,6 @@ func ProcessUserInput() Config {
 		Timeout:                    timeoutInDuration,
 		ProbesBeforeQuit:           *probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
-		NonInteractive:             *nonInteractive,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
 		Resolver:                   resolver,
