@@ -5,6 +5,7 @@ go 1.26.3
 require (
 	github.com/gookit/color v1.6.1
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/term v0.45.0
 	zombiezen.com/go/sqlite v1.4.2
 )
 
