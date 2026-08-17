@@ -1,6 +1,7 @@
 package probers
 
 import (
+	"context"
 	"net"
 	"net/netip"
 	"time"
@@ -11,20 +12,22 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
+const tcp = "tcp"
+
 type Tcping struct {
-	Dial            func(network string, address string) (net.Conn, error)
-	Ticker          *time.Ticker // Ticker used to manage the time between probes.
-	LastProbeFailed bool         // Flag indicating if the destination was unreachable previously.
+	dialer *net.Dialer
+	ip     netip.Addr
+	port   uint16
 }
 
 func NewTcping(cfg config.Config) Tcping {
 	if cfg.NetworkInterface.Use {
 		cfg.NetworkInterface.Dialer.Timeout = cfg.Timeout
-		return Tcping{Dial: cfg.NetworkInterface.Dialer.Dial}
+		return Tcping{dialer: &cfg.NetworkInterface.Dialer}
 	}
 
 	return Tcping{
-		Dial: (&net.Dialer{Timeout: cfg.Timeout}).Dial,
+		dialer: &net.Dialer{Timeout: cfg.Timeout},
 	}
 }
 
@@ -80,40 +83,49 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 	p.PrintProbeSuccess(s)
 }
 
-// Ping checks target's availability using TCP
-func (t Tcping) Ping(s *stats.Statistics, p printers.Printer, cfg config.Config) {
-	t.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
-	defer t.Ticker.Stop()
-
-	var err error
-	var conn net.Conn
-
-	connStart := time.Now()
-
-	if cfg.NetworkInterface.Use {
-		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
-		conn, err = cfg.NetworkInterface.Dialer.Dial("tcp", cfg.NetworkInterface.RemoteAddr.String())
-	} else {
-		ipAndPort := netip.AddrPortFrom(cfg.IP, cfg.Port)
-		conn, err = net.DialTimeout("tcp", ipAndPort.String(), cfg.Timeout)
-	}
-
-	connDuration := time.Since(connStart)
-	elapsed := utils.MaxDuration(connDuration, cfg.IntervalBetweenProbes)
-
+func (t Tcping) Ping(ctx context.Context) error {
+	conn, err := t.Dial(ctx, tcp, t.address())
 	if err != nil {
-		handleConnFailure(s, p, connStart, elapsed)
-	} else {
-		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
-		handleConnSuccess(s, p, connStart, elapsed, rtt, cfg.ShowFailuresOnly)
-
-		conn.Close()
+		return err
 	}
-
-	<-t.Ticker.C
-
-	// TODO: Possibly we can drop using Ticker. Need to think more...
-	// if wait := cfg.IntervalBetweenProbes - time.Since(start); wait > 0 {
-	// 	time.Sleep(wait)
-	// }
+	defer conn.Close()
+	return nil
 }
+
+// Ping checks target's availability using TCP
+// func (t Tcping) Ping(s *stats.Statistics, p printers.Printer, cfg config.Config) {
+// 	t.Ticker = time.NewTicker(cfg.IntervalBetweenProbes)
+// 	defer t.Ticker.Stop()
+
+// 	var err error
+// 	var conn net.Conn
+
+// 	connStart := time.Now()
+
+// 	if cfg.NetworkInterface.Use {
+// 		// The timeout value of this Dialer is set inside the `newNetworkInterface` function
+// 		conn, err = cfg.NetworkInterface.Dialer.Dial("tcp", cfg.NetworkInterface.RemoteAddr.String())
+// 	} else {
+// 		ipAndPort := netip.AddrPortFrom(cfg.IP, cfg.Port)
+// 		conn, err = net.DialTimeout("tcp", ipAndPort.String(), cfg.Timeout)
+// 	}
+
+// 	connDuration := time.Since(connStart)
+// 	elapsed := utils.MaxDuration(connDuration, cfg.IntervalBetweenProbes)
+
+// 	if err != nil {
+// 		handleConnFailure(s, p, connStart, elapsed)
+// 	} else {
+// 		rtt := utils.NanoToMillisecond(connDuration.Nanoseconds())
+// 		handleConnSuccess(s, p, connStart, elapsed, rtt, cfg.ShowFailuresOnly)
+
+// 		conn.Close()
+// 	}
+
+// 	<-t.Ticker.C
+
+// 	// TODO: Possibly we can drop using Ticker. Need to think more...
+// 	// if wait := cfg.IntervalBetweenProbes - time.Since(start); wait > 0 {
+// 	// 	time.Sleep(wait)
+// 	// }
+// }

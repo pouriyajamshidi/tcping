@@ -18,102 +18,114 @@ var (
 )
 
 type Prober struct {
-	pinger     Pingerz
+	pinger     Pinger
 	printer    printers.Printer
+	config     config.Config
 	Ticker     *time.Ticker
 	Timeout    time.Duration
 	Interval   time.Duration
 	Statistics stats.Statistics
 }
 
-type Pingerz interface {
-	Ping(ctx context.Context) error
-}
-
 type Pinger interface {
 	Ping(s *stats.Statistics, p printers.Printer, cfg config.Config)
 }
 
-type ProberOption func(*Prober)
-
-func WithInterval(interval time.Duration) ProberOption {
-	return func(p *Prober) {
-		p.Interval = interval
-	}
-}
-
-func WithTimeout(timeout time.Duration) ProberOption {
-	return func(p *Prober) {
-		p.Timeout = timeout + p.Interval
-	}
-}
-
-func WithPrinter(printer printers.Printer) ProberOption {
-	return func(p *Prober) {
-		p.printer = printer
-	}
-}
-
-func NewProber(p Pingerz, opts ...ProberOption) *Prober {
-	pr := Prober{
-		pinger:   p,
-		printer:  printers.NewColorPrinter(),
-		Interval: DefaultInterval,
-		Timeout:  DefaultTimeout,
-	}
-	for _, opt := range opts {
-		opt(&pr)
-	}
-	return &pr
-}
-
-const (
-	DefaultInterval = 1 * time.Second
-	DefaultTimeout  = 5 * time.Second
-)
-
 func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithTimeout(ctx, p.Timeout)
-	defer cancel()
-
 	p.Ticker = time.NewTicker(p.Interval)
 	defer p.Ticker.Stop()
 
+	timeoutTimer := time.NewTimer(p.Timeout)
+	defer timeoutTimer.Stop()
+
 	p.Statistics.StartTime = time.Now()
+	p.printer.PrintStart(&p.Statistics)
+
+	var probeCount uint
 
 	for {
 		select {
 
 		case <-ctx.Done():
-			p.Statistics.EndTime = time.Now()
-			p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
+			p.finalizeStatistics()
 			return p.Statistics, nil
+
+		case <-timeoutTimer.C:
+			p.finalizeStatistics()
+
+			// Graceful completion if we got successful results
+			if p.Statistics.Successful > 0 {
+				return p.Statistics, nil
+			}
+			return p.Statistics, ErrTimeout
 
 		case <-p.Ticker.C:
 			pingTime := time.Now()
 			err := p.pinger.Ping(ctx)
 			rtt := time.Since(pingTime)
 			if err != nil {
-				if errors.Is(err, ErrPingCompleted) {
-					return p.Statistics, nil
-				}
-				p.printer.PrintProbeFailure(&p.Statistics)
+				// Handle failure
+				p.Statistics.OngoingSuccessfulProbes = 0
+				p.Statistics.OngoingUnsuccessfulProbes++
 				p.Statistics.Failed++
-				p.Statistics.LongestDown = stats.NewLongestTime(pingTime, rtt)
-				continue
+				p.Statistics.TotalUnsuccessfulProbes++
+				p.Statistics.LastUnsuccessfulProbe = pingTime
+
+				// Track downtime periods
+				if !p.Statistics.DestWasDown {
+					p.Statistics.DestWasDown = true
+					p.Statistics.StartOfDowntime = pingTime
+				}
+
+				p.printer.PrintProbeFailure(&p.Statistics)
+
+				// Retry hostname resolution if threshold reached
+				if p.config.ShouldRetryResolve && p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
+					p.Statistics.RetriedHostnameLookups++
+					p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
+					if err := p.config.Resolver.RetryResolveHostname(&p.Statistics); err != nil {
+						p.printer.PrintError("%s", err.Error())
+					}
+				}
+			} else {
+				// Handle success
+				rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
+				p.Statistics.RTT = append(p.Statistics.RTT, rttMs)
+				p.Statistics.LatestRTT = rttMs
+				p.Statistics.HasResults = true
+				p.Statistics.Successful++
+				p.Statistics.TotalSuccessfulProbes++
+				p.Statistics.OngoingSuccessfulProbes++
+				p.Statistics.OngoingUnsuccessfulProbes = 0
+				p.Statistics.LastSuccessfulProbe = pingTime
+
+				// Track uptime periods
+				if p.Statistics.DestWasDown {
+					// Transitioning from down to up
+					p.Statistics.DestWasDown = false
+					downDuration := pingTime.Sub(p.Statistics.StartOfDowntime)
+					p.Statistics.TotalDowntime += downDuration
+					p.Statistics.DownTime = downDuration
+					utils.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+					p.Statistics.StartOfUptime = pingTime
+					p.printer.PrintTotalDownTime(&p.Statistics)
+				}
+
+				if p.Statistics.StartOfUptime.IsZero() {
+					p.Statistics.StartOfUptime = pingTime
+				}
+
+				p.printer.PrintProbeSuccess(&p.Statistics)
 			}
 
-			p.Statistics.RTT = append(p.Statistics.RTT, utils.NanoToMillisecond(rtt.Nanoseconds()))
-			p.Statistics.HasResults = true
-			p.Statistics.Successful++
-			p.Statistics.LongestUp = stats.NewLongestTime(pingTime, rtt)
-			p.printer.PrintProbeSuccess(&p.Statistics)
-
-		case <-time.After(p.Timeout):
-			p.Statistics.EndTime = time.Now()
-			p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
-			return p.Statistics, ErrTimeout
+			// Check probe count limit
+			if p.config.ProbesBeforeQuit > 0 {
+				probeCount++
+				if probeCount >= p.config.ProbesBeforeQuit {
+					p.finalizeStatistics()
+					return p.Statistics, nil
+				}
+			}
 		}
 	}
 }
@@ -129,11 +141,7 @@ func Run(pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg c
 		if cfg.ShouldRetryResolve && stats.OngoingUnsuccessfulProbes >= cfg.RetryResolveAfterNFailures {
 			stats.RetriedHostnameLookups++
 			printer.PrintRetryingToResolve(stats.Hostname)
-			if err := cfg.Resolver.RetryResolveHostname(
-				stats,
-				cfg.UseIPv4,
-				cfg.UseIPv6,
-			); err != nil {
+			if err := cfg.Resolver.RetryResolveHostname(stats); err != nil {
 				printer.PrintError("%s", err.Error())
 			}
 		}
@@ -147,5 +155,23 @@ func Run(pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg c
 				printer.Shutdown(stats)
 			}
 		}
+	}
+}
+
+func (p *Prober) finalizeStatistics() {
+	p.Statistics.EndTime = time.Now()
+	p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
+
+	if p.Statistics.DestWasDown {
+		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
+		p.Statistics.TotalDowntime += downDuration
+		utils.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+		return
+	}
+
+	if !p.Statistics.StartOfUptime.IsZero() {
+		upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
+		p.Statistics.TotalUptime += upDuration
+		utils.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
 	}
 }
