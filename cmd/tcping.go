@@ -68,7 +68,7 @@ func main() {
 	case consts.TCP:
 		pinger = probers.Tcping{}
 	default:
-		pinger = probers.Tcping{}
+		pinger = probers.NewTcping(cfg)
 	}
 
 	if isForegroundTerminal() {
