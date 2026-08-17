@@ -5,12 +5,14 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
+	"golang.org/x/term"
 )
 
 /* TODO:
@@ -36,23 +38,13 @@ import (
 func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 	reader := bufio.NewReader(os.Stdin)
 
-	stdinChan := make(chan bool, 1)
-
-	go func() {
-		for {
-			input, err := reader.ReadString('\n')
-			if err != nil {
-				continue
-			}
-
-			if input == "\n" || input == "\r" || input == "\r\n" {
-				stdinChan <- true
-			}
+	for {
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			continue
 		}
-	}()
 
-	for pressedEnter := range stdinChan {
-		if pressedEnter {
+		if strings.TrimSpace(input) == "" {
 			printers.PrintStats(p, s)
 		}
 	}
@@ -80,7 +72,7 @@ func main() {
 		pinger = probers.Tcping{}
 	}
 
-	if !cfg.NonInteractive {
+	if term.IsTerminal(int(os.Stdout.Fd())) {
 		go monitorSummaryRequest(printer, stats)
 	}
 
