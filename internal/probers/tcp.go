@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"strconv"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
@@ -29,6 +30,10 @@ func NewTcping(cfg config.Config) Tcping {
 	return Tcping{
 		dialer: &net.Dialer{Timeout: cfg.Timeout},
 	}
+}
+
+func (t *Tcping) address() string {
+	return net.JoinHostPort(t.ip.String(), strconv.Itoa(int(t.port)))
 }
 
 // handleConnFailure processes failed probes
@@ -84,7 +89,7 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 }
 
 func (t Tcping) Ping(ctx context.Context) error {
-	conn, err := t.Dial(ctx, tcp, t.address())
+	conn, err := t.dialer.DialContext(ctx, tcp, t.address())
 	if err != nil {
 		return err
 	}

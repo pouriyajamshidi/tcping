@@ -28,7 +28,8 @@ type Prober struct {
 }
 
 type Pinger interface {
-	Ping(s *stats.Statistics, p printers.Printer, cfg config.Config)
+	// Ping(s *stats.Statistics, p printers.Printer, cfg config.Config)
+	Ping(ctx context.Context) error
 }
 
 func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
@@ -135,6 +136,9 @@ func Run(pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg c
 
 	stats.StartTime = time.Now()
 
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
+	defer cancel()
+
 	var probeCount uint
 
 	for {
@@ -146,7 +150,7 @@ func Run(pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg c
 			}
 		}
 
-		pinger.Ping(stats, printer, cfg)
+		pinger.Ping(ctx)
 
 		// -c flag is provided
 		if cfg.ProbesBeforeQuit != 0 {
