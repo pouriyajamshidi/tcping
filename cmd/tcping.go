@@ -25,6 +25,8 @@ import (
 - Display name resolution times?
 - Perhaps unexport the Colors in ColorPrinter
 - Run modernize
+- Remove the non-interactive flag? since we check the TTY now
+- Make tcping background aware?
 - Use built-in slice functions for min max avg, etc
 - Read the entire code once everything is done for "code smells"
 */
