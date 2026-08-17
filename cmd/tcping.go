@@ -12,7 +12,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"golang.org/x/term"
 )
 
 /* TODO:
@@ -72,7 +71,7 @@ func main() {
 		pinger = probers.Tcping{}
 	}
 
-	if term.IsTerminal(int(os.Stdout.Fd())) {
+	if isForegroundTerminal() {
 		go monitorSummaryRequest(printer, stats)
 	}
 
