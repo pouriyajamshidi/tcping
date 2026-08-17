@@ -20,7 +20,6 @@ type Config interface {
 	GetTimeout() string
 	GetProbesBeforeQuit() uint
 	GetTargetIsIP() bool
-	GetNonInteractive() bool
 	GetIntervalBetweenProbes() string
 	GetShowFailuresOnly() bool
 	GetShouldRetryResolve() bool
