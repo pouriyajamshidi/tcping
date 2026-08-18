@@ -24,15 +24,31 @@ type Prober struct {
 	Ticker     *time.Ticker
 	Timeout    time.Duration
 	Interval   time.Duration
-	Statistics stats.Statistics
+	Statistics *stats.Statistics
+}
+
+const (
+	DefaultInterval = 1 * time.Second
+	DefaultTimeout  = 5 * time.Second
+)
+
+func NewProber(p Pinger, cfg config.Config) *Prober {
+	pr := Prober{
+		pinger:     p,
+		printer:    printers.NewColorPrinter(),
+		Interval:   DefaultInterval,
+		Timeout:    DefaultTimeout,
+		Statistics: stats.NewStatistics(cfg),
+	}
+
+	return &pr
 }
 
 type Pinger interface {
-	// Ping(s *stats.Statistics, p printers.Printer, cfg config.Config)
 	Ping(ctx context.Context) error
 }
 
-func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
+func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	p.Ticker = time.NewTicker(p.Interval)
 	defer p.Ticker.Stop()
 
@@ -40,7 +56,7 @@ func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
 	defer timeoutTimer.Stop()
 
 	p.Statistics.StartTime = time.Now()
-	p.printer.PrintStart(&p.Statistics)
+	p.printer.PrintStart(p.Statistics)
 
 	var probeCount uint
 
@@ -78,13 +94,13 @@ func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
 					p.Statistics.StartOfDowntime = pingTime
 				}
 
-				p.printer.PrintProbeFailure(&p.Statistics)
+				p.printer.PrintProbeFailure(p.Statistics)
 
 				// Retry hostname resolution if threshold reached
 				if p.config.ShouldRetryResolve && p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
 					p.Statistics.RetriedHostnameLookups++
 					p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
-					if err := p.config.Resolver.RetryResolveHostname(&p.Statistics); err != nil {
+					if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
 						p.printer.PrintError("%s", err.Error())
 					}
 				}
@@ -109,14 +125,14 @@ func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
 					p.Statistics.DownTime = downDuration
 					utils.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
 					p.Statistics.StartOfUptime = pingTime
-					p.printer.PrintTotalDownTime(&p.Statistics)
+					p.printer.PrintTotalDownTime(p.Statistics)
 				}
 
 				if p.Statistics.StartOfUptime.IsZero() {
 					p.Statistics.StartOfUptime = pingTime
 				}
 
-				p.printer.PrintProbeSuccess(&p.Statistics)
+				p.printer.PrintProbeSuccess(p.Statistics)
 			}
 
 			// Check probe count limit
@@ -131,32 +147,101 @@ func (p *Prober) Probe(ctx context.Context) (stats.Statistics, error) {
 	}
 }
 
-func Run(pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg config.Config) {
-	printer.PrintStart(stats)
+func Run(ctx context.Context, pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg config.Config) (*stats.Statistics, error) {
+	probeTicker := time.NewTicker(cfg.IntervalBetweenProbes)
+	defer probeTicker.Stop()
+
+	timeoutTimer := time.NewTimer(cfg.Timeout)
+	defer timeoutTimer.Stop()
 
 	stats.StartTime = time.Now()
-
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
-	defer cancel()
+	printer.PrintStart(stats)
 
 	var probeCount uint
 
 	for {
-		if cfg.ShouldRetryResolve && stats.OngoingUnsuccessfulProbes >= cfg.RetryResolveAfterNFailures {
-			stats.RetriedHostnameLookups++
-			printer.PrintRetryingToResolve(stats.Hostname)
-			if err := cfg.Resolver.RetryResolveHostname(stats); err != nil {
-				printer.PrintError("%s", err.Error())
+		select {
+
+		case <-ctx.Done():
+			finalizeStatistics(stats)
+			return stats, nil
+
+		case <-timeoutTimer.C:
+			finalizeStatistics(stats)
+
+			// Graceful completion if we got successful results
+			if stats.Successful > 0 {
+				return stats, nil
 			}
-		}
+			return stats, ErrTimeout
 
-		pinger.Ping(ctx)
+		case <-probeTicker.C:
+			if cfg.ShouldRetryResolve && stats.OngoingUnsuccessfulProbes >= cfg.RetryResolveAfterNFailures {
+				stats.RetriedHostnameLookups++
+				printer.PrintRetryingToResolve(stats.Hostname)
+				if err := cfg.Resolver.RetryResolveHostname(stats); err != nil {
+					printer.PrintError("%s", err.Error())
+				}
+			}
 
-		// -c flag is provided
-		if cfg.ProbesBeforeQuit != 0 {
-			probeCount++
-			if probeCount == cfg.ProbesBeforeQuit {
-				printer.Shutdown(stats)
+			pingTime := time.Now()
+			err := pinger.Ping(ctx)
+			rtt := time.Since(pingTime)
+			if err == nil {
+				// if the last probe had succeeded
+				if !stats.DestWasDown {
+					stats.StartOfDowntime = pingTime
+					uptimeDuration := stats.StartOfDowntime.Sub(stats.StartOfUptime)
+					// set longest uptime since it is interrupted
+					utils.SetLongestDuration(stats.StartOfUptime, uptimeDuration, &stats.LongestUptime)
+					stats.StartOfUptime = time.Time{} // TODO: why are we doing this?
+					stats.DestWasDown = true
+				}
+
+				stats.TotalDowntime += rtt
+				stats.LastUnsuccessfulProbe = pingTime
+				stats.TotalUnsuccessfulProbes++
+				stats.OngoingUnsuccessfulProbes++
+
+				printer.PrintProbeSuccess(stats)
+			} else {
+				if stats.DestWasDown {
+					stats.StartOfUptime = pingTime
+					downtimeDuration := stats.StartOfUptime.Sub(stats.StartOfDowntime)
+					// set longest downtime since it is interrupted
+					utils.SetLongestDuration(stats.StartOfDowntime, downtimeDuration, &stats.LongestDowntime)
+					printer.PrintTotalDownTime(stats)
+					stats.StartOfDowntime = time.Time{} // TODO: why are we doing this?
+					stats.DestWasDown = false
+					stats.OngoingUnsuccessfulProbes = 0
+					stats.OngoingSuccessfulProbes = 0
+				}
+
+				if stats.StartOfUptime.IsZero() {
+					stats.StartOfUptime = pingTime
+				}
+
+				stats.TotalUptime += rtt
+				stats.LastSuccessfulProbe = pingTime
+				stats.TotalSuccessfulProbes++
+				stats.OngoingSuccessfulProbes++
+				rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
+				stats.RTT = append(stats.RTT, rttMs)
+				stats.LatestRTT = rttMs
+
+				if cfg.ShowFailuresOnly {
+					continue
+				}
+
+				printer.PrintProbeSuccess(stats)
+			}
+
+			// -c flag is provided
+			if cfg.ProbesBeforeQuit != 0 {
+				probeCount++
+				if probeCount == cfg.ProbesBeforeQuit {
+					printer.Shutdown(stats)
+				}
 			}
 		}
 	}

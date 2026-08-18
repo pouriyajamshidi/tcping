@@ -3,10 +3,12 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/app"
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
@@ -60,7 +62,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	printers.SignalHandler(printer, stats)
+	probeCtx := app.SetupSignalHandler(context.Background())
 
 	var pinger probers.Pinger
 
@@ -75,5 +77,12 @@ func main() {
 		go monitorSummaryRequest(printer, stats)
 	}
 
-	probers.Run(pinger, printer, stats, cfg)
+	prober := probers.NewProber(pinger, cfg)
+
+	stats, err = prober.Probe(probeCtx)
+	// stats, err = probers.Run(probeCtx, pinger, printer, stats, cfg)
+	if err != nil {
+		printer.PrintError("%v", err)
+	}
+	printer.PrintStatistics(stats)
 }
