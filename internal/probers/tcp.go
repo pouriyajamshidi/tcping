@@ -27,9 +27,7 @@ func NewTcping(cfg config.Config) Tcping {
 		return Tcping{dialer: &cfg.NetworkInterface.Dialer}
 	}
 
-	return Tcping{
-		dialer: &net.Dialer{Timeout: cfg.Timeout},
-	}
+	return Tcping{dialer: &net.Dialer{Timeout: cfg.Timeout}}
 }
 
 func (t *Tcping) address() string {
