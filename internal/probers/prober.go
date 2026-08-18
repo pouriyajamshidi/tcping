@@ -179,3 +179,21 @@ func (p *Prober) finalizeStatistics() {
 		utils.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
 	}
 }
+
+func finalizeStatistics(s *stats.Statistics) {
+	s.EndTime = time.Now()
+	s.UpTime = s.EndTime.Sub(s.StartTime)
+
+	if s.DestWasDown {
+		downDuration := s.EndTime.Sub(s.StartOfDowntime)
+		s.TotalDowntime += downDuration
+		utils.SetLongestDuration(s.StartOfDowntime, downDuration, &s.LongestDown)
+		return
+	}
+
+	if !s.StartOfUptime.IsZero() {
+		upDuration := s.EndTime.Sub(s.StartOfUptime)
+		s.TotalUptime += upDuration
+		utils.SetLongestDuration(s.StartOfUptime, upDuration, &s.LongestUp)
+	}
+}
