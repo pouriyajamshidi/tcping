@@ -68,7 +68,7 @@ func main() {
 
 	switch cfg.Protocol {
 	case consts.TCP:
-		pinger = probers.Tcping{}
+		pinger = probers.NewTcping(cfg)
 	default:
 		pinger = probers.NewTcping(cfg)
 	}
