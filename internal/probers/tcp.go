@@ -93,7 +93,9 @@ func (t Tcping) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	defer conn.Close()
+
 	return nil
 }
 
