@@ -2,10 +2,7 @@ package printers
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
 	"slices"
-	"syscall"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -113,17 +110,6 @@ func PrintStats(p Printer, s *stats.Statistics) {
 	s.RTTResults = calcMinAvgMaxRttTime(s.RTT)
 
 	p.PrintStatistics(s)
-}
-
-// SignalHandler catches SIGINT and SIGTERM then prints tcping stats
-func SignalHandler(p Printer, s *stats.Statistics) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		p.Shutdown(s)
-	}()
 }
 
 // calcMinAvgMaxRttTime calculates min, avg and max RTT values
