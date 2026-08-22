@@ -101,7 +101,7 @@ func NewPrinter(cfg PrinterConfig) (Printer, error) {
 // This should be used instead of directly calling the PrintStatistics
 // as it makes the common calculations beforehand.
 func PrintStats(p Printer, s *stats.Statistics) {
-	if s.DestWasDown {
+	if s.LastProbeHadFailed {
 		utils.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
 	} else {
 		utils.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
