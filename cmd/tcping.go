@@ -31,6 +31,7 @@ import (
 - Remove the non-interactive flag? since we check the TTY now
 - Make tcping background aware?
 - Use built-in slice functions for min max avg, etc
+- createDNSResolver to also account for the -I flag
 - Read the entire code once everything is done for "code smells"
 */
 
