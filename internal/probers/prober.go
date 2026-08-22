@@ -23,6 +23,7 @@ func NewProber(p Pinger, cfg config.Config) *Prober {
 	pr := Prober{
 		pinger:     p,
 		printer:    printers.NewColorPrinter(),
+		config:     cfg,
 		Statistics: stats.NewStatistics(cfg),
 	}
 
