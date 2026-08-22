@@ -3,18 +3,12 @@ package probers
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
-)
-
-var (
-	ErrTimeout       = errors.New("timed out waiting for ping")
-	ErrPingCompleted = errors.New("ping completed")
 )
 
 type Prober struct {
