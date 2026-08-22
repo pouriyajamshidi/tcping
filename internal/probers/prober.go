@@ -51,6 +51,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 
 		case <-p.Ticker.C:
 			pingTime := time.Now()
+
 			err := p.pinger.Ping(ctx)
 			rtt := time.Since(pingTime)
 
@@ -132,66 +133,70 @@ func (p *Prober) ProbeV2(ctx context.Context) (*stats.Statistics, error) {
 	}
 }
 
-			pingTime := time.Now()
-			err := pinger.Ping(ctx)
-			rtt := time.Since(pingTime)
-			if err == nil {
-				// if the last probe had succeeded
-				if !stats.DestWasDown {
-					stats.StartOfDowntime = pingTime
-					uptimeDuration := stats.StartOfDowntime.Sub(stats.StartOfUptime)
-					// set longest uptime since it is interrupted
-					utils.SetLongestDuration(stats.StartOfUptime, uptimeDuration, &stats.LongestUptime)
-					stats.StartOfUptime = time.Time{} // TODO: why are we doing this?
-					stats.DestWasDown = true
-				}
+func (p *Prober) handleProbeFailure(pingTime time.Time) {
+	s := p.Statistics
 
-				stats.TotalDowntime += rtt
-				stats.LastUnsuccessfulProbe = pingTime
-				stats.TotalUnsuccessfulProbes++
-				stats.OngoingUnsuccessfulProbes++
+	s.OngoingSuccessfulProbes = 0
+	s.OngoingUnsuccessfulProbes++
+	s.Failed++
+	s.TotalUnsuccessfulProbes++
+	s.LastUnsuccessfulProbe = pingTime
 
-				printer.PrintProbeSuccess(stats)
-			} else {
-				if stats.DestWasDown {
-					stats.StartOfUptime = pingTime
-					downtimeDuration := stats.StartOfUptime.Sub(stats.StartOfDowntime)
-					// set longest downtime since it is interrupted
-					utils.SetLongestDuration(stats.StartOfDowntime, downtimeDuration, &stats.LongestDowntime)
-					printer.PrintTotalDownTime(stats)
-					stats.StartOfDowntime = time.Time{} // TODO: why are we doing this?
-					stats.DestWasDown = false
-					stats.OngoingUnsuccessfulProbes = 0
-					stats.OngoingSuccessfulProbes = 0
-				}
+	if !s.LastProbeHadFailed {
+		// UP -> DOWN
+		s.LastProbeHadFailed = true
+		s.StartOfDowntime = pingTime
 
-				if stats.StartOfUptime.IsZero() {
-					stats.StartOfUptime = pingTime
-				}
+		if !s.StartOfUptime.IsZero() {
+			uptimeDuration := pingTime.Sub(s.StartOfUptime)
+			s.TotalUptime += uptimeDuration
 
-				stats.TotalUptime += rtt
-				stats.LastSuccessfulProbe = pingTime
-				stats.TotalSuccessfulProbes++
-				stats.OngoingSuccessfulProbes++
-				rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
-				stats.RTT = append(stats.RTT, rttMs)
-				stats.LatestRTT = rttMs
-
-				if cfg.ShowFailuresOnly {
-					continue
-				}
-
-				printer.PrintProbeSuccess(stats)
-			}
-
-			// -c flag is provided
-			if cfg.ProbesBeforeQuit != 0 {
-				probeCount++
-				if probeCount == cfg.ProbesBeforeQuit {
-					printer.Shutdown(stats)
-				}
-			}
+			utils.SetLongestDuration(
+				s.StartOfUptime,
+				uptimeDuration,
+				&s.LongestUptime,
+			)
 		}
+	}
+}
+
+func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration) {
+	s := p.Statistics
+
+	rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
+
+	s.RTT = append(s.RTT, rttMs)
+	s.LatestRTT = rttMs
+	s.HasResults = true
+
+	s.Successful++
+	s.TotalSuccessfulProbes++
+	s.OngoingSuccessfulProbes++
+	s.OngoingUnsuccessfulProbes = 0
+	s.LastSuccessfulProbe = pingTime
+
+	if s.LastProbeHadFailed {
+		// DOWN -> UP
+		s.LastProbeHadFailed = false
+
+		downtimeDuration := pingTime.Sub(s.StartOfDowntime)
+
+		s.TotalDowntime += downtimeDuration
+		s.DownTime = downtimeDuration
+
+		utils.SetLongestDuration(
+			s.StartOfDowntime,
+			downtimeDuration,
+			&s.LongestDown,
+		)
+
+		p.printer.PrintTotalDownTime(s)
+
+		s.StartOfUptime = pingTime
+	}
+
+	if s.StartOfUptime.IsZero() {
+		s.StartOfUptime = pingTime
 	}
 }
 
@@ -199,7 +204,7 @@ func (p *Prober) finalizeStatistics() {
 	p.Statistics.EndTime = time.Now()
 	p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
 
-	if p.Statistics.DestWasDown {
+	if p.Statistics.LastProbeHadFailed {
 		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
 		p.Statistics.TotalDowntime += downDuration
 		utils.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
@@ -217,7 +222,7 @@ func finalizeStatistics(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	s.UpTime = s.EndTime.Sub(s.StartTime)
 
-	if s.DestWasDown {
+	if s.LastProbeHadFailed {
 		downDuration := s.EndTime.Sub(s.StartOfDowntime)
 		s.TotalDowntime += downDuration
 		utils.SetLongestDuration(s.StartOfDowntime, downDuration, &s.LongestDown)
