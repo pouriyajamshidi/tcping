@@ -137,7 +137,7 @@ func TestDatabasePrinter_PrintProbeSuccess(t *testing.T) {
 	cfg := PrinterConfig{
 		OutputDBPath:      ":memory:",
 		Target:            "localhost",
-		Port:              "8001",
+		Port:              8001,
 		WithTimestamp:     true,
 		WithSourceAddress: true,
 	}
