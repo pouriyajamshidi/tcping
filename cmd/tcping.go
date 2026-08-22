@@ -83,5 +83,6 @@ func main() {
 	if err != nil {
 		printer.PrintError("%v", err)
 	}
-	printer.PrintStatistics(stats)
+
+	printer.Shutdown(stats)
 }
