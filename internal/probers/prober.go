@@ -53,64 +53,30 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 			pingTime := time.Now()
 			err := p.pinger.Ping(ctx)
 			rtt := time.Since(pingTime)
+
 			if err != nil {
-				// Handle failure
-				p.Statistics.OngoingSuccessfulProbes = 0
-				p.Statistics.OngoingUnsuccessfulProbes++
-				p.Statistics.Failed++
-				p.Statistics.TotalUnsuccessfulProbes++
-				p.Statistics.LastUnsuccessfulProbe = pingTime
-
-				// Track downtime periods
-				if !p.Statistics.DestWasDown {
-					p.Statistics.DestWasDown = true
-					p.Statistics.StartOfDowntime = pingTime
-				}
-
+				p.handleProbeFailure(pingTime)
 				p.printer.PrintProbeFailure(p.Statistics)
-
-				// Retry hostname resolution if threshold reached
-				if p.config.ShouldRetryResolve && p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
-					p.Statistics.RetriedHostnameLookups++
-					p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
-					if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
-						p.printer.PrintError("%s", err.Error())
-					}
-				}
 			} else {
-				// Handle success
-				rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
-				p.Statistics.RTT = append(p.Statistics.RTT, rttMs)
-				p.Statistics.LatestRTT = rttMs
-				p.Statistics.HasResults = true
-				p.Statistics.Successful++
-				p.Statistics.TotalSuccessfulProbes++
-				p.Statistics.OngoingSuccessfulProbes++
-				p.Statistics.OngoingUnsuccessfulProbes = 0
-				p.Statistics.LastSuccessfulProbe = pingTime
-
-				// Track uptime periods
-				if p.Statistics.DestWasDown {
-					// Transitioning from down to up
-					p.Statistics.DestWasDown = false
-					downDuration := pingTime.Sub(p.Statistics.StartOfDowntime)
-					p.Statistics.TotalDowntime += downDuration
-					p.Statistics.DownTime = downDuration
-					utils.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
-					p.Statistics.StartOfUptime = pingTime
-					p.printer.PrintTotalDownTime(p.Statistics)
-				}
-
-				if p.Statistics.StartOfUptime.IsZero() {
-					p.Statistics.StartOfUptime = pingTime
-				}
-
+				p.handleProbeSuccess(pingTime, rtt)
 				p.printer.PrintProbeSuccess(p.Statistics)
 			}
 
-			// Check probe count limit
+			if p.config.ShouldRetryResolve &&
+				p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
+
+				p.Statistics.RetriedHostnameLookups++
+
+				p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
+
+				if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
+					p.printer.PrintError("%s", err.Error())
+				}
+			}
+
 			if p.config.ProbesBeforeQuit > 0 {
 				probeCount++
+
 				if probeCount >= p.config.ProbesBeforeQuit {
 					p.finalizeStatistics()
 					return p.Statistics, nil
