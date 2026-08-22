@@ -16,15 +16,8 @@ type Prober struct {
 	printer    printers.Printer
 	config     config.Config
 	Ticker     *time.Ticker
-	Timeout    time.Duration
-	Interval   time.Duration
 	Statistics *stats.Statistics
 }
-
-const (
-	DefaultInterval = 1 * time.Second
-	DefaultTimeout  = 5 * time.Second
-)
 
 func NewProber(p Pinger, cfg config.Config) *Prober {
 	pr := Prober{
