@@ -37,13 +37,13 @@ func (t *Tcping) address() string {
 // handleConnFailure processes failed probes
 func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration) {
 	// if the last probe had succeeded
-	if !s.DestWasDown {
+	if !s.LastProbeHadFailed {
 		s.StartOfDowntime = startTime
 		uptimeDuration := s.StartOfDowntime.Sub(s.StartOfUptime)
 		// set longest uptime since it is interrupted
 		utils.SetLongestDuration(s.StartOfUptime, uptimeDuration, &s.LongestUptime)
 		s.StartOfUptime = time.Time{} // TODO: why are we doing this?
-		s.DestWasDown = true
+		s.LastProbeHadFailed = true
 	}
 
 	s.TotalDowntime += elapsed
@@ -56,14 +56,14 @@ func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.T
 
 // handleConnSuccess processes successful probes
 func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.Time, elapsed time.Duration, rtt float32, showFailuresOnly bool) {
-	if s.DestWasDown {
+	if s.LastProbeHadFailed {
 		s.StartOfUptime = startTime
 		downtimeDuration := s.StartOfUptime.Sub(s.StartOfDowntime)
 		// set longest downtime since it is interrupted
 		utils.SetLongestDuration(s.StartOfDowntime, downtimeDuration, &s.LongestDowntime)
 		p.PrintTotalDownTime(s)
 		s.StartOfDowntime = time.Time{} // TODO: why are we doing this?
-		s.DestWasDown = false
+		s.LastProbeHadFailed = false
 		s.OngoingUnsuccessfulProbes = 0
 		s.OngoingSuccessfulProbes = 0
 	}
