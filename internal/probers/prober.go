@@ -23,8 +23,6 @@ func NewProber(p Pinger, cfg config.Config) *Prober {
 	pr := Prober{
 		pinger:     p,
 		printer:    printers.NewColorPrinter(),
-		Interval:   DefaultInterval,
-		Timeout:    DefaultTimeout,
 		Statistics: stats.NewStatistics(cfg),
 	}
 
