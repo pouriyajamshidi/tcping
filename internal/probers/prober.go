@@ -35,7 +35,7 @@ type Pinger interface {
 }
 
 func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
-	p.Ticker = time.NewTicker(p.Interval)
+	p.Ticker = time.NewTicker(p.config.IntervalBetweenProbes)
 	defer p.Ticker.Stop()
 
 	timeoutTimer := time.NewTimer(p.Timeout)
