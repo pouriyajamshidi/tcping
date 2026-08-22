@@ -34,7 +34,7 @@ type Statistics struct {
 	Port                      uint16
 	Protocol                  consts.Protocol
 	Hostname                  string
-	DestWasDown               bool
+	LastProbeHadFailed        bool
 	DestIsIP                  bool
 	LocalAddr                 net.Addr
 	StartTime                 time.Time
