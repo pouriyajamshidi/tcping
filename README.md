@@ -4,13 +4,13 @@
 
 # TCPING
 
+![Download](https://img.shields.io/github/downloads/pouriyajamshidi/tcping/total.svg?label=DOWNLOADS&logo=github)
+![Docker Pulls](https://img.shields.io/docker/pulls/pouriyajamshidi/tcping)
 ![CodeFactor](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping/badge)
 ![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/.github/workflows/codeql-analysis.yml/badge.svg)
 ![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Go project version](https://badge.fury.io/go/github.com%2Fpouriyajamshidi%2Ftcping.svg)
-![Download](https://img.shields.io/github/downloads/pouriyajamshidi/tcping/total.svg?label=DOWNLOADS&logo=github)
-![Docker Pulls](https://img.shields.io/docker/pulls/pouriyajamshidi/tcping)
 
 **NOTE: You are viewing a broken and a work in progress branch. head to the [MAIN BRANCH](https://github.com/pouriyajamshidi/tcping/tree/master) for the latest release.**
 **This branch has become the default for now to ensure our contributors are not basing their work on version 2 mistakenly.**
