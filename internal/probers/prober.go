@@ -86,42 +86,51 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	}
 }
 
-func Run(ctx context.Context, pinger Pinger, printer printers.Printer, stats *stats.Statistics, cfg config.Config) (*stats.Statistics, error) {
-	probeTicker := time.NewTicker(cfg.IntervalBetweenProbes)
-	defer probeTicker.Stop()
-
-	timeoutTimer := time.NewTimer(cfg.Timeout)
-	defer timeoutTimer.Stop()
-
-	stats.StartTime = time.Now()
-	printer.PrintStart(stats)
-
+func (p *Prober) ProbeV2(ctx context.Context) (*stats.Statistics, error) {
 	var probeCount uint
+
+	probe := func() {
+		probeCount++
+
+		pingTime := time.Now()
+
+		err := p.pinger.Ping(ctx)
+		rtt := time.Since(pingTime)
+
+		if err != nil {
+			p.handleProbeFailure(pingTime)
+		} else {
+			p.handleProbeSuccess(pingTime, rtt)
+		}
+	}
+
+	p.Ticker = time.NewTicker(p.config.IntervalBetweenProbes)
+	defer p.Ticker.Stop()
+
+	p.Statistics.StartTime = time.Now()
+	p.printer.PrintStart(p.Statistics)
+
+	// so we do not wait the p.Ticker.C to then start probing
+	probe()
 
 	for {
 		select {
-
 		case <-ctx.Done():
-			finalizeStatistics(stats)
-			return stats, nil
+			p.finalizeStatistics()
+			return p.Statistics, nil
 
-		case <-timeoutTimer.C:
-			finalizeStatistics(stats)
+		case <-p.Ticker.C:
+			probe()
 
-			// Graceful completion if we got successful results
-			if stats.Successful > 0 {
-				return stats, nil
-			}
-			return stats, ErrTimeout
-
-		case <-probeTicker.C:
-			if cfg.ShouldRetryResolve && stats.OngoingUnsuccessfulProbes >= cfg.RetryResolveAfterNFailures {
-				stats.RetriedHostnameLookups++
-				printer.PrintRetryingToResolve(stats.Hostname)
-				if err := cfg.Resolver.RetryResolveHostname(stats); err != nil {
-					printer.PrintError("%s", err.Error())
+			if p.config.ProbesBeforeQuit > 0 {
+				if probeCount >= p.config.ProbesBeforeQuit {
+					p.finalizeStatistics()
+					return p.Statistics, nil
 				}
 			}
+		}
+	}
+}
 
 			pingTime := time.Now()
 			err := pinger.Ping(ctx)
