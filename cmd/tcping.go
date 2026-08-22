@@ -79,9 +79,7 @@ func main() {
 	}
 
 	prober := probers.NewProber(pinger, cfg)
-
 	stats, err = prober.Probe(probeCtx)
-	// stats, err = probers.Run(probeCtx, pinger, printer, stats, cfg)
 	if err != nil {
 		printer.PrintError("%v", err)
 	}
