@@ -38,9 +38,6 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	p.Ticker = time.NewTicker(p.config.IntervalBetweenProbes)
 	defer p.Ticker.Stop()
 
-	timeoutTimer := time.NewTimer(p.Timeout)
-	defer timeoutTimer.Stop()
-
 	p.Statistics.StartTime = time.Now()
 	p.printer.PrintStart(p.Statistics)
 
@@ -48,19 +45,9 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 
 	for {
 		select {
-
 		case <-ctx.Done():
 			p.finalizeStatistics()
 			return p.Statistics, nil
-
-		case <-timeoutTimer.C:
-			p.finalizeStatistics()
-
-			// Graceful completion if we got successful results
-			if p.Statistics.Successful > 0 {
-				return p.Statistics, nil
-			}
-			return p.Statistics, ErrTimeout
 
 		case <-p.Ticker.C:
 			pingTime := time.Now()
