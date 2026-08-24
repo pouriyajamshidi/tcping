@@ -1,6 +1,6 @@
 module github.com/pouriyajamshidi/tcping/v3
 
-go 1.26.3
+go 1.26.7
 
 require (
 	github.com/gookit/color v1.6.1
