@@ -75,6 +75,11 @@ update:
 	@go get -u
 	@echo "[+] Done"
 
+tidyup:
+	@echo "[+] Running go mod tidy"
+	@go get -u ./...
+	@go mod tidy
+
 format:
 	@echo "[+] Formatting files"
 	@gofmt -w *.go
@@ -86,11 +91,6 @@ vet:
 test:
 	@echo "[+] Running tests"
 	@go test
-
-tidyup:
-	@echo "[+] Running go mod tidy"
-	@go get -u ./...
-	@go mod tidy
 
 container:
 	@echo "[+] Building container image"
