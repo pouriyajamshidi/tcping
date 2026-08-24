@@ -17,21 +17,16 @@ import (
 )
 
 /* TODO:
-- Pass `Prober` instead of tcping to printers, helpers, etc
 - Implement functional pattern to chose the prober
-- Probably it is better to move SignalHandler to probes.go instead of printers
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 - Cross-check the printer implementations to see how much they differ
 - See what printer methods are not used
 - Show how long we were up on failure similar to what we do for success?
 - Get DNS timeout as a user input option?
-- Display name resolution times?
-- Perhaps unexport the Colors in ColorPrinter
-- Run modernize
-- Remove the non-interactive flag? since we check the TTY now
-- Make tcping background aware?
-- Use built-in slice functions for min max avg, etc
 - createDNSResolver to also account for the -I flag
+- Display name resolution times?
+- Use built-in slice functions for min max avg, etc
+- Run modernize
 - Read the entire code once everything is done for "code smells"
 */
 
@@ -74,7 +69,7 @@ func main() {
 		pinger = probers.NewTcping(cfg)
 	}
 
-	if isForegroundTerminal() {
+	if app.IsForegroundTerminal() {
 		go monitorSummaryRequest(printer, stats)
 	}
 
