@@ -74,7 +74,7 @@ func main() {
 		pinger = probers.NewTcping(cfg)
 	}
 
-	if isForegroundTerminal() {
+	if app.IsForegroundTerminal() {
 		go monitorSummaryRequest(printer, stats)
 	}
 

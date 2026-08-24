@@ -1,6 +1,6 @@
 //go:build unix
 
-package main
+package app
 
 import (
 	"os"
@@ -9,9 +9,9 @@ import (
 	"golang.org/x/term"
 )
 
-// isForegroundTerminal reports whether we are running attached to a terminal
+// IsForegroundTerminal reports whether we are running attached to a terminal
 // and are in the foreground process group (i.e., safe to read from stdin).
-func isForegroundTerminal() bool {
+func IsForegroundTerminal() bool {
 	// Must be a terminal first
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
 		return false
