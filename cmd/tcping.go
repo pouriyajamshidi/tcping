@@ -2,11 +2,9 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/app"
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
@@ -29,23 +27,6 @@ import (
 - Run modernize
 - Read the entire code once everything is done for "code smells"
 */
-
-// monitorSummaryRequest checks stdin to see whether the 'Enter' key was pressed
-// if so, it prints the statistics
-func monitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
-	reader := bufio.NewReader(os.Stdin)
-
-	for {
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			continue
-		}
-
-		if strings.TrimSpace(input) == "" {
-			printers.PrintStats(p, s)
-		}
-	}
-}
 
 func main() {
 	cfg := config.ProcessUserInput()
@@ -70,7 +51,7 @@ func main() {
 	}
 
 	if app.IsForegroundTerminal() {
-		go monitorSummaryRequest(printer, stats)
+		go app.MonitorSummaryRequest(printer, stats)
 	}
 
 	prober := probers.NewProber(pinger, cfg)
