@@ -11,16 +11,16 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
-// Color functions used when printing information
+// Color function aliases used when printing information
 var (
-	ColorCyan        = color.Cyan.Printf
-	ColorLightCyan   = color.LightCyan.Printf
-	ColorGreen       = color.Green.Printf
-	ColorLightGreen  = color.LightGreen.Printf
-	ColorYellow      = color.Yellow.Printf
-	ColorLightYellow = color.LightYellow.Printf
-	ColorRed         = color.Red.Printf
-	ColorLightBlue   = color.FgLightBlue.Printf
+	printCyan        = color.Cyan.Printf
+	printLightCyan   = color.LightCyan.Printf
+	printGreen       = color.Green.Printf
+	printLightGreen  = color.LightGreen.Printf
+	printYellow      = color.Yellow.Printf
+	printLightYellow = color.LightYellow.Printf
+	printRed         = color.Red.Printf
+	printLightBlue   = color.FgLightBlue.Printf
 )
 
 // ColorPrinter provides functionality for printing messages with color support.
