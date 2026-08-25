@@ -53,10 +53,11 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
 	if s.WithSourceAddress {
-		msg += fmt.Sprintf(" using %s", s.SourceAddr())
+		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
-	msg += fmt.Sprintf(" TCP_conn=%d time=%s ms\n", s.OngoingSuccessfulProbes, s.RTTStr())
+	msg += fmt.Sprintf("TCP_conn=%d ", s.OngoingSuccessfulProbes)
+	msg += fmt.Sprintf("time=%s ms\n", s.RTTStr())
 
 	printLightGreen(msg)
 }
