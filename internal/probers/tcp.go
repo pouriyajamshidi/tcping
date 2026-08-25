@@ -10,7 +10,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 const tcp = "tcp"
@@ -41,7 +40,7 @@ func handleConnFailure(s *stats.Statistics, p printers.Printer, startTime time.T
 		s.StartOfDowntime = startTime
 		uptimeDuration := s.StartOfDowntime.Sub(s.StartOfUptime)
 		// set longest uptime since it is interrupted
-		utils.SetLongestDuration(s.StartOfUptime, uptimeDuration, &s.LongestUptime)
+		stats.SetLongestDuration(s.StartOfUptime, uptimeDuration, &s.LongestUptime)
 		s.StartOfUptime = time.Time{} // TODO: why are we doing this?
 		s.LastProbeHadFailed = true
 	}
@@ -60,7 +59,7 @@ func handleConnSuccess(s *stats.Statistics, p printers.Printer, startTime time.T
 		s.StartOfUptime = startTime
 		downtimeDuration := s.StartOfUptime.Sub(s.StartOfDowntime)
 		// set longest downtime since it is interrupted
-		utils.SetLongestDuration(s.StartOfDowntime, downtimeDuration, &s.LongestDowntime)
+		stats.SetLongestDuration(s.StartOfDowntime, downtimeDuration, &s.LongestDowntime)
 		p.PrintTotalDownTime(s)
 		s.StartOfDowntime = time.Time{} // TODO: why are we doing this?
 		s.LastProbeHadFailed = false

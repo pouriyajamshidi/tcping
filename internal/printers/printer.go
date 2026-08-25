@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 // PrinterConfig holds all configuration options for Printer creation
@@ -102,9 +101,9 @@ func NewPrinter(cfg PrinterConfig) (Printer, error) {
 // as it makes the common calculations beforehand.
 func PrintStats(p Printer, s *stats.Statistics) {
 	if s.LastProbeHadFailed {
-		utils.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
+		stats.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
 	} else {
-		utils.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
+		stats.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
 	}
 
 	s.RTTResults = calcMinAvgMaxRttTime(s.RTT)

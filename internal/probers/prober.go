@@ -151,7 +151,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 			uptimeDuration := pingTime.Sub(s.StartOfUptime)
 			s.TotalUptime += uptimeDuration
 
-			utils.SetLongestDuration(
+			stats.SetLongestDuration(
 				s.StartOfUptime,
 				uptimeDuration,
 				&s.LongestUptime,
@@ -184,7 +184,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration) {
 		s.TotalDowntime += downtimeDuration
 		s.DownTime = downtimeDuration
 
-		utils.SetLongestDuration(
+		stats.SetLongestDuration(
 			s.StartOfDowntime,
 			downtimeDuration,
 			&s.LongestDown,
@@ -207,13 +207,13 @@ func (p *Prober) finalizeStatistics() {
 	if p.Statistics.LastProbeHadFailed {
 		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
 		p.Statistics.TotalDowntime += downDuration
-		utils.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+		stats.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
 		return
 	}
 
 	if !p.Statistics.StartOfUptime.IsZero() {
 		upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
 		p.Statistics.TotalUptime += upDuration
-		utils.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
+		stats.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
 	}
 }
