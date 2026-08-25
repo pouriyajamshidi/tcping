@@ -76,10 +76,13 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 		target = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
-	msg += fmt.Sprintf("%s on port %d TCP_conn=%d\n", hostnameAndIP, s.Port, s.OngoingUnsuccessfulProbes)
+	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
+
 	if s.WithSourceAddress {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
+
+	msg += fmt.Sprintf("TCP_conn=%d\n", s.OngoingUnsuccessfulProbes)
 
 	printRed(msg)
 }
