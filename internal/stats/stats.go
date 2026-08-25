@@ -85,7 +85,6 @@ func NewStatistics(cfg Config) *Statistics {
 			Addr: cfg.GetIP(),
 			When: time.Now(),
 		}},
-		StartTime: time.Now(),
 	}
 }
 
