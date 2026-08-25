@@ -73,7 +73,7 @@ func TestNewDatabasePrinter(t *testing.T) {
 			cfg: PrinterConfig{
 				OutputDBPath: ":memory:",
 				Target:       "localhost",
-				Port:         "8001",
+				Port:         8001,
 			},
 			wantErr: false,
 		},
@@ -82,7 +82,7 @@ func TestNewDatabasePrinter(t *testing.T) {
 			cfg: PrinterConfig{
 				OutputDBPath: "test",
 				Target:       "example.com",
-				Port:         "80",
+				Port:         80,
 			},
 			wantErr: false,
 		},
@@ -210,7 +210,7 @@ func TestDatabasePrinter_PrintProbeFailure(t *testing.T) {
 	cfg := PrinterConfig{
 		OutputDBPath:  ":memory:",
 		Target:        "localhost",
-		Port:          "8001",
+		Port:          8001,
 		WithTimestamp: true,
 	}
 
@@ -274,7 +274,7 @@ func TestDatabasePrinter_PrintStatistics(t *testing.T) {
 	cfg := PrinterConfig{
 		OutputDBPath: ":memory:",
 		Target:       "localhost",
-		Port:         "8001",
+		Port:         8001,
 	}
 
 	db, err := NewDatabasePrinter(cfg)
