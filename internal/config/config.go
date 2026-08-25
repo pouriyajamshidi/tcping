@@ -139,51 +139,67 @@ type Config struct {
 func (c Config) GetHostname() string {
 	return c.Hostname
 }
+
 func (c Config) GetIP() netip.Addr {
 	return c.IP
 }
+
 func (c Config) GetPort() uint16 {
 	return c.Port
 }
+
 func (c Config) GetProtocol() consts.Protocol {
 	return c.Protocol
 }
+
 func (c Config) GetUseIPv4() bool {
 	return c.UseIPv4
 }
+
 func (c Config) GetUseIPv6() bool {
 	return c.UseIPv6
 }
+
 func (c Config) GetTimeout() string {
 	return c.Timeout.String()
 }
+
 func (c Config) GetProbesBeforeQuit() uint {
 	return c.ProbesBeforeQuit
 }
+
 func (c Config) GetTargetIsIP() bool {
 	return c.TargetIsIP
 }
+
 func (c Config) GetIntervalBetweenProbes() string {
 	return c.IntervalBetweenProbes.String()
 }
+
 func (c Config) GetShowFailuresOnly() bool {
 	return c.ShowFailuresOnly
 }
+
 func (c Config) GetShouldRetryResolve() bool {
 	return c.ShouldRetryResolve
 }
+
 func (c Config) GetRetryResolveAfterNFailures() uint {
 	return c.RetryHostnameLookupAfter
 }
+
 func (c Config) GetNetworkInterface() nic.NetworkInterface {
 	return c.NetworkInterface
 }
+
 func (c Config) GetPrinterConfig() printers.PrinterConfig {
 	return c.PrinterConfig
 }
+
 func (c Config) GetWithTimestamp() bool {
 	return c.PrinterConfig.WithTimestamp
 }
+
 func (c Config) GetWithSourceAddress() bool {
 	return c.PrinterConfig.WithSourceAddress
 }
