@@ -42,7 +42,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	if s.WithTimestamp {
 		timestamp := s.StartTimeFormatted()
-		msg = fmt.Sprintf("%v %v", timestamp, msg)
+		msg = fmt.Sprintf("%s %s", timestamp, msg)
 	}
 
 	hostnameAndIP := s.IPStr()
