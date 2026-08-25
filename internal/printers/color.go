@@ -23,12 +23,10 @@ var (
 	printLightBlue   = color.FgLightBlue.Printf
 )
 
-// ColorPrinter provides functionality for printing messages with color support.
-// It optionally includes a timestamp in the output if ShowTimestamp is enabled.
+// ColorPrinter provides functionality for printing colored messages.
 type ColorPrinter struct{}
 
 // NewColorPrinter creates a new ColorPrinter instance.
-// The showTimestamp parameter controls whether timestamps should be included in printed messages.
 func NewColorPrinter() *ColorPrinter {
 	return &ColorPrinter{}
 }
@@ -41,23 +39,11 @@ func (p *ColorPrinter) Shutdown(s *stats.Statistics) {
 }
 
 // PrintStart prints a message indicating the start of a TCP ping attempt.
-// The message is printed in light cyan and includes the target hostname and port.
-//
-// Parameters:
-//   - hostname: The target host for the TCP ping.
-//   - port: The target port number.
 func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
 	ColorLightCyan("TCPinging %s on port %d\n", s.Hostname, s.Port)
 }
 
 // PrintProbeSuccess prints a message indicating a successful probe response.
-// It includes the source IP (if shown), target IP/hostname, port, connection streak, and RTT.
-//
-// Parameters:
-//   - sourceAddr: The local address used for the TCP connection.
-//   - userInput: The user-provided input data (hostname, IP, port, etc.).
-//   - streak: The number of consecutive successful probes.
-//   - rtt: The round-trip time of the probe in milliseconds (3 decimal points).
 func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
@@ -83,11 +69,6 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 }
 
 // PrintProbeFailure prints a message indicating a failed probe attempt.
-// It includes the target hostname/IP, port, and failed connection streak.
-//
-// Parameters:
-//   - userInput: The user-provided input data (hostname, IP, port, etc.).
-//   - streak: The number of consecutive failed probes.
 func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
