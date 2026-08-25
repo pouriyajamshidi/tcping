@@ -146,3 +146,16 @@ type HostnameChange struct {
 	Addr netip.Addr // New IP address associated with the hostname.
 	When time.Time  // Timestamp of when the change occurred.
 }
+
+// SetLongestDuration updates the longest uptime or downtime based on the given type.
+func SetLongestDuration(start time.Time, duration time.Duration, longest *LongestTime) {
+	if start.IsZero() || duration == 0 {
+		return
+	}
+
+	newLongest := NewLongestTime(start, duration)
+
+	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
+		*longest = newLongest
+	}
+}
