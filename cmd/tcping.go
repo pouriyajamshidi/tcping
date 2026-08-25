@@ -16,6 +16,7 @@ import (
 
 /* TODO:
 - Implement functional pattern to chose the prober
+- Using the --show-source-address flag without -I crashes the program at func (s *Statistics) SourceAddr()
 - The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
 - Cross-check the printer implementations to see how much they differ
 - See what printer methods are not used
