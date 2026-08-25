@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
-	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
@@ -99,7 +98,8 @@ func (s *Statistics) PortStr() string {
 }
 
 func (s *Statistics) SourceAddr() string {
-	return strings.Replace(s.LocalAddr.String(), ":0", "", 1)
+	// return strings.Replace(s.LocalAddr.String(), ":0", "", 1)
+	return s.LocalAddr.String()
 }
 
 func (s *Statistics) StartTimeFormatted() string {
