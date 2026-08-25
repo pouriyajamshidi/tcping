@@ -45,12 +45,12 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		msg = fmt.Sprintf("%s %s", timestamp, msg)
 	}
 
-	hostnameAndIP := s.IPStr()
-	if s.Hostname != hostnameAndIP {
-		hostnameAndIP = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
+	target := s.IPStr()
+	if s.Hostname != target {
+		target = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
-	msg += fmt.Sprintf("%s on port %d", hostnameAndIP, s.Port)
+	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
 	if s.WithSourceAddress {
 		msg += fmt.Sprintf(" using %s", s.SourceAddr())
