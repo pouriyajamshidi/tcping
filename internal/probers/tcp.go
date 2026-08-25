@@ -20,10 +20,18 @@ type Tcping struct {
 func NewTcping(cfg config.Config) Tcping {
 	if cfg.NetworkInterface.Use {
 		cfg.NetworkInterface.Dialer.Timeout = cfg.Timeout
-		return Tcping{dialer: &cfg.NetworkInterface.Dialer, ip: cfg.IP, port: cfg.Port}
+		return Tcping{
+			dialer: &cfg.NetworkInterface.Dialer,
+			ip:     cfg.IP,
+			port:   cfg.Port,
+		}
 	}
 
-	return Tcping{dialer: &net.Dialer{Timeout: cfg.Timeout}, ip: cfg.IP, port: cfg.Port}
+	return Tcping{
+		dialer: &net.Dialer{Timeout: cfg.Timeout},
+		ip:     cfg.IP,
+		port:   cfg.Port,
+	}
 }
 
 func (t *Tcping) address() string {
@@ -35,7 +43,6 @@ func (t Tcping) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	defer conn.Close()
 
 	return nil
