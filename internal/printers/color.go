@@ -31,13 +31,6 @@ func NewColorPrinter() *ColorPrinter {
 	return &ColorPrinter{}
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
-func (p *ColorPrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
-	os.Exit(0)
-}
-
 // PrintStart prints a message indicating the start of a TCP ping attempt.
 func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
 	ColorLightCyan("TCPinging %s on port %d\n", s.Hostname, s.Port)
@@ -241,4 +234,10 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 
 	durationTime := time.Time{}.Add(s.TotalDowntime + s.TotalUptime)
 	ColorYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
+
+// Shutdown sets the end time, prints statistics, and exits the program.
+func (p *ColorPrinter) Shutdown(s *stats.Statistics) {
+	s.EndTime = time.Now()
+	PrintStats(p, s)
+	os.Exit(0)
 }
