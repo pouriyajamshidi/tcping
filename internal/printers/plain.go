@@ -18,13 +18,6 @@ func NewPlainPrinter() *PlainPrinter {
 	return &PlainPrinter{}
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
-func (p *PlainPrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
-	os.Exit(0)
-}
-
 // PrintStart prints the start message indicating the TCPing operation on the given hostname and port.
 func (p *PlainPrinter) PrintStart(s *stats.Statistics) {
 	fmt.Printf("TCPinging %s on port %d\n", s.Hostname, s.Port)
@@ -190,4 +183,11 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	msg += fmt.Sprintf("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
 
 	fmt.Print(msg)
+}
+
+// Shutdown sets the end time, prints statistics, and exits the program.
+func (p *PlainPrinter) Shutdown(s *stats.Statistics) {
+	s.EndTime = time.Now()
+	PrintStats(p, s)
+	os.Exit(0)
 }
