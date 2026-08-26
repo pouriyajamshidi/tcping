@@ -9,6 +9,7 @@
 - build: general cleanups
 - build: support more container architectures
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
+- improvement: when the `-I` flag is used, show the interface name on probe **failures** too
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
