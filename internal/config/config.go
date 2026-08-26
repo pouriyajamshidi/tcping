@@ -367,7 +367,6 @@ func ProcessUserInput() Config {
 			validatedPort,
 			*useIPv4,
 			*useIPv6,
-			timeoutInDuration,
 		)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())

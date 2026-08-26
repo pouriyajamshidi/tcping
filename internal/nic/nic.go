@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
-	"time"
 )
 
 // NetworkInterface represents a network interface used for connecting to the target.
@@ -22,7 +21,6 @@ func NewNetworkInterface(
 	port uint16,
 	useIPv4,
 	useIPv6 bool,
-	timeout time.Duration,
 ) (NetworkInterface, error) {
 	found := false
 	interfaceAddress := net.ParseIP(sourceAddress)
