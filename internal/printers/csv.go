@@ -346,4 +346,4 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 }
 
 // PrintTotalDownTime is a no-op implementation to satisfy the Printer interface.
-func (p *CSVPrinter) PrintTotalDownTime(_ *stats.Statistics) {}
+func (p *CSVPrinter) PrintTotalDownTime(_ time.Duration) {}

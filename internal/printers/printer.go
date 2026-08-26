@@ -56,7 +56,7 @@ type Printer interface {
 	//
 	// This is being called when host was unavailable for some time
 	// but the latest probe was successful (became available).
-	PrintTotalDownTime(s *stats.Statistics)
+	PrintTotalDownTime(d time.Duration)
 
 	// PrintStatistics should print a message with
 	// helpful statistics information.

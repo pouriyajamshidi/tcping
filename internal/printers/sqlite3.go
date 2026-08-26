@@ -537,4 +537,4 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 }
 
 // PrintTotalDownTime satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintTotalDownTime(_ *stats.Statistics) {}
+func (p *DatabasePrinter) PrintTotalDownTime(_ time.Duration) {}
