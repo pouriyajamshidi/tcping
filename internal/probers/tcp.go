@@ -38,12 +38,12 @@ func (t *Tcping) address() string {
 	return net.JoinHostPort(t.ip.String(), strconv.Itoa(int(t.port)))
 }
 
-func (t Tcping) Ping(ctx context.Context) error {
+func (t Tcping) Ping(ctx context.Context) (ProbeResult, error) {
 	conn, err := t.dialer.DialContext(ctx, tcp, t.address())
 	if err != nil {
-		return err
+		return ProbeResult{}, err
 	}
 	defer conn.Close()
 
-	return nil
+	return ProbeResult{LocalAddr: conn.LocalAddr()}, nil
 }

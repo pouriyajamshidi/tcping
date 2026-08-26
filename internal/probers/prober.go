@@ -3,6 +3,7 @@ package probers
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
@@ -30,8 +31,12 @@ func NewProber(p Pinger, cfg config.Config) *Prober {
 	return &pr
 }
 
+type ProbeResult struct {
+	LocalAddr net.Addr
+}
+
 type Pinger interface {
-	Ping(ctx context.Context) error
+	Ping(ctx context.Context) (ProbeResult, error)
 }
 
 func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
@@ -52,14 +57,14 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 		case <-p.Ticker.C:
 			pingTime := time.Now()
 
-			err := p.pinger.Ping(ctx)
+			probeResult, err := p.pinger.Ping(ctx)
 			rtt := time.Since(pingTime)
 
 			if err != nil {
 				p.handleProbeFailure(pingTime)
 				p.printer.PrintProbeFailure(p.Statistics)
 			} else {
-				p.handleProbeSuccess(pingTime, rtt)
+				p.handleProbeSuccess(pingTime, rtt, probeResult)
 				p.printer.PrintProbeSuccess(p.Statistics)
 			}
 
@@ -95,13 +100,13 @@ func (p *Prober) ProbeV2(ctx context.Context) (*stats.Statistics, error) {
 
 		pingTime := time.Now()
 
-		err := p.pinger.Ping(ctx)
+		probeResult, err := p.pinger.Ping(ctx)
 		rtt := time.Since(pingTime)
 
 		if err != nil {
 			p.handleProbeFailure(pingTime)
 		} else {
-			p.handleProbeSuccess(pingTime, rtt)
+			p.handleProbeSuccess(pingTime, rtt, probeResult)
 		}
 	}
 
@@ -142,6 +147,10 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 	s.TotalUnsuccessfulProbes++
 	s.LastUnsuccessfulProbe = pingTime
 
+	if p.config.NetworkInterface.Use {
+		s.LocalAddr = p.config.NetworkInterface.Dialer.LocalAddr
+	}
+
 	if !s.LastProbeHadFailed {
 		// UP -> DOWN
 		s.LastProbeHadFailed = true
@@ -160,7 +169,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 	}
 }
 
-func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration) {
+func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult ProbeResult) {
 	s := p.Statistics
 
 	rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
@@ -168,6 +177,8 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration) {
 	s.RTT = append(s.RTT, rttMs)
 	s.LatestRTT = rttMs
 	s.HasResults = true
+
+	s.LocalAddr = probeResult.LocalAddr
 
 	s.Successful++
 	s.TotalSuccessfulProbes++
@@ -190,7 +201,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration) {
 			&s.LongestDown,
 		)
 
-		p.printer.PrintTotalDownTime(s)
+		p.printer.PrintTotalDownTime(s.DownTime)
 
 		s.StartOfUptime = pingTime
 	}
