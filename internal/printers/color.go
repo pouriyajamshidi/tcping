@@ -11,7 +11,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
-// Color function aliases used when printing information
+// Color function aliases to use when printing information
 var (
 	printCyan        = color.Cyan.Printf
 	printLightCyan   = color.LightCyan.Printf
