@@ -88,34 +88,22 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 }
 
 // PrintTotalDownTime prints the total duration of downtime when no response was received.
-//
-// Parameters:
-//   - downtime: The total duration of downtime.
 func (p *ColorPrinter) PrintTotalDownTime(s *stats.Statistics) {
 	printYellow("No response received for %s\n", utils.DurationToString(s.DownTime))
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
-//
-// Parameters:
-//   - hostname: The hostname that is being resolved.
 func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
 	printLightYellow("Retrying to resolve %s\n", hostname)
 }
 
 // PrintError prints an error message in red.
-//
-// Parameters:
-//   - format: A format string for the error message.
-//   - args: Arguments to format the message.
+// it takes a verb and the arguments.
 func (p *ColorPrinter) PrintError(format string, args ...any) {
 	printRed(format+"\n", args...)
 }
 
-// PrintStatistics prints a summary of TCP ping statistics.
-// It includes transmitted and received packets, packet loss percentage,
-// successful and unsuccessful probes, uptime/downtime durations,
-// longest uptime/downtime, IP address changes, and RTT statistics.
+// PrintStatistics prints a summary of probe statistics.
 func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	if !s.DestIsIP {
 		printYellow("\n--- %s (%s) TCPing statistics ---\n",
