@@ -78,7 +78,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
-	if s.WithSourceAddress {
+	if s.WithSourceAddress && s.SourceAddr() != "" {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
