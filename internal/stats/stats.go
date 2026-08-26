@@ -97,7 +97,12 @@ func (s *Statistics) PortStr() string {
 }
 
 func (s *Statistics) SourceAddr() string {
-	// return strings.Replace(s.LocalAddr.String(), ":0", "", 1)
+	// in case probe failed and -I flag
+	// was not used
+	if s.LocalAddr == nil {
+		return ""
+	}
+
 	return s.LocalAddr.String()
 }
 
