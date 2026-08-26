@@ -88,8 +88,8 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 }
 
 // PrintTotalDownTime prints the total duration of downtime when no response was received.
-func (p *ColorPrinter) PrintTotalDownTime(s *stats.Statistics) {
-	printYellow("No response received for %s\n", utils.DurationToString(s.DownTime))
+func (p *ColorPrinter) PrintTotalDownTime(d time.Duration) {
+	printYellow("No response received for %s\n", utils.DurationToString(d))
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
