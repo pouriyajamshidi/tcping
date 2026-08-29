@@ -46,6 +46,12 @@ type Printer interface {
 	// streak is the number of successful consecutive probes.
 	PrintProbeFailure(s *stats.Statistics)
 
+	// PrintStatistics should print a message with
+	// helpful statistics information.
+	//
+	// This is being called on exit and when user hits "Enter".
+	PrintStatistics(s *stats.Statistics)
+
 	// PrintRetryingToResolve should print a message with the hostname
 	// it is trying to resolve an IP for.
 	//
@@ -57,12 +63,6 @@ type Printer interface {
 	// This is being called when host was unavailable for some time
 	// but the latest probe was successful (became available).
 	PrintTotalDownTime(d time.Duration)
-
-	// PrintStatistics should print a message with
-	// helpful statistics information.
-	//
-	// This is being called on exit and when user hits "Enter".
-	PrintStatistics(s *stats.Statistics)
 
 	// PrintError should print an error message.
 	// Printer should also apply \n to the given string, if needed.

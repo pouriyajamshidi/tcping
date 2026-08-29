@@ -87,22 +87,6 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	printRed(msg)
 }
 
-// PrintTotalDownTime prints the total duration of downtime when no response was received.
-func (p *ColorPrinter) PrintTotalDownTime(d time.Duration) {
-	printYellow("No response received for %s\n", utils.DurationToString(d))
-}
-
-// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
-func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
-	printLightYellow("Retrying to resolve %s\n", hostname)
-}
-
-// PrintError prints an error message in red.
-// it takes a verb and the arguments.
-func (p *ColorPrinter) PrintError(format string, args ...any) {
-	printRed(format+"\n", args...)
-}
-
 // PrintStatistics prints a summary of probe statistics.
 func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	if !s.DestIsIP {
@@ -229,6 +213,22 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 
 	durationTime := time.Time{}.Add(s.TotalDowntime + s.TotalUptime)
 	printYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
+}
+
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
+func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
+	printLightYellow("Retrying to resolve %s\n", hostname)
+}
+
+// PrintTotalDownTime prints the total duration of downtime when no response was received.
+func (p *ColorPrinter) PrintTotalDownTime(d time.Duration) {
+	printYellow("No response received for %s\n", utils.DurationToString(d))
+}
+
+// PrintError prints an error message in red.
+// it takes a verb and the arguments.
+func (p *ColorPrinter) PrintError(format string, args ...any) {
+	printRed(format+"\n", args...)
 }
 
 // Shutdown sets the end time, prints statistics, and exits the program.
