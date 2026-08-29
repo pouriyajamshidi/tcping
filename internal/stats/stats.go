@@ -123,6 +123,7 @@ func (s *Statistics) RTTStr() string {
 }
 
 // DurationToString creates a human-readable string for a given duration
+// TODO: unexport this when all printers are using the helper methods
 func DurationToString(d time.Duration) string {
 	hours := d / time.Hour
 	d %= time.Hour
