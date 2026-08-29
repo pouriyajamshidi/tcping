@@ -77,7 +77,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	if !s.DestIsIP {
 		msg = fmt.Sprintf("(%s) ", s.IP)
 	}
-	msg += fmt.Sprintf("TCPing statistics ---\n")
+	msg += "TCPing statistics ---\n"
 
 	msg += fmt.Sprintf(
 		"%d probes transmitted on port %d | %d received, ",
@@ -91,16 +91,16 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	msg += fmt.Sprintf("successful probes:   %d\n", s.TotalSuccessfulProbes)
 	msg += fmt.Sprintf("unsuccessful probes: %d\n", s.TotalUnsuccessfulProbes)
 
-	msg += fmt.Sprintf("last successful probe:   ")
+	msg += "last successful probe:   "
 	if s.LastSuccessfulProbe.IsZero() {
-		msg += fmt.Sprintf("Never succeeded\n")
+		msg += "Never succeeded\n"
 	} else {
 		msg += fmt.Sprintf("%s\n", s.LastSuccessfulProbeFormatted())
 	}
 
-	msg += fmt.Sprintf("last unsuccessful probe: ")
+	msg += "last unsuccessful probe: "
 	if s.LastUnsuccessfulProbe.IsZero() {
-		msg += fmt.Sprintf("Never failed\n")
+		msg += "Never failed\n"
 	} else {
 		msg += fmt.Sprintf("%s\n", s.LastUnsuccessfulProbeFormatted())
 	}
@@ -109,7 +109,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	msg += fmt.Sprintf("total downtime: %s\n", s.TotalDowntimeDuration())
 
 	if s.LongestUp.Duration != 0 {
-		msg += fmt.Sprintf("longest consecutive uptime:   ")
+		msg += "longest consecutive uptime:   "
 		msg += fmt.Sprintf("%s ", s.LongestUptimeDuration())
 		msg += fmt.Sprintf("from %s ", s.LongestUptimeStartTime())
 		msg += fmt.Sprintf("to %s\n", s.LongestUptimeEndTime())
@@ -133,7 +133,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 
 		if len(s.HostnameChanges) > 1 {
-			msg += fmt.Sprintf("IP address changes:\n")
+			msg += "IP address changes:\n"
 			for i := 0; i < len(s.HostnameChanges)-1; i++ {
 				msg += fmt.Sprintf("  from %s ", s.HostnameChanges[i].Addr.String())
 				msg += fmt.Sprintf("to %s ", s.HostnameChanges[i+1].Addr.String())
@@ -143,7 +143,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if s.RTTResults.HasResults {
-		msg += fmt.Sprintf("rtt min/avg/max: ")
+		msg += "rtt min/avg/max: "
 		msg += fmt.Sprintf("%.3f/%.3f/%.3f ms\n",
 			s.RTTResults.Min,
 			s.RTTResults.Average,
@@ -151,7 +151,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	}
 
-	msg += fmt.Sprintf(strings.Repeat("-", 40) + "\n")
+	msg += fmt.Sprint(strings.Repeat("-", 40) + "\n")
 	msg += fmt.Sprintf("TCPing started at: %s\n", s.StartTimeFormatted())
 
 	// If the program was not terminated, no need to show the end time
