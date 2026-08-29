@@ -37,38 +37,30 @@ type Printer interface {
 	PrintStart(s *stats.Statistics)
 
 	// PrintProbeSuccess should print a message after each successful probe.
-	// hostname could be empty, meaning it's pinging an address.
-	// streak is the number of successful consecuti`ve probes.
 	PrintProbeSuccess(s *stats.Statistics)
 
 	// PrintProbeFailure should print a message after each failed probe.
-	// hostname could be empty, meaning it's pinging an address.
-	// streak is the number of successful consecutive probes.
 	PrintProbeFailure(s *stats.Statistics)
 
-	// PrintStatistics should print a message with
-	// helpful statistics information.
-	//
-	// This is being called on exit and when user hits "Enter".
+	// PrintStatistics should print all the statistics.
+	// This is called on exit and when a user hits the "Enter" key.
 	PrintStatistics(s *stats.Statistics)
 
 	// PrintRetryingToResolve should print a message with the hostname
 	// it is trying to resolve an IP for.
-	//
-	// This is only being printed when the -r flag is applied.
+	// This is only called when the -r flag is provided.
 	PrintRetryingToResolve(hostname string)
 
 	// PrintDownTimeDuration should print a downtime duration.
-	//
-	// This is being called when host was unavailable for some time
-	// but the latest probe was successful (became available).
+	// This is called when target was unavailable for some time
+	// but it has become available now.
 	PrintDownTimeDuration(s *stats.Statistics)
 
-	// PrintError should print an error message.
-	// Printer should also apply \n to the given string, if needed.
+	// PrintError prints an error message in red. It takes a print verb and then the arguments.
 	PrintError(format string, args ...any)
 
-	// Shutdown sets the EndTime, calls PrintStatistics() and Done() then exits the program.
+	// Shutdown sets the end time, prints statistics, and exits the program.
+	// This will be removed soon
 	Shutdown(s *stats.Statistics)
 }
 

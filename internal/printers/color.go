@@ -30,12 +30,12 @@ func NewColorPrinter() *ColorPrinter {
 	return &ColorPrinter{}
 }
 
-// PrintStart prints a message indicating the start of a TCP ping attempt.
+// PrintStart prints the first message to indicate the target's address and port.
 func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
 	printLightCyan("TCPinging %s on port %d\n", s.Hostname, s.Port)
 }
 
-// PrintProbeSuccess prints a message indicating a successful probe response.
+// PrintProbeSuccess prints a message when there is a successful probe response.
 func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
@@ -61,7 +61,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	printLightGreen(msg)
 }
 
-// PrintProbeFailure prints a message indicating a failed probe attempt.
+// PrintProbeFailure prints a message the probe has failed.
 func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
@@ -86,7 +86,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	printRed(msg)
 }
 
-// PrintStatistics prints a summary of probe statistics.
+// PrintStatistics prints the summary of all probe statistics.
 func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow("\n--- %s", s.Hostname)
 	if !s.DestIsIP {
@@ -217,8 +217,7 @@ func (p *ColorPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	printYellow("No response received for %s\n", s.DowntimeDuration())
 }
 
-// PrintError prints an error message in red.
-// it takes a print verb and the arguments.
+// PrintError prints an error message in red. It takes a print verb and then the arguments.
 func (p *ColorPrinter) PrintError(format string, args ...any) {
 	printRed(format+"\n", args...)
 }
