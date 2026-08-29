@@ -4,7 +4,6 @@ package printers
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"strings"
 	"time"
@@ -18,7 +17,6 @@ import (
 // EventType is a special type for each method
 // in the printer interface so that automatic tools
 // can understand what kind of an event they've received.
-// For instance, probe vs stats...
 type EventType string
 
 const (
@@ -221,7 +219,6 @@ type DatabasePrinter struct {
 }
 
 // NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data table, and returns a pointer to it.
-// If any error occurs during database creation or table initialization, the function exits the program.
 func NewDatabasePrinter(target, port, filePath string) (*DatabasePrinter, error) {
 	probeTableName := sanitizeTableName(target, port)
 	statsTableName := probeTableName + "_stats"
@@ -230,18 +227,19 @@ func NewDatabasePrinter(target, port, filePath string) (*DatabasePrinter, error)
 
 	conn, err := sqlite.OpenConn(filePath, sqlite.OpenCreate, sqlite.OpenReadWrite)
 	if err != nil {
-		return nil, fmt.Errorf("\nError creating the database %q: %s", filePath, err)
+		return nil, fmt.Errorf("error creating the database %q: %w", filePath, err)
 	}
 
 	tableSchema := fmt.Sprintf(dataTableSchema, probeTableName)
 	if err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{}); err != nil {
-		fmt.Printf("\nError creating the data table: %s\n", err)
-		os.Exit(1)
+		conn.Close()
+		return nil, fmt.Errorf("error creating the data table: %w", err)
 	}
 
-	statsTableSchema := fmt.Sprintf(statsTableSchema, statsTableName)
-	if err = sqlitex.Execute(conn, statsTableSchema, &sqlitex.ExecOptions{}); err != nil {
-		return nil, fmt.Errorf("\nError creating the statistics table: %s", err)
+	statsSchema := fmt.Sprintf(statsTableSchema, statsTableName)
+	if err = sqlitex.Execute(conn, statsSchema, &sqlitex.ExecOptions{}); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("error creating the statistics table: %w", err)
 	}
 
 	return &DatabasePrinter{
@@ -260,9 +258,9 @@ func addDbExtension(filename string) string {
 	return filename + ".db"
 }
 
-// sanitizeTableName will return the sanitized and correctly formatted table name
-// formatting the table name as "example_com_port__year_month_day_hour_minute_sec"
-// table name can't have '.','-' and can't start with numbers
+// sanitizeTableName returns the sanitized and correctly formatted table name.
+// Formatting the table name as "example_com_port__year_month_day_hour_minute_sec".
+// Table names cannot contain '.', '-' and cannot start with numbers.
 func sanitizeTableName(hostname, port string) string {
 	sanitizedHost := strings.ReplaceAll(hostname, ".", "_")
 	sanitizedHost = strings.ReplaceAll(sanitizedHost, "-", "_")
@@ -284,17 +282,11 @@ func sanitizeTableName(hostname, port string) string {
 	return tableName
 }
 
-// Done closes the connection to the database
+// Done closes the connection to the database.
 func (p *DatabasePrinter) Done() {
-	p.Conn.Close()
-}
-
-// Shutdown sets the end time, prints statistics, calls Done() and exits the program.
-func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
-	p.Done()
-	os.Exit(0)
+	if p.Conn != nil {
+		p.Conn.Close()
+	}
 }
 
 // PrintStart prints a message indicating that TCPing has started for the given hostname and port.
@@ -302,77 +294,30 @@ func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 	fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.FilePath)
 }
 
-// PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
+// PrintProbeSuccess writes successful probe details to the database.
 func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
-	timestamp := ""
-	if s.WithTimestamp {
-		timestamp = s.StartTimeFormatted()
-	}
-
 	data := dbData{
 		eventType:               ProbeEvent,
 		success:                 "true",
+		ipAddr:                  s.IPStr(),
+		hostname:                s.Hostname,
+		port:                    s.Port,
+		time:                    s.RTTStr(),
 		ongoingSuccessfulProbes: s.OngoingSuccessfulProbes,
 	}
 
-	if s.Hostname == s.IPStr() {
+	if s.WithTimestamp {
+		data.timestamp = s.CurrentTimestamp()
+	}
+
+	if s.WithSourceAddress {
+		data.sourceAddr = s.SourceAddr()
+	}
+
+	if s.DestIsIP {
 		data.destIsIP = "true"
-
-		if timestamp == "" {
-			if s.WithSourceAddress {
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		} else {
-			data.timestamp = timestamp
-
-			if s.WithSourceAddress {
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		}
 	} else {
 		data.destIsIP = "false"
-
-		if timestamp == "" {
-			if s.WithSourceAddress {
-				data.hostname = s.Hostname
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.hostname = s.Hostname
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		} else {
-			data.timestamp = timestamp
-
-			if s.WithSourceAddress {
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.sourceAddr = s.SourceAddr()
-				data.time = s.RTTStr()
-			} else {
-				data.ipAddr = s.IPStr()
-				data.port = s.Port
-				data.time = s.RTTStr()
-			}
-		}
 	}
 
 	if err := sqlitex.Execute(
@@ -380,47 +325,33 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
 		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
-		p.PrintError("Failed writing probe success data to database: %s\n", err)
+		p.PrintError("Failed writing probe success data to database: %v", err)
 	}
 }
 
-// PrintProbeFailure satisfies the "printer" interface but does nothing in this implementation
+// PrintProbeFailure writes failed probe details to the database.
 func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
-	timestamp := ""
-	if s.WithTimestamp {
-		timestamp = s.StartTimeFormatted()
-	}
-
 	data := dbData{
 		eventType:                 ProbeEvent,
 		success:                   "false",
+		ipAddr:                    s.IPStr(),
+		hostname:                  s.Hostname,
+		port:                      s.Port,
 		ongoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
 	}
 
-	if s.Hostname == s.IPStr() {
-		data.destIsIP = "true"
+	if s.WithTimestamp {
+		data.timestamp = s.CurrentTimestamp()
+	}
 
-		if timestamp == "" {
-			data.ipAddr = s.IPStr()
-			data.port = s.Port
-		} else {
-			data.timestamp = timestamp
-			data.ipAddr = s.IPStr()
-			data.port = s.Port
-		}
+	if s.WithSourceAddress {
+		data.sourceAddr = s.SourceAddr()
+	}
+
+	if s.DestIsIP {
+		data.destIsIP = "true"
 	} else {
 		data.destIsIP = "false"
-
-		if timestamp == "" {
-			data.hostname = s.Hostname
-			data.ipAddr = s.IPStr()
-			data.port = s.Port
-		} else {
-			data.timestamp = timestamp
-			data.hostname = s.Hostname
-			data.ipAddr = s.IPStr()
-			data.port = s.Port
-		}
 	}
 
 	if err := sqlitex.Execute(
@@ -428,23 +359,11 @@ func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
-		p.PrintError("Failed writing probe failure data to database: %s\n", err)
+		p.PrintError("Failed writing probe failure data to database: %v", err)
 	}
 }
 
-// PrintError prints an error message to stderr and exits the program.
-func (p *DatabasePrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, format, args...)
-	os.Exit(1)
-}
-
-// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
-func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
-	fmt.Printf("Retrying to resolve %s\n", hostname)
-}
-
-// PrintStatistics saves TCPing statistics to the database.
-// If an error occurs while saving, it logs the error.
+// PrintStatistics saves TCPing summary statistics to the database.
 func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	data := dbStats{
 		eventType:                StatisticsEvent,
@@ -452,55 +371,49 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 		ipAddr:                   s.IPStr(),
 		hostname:                 s.Hostname,
 		port:                     s.Port,
+		totalDuration:            s.RuntimeDuration(),
+		totalUptime:              s.TotalUptimeDuration(),
+		totalDowntime:            s.TotalDowntimeDuration(),
+		totalPackets:             s.TotalProbes(),
 		totalSuccessfulPackets:   s.TotalSuccessfulProbes,
 		totalUnsuccessfulPackets: s.TotalUnsuccessfulProbes,
-		startTimestamp:           s.StartTime.Format(time.DateTime),
-		totalUptime:              stats.DurationToString(s.TotalUptime),
-		totalDowntime:            stats.DurationToString(s.TotalDowntime),
-		totalPackets:             s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes,
+		totalPacketLossPercent:   fmt.Sprintf("%.2f", s.PacketLoss()),
+		startTimestamp:           s.StartTimeFormatted(),
 	}
 
 	if len(s.HostnameChanges) > 1 {
+		var changes strings.Builder
 		for i := 0; i < len(s.HostnameChanges)-1; i++ {
 			if s.HostnameChanges[i].Addr.String() == "" {
 				continue
 			}
-
-			data.hostnameChanges += fmt.Sprintf("from %s to %s at %v\n",
+			fmt.Fprintf(&changes, "from %s to %s at %s\n",
 				s.HostnameChanges[i].Addr.String(),
 				s.HostnameChanges[i+1].Addr.String(),
-				s.HostnameChanges[i+1].When.Format(time.DateTime),
+				s.HostnameChanges[i+1].WhenFormatted(),
 			)
 		}
+		data.hostnameChanges = changes.String()
 	}
-
-	totalPackets := s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
-	packetLoss := (float32(s.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
-
-	if math.IsNaN(float64(packetLoss)) {
-		packetLoss = 0
-	}
-
-	data.totalPacketLossPercent = fmt.Sprintf("%.2f", packetLoss)
 
 	if !s.LastSuccessfulProbe.IsZero() {
-		data.lastSuccessfulProbe = s.LastSuccessfulProbe.Format(time.DateTime)
+		data.lastSuccessfulProbe = s.LastSuccessfulProbeFormatted()
 	}
 
 	if !s.LastUnsuccessfulProbe.IsZero() {
-		data.lastUnsuccessfulProbe = s.LastUnsuccessfulProbe.Format(time.DateTime)
+		data.lastUnsuccessfulProbe = s.LastUnsuccessfulProbeFormatted()
 	}
 
 	if s.LongestUp.Duration != 0 {
-		data.longestUptime = fmt.Sprintf("%.0f", s.LongestUp.Duration.Seconds())
-		data.longestConsecutiveUptimeStart = s.LongestUp.Start.Format(time.DateTime)
-		data.longestConsecutiveUptimeEnd = s.LongestUp.End.Format(time.DateTime)
+		data.longestUptime = s.LongestUptimeDuration()
+		data.longestConsecutiveUptimeStart = s.LongestUptimeStartTime()
+		data.longestConsecutiveUptimeEnd = s.LongestUptimeEndTime()
 	}
 
 	if s.LongestDown.Duration != 0 {
-		data.longestDowntime = fmt.Sprintf("%.0f", s.LongestDown.Duration.Seconds())
-		data.longestConsecutiveDowntimeStart = s.LongestDown.Start.Format(time.DateTime)
-		data.longestConsecutiveDowntimeEnd = s.LongestDown.End.Format(time.DateTime)
+		data.longestDowntime = s.LongestDowntimeDuration()
+		data.longestConsecutiveDowntimeStart = s.LongestDowntimeStartTime()
+		data.longestConsecutiveDowntimeEnd = s.LongestDowntimeEndTime()
 	}
 
 	if !s.DestIsIP {
@@ -514,18 +427,16 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if !s.EndTime.IsZero() {
-		data.endTimestamp = s.EndTime.Format(time.DateTime)
+		data.endTimestamp = s.EndTimeFormatted()
 	}
-
-	totalDuration := s.TotalDowntime + s.TotalUptime
-	data.totalDuration = fmt.Sprintf("%.0f", totalDuration.Seconds())
 
 	if err := sqlitex.Execute(
 		p.Conn,
 		fmt.Sprintf(statsTableInsertSchema, p.statsTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
-		p.PrintError("Failed writing statistics to database: %s\n", err)
+		p.PrintError("Failed writing statistics to database: %v", err)
+		return
 	}
 
 	fmt.Printf("\nProbe and statistics data for %q have been saved to the table %q and %q, respectively\n",
@@ -535,5 +446,25 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	)
 }
 
-// PrintDownTimeDuration satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintDownTimeDuration(_ *stats.Statistics) {}
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
+func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
+	fmt.Printf("Retrying to resolve %s\n", hostname)
+}
+
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
+func (p *DatabasePrinter) PrintDownTimeDuration(s *stats.Statistics) {
+	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
+}
+
+// PrintError prints an error message to stderr.
+func (p *DatabasePrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "Database Error: "+format+"\n", args...)
+}
+
+// Shutdown sets the end time, prints statistics, calls Done() and exits the program.
+func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
+	s.EndTime = time.Now()
+	PrintStats(p, s)
+	p.Done()
+	os.Exit(0)
+}
