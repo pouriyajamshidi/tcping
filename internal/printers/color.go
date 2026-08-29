@@ -88,11 +88,11 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 // PrintStatistics prints the summary of all probe statistics.
 func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
-	printYellow("\n--- %s", s.Hostname)
+	printYellow("\n--- %s ", s.Hostname)
 	if !s.DestIsIP {
-		printYellow(" (%s)", s.IPStr())
+		printYellow("(%s) ", s.IPStr())
 	}
-	printYellow(" TCPing statistics ---\n")
+	printYellow("TCPing statistics ---\n")
 
 	printYellow(
 		"%d probes transmitted on port %d | %d received, ",
