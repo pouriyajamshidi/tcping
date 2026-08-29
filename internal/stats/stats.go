@@ -139,6 +139,10 @@ func (s *Statistics) PacketLoss() float32 {
 	return packetLoss
 }
 
+func (s *Statistics) DowntimeDuration() string {
+	return DurationToString(s.DownTime)
+}
+
 func (s *Statistics) LastSuccessfulProbeFormatted() string {
 	return s.LastSuccessfulProbe.Format(time.DateTime)
 }
