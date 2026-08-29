@@ -103,7 +103,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	latency, _ := strconv.ParseFloat(s.RTTStr(), 32)
 
-	event := jsonProbe{
+	data := jsonProbe{
 		Hostname:    hostname,
 		IP:          s.IPStr(),
 		Port:        s.Port,
@@ -113,14 +113,14 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	if s.WithTimestamp {
-		event.Timestamp = s.StartTimeFormatted()
+		data.Timestamp = s.CurrentTimestamp()
 	}
 
 	if s.WithSourceAddress && s.SourceAddr() != "" {
-		event.Source = s.SourceAddr()
+		data.Source = s.SourceAddr()
 	}
 
-	p.encode("probe", event)
+	p.encode("probe", data)
 }
 
 func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
@@ -129,7 +129,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		hostname = ""
 	}
 
-	event := jsonProbe{
+	data := jsonProbe{
 		Hostname:    hostname,
 		IP:          s.IPStr(),
 		Port:        s.Port,
@@ -138,11 +138,11 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 
 	if s.WithTimestamp {
-		event.Timestamp = time.Now().Format(time.DateTime)
+		data.Timestamp = s.CurrentTimestamp()
 	}
 
 	if s.WithSourceAddress && s.SourceAddr() != "" {
-		event.Source = s.SourceAddr()
+		data.Source = s.SourceAddr()
 	}
 
 	p.encode("probe", event)
@@ -172,7 +172,7 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		hostname = ""
 	}
 
-	event := jsonStatistics{
+	data := jsonStatistics{
 		Hostname:           hostname,
 		IP:                 s.IPStr(),
 		Port:               s.Port,
@@ -187,37 +187,37 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if !s.LastSuccessfulProbe.IsZero() {
-		event.LastSuccessfulProbe = s.LastSuccessfulProbeFormatted()
+		data.LastSuccessfulProbe = s.LastSuccessfulProbeFormatted()
 	}
 
 	if !s.LastUnsuccessfulProbe.IsZero() {
-		event.LastUnsuccessfulProbe = s.LastUnsuccessfulProbeFormatted()
+		data.LastUnsuccessfulProbe = s.LastUnsuccessfulProbeFormatted()
 	}
 
 	if s.LongestUp.Duration != 0 {
-		event.LongestUptime = s.LongestUptimeDuration()
+		data.LongestUptime = s.LongestUptimeDuration()
 	}
 
 	if s.LongestDown.Duration != 0 {
-		event.LongestDowntime = s.LongestDowntimeDuration()
+		data.LongestDowntime = s.LongestDowntimeDuration()
 	}
 
 	if !s.DestIsIP {
-		event.HostnameResolveRetries = s.RetriedHostnameLookups
+		data.HostnameResolveRetries = s.RetriedHostnameLookups
 
 		if len(s.HostnameChanges) > 1 {
-			event.HostnameChanges = s.HostnameChanges
+			data.HostnameChanges = s.HostnameChanges
 		}
 	}
 
 	if s.RTTResults.HasResults {
-		event.LatencyMin = s.RTTResults.Min
-		event.LatencyAvg = s.RTTResults.Average
-		event.LatencyMax = s.RTTResults.Max
+		data.LatencyMin = s.RTTResults.Min
+		data.LatencyAvg = s.RTTResults.Average
+		data.LatencyMax = s.RTTResults.Max
 	}
 
 	if !s.EndTime.IsZero() {
-		event.EndTime = s.EndTimeFormatted()
+		data.EndTime = s.EndTimeFormatted()
 	}
 
 	p.encode("statistics", event)
