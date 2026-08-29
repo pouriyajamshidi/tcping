@@ -122,6 +122,59 @@ func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
 }
 
+func (s *Statistics) TotalProbes() uint {
+	return s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
+}
+
+func (s *Statistics) PacketLoss() float32 {
+	var packetLoss float32
+	if s.TotalProbes() > 0 {
+		packetLoss = float32(s.TotalUnsuccessfulProbes) / float32(s.TotalProbes()) * 100
+	}
+
+	return packetLoss
+}
+
+func (s *Statistics) LastSuccessfulProbeFormatted() string {
+	return s.LastSuccessfulProbe.Format(time.DateTime)
+}
+
+func (s *Statistics) LastUnsuccessfulProbeFormatted() string {
+	return s.LastUnsuccessfulProbe.Format(time.DateTime)
+}
+
+func (s *Statistics) TotalUptimeDuration() string {
+	return DurationToString(s.TotalUptime)
+}
+
+func (s *Statistics) TotalDowntimeDuration() string {
+	return DurationToString(s.TotalDowntime)
+}
+
+func (s *Statistics) LongestUptimeDuration() string {
+	return DurationToString(s.LongestUp.Duration)
+}
+
+func (s *Statistics) LongestUptimeStartTime() string {
+	return s.LongestUp.Start.Format(time.DateTime)
+}
+
+func (s *Statistics) LongestUptimeEndTime() string {
+	return s.LongestUp.End.Format(time.DateTime)
+}
+
+func (s *Statistics) LongestDowntimeDuration() string {
+	return DurationToString(s.LongestDown.Duration)
+}
+
+func (s *Statistics) LongestDowntimeStartTime() string {
+	return s.LongestDown.Start.Format(time.DateTime)
+}
+
+func (s *Statistics) LongestDowntimeEndTime() string {
+	return s.LongestDown.End.Format(time.DateTime)
+}
+
 // DurationToString creates a human-readable string for a given duration
 // TODO: unexport this when all printers are using the helper methods
 func DurationToString(d time.Duration) string {
