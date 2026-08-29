@@ -2,7 +2,6 @@ package printers
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"time"
 
