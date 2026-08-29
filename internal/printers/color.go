@@ -135,7 +135,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	printYellow("total uptime:   ")
-	printGreen("%s\n", s.TotalDowntimeDuration())
+	printGreen("%s\n", s.TotalUptimeDuration())
 	printYellow("total downtime: ")
 	printRed("%s\n", s.TotalDowntimeDuration())
 
