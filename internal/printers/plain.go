@@ -27,8 +27,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
 	if s.WithTimestamp {
-		timestamp := s.StartTimeFormatted()
-		msg = fmt.Sprintf("%s %s", timestamp, msg)
+		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
 	target := s.IPStr()
@@ -53,8 +52,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
 	if s.WithTimestamp {
-		timestamp := s.StartTimeFormatted()
-		msg = fmt.Sprintf("%v %v", timestamp, msg)
+		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
 	target := s.IPStr()
