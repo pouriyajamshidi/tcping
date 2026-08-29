@@ -106,6 +106,10 @@ func (s *Statistics) SourceAddr() string {
 	return s.LocalAddr.String()
 }
 
+func (s *Statistics) CurrentTimestamp() string {
+	return time.Now().Format(time.DateTime)
+}
+
 func (s *Statistics) StartTimeFormatted() string {
 	return s.StartTime.Format(time.DateTime)
 }
