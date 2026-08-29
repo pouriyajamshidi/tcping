@@ -122,6 +122,49 @@ func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
 }
 
+// DurationToString creates a human-readable string for a given duration
+func DurationToString(d time.Duration) string {
+	hours := d / time.Hour
+	d %= time.Hour
+
+	minutes := d / time.Minute
+	d %= time.Minute
+
+	seconds := d.Seconds()
+
+	switch {
+	case hours >= 2:
+		return fmt.Sprintf("%d hours %d minutes %.0f seconds", hours, minutes, seconds)
+
+	case hours == 1:
+		if minutes == 0 && seconds == 0 {
+			return "1 hour"
+		}
+		return fmt.Sprintf("1 hour %d minutes %.0f seconds", minutes, seconds)
+
+	case minutes >= 2:
+		return fmt.Sprintf("%d minutes %.0f seconds", minutes, seconds)
+
+	case minutes == 1:
+		if seconds == 0 {
+			return "1 minute"
+		}
+		return fmt.Sprintf("1 minute %.0f seconds", seconds)
+
+	case seconds == 0:
+		return "0 seconds"
+
+	case seconds < 1.1:
+		return "1 second"
+
+	case seconds < 2:
+		return fmt.Sprintf("%.1f seconds", seconds)
+
+	default:
+		return fmt.Sprintf("%.0f seconds", seconds)
+	}
+}
+
 // RTTResult holds statistics for round-trip times (RTT) results.
 type RTTResult struct {
 	Min        float32 // Minimum RTT value.

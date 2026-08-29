@@ -139,12 +139,12 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	printYellow("total uptime: ")
-	printGreen("  %s\n", utils.DurationToString(s.TotalUptime))
+	printGreen("  %s\n", stats.DurationToString(s.TotalUptime))
 	printYellow("total downtime: ")
-	printRed("%s\n", utils.DurationToString(s.TotalDowntime))
+	printRed("%s\n", stats.DurationToString(s.TotalDowntime))
 
 	if s.LongestUp.Duration != 0 {
-		uptime := utils.DurationToString(s.LongestUp.Duration)
+		uptime := stats.DurationToString(s.LongestUp.Duration)
 
 		printYellow("longest consecutive uptime:   ")
 		printGreen("%v ", uptime)
@@ -155,7 +155,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if s.LongestDown.Duration != 0 {
-		downtime := utils.DurationToString(s.LongestDown.Duration)
+		downtime := stats.DurationToString(s.LongestDown.Duration)
 
 		printYellow("longest consecutive downtime: ")
 		printRed("%v ", downtime)
@@ -222,7 +222,7 @@ func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
 
 // PrintTotalDownTime prints the total duration of downtime when no response was received.
 func (p *ColorPrinter) PrintTotalDownTime(d time.Duration) {
-	printYellow("No response received for %s\n", utils.DurationToString(d))
+	printYellow("No response received for %s\n", stats.DurationToString(d))
 }
 
 // PrintError prints an error message in red.

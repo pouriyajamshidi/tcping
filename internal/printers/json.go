@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 // JSONEventType is a special type for each method
@@ -272,8 +271,8 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 func (p *JSONPrinter) PrintTotalDownTime(d time.Duration) {
 	p.encoder.Encode(JSONData{
 		Type:          retrySuccessEvent,
-		Message:       fmt.Sprintf("No response received for %s", utils.DurationToString(d)),
-		TotalDowntime: utils.DurationToString(d),
+		Message:       fmt.Sprintf("No response received for %s", stats.DurationToString(d)),
+		TotalDowntime: stats.DurationToString(d),
 	})
 }
 
@@ -306,8 +305,8 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		TotalUnsuccessfulPackets: s.TotalUnsuccessfulProbes,
 		Timestamp:                time.Now().Format(time.DateTime),
 		StartTimestamp:           s.StartTime.Format(time.DateTime),
-		TotalUptime:              utils.DurationToString(s.TotalUptime),
-		TotalDowntime:            utils.DurationToString(s.TotalDowntime),
+		TotalUptime:              stats.DurationToString(s.TotalUptime),
+		TotalDowntime:            stats.DurationToString(s.TotalDowntime),
 		TotalPackets:             s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes,
 	}
 

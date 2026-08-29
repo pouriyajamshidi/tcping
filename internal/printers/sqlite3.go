@@ -11,7 +11,6 @@ import (
 	"unicode"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
@@ -456,8 +455,8 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 		totalSuccessfulPackets:   s.TotalSuccessfulProbes,
 		totalUnsuccessfulPackets: s.TotalUnsuccessfulProbes,
 		startTimestamp:           s.StartTime.Format(time.DateTime),
-		totalUptime:              utils.DurationToString(s.TotalUptime),
-		totalDowntime:            utils.DurationToString(s.TotalDowntime),
+		totalUptime:              stats.DurationToString(s.TotalUptime),
+		totalDowntime:            stats.DurationToString(s.TotalDowntime),
 		totalPackets:             s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes,
 	}
 

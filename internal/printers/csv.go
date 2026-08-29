@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 const (
@@ -237,10 +236,10 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	)
 
 	statistics = append(statistics, []string{"Total Uptime",
-		utils.DurationToString(s.TotalUptime)},
+		stats.DurationToString(s.TotalUptime)},
 	)
 	statistics = append(statistics, []string{"Total Downtime",
-		utils.DurationToString(s.TotalDowntime)},
+		stats.DurationToString(s.TotalDowntime)},
 	)
 
 	totalPackets := s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes

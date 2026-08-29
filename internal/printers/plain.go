@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 // PlainPrinter is a printer that prints the TCPing results in a simple, plain text format.
@@ -69,7 +68,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 // PrintTotalDownTime prints the total downtime when no response is received.
 func (p *PlainPrinter) PrintTotalDownTime(d time.Duration) {
-	fmt.Printf("No response received for %s\n", utils.DurationToString(d))
+	fmt.Printf("No response received for %s\n", stats.DurationToString(d))
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
@@ -123,11 +122,11 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		msg += fmt.Sprintf("%v\n", s.LastUnsuccessfulProbe.Format(time.DateTime))
 	}
 
-	msg += fmt.Sprintf("total uptime: %s\n", utils.DurationToString(s.TotalUptime))
-	msg += fmt.Sprintf("total downtime: %s\n", utils.DurationToString(s.TotalDowntime))
+	msg += fmt.Sprintf("total uptime: %s\n", stats.DurationToString(s.TotalUptime))
+	msg += fmt.Sprintf("total downtime: %s\n", stats.DurationToString(s.TotalDowntime))
 
 	if s.LongestUp.Duration != 0 {
-		uptime := utils.DurationToString(s.LongestUp.Duration)
+		uptime := stats.DurationToString(s.LongestUp.Duration)
 
 		msg += fmt.Sprintf("longest consecutive uptime:   ")
 		msg += fmt.Sprintf("%v ", uptime)
@@ -136,7 +135,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if s.LongestDown.Duration != 0 {
-		downtime := utils.DurationToString(s.LongestDown.Duration)
+		downtime := stats.DurationToString(s.LongestDown.Duration)
 
 		msg += fmt.Sprintf("longest consecutive downtime: %v ", downtime)
 		msg += fmt.Sprintf("from %v ", s.LongestDown.Start.Format(time.DateTime))
