@@ -27,6 +27,7 @@ import (
 - Use built-in slice functions for min max avg, etc
 - Run modernize
 - Shutdown would not be needed once the program flow is solid
+- PrintStats can go too when we have a stats helper method in its place
 - Read the entire code once everything is done for "code smells"
 */
 
