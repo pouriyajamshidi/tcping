@@ -66,7 +66,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
 	if s.WithTimestamp {
-		timestamp := time.Now().Format(s.StartTimeFormatted())
+		timestamp := s.StartTimeFormatted()
 		msg = fmt.Sprintf("%v %v", timestamp, msg)
 	}
 
