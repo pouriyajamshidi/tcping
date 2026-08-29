@@ -114,6 +114,10 @@ func (s *Statistics) EndTimeFormatted() string {
 	return s.EndTime.Format(time.DateTime)
 }
 
+func (s *Statistics) RuntimeDuration() string {
+	return time.Time{}.Add(s.TotalDowntime + s.TotalUptime).Format(time.TimeOnly)
+}
+
 func (s *Statistics) ProtocolStr() string {
 	return string(s.Protocol)
 }
