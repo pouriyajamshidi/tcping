@@ -218,7 +218,7 @@ func (p *ColorPrinter) PrintTotalDownTime(d time.Duration) {
 }
 
 // PrintError prints an error message in red.
-// it takes a verb and the arguments.
+// it takes a print verb and the arguments.
 func (p *ColorPrinter) PrintError(format string, args ...any) {
 	printRed(format+"\n", args...)
 }
