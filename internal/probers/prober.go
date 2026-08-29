@@ -211,6 +211,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 	}
 }
 
+// TODO: this should replace the ShutDown and PrintStats methods
 func (p *Prober) finalizeStatistics() {
 	p.Statistics.EndTime = time.Now()
 	p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
