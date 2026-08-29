@@ -5,6 +5,7 @@ package printers
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -219,8 +220,10 @@ type DatabasePrinter struct {
 }
 
 // NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data table, and returns a pointer to it.
-func NewDatabasePrinter(target, port, filePath string) (*DatabasePrinter, error) {
-	probeTableName := sanitizeTableName(target, port)
+func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabasePrinter, error) {
+	portStr := strconv.FormatUint(uint64(port), 10)
+
+	probeTableName := sanitizeTableName(target, portStr)
 	statsTableName := probeTableName + "_stats"
 
 	filePath = addDbExtension(filePath)

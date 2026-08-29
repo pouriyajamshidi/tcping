@@ -61,7 +61,7 @@ func TestSanitizeTableName(t *testing.T) {
 }
 
 func TestDatabasePrinter_InMemoryOperations(t *testing.T) {
-	dbPrinter, err := NewDatabasePrinter("example.com", "80", ":memory:")
+	dbPrinter, err := NewDatabasePrinter("example.com", 80, ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to initialize DatabasePrinter in memory: %v", err)
 	}

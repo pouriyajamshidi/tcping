@@ -75,7 +75,7 @@ func NewPrinter(cfg PrinterConfig) (Printer, error) {
 		return NewJSONPrinter(cfg.PrettyJSON), nil
 
 	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg.Target, string(cfg.Port), cfg.OutputDBPath)
+		return NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
 
 	case cfg.OutputCSVPath != "":
 		return NewCSVPrinter(cfg.OutputCSVPath)
