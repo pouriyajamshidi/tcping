@@ -57,7 +57,7 @@ func main() {
 		go app.MonitorSummaryRequest(printer, stats)
 	}
 
-	prober := probers.NewProber(pinger, printer, cfg)
+	prober := probers.NewProber(pinger, printer, cfg, stats)
 	stats, err = prober.Probe(probeCtx)
 	if err != nil {
 		printer.PrintError("%v", err)

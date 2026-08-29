@@ -20,12 +20,12 @@ type Prober struct {
 	Statistics *stats.Statistics
 }
 
-func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config) *Prober {
+func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats *stats.Statistics) *Prober {
 	pr := Prober{
 		pinger:     pinger,
 		printer:    printer,
 		config:     cfg,
-		Statistics: stats.NewStatistics(cfg),
+		Statistics: stats,
 	}
 
 	return &pr
