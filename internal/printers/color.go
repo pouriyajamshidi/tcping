@@ -131,7 +131,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	if s.LastUnsuccessfulProbe.IsZero() {
 		printGreen("Never failed\n")
 	} else {
-		printRed("%v\n", s.LastUnsuccessfulProbeFormatted())
+		printRed("%s\n", s.LastUnsuccessfulProbeFormatted())
 	}
 
 	printYellow("total uptime:   ")
