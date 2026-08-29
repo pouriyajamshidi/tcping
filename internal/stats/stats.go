@@ -249,6 +249,10 @@ type HostnameChange struct {
 	When time.Time  // Timestamp of when the change occurred.
 }
 
+func (h *HostnameChange) WhenFormatted() string {
+	return h.When.Format(time.DateTime)
+}
+
 // SetLongestDuration updates the longest uptime or downtime based on the given type.
 func SetLongestDuration(start time.Time, duration time.Duration, longest *LongestTime) {
 	if start.IsZero() || duration == 0 {
