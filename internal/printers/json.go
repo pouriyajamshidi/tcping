@@ -145,25 +145,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		data.Source = s.SourceAddr()
 	}
 
-	p.encode("probe", event)
-}
-
-func (p *JSONPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	p.encode("retrySuccess", jsonDowntime{
-		Duration: s.DowntimeDuration(),
-	})
-}
-
-func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
-	p.encode("retry", jsonRetry{
-		Hostname: hostname,
-	})
-}
-
-func (p *JSONPrinter) PrintError(format string, args ...any) {
-	p.encode("error", jsonError{
-		Message: fmt.Sprintf(format, args...),
-	})
+	p.encode("probe", data)
 }
 
 func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
@@ -220,7 +202,25 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		data.EndTime = s.EndTimeFormatted()
 	}
 
-	p.encode("statistics", event)
+	p.encode("statistics", data)
+}
+
+func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
+	p.encode("retry", jsonRetry{
+		Hostname: hostname,
+	})
+}
+
+func (p *JSONPrinter) PrintDownTimeDuration(s *stats.Statistics) {
+	p.encode("downtimeDuration", jsonDowntime{
+		Duration: s.DowntimeDuration(),
+	})
+}
+
+func (p *JSONPrinter) PrintError(format string, args ...any) {
+	p.encode("error", jsonError{
+		Message: fmt.Sprintf(format, args...),
+	})
 }
 
 func (p *JSONPrinter) Shutdown(s *stats.Statistics) {
