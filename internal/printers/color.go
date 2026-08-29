@@ -199,7 +199,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow(strings.Repeat("-", 40) + "\n")
 	printYellow("TCPing started at: %s\n", s.StartTimeFormatted())
 
-	/* If the program was not terminated, no need to show the end time */
+	// If the program was not terminated, no need to show the end time
 	if !s.EndTime.IsZero() {
 		printYellow("TCPing ended at:   %s\n", s.EndTimeFormatted())
 	}
