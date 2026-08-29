@@ -344,5 +344,5 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	fmt.Printf("\nStatistics have been saved to: %s\n", p.StatsFile.Name())
 }
 
-// PrintTotalDownTime is a no-op implementation to satisfy the Printer interface.
-func (p *CSVPrinter) PrintTotalDownTime(_ time.Duration) {}
+// PrintDownTimeDuration is a no-op implementation to satisfy the Printer interface.
+func (p *CSVPrinter) PrintDownTimeDuration(_ *stats.Statistics) {}

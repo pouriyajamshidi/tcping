@@ -43,5 +43,5 @@ func (p *DatabasePrinter) PrintRetryingToResolve(_ string) {}
 // If an error occurs while saving, it logs the error.
 func (p *DatabasePrinter) PrintStatistics(_ *stats.Statistics) {}
 
-// PrintTotalDownTime satisfies the "printer" interface but does nothing in this implementation
-func (p *DatabasePrinter) PrintTotalDownTime(_ time.Duration) {}
+// PrintDownTimeDuration satisfies the "printer" interface but does nothing in this implementation
+func (p *DatabasePrinter) PrintDownTimeDuration(_ time.Duration) {}

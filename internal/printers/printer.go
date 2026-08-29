@@ -58,11 +58,11 @@ type Printer interface {
 	// This is only being printed when the -r flag is applied.
 	PrintRetryingToResolve(hostname string)
 
-	// PrintTotalDownTime should print a downtime duration.
+	// PrintDownTimeDuration should print a downtime duration.
 	//
 	// This is being called when host was unavailable for some time
 	// but the latest probe was successful (became available).
-	PrintTotalDownTime(d time.Duration)
+	PrintDownTimeDuration(s *stats.Statistics)
 
 	// PrintError should print an error message.
 	// Printer should also apply \n to the given string, if needed.

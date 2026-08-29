@@ -20,7 +20,7 @@ func (fp *dummyPrinter) PrintProbeSuccess(_ time.Time, _ string, _ config.Config
 }
 func (fp *dummyPrinter) PrintProbeFailure(_ time.Time, _ config.Config, _ uint) {}
 func (fp *dummyPrinter) PrintRetryingToResolve(_ string)                        {}
-func (fp *dummyPrinter) PrintTotalDownTime(_ time.Duration)                     {}
+func (fp *dummyPrinter) PrintDownTimeDuration(_ time.Duration)                  {}
 func (fp *dummyPrinter) PrintStatistics(_ Tcping)                               {}
 func (fp *dummyPrinter) PrintError(_ string, _ ...any)                          {}
 

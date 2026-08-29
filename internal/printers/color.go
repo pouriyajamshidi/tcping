@@ -212,9 +212,9 @@ func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
 	printLightYellow("Retrying to resolve %s\n", hostname)
 }
 
-// PrintTotalDownTime prints the total duration of downtime when no response was received.
-func (p *ColorPrinter) PrintTotalDownTime(d time.Duration) {
-	printYellow("No response received for %s\n", stats.DurationToString(d))
+// PrintDownTimeDuration prints the total duration of downtime when no response was received.
+func (p *ColorPrinter) PrintDownTimeDuration(s *stats.Statistics) {
+	printYellow("No response received for %s\n", s.DowntimeDuration())
 }
 
 // PrintError prints an error message in red.

@@ -66,9 +66,9 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 	fmt.Print(msg)
 }
 
-// PrintTotalDownTime prints the total downtime when no response is received.
-func (p *PlainPrinter) PrintTotalDownTime(d time.Duration) {
-	fmt.Printf("No response received for %s\n", stats.DurationToString(d))
+// PrintDownTimeDuration prints the total downtime when no response is received.
+func (p *PlainPrinter) PrintDownTimeDuration(s *stats.Statistics) {
+	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.

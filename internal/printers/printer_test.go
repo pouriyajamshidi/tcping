@@ -20,7 +20,7 @@ func (fp *dummyPrinter) printStart(_ string, _ uint16)                          
 func (fp *dummyPrinter) printProbeSuccess(_ string, _ userInput, _ uint, _ float32) {}
 func (fp *dummyPrinter) printProbeFail(_ userInput, _ uint)                         {}
 func (fp *dummyPrinter) printRetryingToResolve(_ string)                            {}
-func (fp *dummyPrinter) printTotalDownTime(_ time.Duration)                         {}
+func (fp *dummyPrinter) PrintDownTimeDuration(_ time.Duration)                      {}
 func (fp *dummyPrinter) printStatistics(_ tcping)                                   {}
 func (fp *dummyPrinter) printVersion()                                              {}
 func (fp *dummyPrinter) printInfo(_ string, _ ...any)                               {}

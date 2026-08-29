@@ -201,7 +201,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 			&s.LongestDown,
 		)
 
-		p.printer.PrintTotalDownTime(s.DownTime)
+		p.printer.PrintDownTimeDuration(s)
 
 		s.StartOfUptime = pingTime
 	}

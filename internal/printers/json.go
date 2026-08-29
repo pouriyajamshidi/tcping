@@ -266,13 +266,13 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 	p.encoder.Encode(data)
 }
 
-// PrintTotalDownTime prints the total downtime,
+// PrintDownTimeDuration prints the total downtime,
 // if the next retry was successful.
-func (p *JSONPrinter) PrintTotalDownTime(d time.Duration) {
+func (p *JSONPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	p.encoder.Encode(JSONData{
 		Type:          retrySuccessEvent,
-		Message:       fmt.Sprintf("No response received for %s", stats.DurationToString(d)),
-		TotalDowntime: stats.DurationToString(d),
+		Message:       fmt.Sprintf("No response received for %s", s.DowntimeDuration()),
+		TotalDowntime: s.DowntimeDuration(),
 	})
 }
 
