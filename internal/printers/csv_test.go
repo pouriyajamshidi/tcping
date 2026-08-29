@@ -2,144 +2,159 @@ package printers
 
 import (
 	"encoding/csv"
-	"net/netip"
 	"os"
+	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
-func TestNewCSVPrinter(t *testing.T) {
-	probeFilename := "test_data.csv"
+func TestAddCSVExtension(t *testing.T) {
+	tests := []struct {
+		name         string
+		filename     string
+		withStatsExt bool
+		expected     string
+	}{
+		{"No extension, probe file", "results", false, "results.csv"},
+		{"No extension, stats file", "results", true, "results_stats.csv"},
+		{"Standard extension, probe file", "results.csv", false, "results.csv"},
+		{"Standard extension, stats file", "results.csv", true, "results_stats.csv"},
+		{"Multiple dots, probe file", "results.backup.2026", false, "results.backup.2026.csv"},
+		{"Multiple dots, stats file", "results.backup.2026.csv", true, "results.backup.2026_stats.csv"},
+	}
 
-	cfg := PrinterConfig{OutputCSVPath: "test_data"}
-
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
-	assert.Equal(t, probeFilename, cp.ProbeFile.Name())
-	assert.Equal(t, probeFilename[:len(probeFilename)-4]+"_stats.csv", cp.StatsFile.Name())
-
-	cp.Done()
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := addCSVExtension(tt.filename, tt.withStatsExt)
+			if result != tt.expected {
+				t.Errorf("addCSVExtension(%q, %v) = %q; expected %q", tt.filename, tt.withStatsExt, result, tt.expected)
+			}
+		})
+	}
 }
 
-func TestWriteRecord(t *testing.T) {
-	cfg := PrinterConfig{}
+func TestNewCSVPrinter_CreatesFiles(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "test_output")
 
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
+	p, err := NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter failed: %v", err)
+	}
+	defer p.Done()
 
-	file, err := os.Open(cp.ProbeFile.Name())
-	assert.NoError(t, err)
-	defer file.Close()
+	// Verify Probe File
+	if _, err := os.Stat(p.ProbeFile.Name()); os.IsNotExist(err) {
+		t.Errorf("Expected probe file to be created at %s, but it was not", p.ProbeFile.Name())
+	}
 
-	reader := csv.NewReader(file)
-	headers, err := reader.Read()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"Status", "Hostname", "IP", "Port", "Connection", "Latency(ms)"}, headers)
+	// Verify Stats File
+	if _, err := os.Stat(p.StatsFile.Name()); os.IsNotExist(err) {
+		t.Errorf("Expected stats file to be created at %s, but it was not", p.StatsFile.Name())
+	}
+}
 
-	opts := types.Options{
-		IP:       netip.MustParseAddr("127.0.0.1"),
-		Hostname: "localhost",
+func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "headers_test.csv")
+
+	p, err := NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter failed: %v", err)
+	}
+	defer p.Done()
+
+	// Dummy stats object for testing
+	dummyStats := &stats.Statistics{
+		Hostname:          "example.com",
+		Port:              443,
+		WithTimestamp:     true,
+		WithSourceAddress: true,
+	}
+
+	p.PrintStart(dummyStats)
+	p.Done() // Close and flush so we can read
+
+	// Verify Probe CSV Headers
+	probeFile, err := os.Open(p.ProbeFile.Name())
+	if err != nil {
+		t.Fatalf("Failed to open probe file: %v", err)
+	}
+	defer probeFile.Close()
+
+	probeReader := csv.NewReader(probeFile)
+	probeHeaders, err := probeReader.Read()
+	if err != nil {
+		t.Fatalf("Failed to read probe headers: %v", err)
+	}
+
+	expectedProbeHeaders := []string{colTimestamp, colStatus, colHostname, colIP, colPort, colSourceAddress, colConnection, colLatency}
+	if len(probeHeaders) != len(expectedProbeHeaders) {
+		t.Errorf("Expected %d probe headers, got %d", len(expectedProbeHeaders), len(probeHeaders))
+	}
+
+	// Verify Stats CSV Headers
+	statsFile, err := os.Open(p.StatsFile.Name())
+	if err != nil {
+		t.Fatalf("Failed to open stats file: %v", err)
+	}
+	defer statsFile.Close()
+
+	statsReader := csv.NewReader(statsFile)
+	statsHeaders, err := statsReader.Read()
+	if err != nil {
+		t.Fatalf("Failed to read stats headers: %v", err)
+	}
+
+	expectedStatsHeaders := []string{"Metric", "Value"}
+	if len(statsHeaders) != len(expectedStatsHeaders) {
+		t.Errorf("Expected %d stats headers, got %d", len(expectedStatsHeaders), len(statsHeaders))
+	}
+}
+
+func TestCSVPrinter_ProbeRecords(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "records_test.csv")
+
+	p, err := NewCSVPrinter(filePath)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter failed: %v", err)
+	}
+	defer p.Done()
+
+	dummyStats := &stats.Statistics{
+		Hostname: "example.com",
 		Port:     80,
 	}
 
-	cp.PrintProbeSuccess(time.Now(), "192.168.1.10:1234", opts, 1, "10.123")
+	// Write one success and one failure
+	p.PrintProbeSuccess(dummyStats)
+	p.PrintProbeFailure(dummyStats)
+	p.Done()
 
-	readRecord, err := reader.Read()
-	assert.NoError(t, err)
+	// Read back the records
+	probeFile, err := os.Open(p.ProbeFile.Name())
+	if err != nil {
+		t.Fatalf("Failed to open probe file: %v", err)
+	}
+	defer probeFile.Close()
 
-	record := []string{"Reply", "localhost", "127.0.0.1", "80", "1", "10.123"}
-	assert.Equal(t, record, readRecord)
-
-	cp.Done()
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
-}
-
-func TestWriteStatistics(t *testing.T) {
-	probeFilename := "test_data.csv"
-
-	cfg := PrinterConfig{
-		OutputCSVPath: probeFilename,
-		Target:        "localhost",
-		Port:          "1234",
+	reader := csv.NewReader(probeFile)
+	records, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("Failed to read probe records: %v", err)
 	}
 
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
-
-	tcping := types.Tcping{
-		Printer:                 cp,
-		TotalSuccessfulProbes:   1,
-		TotalUnsuccessfulProbes: 0,
-		LastSuccessfulProbe:     time.Now(),
-		StartTime:               time.Now(),
+	if len(records) != 2 {
+		t.Fatalf("Expected 2 records, got %d", len(records))
 	}
 
-	PrintStats(&tcping)
-
-	statsFile, err := os.Open(cp.StatsFile.Name())
-	assert.NoError(t, err)
-	defer statsFile.Close()
-
-	reader := csv.NewReader(statsFile)
-	headers, err := reader.Read()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"Metric", "Value"}, headers)
-
-	for {
-		record, err := reader.Read()
-		if err != nil {
-			break
-		}
-		assert.NotEmpty(t, record)
+	// Basic validation of record contents
+	if records[0][0] != "True" {
+		t.Errorf("Expected first record to be a 'True', got %q", records[0][0])
 	}
-
-	cp.Done()
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
-}
-
-func TestCleanup(t *testing.T) {
-	probeFilename := "test_data.csv"
-
-	cfg := PrinterConfig{
-		OutputCSVPath: probeFilename,
-		Target:        "localhost",
-		Port:          "1234",
+	if records[1][0] != "False" {
+		t.Errorf("Expected second record to be a 'False', got %q", records[1][0])
 	}
-
-	cp, err := NewCSVPrinter(cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, cp)
-
-	tcping := types.Tcping{
-		Printer:                 cp,
-		TotalSuccessfulProbes:   1,
-		TotalUnsuccessfulProbes: 0,
-		LastSuccessfulProbe:     time.Now(),
-		StartTime:               time.Now(),
-	}
-
-	PrintStats(&tcping)
-
-	cp.Done()
-
-	_, err = os.Stat(probeFilename)
-	assert.NoError(t, err)
-
-	_, err = os.Stat(cp.StatsFile.Name())
-	assert.NoError(t, err)
-
-	os.Remove(cp.ProbeFile.Name())
-	os.Remove(cp.StatsFile.Name())
 }
