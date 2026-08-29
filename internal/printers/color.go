@@ -7,7 +7,6 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 // Color function aliases to use when printing information
