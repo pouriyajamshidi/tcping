@@ -3,6 +3,7 @@ package printers
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gookit/color"
@@ -87,30 +88,27 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 // PrintStatistics prints a summary of probe statistics.
 func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
+	printYellow("\n--- %s", s.Hostname)
 	if !s.DestIsIP {
-		printYellow("\n--- %s (%s) TCPing statistics ---\n",
-			s.Hostname,
-			s.IPStr())
-	} else {
-		printYellow("\n--- %s TCPing statistics ---\n", s.Hostname)
+		printYellow(" (%s)", s.IPStr())
 	}
+	printYellow(" TCPing statistics ---\n")
 
-	totalPackets := s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
+	printYellow(
+		"%d probes transmitted on port %d | %d received, ",
+		s.TotalProbes(),
+		s.Port,
+		s.TotalSuccessfulProbes,
+	)
 
-	printYellow("%d probes transmitted on port %d | ", totalPackets, s.Port)
-	printYellow("%d received, ", s.TotalSuccessfulProbes)
+	packetLoss := s.PacketLoss()
 
-	packetLoss := (float32(s.TotalUnsuccessfulProbes) / float32(totalPackets)) * 100
-
-	if math.IsNaN(float64(packetLoss)) {
-		packetLoss = 0
-	}
-
-	if packetLoss == 0 {
+	switch {
+	case packetLoss == 0:
 		printGreen("%.2f%%", packetLoss)
-	} else if packetLoss > 0 && packetLoss <= 30 {
+	case packetLoss <= 30:
 		printLightYellow("%.2f%%", packetLoss)
-	} else {
+	default:
 		printRed("%.2f%%", packetLoss)
 	}
 
@@ -126,52 +124,49 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	if s.LastSuccessfulProbe.IsZero() {
 		printRed("Never succeeded\n")
 	} else {
-		printGreen("%v\n", s.LastSuccessfulProbe.Format(time.DateTime))
+		printGreen("%s\n", s.LastSuccessfulProbeFormatted())
 	}
 
 	printYellow("last unsuccessful probe: ")
 	if s.LastUnsuccessfulProbe.IsZero() {
 		printGreen("Never failed\n")
 	} else {
-		printRed("%v\n", s.LastUnsuccessfulProbe.Format(time.DateTime))
+		printRed("%v\n", s.LastUnsuccessfulProbeFormatted())
 	}
 
-	printYellow("total uptime: ")
-	printGreen("  %s\n", stats.DurationToString(s.TotalUptime))
+	printYellow("total uptime:   ")
+	printGreen("%s\n", s.TotalDowntimeDuration())
 	printYellow("total downtime: ")
-	printRed("%s\n", stats.DurationToString(s.TotalDowntime))
+	printRed("%s\n", s.TotalDowntimeDuration())
 
 	if s.LongestUp.Duration != 0 {
-		uptime := stats.DurationToString(s.LongestUp.Duration)
-
 		printYellow("longest consecutive uptime:   ")
-		printGreen("%v ", uptime)
+		printGreen("%s ", s.LongestUptimeDuration())
 		printYellow("from ")
-		printLightBlue("%v ", s.LongestUp.Start.Format(time.DateTime))
+		printLightBlue("%s ", s.LongestUptimeStartTime())
 		printYellow("to ")
-		printLightBlue("%v\n", s.LongestUp.End.Format(time.DateTime))
+		printLightBlue("%s\n", s.LongestUptimeEndTime())
 	}
 
 	if s.LongestDown.Duration != 0 {
-		downtime := stats.DurationToString(s.LongestDown.Duration)
-
 		printYellow("longest consecutive downtime: ")
-		printRed("%v ", downtime)
+		printRed("%s ", s.LongestDowntimeDuration())
 		printYellow("from ")
-		printLightBlue("%v ", s.LongestDown.Start.Format(time.DateTime))
+		printLightBlue("%s ", s.LongestDowntimeStartTime())
 		printYellow("to ")
-		printLightBlue("%v\n", s.LongestDown.End.Format(time.DateTime))
+		printLightBlue("%s\n", s.LongestDowntimeEndTime())
 	}
 
 	if !s.DestIsIP {
 		timeNoun := "time"
-		if s.RetriedHostnameLookups > 1 {
+		if s.RetriedHostnameLookups != 1 {
 			timeNoun = "times"
 		}
 
-		printYellow("retried to resolve hostname ")
-		printRed("%d ", s.RetriedHostnameLookups)
-		printYellow("%s\n", timeNoun)
+		printYellow("retried to resolve hostname: %d %s\n",
+			s.RetriedHostnameLookups,
+			timeNoun,
+		)
 
 		if len(s.HostnameChanges) > 1 {
 			printYellow("IP address changes:\n")
@@ -181,7 +176,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 				printYellow(" to ")
 				printGreen(s.HostnameChanges[i+1].Addr.String())
 				printYellow(" at ")
-				printLightBlue("%v\n", s.HostnameChanges[i+1].When.Format(time.DateTime))
+				printLightBlue("%s\n", s.HostnameChanges[i+1].WhenFormatted())
 			}
 		}
 	}
@@ -201,16 +196,15 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 		printYellow(" ms\n")
 	}
 
-	printYellow("--------------------------------------\n")
-	printYellow("TCPing started at: %v\n", s.StartTimeFormatted())
+	printYellow(strings.Repeat("-", 40) + "\n")
+	printYellow("TCPing started at: %s\n", s.StartTimeFormatted())
 
 	/* If the program was not terminated, no need to show the end time */
 	if !s.EndTime.IsZero() {
-		printYellow("TCPing ended at:   %v\n", s.EndTimeFormatted())
+		printYellow("TCPing ended at:   %s\n", s.EndTimeFormatted())
 	}
 
-	durationTime := time.Time{}.Add(s.TotalDowntime + s.TotalUptime)
-	printYellow("duration (HH:MM:SS): %v\n\n", durationTime.Format(time.TimeOnly))
+	printYellow("duration (HH:MM:SS): %s\n\n", s.RuntimeDuration())
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
