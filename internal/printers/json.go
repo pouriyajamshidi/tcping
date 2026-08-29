@@ -39,7 +39,7 @@ type jsonProbe struct {
 	IP          string  `json:"ipAddress"`
 	Port        uint16  `json:"port"`
 	Success     bool    `json:"success"`
-	Latency     float64 `json:"latency,omitempty"`
+	Latency     float32 `json:"latency,omitempty"`
 	Source      string  `json:"sourceAddress,omitempty"`
 	Connections uint    `json:"connections"`
 	Timestamp   string  `json:"timestamp,omitempty"`
@@ -101,14 +101,14 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		hostname = ""
 	}
 
-	latency, _ := strconv.ParseFloat(s.RTTStr(), 64)
+	latency, _ := strconv.ParseFloat(s.RTTStr(), 32)
 
 	event := jsonProbe{
 		Hostname:    hostname,
 		IP:          s.IPStr(),
 		Port:        s.Port,
 		Success:     true,
-		Latency:     latency,
+		Latency:     float32(latency),
 		Connections: s.OngoingSuccessfulProbes,
 	}
 
