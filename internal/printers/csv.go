@@ -38,14 +38,14 @@ type CSVPrinter struct {
 
 // NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
 func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
-	probeFilename := addCSVExtension(filePath, false)
+	probeFilename := addDateAndCSVExtension(filePath, false)
 
 	probeFile, err := os.OpenFile(probeFilename, fileFlag, filePermission)
 	if err != nil {
 		return nil, fmt.Errorf("error creating the probe CSV file %s: %w", probeFilename, err)
 	}
 
-	statsFilename := addCSVExtension(filePath, true)
+	statsFilename := addDateAndCSVExtension(filePath, true)
 
 	statsFile, err := os.OpenFile(statsFilename, fileFlag, filePermission)
 	if err != nil {
@@ -61,15 +61,17 @@ func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
 	}, nil
 }
 
-func addCSVExtension(filename string, withStatsExt bool) string {
+func addDateAndCSVExtension(filename string, withStatsExt bool) string {
+	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
+
 	ext := filepath.Ext(filename)
 	base := filename[:len(filename)-len(ext)]
 
 	if withStatsExt {
-		return base + "_stats.csv"
+		return base + "_" + timestamp + "_stats.csv"
 	}
 
-	return base + ".csv"
+	return base + "_" + timestamp + ".csv"
 }
 
 // Done flushes the buffer of writers and closes the probe and stats files.

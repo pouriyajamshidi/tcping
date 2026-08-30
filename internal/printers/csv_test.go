@@ -26,7 +26,7 @@ func TestAddCSVExtension(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := addCSVExtension(tt.filename, tt.withStatsExt)
+			result := addDateAndCSVExtension(tt.filename, tt.withStatsExt)
 			if result != tt.expected {
 				t.Errorf("addCSVExtension(%q, %v) = %q; expected %q", tt.filename, tt.withStatsExt, result, tt.expected)
 			}
