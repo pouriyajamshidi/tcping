@@ -49,7 +49,7 @@ func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
 
 	statsFile, err := os.OpenFile(statsFilename, fileFlag, filePermission)
 	if err != nil {
-		probeFile.Close() // Clean up on failure
+		probeFile.Close()
 		return nil, fmt.Errorf("error creating the stats CSV file %s: %w", statsFilename, err)
 	}
 
