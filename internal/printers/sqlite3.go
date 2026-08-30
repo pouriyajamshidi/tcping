@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	dataTableSchema = `CREATE TABLE IF NOT EXISTS %s (
-		type TEXT NOT NULL,
-		success TEXT,
+	probeTableSchema = `CREATE TABLE IF NOT EXISTS %s (
+		reachable TEXT,
 		timestamp DATETIME,
 		ip_address TEXT,
 		hostname TEXT,
@@ -30,9 +29,8 @@ const (
 		ongoing_unsuccessful_probes INTEGER
 	);`
 
-	dataTableInsertSchema = `INSERT INTO %s (
-		type,
-		success,
+	probeTableInsertSchema = `INSERT INTO %s (
+		reachable,
 		timestamp,
 		ip_address,
 		hostname,
@@ -108,9 +106,8 @@ const (
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);`
 )
 
-type dbData struct {
-	eventType                 EventType
-	success                   string
+type probeData struct {
+	reachable                 string
 	timestamp                 string
 	ipAddr                    string
 	hostname                  string
@@ -138,10 +135,7 @@ func (d *dbData) toArgs() []interface{} {
 	}
 }
 
-type dbStats struct {
-	eventType                       EventType
-	timestamp                       string
-	ipAddr                          string
+type probeStats struct {
 	hostname                        string
 	port                            uint16
 	totalDuration                   string
@@ -222,7 +216,7 @@ func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabaseP
 		return nil, fmt.Errorf("error creating the database %q: %w", filePath, err)
 	}
 
-	tableSchema := fmt.Sprintf(dataTableSchema, probeTableName)
+	tableSchema := fmt.Sprintf(probeTableSchema, probeTableName)
 	if err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{}); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("error creating the data table: %w", err)
@@ -289,10 +283,8 @@ func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 
 // PrintProbeSuccess writes successful probe details to the database.
 func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
-	data := dbData{
-		eventType:               ProbeEvent,
-		success:                 "true",
-		ipAddr:                  s.IPStr(),
+	data := probeData{
+		reachable:               "true",
 		hostname:                s.Hostname,
 		port:                    s.Port,
 		latency:                 s.RTTStr(),
@@ -315,7 +307,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
+		fmt.Sprintf(probeTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
 		p.PrintError("Failed writing probe success data to database: %v", err)
@@ -324,10 +316,8 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 // PrintProbeFailure writes failed probe details to the database.
 func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
-	data := dbData{
-		eventType:                 ProbeEvent,
-		success:                   "false",
-		ipAddr:                    s.IPStr(),
+	data := probeData{
+		reachable:                 "false",
 		hostname:                  s.Hostname,
 		port:                      s.Port,
 		ongoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
@@ -349,7 +339,7 @@ func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(dataTableInsertSchema, p.probeTableName),
+		fmt.Sprintf(probeTableInsertSchema, p.probeTableName),
 		&sqlitex.ExecOptions{Args: data.toArgs()},
 	); err != nil {
 		p.PrintError("Failed writing probe failure data to database: %v", err)
@@ -358,10 +348,7 @@ func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 
 // PrintStatistics saves TCPing summary statistics to the database.
 func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
-	data := dbStats{
-		eventType:                StatisticsEvent,
-		timestamp:                time.Now().Format(time.DateTime),
-		ipAddr:                   s.IPStr(),
+	data := probeStats{
 		hostname:                 s.Hostname,
 		port:                     s.Port,
 		totalDuration:            s.RuntimeDuration(),
