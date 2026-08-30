@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -245,18 +246,23 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if len(s.HostnameChanges) > 1 {
-		hostnameChanges := ""
+		var hostnameChanges strings.Builder
+
 		for i := 0; i < len(s.HostnameChanges)-1; i++ {
-			if s.HostnameChanges[i].Addr.String() == "" {
+			from := s.HostnameChanges[i].Addr.String()
+			if from == "" {
 				continue
 			}
-			hostnameChanges += fmt.Sprintf("from %s to %s at %s - ",
-				s.HostnameChanges[i].Addr.String(),
-				s.HostnameChanges[i+1].Addr.String(),
+
+			to := s.HostnameChanges[i+1].Addr.String()
+
+			fmt.Fprintf(&hostnameChanges, "from %s to %s at %s - ",
+				from,
+				to,
 				s.HostnameChanges[i+1].WhenFormatted(),
 			)
 		}
-		statistics = append(statistics, []string{"Hostname Changes", hostnameChanges})
+		statistics = append(statistics, []string{"Hostname Changes", hostnameChanges.String()})
 	} else {
 		statistics = append(statistics, []string{"Hostname Changes", "0"})
 	}
