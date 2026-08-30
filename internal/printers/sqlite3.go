@@ -267,6 +267,7 @@ func sanitizeTableName(hostname, port string) string {
 		sanitizedTime,
 	)
 
+	// table names cannot start with a number
 	if unicode.IsNumber(rune(tableName[0])) {
 		tableName = "_" + tableName
 	}
