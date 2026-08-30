@@ -309,6 +309,11 @@ func ProcessUserInput() Config {
 		usage()
 	}
 
+	if *prettyJSON && !*outputJSON {
+		fmt.Fprintln(os.Stderr, "--pretty has no effect without the -j flag")
+		usage()
+	}
+
 	args := flag.Args()
 
 	// host and port must be specified

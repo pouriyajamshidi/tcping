@@ -1,7 +1,6 @@
 package printers
 
 import (
-	"fmt"
 	"slices"
 	"time"
 
@@ -66,10 +65,6 @@ type Printer interface {
 
 // NewPrinter creates and returns an appropriate printer based on configuration
 func NewPrinter(cfg PrinterConfig) (Printer, error) {
-	if cfg.PrettyJSON && !cfg.OutputJSON {
-		return nil, fmt.Errorf("--pretty has no effect without the -j flag")
-	}
-
 	switch {
 	case cfg.OutputJSON:
 		return NewJSONPrinter(cfg.PrettyJSON), nil
