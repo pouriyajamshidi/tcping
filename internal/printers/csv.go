@@ -312,8 +312,10 @@ func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintDownTimeDuration is a no-op implementation to satisfy the Printer interface.
-func (p *CSVPrinter) PrintDownTimeDuration(_ *stats.Statistics) {}
+// PrintDownTimeDuration prints the total duration of downtime when no response was received.
+func (p *CSVPrinter) PrintDownTimeDuration(s *stats.Statistics) {
+	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
+}
 
 // PrintError logs an error message to stderr.
 func (p *CSVPrinter) PrintError(format string, args ...any) {
