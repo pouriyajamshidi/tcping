@@ -4,11 +4,13 @@ package printers
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"zombiezen.com/go/sqlite"
@@ -17,19 +19,49 @@ import (
 
 const (
 	probeTableSchema = `CREATE TABLE IF NOT EXISTS %s (
-		reachable TEXT,
-		timestamp DATETIME,
-		hostname TEXT,
-		ip_address TEXT,
-		port INTEGER,
+		reachable INTEGER NOT NULL CHECK (reachable IN (0, 1)),
+		timestamp TEXT,
+		hostname TEXT NOT NULL,
+		ip_address TEXT NOT NULL,
+		port INTEGER NOT NULL,
 		source_address TEXT,
-		destination_is_ip TEXT,
-		latency TEXT,
-		ongoing_successful_probes INTEGER,
-		ongoing_unsuccessful_probes INTEGER
+		destination_is_ip INTEGER NOT NULL CHECK (destination_is_ip IN (0, 1)),
+		latency REAL,
+		ongoing_successful_probes INTEGER NOT NULL DEFAULT 0,
+		ongoing_unsuccessful_probes INTEGER NOT NULL DEFAULT 0
 	);`
 
-	probeTableInsertSchema = `INSERT INTO %s (
+	statsTableSchema = `CREATE TABLE IF NOT EXISTS %s (
+		hostname TEXT NOT NULL,
+		ip_address TEXT NOT NULL,
+		port INTEGER NOT NULL,
+		total_duration TEXT,
+		total_uptime TEXT,
+		total_downtime TEXT,
+		total_packets INTEGER NOT NULL,
+		total_successful_packets INTEGER NOT NULL,
+		total_unsuccessful_packets INTEGER NOT NULL,
+		total_packet_loss_percent REAL,
+		longest_uptime TEXT,
+		longest_downtime TEXT,
+		hostname_resolve_retries INTEGER NOT NULL DEFAULT 0,
+		hostname_changes TEXT,
+		last_successful_probe TEXT,
+		last_unsuccessful_probe TEXT,
+		longest_consecutive_uptime_start TEXT,
+		longest_consecutive_uptime_end TEXT,
+		longest_consecutive_downtime_start TEXT,
+		longest_consecutive_downtime_end TEXT,
+		latency_min REAL,
+		latency_avg REAL,
+		latency_max REAL,
+		start_time TEXT,
+		end_time TEXT
+	);`
+)
+
+const (
+	probeInsert = `INSERT INTO %s (
 		reachable,
 		timestamp,
 		hostname,
@@ -40,40 +72,9 @@ const (
 		latency,
 		ongoing_successful_probes,
 		ongoing_unsuccessful_probes
-		)
-		VALUES (?,?,?,?,?,?,?,?,?,?);`
-)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
-const (
-	statsTableSchema = `CREATE TABLE IF NOT EXISTS %s (
-		hostname TEXT,
-		ip_address TEXT,
-		port INTEGER,
-		total_duration TEXT,
-		total_uptime TEXT,
-		total_downtime TEXT,
-		total_packets INTEGER,
-		total_successful_packets INTEGER,
-		total_unsuccessful_packets INTEGER,
-		total_packet_loss_percent TEXT,
-		longest_uptime TEXT,
-		longest_downtime TEXT,
-		hostname_resolve_retries INTEGER,
-		hostname_changes BLOB,
-		last_successful_probe TEXT,
-		last_unsuccessful_probe TEXT,
-		longest_consecutive_uptime_start TEXT,
-		longest_consecutive_uptime_end TEXT,
-		longest_consecutive_downtime_start TEXT,
-		longest_consecutive_downtime_end TEXT,
-		latency_min TEXT,
-		latency_avg TEXT,
-		latency_max TEXT,
-		start_time TEXT,
-		end_time TEXT
-	);`
-
-	statsTableInsertSchema = `INSERT INTO %s (
+	statsInsert = `INSERT INTO %s (
 		hostname,
 		ip_address,
 		port,
@@ -99,97 +100,10 @@ const (
 		latency_max,
 		start_time,
 		end_time
-		)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-type probeData struct {
-	reachable                 string
-	timestamp                 string
-	hostname                  string
-	ipAddr                    string
-	port                      uint16
-	sourceAddr                string
-	destIsIP                  string
-	latency                   string
-	ongoingSuccessfulProbes   uint
-	ongoingUnsuccessfulProbes uint
-}
-
-func (d *probeData) toArgs() []any {
-	return []any{
-		d.reachable,
-		d.timestamp,
-		d.hostname,
-		d.ipAddr,
-		d.port,
-		d.sourceAddr,
-		d.destIsIP,
-		d.latency,
-		d.ongoingSuccessfulProbes,
-		d.ongoingUnsuccessfulProbes,
-	}
-}
-
-type probeStats struct {
-	hostname                        string
-	ipAddr                          string
-	port                            uint16
-	totalDuration                   string
-	totalUptime                     string
-	totalDowntime                   string
-	totalPackets                    uint
-	totalSuccessfulPackets          uint
-	totalUnsuccessfulPackets        uint
-	totalPacketLossPercent          string
-	longestUptime                   string
-	longestDowntime                 string
-	hostnameResolveRetries          uint
-	hostnameChanges                 string
-	lastSuccessfulProbe             string
-	lastUnsuccessfulProbe           string
-	longestConsecutiveUptimeStart   string
-	longestConsecutiveUptimeEnd     string
-	longestConsecutiveDowntimeStart string
-	longestConsecutiveDowntimeEnd   string
-	latencyMin                      string
-	latencyAvg                      string
-	latencyMax                      string
-	startTimestamp                  string
-	endTimestamp                    string
-}
-
-func (d *probeStats) toArgs() []any {
-	return []any{
-		d.hostname,
-		d.ipAddr,
-		d.port,
-		d.totalDuration,
-		d.totalUptime,
-		d.totalDowntime,
-		d.totalPackets,
-		d.totalSuccessfulPackets,
-		d.totalUnsuccessfulPackets,
-		d.totalPacketLossPercent,
-		d.longestUptime,
-		d.longestDowntime,
-		d.hostnameResolveRetries,
-		d.hostnameChanges,
-		d.lastSuccessfulProbe,
-		d.lastUnsuccessfulProbe,
-		d.longestConsecutiveUptimeStart,
-		d.longestConsecutiveUptimeEnd,
-		d.longestConsecutiveDowntimeStart,
-		d.longestConsecutiveDowntimeEnd,
-		d.latencyMin,
-		d.latencyAvg,
-		d.latencyMax,
-		d.startTimestamp,
-		d.endTimestamp,
-	}
-}
-
-// DatabasePrinter represents a SQLite database connection for storing probe results.
+// DatabasePrinter stores one probe stream and its final statistics in SQLite.
 type DatabasePrinter struct {
 	Conn           *sqlite.Conn
 	probeTableName string
@@ -197,28 +111,38 @@ type DatabasePrinter struct {
 	FilePath       string
 }
 
-// NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data and stats table, and returns a pointer to it.
+// NewDatabasePrinter opens the database and creates the probe and statistics tables.
 func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabasePrinter, error) {
 	portStr := strconv.FormatUint(uint64(port), 10)
-
 	probeTableName := sanitizeTableName(target, portStr)
 	statsTableName := probeTableName + "_stats"
-
 	filePath = addDbExtension(filePath)
 
-	conn, err := sqlite.OpenConn(filePath, sqlite.OpenCreate, sqlite.OpenReadWrite)
+	flags := sqlite.OpenCreate | sqlite.OpenReadWrite
+	if filePath != ":memory:" {
+		flags |= sqlite.OpenWAL
+	}
+
+	conn, err := sqlite.OpenConn(filePath, flags)
 	if err != nil {
 		return nil, fmt.Errorf("error creating the database %q: %w", filePath, err)
 	}
 
-	tableSchema := fmt.Sprintf(probeTableSchema, probeTableName)
-	if err = sqlitex.Execute(conn, tableSchema, &sqlitex.ExecOptions{}); err != nil {
+	conn.SetBusyTimeout(5 * time.Second)
+
+	if filePath != ":memory:" {
+		if err := sqlitex.Execute(conn, "PRAGMA synchronous=NORMAL;", &sqlitex.ExecOptions{}); err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("error configuring the database: %w", err)
+		}
+	}
+
+	if err := sqlitex.Execute(conn, fmt.Sprintf(probeTableSchema, probeTableName), &sqlitex.ExecOptions{}); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("error creating the data table: %w", err)
 	}
 
-	statsSchema := fmt.Sprintf(statsTableSchema, statsTableName)
-	if err = sqlitex.Execute(conn, statsSchema, &sqlitex.ExecOptions{}); err != nil {
+	if err := sqlitex.Execute(conn, fmt.Sprintf(statsTableSchema, statsTableName), &sqlitex.ExecOptions{}); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("error creating the statistics table: %w", err)
 	}
@@ -235,178 +159,186 @@ func addDbExtension(filename string) string {
 	if filename == ":memory:" || strings.HasSuffix(filename, ".db") {
 		return filename
 	}
-
 	return filename + ".db"
 }
 
-// sanitizeTableName returns the sanitized and correctly formatted table name.
-// Formatting the table name as "example_com_port__year_month_day_hour_minute_sec".
-// Table names cannot contain '.', '-' and cannot start with numbers.
+// sanitizeTableName formats a target/port pair as a valid SQLite identifier.
 func sanitizeTableName(hostname, port string) string {
-	sanitizedHost := strings.ReplaceAll(hostname, ".", "_")
-	sanitizedHost = strings.ReplaceAll(sanitizedHost, "-", "_")
+	sanitizedHost := sanitizeIdentifierPart(hostname)
+	sanitizedTime := strings.NewReplacer("-", "_", ":", "_", " ", "_").Replace(time.Now().Format(time.DateTime))
 
-	sanitizedTime := strings.ReplaceAll(time.Now().Format(time.DateTime), "-", "_")
-	sanitizedTime = strings.ReplaceAll(sanitizedTime, ":", "_")
-	sanitizedTime = strings.ReplaceAll(sanitizedTime, " ", "_")
-
-	tableName := fmt.Sprintf("%s_%s__%s",
-		sanitizedHost,
-		port,
-		sanitizedTime,
-	)
-
-	// table names cannot start with a number
-	if unicode.IsNumber(rune(tableName[0])) {
-		tableName = "_" + tableName
+	tableName := fmt.Sprintf("%s_%s__%s", sanitizedHost, port, sanitizedTime)
+	if tableName != "" {
+		if r, _ := utf8.DecodeRuneInString(tableName); unicode.IsNumber(r) {
+			tableName = "_" + tableName
+		}
 	}
-
 	return tableName
 }
 
-// PrintStart prints a message indicating that TCPing has started for the given hostname and port.
+// sanitizeIdentifierPart replaces every character that isn't a letter, digit,
+// or underscore with an underscore. Table names are built with fmt.Sprintf
+// directly into DDL/DML text (SQL identifiers can't be bound as query
+// parameters), so this allow-list is what keeps an arbitrary hostname string
+// from being able to break out of the intended identifier.
+func sanitizeIdentifierPart(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	return b.String()
+}
+
+func (p *DatabasePrinter) insertProbe(
+	reachable bool,
+	s *stats.Statistics,
+	latency string,
+	successfulProbes uint,
+	unsuccessfulProbes uint,
+) {
+	timestamp := ""
+	if s.WithTimestamp {
+		timestamp = s.CurrentTimestamp()
+	}
+
+	sourceAddr := ""
+	if s.WithSourceAddress {
+		sourceAddr = s.SourceAddr()
+	}
+
+	latencyValue := any(nil)
+	if latency != "" {
+		value, err := strconv.ParseFloat(latency, 64)
+		if err == nil {
+			latencyValue = math.Round(value*1000) / 1000
+		} else {
+			p.PrintError("Failed parsing latency value %q: %v", latency, err)
+		}
+	}
+
+	args := []any{
+		boolToInt(reachable),
+		timestamp,
+		s.Hostname,
+		s.IPStr(),
+		s.Port,
+		sourceAddr,
+		boolToInt(s.DestIsIP),
+		latencyValue,
+		successfulProbes,
+		unsuccessfulProbes,
+	}
+
+	if err := sqlitex.Execute(
+		p.Conn,
+		fmt.Sprintf(probeInsert, p.probeTableName),
+		&sqlitex.ExecOptions{Args: args},
+	); err != nil {
+		p.PrintError("Failed writing probe data to database: %v", err)
+	}
+}
+
+// PrintStart prints a message indicating that TCPing has started.
 func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 	fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.FilePath)
 }
 
 // PrintProbeSuccess writes successful probe details to the database.
 func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
-	data := probeData{
-		reachable:               "true",
-		hostname:                s.Hostname,
-		ipAddr:                  s.IPStr(),
-		port:                    s.Port,
-		latency:                 s.RTTStr(),
-		ongoingSuccessfulProbes: s.OngoingSuccessfulProbes,
-	}
-
-	if s.WithTimestamp {
-		data.timestamp = s.CurrentTimestamp()
-	}
-
-	if s.WithSourceAddress && s.SourceAddr() != "" {
-		data.sourceAddr = s.SourceAddr()
-	}
-
-	if s.DestIsIP {
-		data.destIsIP = "true"
-	} else {
-		data.destIsIP = "false"
-	}
-
-	if err := sqlitex.Execute(
-		p.Conn,
-		fmt.Sprintf(probeTableInsertSchema, p.probeTableName),
-		&sqlitex.ExecOptions{Args: data.toArgs()},
-	); err != nil {
-		p.PrintError("Failed writing probe success data to database: %v", err)
-	}
+	p.insertProbe(true, s, s.RTTStr(), s.OngoingSuccessfulProbes, 0)
 }
 
 // PrintProbeFailure writes failed probe details to the database.
 func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
-	data := probeData{
-		reachable:                 "false",
-		hostname:                  s.Hostname,
-		ipAddr:                    s.IPStr(),
-		port:                      s.Port,
-		ongoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
-	}
-
-	if s.WithTimestamp {
-		data.timestamp = s.CurrentTimestamp()
-	}
-
-	if s.WithSourceAddress && s.SourceAddr() != "" {
-		data.sourceAddr = s.SourceAddr()
-	}
-
-	if s.DestIsIP {
-		data.destIsIP = "true"
-	} else {
-		data.destIsIP = "false"
-	}
-
-	if err := sqlitex.Execute(
-		p.Conn,
-		fmt.Sprintf(probeTableInsertSchema, p.probeTableName),
-		&sqlitex.ExecOptions{Args: data.toArgs()},
-	); err != nil {
-		p.PrintError("Failed writing probe failure data to database: %v", err)
-	}
+	p.insertProbe(false, s, "", 0, s.OngoingUnsuccessfulProbes)
 }
 
-// PrintStatistics saves TCPing summary statistics to the database.
+// PrintStatistics stores the same summary data that PlainPrinter presents.
 func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
-	data := probeStats{
-		hostname:                 s.Hostname,
-		ipAddr:                   s.IPStr(),
-		port:                     s.Port,
-		totalDuration:            s.RuntimeDuration(),
-		totalUptime:              s.TotalUptimeDuration(),
-		totalDowntime:            s.TotalDowntimeDuration(),
-		totalPackets:             s.TotalProbes(),
-		totalSuccessfulPackets:   s.TotalSuccessfulProbes,
-		totalUnsuccessfulPackets: s.TotalUnsuccessfulProbes,
-		totalPacketLossPercent:   fmt.Sprintf("%.2f", s.PacketLoss()),
-		startTimestamp:           s.StartTimeFormatted(),
-	}
-
-	if len(s.HostnameChanges) > 1 {
-		var changes strings.Builder
-		for i := 0; i < len(s.HostnameChanges)-1; i++ {
-			if s.HostnameChanges[i].Addr.String() == "" {
-				continue
-			}
-
-			fmt.Fprintf(&changes, "from %s to %s at %s\n",
-				s.HostnameChanges[i].Addr.String(),
-				s.HostnameChanges[i+1].Addr.String(),
-				s.HostnameChanges[i+1].WhenFormatted(),
-			)
-		}
-
-		data.hostnameChanges = changes.String()
-	}
-
+	lastSuccessful := ""
 	if !s.LastSuccessfulProbe.IsZero() {
-		data.lastSuccessfulProbe = s.LastSuccessfulProbeFormatted()
+		lastSuccessful = s.LastSuccessfulProbeFormatted()
 	}
 
+	lastUnsuccessful := ""
 	if !s.LastUnsuccessfulProbe.IsZero() {
-		data.lastUnsuccessfulProbe = s.LastUnsuccessfulProbeFormatted()
+		lastUnsuccessful = s.LastUnsuccessfulProbeFormatted()
 	}
 
+	longestUptime := ""
+	longestUptimeStart := ""
+	longestUptimeEnd := ""
 	if s.LongestUp.Duration != 0 {
-		data.longestUptime = s.LongestUptimeDuration()
-		data.longestConsecutiveUptimeStart = s.LongestUptimeStartTime()
-		data.longestConsecutiveUptimeEnd = s.LongestUptimeEndTime()
+		longestUptime = s.LongestUptimeDuration()
+		longestUptimeStart = s.LongestUptimeStartTime()
+		longestUptimeEnd = s.LongestUptimeEndTime()
 	}
 
+	longestDowntime := ""
+	longestDowntimeStart := ""
+	longestDowntimeEnd := ""
 	if s.LongestDown.Duration != 0 {
-		data.longestDowntime = s.LongestDowntimeDuration()
-		data.longestConsecutiveDowntimeStart = s.LongestDowntimeStartTime()
-		data.longestConsecutiveDowntimeEnd = s.LongestDowntimeEndTime()
+		longestDowntime = s.LongestDowntimeDuration()
+		longestDowntimeStart = s.LongestDowntimeStartTime()
+		longestDowntimeEnd = s.LongestDowntimeEndTime()
 	}
 
-	if !s.DestIsIP {
-		data.hostnameResolveRetries = s.RetriedHostnameLookups
-	}
-
+	latencyMin := any(nil)
+	latencyAvg := any(nil)
+	latencyMax := any(nil)
 	if s.RTTResults.HasResults {
-		data.latencyMin = fmt.Sprintf("%.3f", s.RTTResults.Min)
-		data.latencyAvg = fmt.Sprintf("%.3f", s.RTTResults.Average)
-		data.latencyMax = fmt.Sprintf("%.3f", s.RTTResults.Max)
+		latencyMin = math.Round(float64(s.RTTResults.Min)*1000) / 1000
+		latencyAvg = math.Round(float64(s.RTTResults.Average)*1000) / 1000
+		latencyMax = math.Round(float64(s.RTTResults.Max)*1000) / 1000
 	}
 
+	endTime := ""
 	if !s.EndTime.IsZero() {
-		data.endTimestamp = s.EndTimeFormatted()
+		endTime = s.EndTimeFormatted()
+	}
+
+	retries := uint(0)
+	if !s.DestIsIP {
+		retries = s.RetriedHostnameLookups
+	}
+
+	args := []any{
+		s.Hostname,
+		s.IPStr(),
+		s.Port,
+		s.RuntimeDuration(),
+		s.TotalUptimeDuration(),
+		s.TotalDowntimeDuration(),
+		s.TotalProbes(),
+		s.TotalSuccessfulProbes,
+		s.TotalUnsuccessfulProbes,
+		s.PacketLoss(),
+		longestUptime,
+		longestDowntime,
+		retries,
+		hostnameChanges(s),
+		lastSuccessful,
+		lastUnsuccessful,
+		longestUptimeStart,
+		longestUptimeEnd,
+		longestDowntimeStart,
+		longestDowntimeEnd,
+		latencyMin,
+		latencyAvg,
+		latencyMax,
+		s.StartTimeFormatted(),
+		endTime,
 	}
 
 	if err := sqlitex.Execute(
 		p.Conn,
-		fmt.Sprintf(statsTableInsertSchema, p.statsTableName),
-		&sqlitex.ExecOptions{Args: data.toArgs()},
+		fmt.Sprintf(statsInsert, p.statsTableName),
+		&sqlitex.ExecOptions{Args: args},
 	); err != nil {
 		p.PrintError("Failed writing statistics to database: %v", err)
 		return
@@ -419,7 +351,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	)
 }
 
-// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve the hostname.
+// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
 func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
@@ -429,12 +361,10 @@ func (p *DatabasePrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
 }
 
-// PrintError prints an error message to stderr.
 func (p *DatabasePrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Database Error: "+format+"\n", args...)
 }
 
-// Shutdown sets the end time, prints statistics, calls Done() and exits the program.
 func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
 	s.EndTime = time.Now()
 	PrintStats(p, s)
@@ -442,9 +372,36 @@ func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
 	os.Exit(0)
 }
 
-// Done closes the connection to the database.
 func (p *DatabasePrinter) Done() {
 	if p.Conn != nil {
-		p.Conn.Close()
+		_ = p.Conn.Close()
 	}
+}
+
+func boolToInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
+}
+
+func hostnameChanges(s *stats.Statistics) string {
+	if len(s.HostnameChanges) < 2 {
+		return ""
+	}
+
+	var changes strings.Builder
+	for i := 0; i < len(s.HostnameChanges)-1; i++ {
+		from := s.HostnameChanges[i].Addr.String()
+		if from == "" {
+			continue
+		}
+
+		fmt.Fprintf(&changes, "from %s to %s at %s\n",
+			from,
+			s.HostnameChanges[i+1].Addr.String(),
+			s.HostnameChanges[i+1].WhenFormatted(),
+		)
+	}
+	return changes.String()
 }
