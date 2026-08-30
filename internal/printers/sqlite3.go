@@ -25,7 +25,7 @@ const (
 		port INTEGER,
 		source_address TEXT,
 		destination_is_ip TEXT,
-		time TEXT,
+		latency TEXT,
 		ongoing_successful_probes INTEGER,
 		ongoing_unsuccessful_probes INTEGER
 	);`
@@ -39,7 +39,7 @@ const (
 		port,
 		source_address,
 		destination_is_ip,
-		time,
+		latency,
 		ongoing_successful_probes,
 		ongoing_unsuccessful_probes
 		)
@@ -117,7 +117,7 @@ type dbData struct {
 	port                      uint16
 	sourceAddr                string
 	destIsIP                  string
-	time                      string
+	latency                   string
 	ongoingSuccessfulProbes   uint
 	ongoingUnsuccessfulProbes uint
 }
@@ -132,7 +132,7 @@ func (d *dbData) toArgs() []interface{} {
 		d.port,
 		d.sourceAddr,
 		d.destIsIP,
-		d.time,
+		d.latency,
 		d.ongoingSuccessfulProbes,
 		d.ongoingUnsuccessfulProbes,
 	}
@@ -294,7 +294,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
 		ipAddr:                  s.IPStr(),
 		hostname:                s.Hostname,
 		port:                    s.Port,
-		time:                    s.RTTStr(),
+		latency:                 s.RTTStr(),
 		ongoingSuccessfulProbes: s.OngoingSuccessfulProbes,
 	}
 
