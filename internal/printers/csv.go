@@ -140,7 +140,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	record = append(
 		record,
-		"True",
+		"true",
 		s.Hostname,
 		s.IPStr(),
 		s.PortStr(),
@@ -169,7 +169,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	record = append(
 		record,
-		"False",
+		"false",
 		s.Hostname,
 		s.IPStr(),
 		strconv.Itoa(int(s.Port)),

@@ -151,10 +151,10 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 	}
 
 	// Basic validation of record contents
-	if records[0][0] != "True" {
-		t.Errorf("Expected first record to be a 'True', got %q", records[0][0])
+	if records[0][0] != "true" {
+		t.Errorf("Expected first record to be a 'true', got %q", records[0][0])
 	}
-	if records[1][0] != "False" {
-		t.Errorf("Expected second record to be a 'False', got %q", records[1][0])
+	if records[1][0] != "false" {
+		t.Errorf("Expected second record to be a 'false', got %q", records[1][0])
 	}
 }
