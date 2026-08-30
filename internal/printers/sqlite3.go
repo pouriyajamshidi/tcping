@@ -336,7 +336,7 @@ func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 		data.timestamp = s.CurrentTimestamp()
 	}
 
-	if s.WithSourceAddress {
+	if s.WithSourceAddress && s.SourceAddr() != "" {
 		data.sourceAddr = s.SourceAddr()
 	}
 
