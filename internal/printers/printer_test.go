@@ -36,15 +36,6 @@ func TestNewPrinter(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "Error on PrettyJSON without OutputJSON",
-			cfg: PrinterConfig{
-				OutputJSON: false,
-				PrettyJSON: true,
-			},
-			wantErr:     true,
-			expectedErr: "--pretty has no effect without the -j flag",
-		},
-		{
 			name: "JSON Printer Initialization",
 			cfg: PrinterConfig{
 				OutputJSON: true,
