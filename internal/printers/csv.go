@@ -191,10 +191,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 // PrintStatistics logs TCPing statistics to a CSV file.
 func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
-	timestamp := s.CurrentTimestamp()
-
 	statistics := [][]string{
-		{"Timestamp", timestamp},
 		{"IP Address", s.IPStr()},
 	}
 
