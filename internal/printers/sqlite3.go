@@ -208,7 +208,7 @@ type DatabasePrinter struct {
 	FilePath       string
 }
 
-// NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data table, and returns a pointer to it.
+// NewDatabasePrinter initializes a new sqlite3 Database instance, creates the data and stats table, and returns a pointer to it.
 func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabasePrinter, error) {
 	portStr := strconv.FormatUint(uint64(port), 10)
 
