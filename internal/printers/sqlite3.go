@@ -119,10 +119,9 @@ type probeData struct {
 	ongoingUnsuccessfulProbes uint
 }
 
-func (d *dbData) toArgs() []interface{} {
-	return []interface{}{
-		d.eventType,
-		d.success,
+func (d *probeData) toArgs() []any {
+	return []any{
+		d.reachable,
 		d.timestamp,
 		d.ipAddr,
 		d.hostname,
@@ -162,11 +161,8 @@ type probeStats struct {
 	endTimestamp                    string
 }
 
-func (d *dbStats) toArgs() []interface{} {
-	return []interface{}{
-		d.eventType,
-		d.timestamp,
-		d.ipAddr,
+func (d *probeStats) toArgs() []any {
+	return []any{
 		d.hostname,
 		d.port,
 		d.totalDuration,
