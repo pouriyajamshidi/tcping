@@ -13,7 +13,7 @@ import (
 
 const (
 	colTimestamp     string = "Timestamp"
-	colStatus        string = "Success"
+	colStatus        string = "Reachable"
 	colHostname      string = "Hostname"
 	colIP            string = "IP"
 	colPort          string = "Port"
