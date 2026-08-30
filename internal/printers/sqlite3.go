@@ -190,7 +190,7 @@ func (d *probeStats) toArgs() []any {
 	}
 }
 
-// DatabasePrinter represents a SQLite database connection for storing TCPing results.
+// DatabasePrinter represents a SQLite database connection for storing probe results.
 type DatabasePrinter struct {
 	Conn           *sqlite.Conn
 	probeTableName string
