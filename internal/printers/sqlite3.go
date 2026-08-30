@@ -454,7 +454,7 @@ func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
+// PrintDownTimeDuration prints the total duration of downtime when no response was received.
 func (p *DatabasePrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
 }
