@@ -15,17 +15,6 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-// EventType is a special type for each method
-// in the printer interface so that automatic tools
-// can understand what kind of an event they've received.
-type EventType string
-
-const (
-	ProbeEvent          EventType = "probe"
-	StatisticsEvent     EventType = "statistics"
-	HostnameChangeEvent EventType = "hostname change"
-)
-
 const (
 	dataTableSchema = `CREATE TABLE IF NOT EXISTS %s (
 		type TEXT NOT NULL,
