@@ -113,7 +113,7 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 }
 
 func (p *CSVPrinter) writeStatsHeader() error {
-	headers := []string{"Metric", "Value"}
+	headers := []string{"Statistic", "Value"}
 
 	if err := p.StatsWriter.Write(headers); err != nil {
 		return fmt.Errorf("failed to write statistics headers: %w", err)
