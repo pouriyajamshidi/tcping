@@ -1,8 +1,8 @@
 # NOTE
 
-1. **Pull requests without opening an issue first will be rejected.**
-2. **Pull requests that do not respect this guide will be rejected.**
-3. **Please tick and provide the requested information below to help us review your pull request easier and to avoid wasting your generous efforts.**
+1. **Pull requests without opening an issue first will be rejected. The only exception is typos and very minor issues**
+2. **Please tick and provide the requested information below to help us review your pull request easier and to avoid wasting your generous efforts.**
+3. **Pull requests that do not respect this guide will be rejected.**
 
 ## Summary
 
