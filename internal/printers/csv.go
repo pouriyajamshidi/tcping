@@ -18,9 +18,9 @@ const (
 	colHostname      string = "Hostname"
 	colIP            string = "IP"
 	colPort          string = "Port"
+	colSourceAddress string = "Source Address"
 	colConnection    string = "Connection"
 	colLatency       string = "Latency(ms)"
-	colSourceAddress string = "Source Address"
 )
 
 const (
