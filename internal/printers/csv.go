@@ -218,9 +218,9 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	} else {
 		statistics = append(statistics,
-			[]string{"Longest Uptime", "Never"},
-			[]string{"Longest Consecutive Uptime Start", "Never"},
-			[]string{"Longest Consecutive Uptime End", "Never"},
+			[]string{"Longest Uptime", "0"},
+			[]string{"Longest Consecutive Uptime Start", ""},
+			[]string{"Longest Consecutive Uptime End", ""},
 		)
 	}
 
@@ -232,9 +232,9 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	} else {
 		statistics = append(statistics,
-			[]string{"Longest Downtime", "Never"},
-			[]string{"Longest Consecutive Downtime Start", "Never"},
-			[]string{"Longest Consecutive Downtime End", "Never"},
+			[]string{"Longest Downtime", "0"},
+			[]string{"Longest Consecutive Downtime Start", ""},
+			[]string{"Longest Consecutive Downtime End", ""},
 		)
 	}
 
@@ -265,13 +265,13 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if s.LastSuccessfulProbe.IsZero() {
-		statistics = append(statistics, []string{"Last Successful Probe", "Never succeeded"})
+		statistics = append(statistics, []string{"Last Successful Probe", ""})
 	} else {
 		statistics = append(statistics, []string{"Last Successful Probe", s.LastSuccessfulProbeFormatted()})
 	}
 
 	if s.LastUnsuccessfulProbe.IsZero() {
-		statistics = append(statistics, []string{"Last Unsuccessful Probe", "Never failed"})
+		statistics = append(statistics, []string{"Last Unsuccessful Probe", ""})
 	} else {
 		statistics = append(statistics, []string{"Last Unsuccessful Probe", s.LastUnsuccessfulProbeFormatted()})
 	}
@@ -284,9 +284,9 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	} else {
 		statistics = append(statistics,
-			[]string{"Latency Min", "N/A"},
-			[]string{"Latency Avg", "N/A"},
-			[]string{"Latency Max", "N/A"},
+			[]string{"Latency Min", ""},
+			[]string{"Latency Avg", ""},
+			[]string{"Latency Max", ""},
 		)
 	}
 
@@ -295,7 +295,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	if !s.EndTime.IsZero() {
 		statistics = append(statistics, []string{"End Timestamp", s.EndTimeFormatted()})
 	} else {
-		statistics = append(statistics, []string{"End Timestamp", "In progress"})
+		statistics = append(statistics, []string{"End Timestamp", ""})
 	}
 
 	for _, record := range statistics {
