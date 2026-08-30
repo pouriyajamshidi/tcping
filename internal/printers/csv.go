@@ -176,7 +176,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 		strconv.Itoa(int(s.Port)),
 	)
 
-	if s.WithSourceAddress {
+	if s.WithSourceAddress && s.SourceAddr() != "" {
 		record = append(record, s.SourceAddr())
 	}
 
