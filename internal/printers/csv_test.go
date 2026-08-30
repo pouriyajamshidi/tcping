@@ -2,31 +2,40 @@ package printers
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 func TestAddCSVExtension(t *testing.T) {
+	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
+	timestamp = strings.ReplaceAll(timestamp, " ", "")
+	timestampWithExtension := "_" + timestamp + ".csv"
+	timestampWithExtensionStats := "_" + timestamp + "_stats.csv"
+
 	tests := []struct {
 		name         string
 		filename     string
 		withStatsExt bool
 		expected     string
 	}{
-		{"No extension, probe file", "results", false, "results.csv"},
-		{"No extension, stats file", "results", true, "results_stats.csv"},
-		{"Standard extension, probe file", "results.csv", false, "results.csv"},
-		{"Standard extension, stats file", "results.csv", true, "results_stats.csv"},
-		{"Multiple dots, probe file", "results.backup.2026", false, "results.backup.2026.csv"},
-		{"Multiple dots, stats file", "results.backup.2026.csv", true, "results.backup.2026_stats.csv"},
+		{"No extension, probe file", "results", false, "results" + timestampWithExtension},
+		{"No extension, stats file", "results", true, "results" + timestampWithExtensionStats},
+		{"Standard extension, probe file", "results.csv", false, "results" + timestampWithExtension},
+		{"Standard extension, stats file", "results.csv", true, "results" + timestampWithExtensionStats},
+		{"Multiple dots, probe file", "results.backup.2026", false, "results.backup.2026" + timestampWithExtension},
+		{"Multiple dots, stats file", "results.backup.2026.csv", true, "results.backup.2026" + timestampWithExtensionStats},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := addDateAndCSVExtension(tt.filename, tt.withStatsExt)
+			fmt.Println(result)
 			if result != tt.expected {
 				t.Errorf("addCSVExtension(%q, %v) = %q; expected %q", tt.filename, tt.withStatsExt, result, tt.expected)
 			}

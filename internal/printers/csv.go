@@ -65,13 +65,17 @@ func addDateAndCSVExtension(filename string, withStatsExt bool) string {
 	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
 
 	ext := filepath.Ext(filename)
+	// don't mistake example.com with example.csv
+	if ext != ".csv" {
+		ext = ""
+	}
 	base := filename[:len(filename)-len(ext)]
 
 	if withStatsExt {
-		return base + "_" + timestamp + "_stats.csv"
+		return strings.ReplaceAll(base+"_"+timestamp+"_stats.csv", " ", "")
 	}
 
-	return base + "_" + timestamp + ".csv"
+	return strings.ReplaceAll(base+"_"+timestamp+".csv", " ", "")
 }
 
 // Done flushes the buffer of writers and closes the probe and stats files.
