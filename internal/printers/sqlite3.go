@@ -19,8 +19,8 @@ const (
 	probeTableSchema = `CREATE TABLE IF NOT EXISTS %s (
 		reachable TEXT,
 		timestamp DATETIME,
-		ip_address TEXT,
 		hostname TEXT,
+		ip_address TEXT,
 		port INTEGER,
 		source_address TEXT,
 		destination_is_ip TEXT,
@@ -32,8 +32,8 @@ const (
 	probeTableInsertSchema = `INSERT INTO %s (
 		reachable,
 		timestamp,
-		ip_address,
 		hostname,
+		ip_address,
 		port,
 		source_address,
 		destination_is_ip,
@@ -41,15 +41,13 @@ const (
 		ongoing_successful_probes,
 		ongoing_unsuccessful_probes
 		)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?);`
+		VALUES (?,?,?,?,?,?,?,?,?,?);`
 )
 
 const (
 	statsTableSchema = `CREATE TABLE IF NOT EXISTS %s (
-		type TEXT NOT NULL,
-		timestamp DATETIME,
-		ip_address TEXT,
 		hostname TEXT,
+		ip_address TEXT,
 		port INTEGER,
 		total_duration TEXT,
 		total_uptime TEXT,
@@ -76,10 +74,8 @@ const (
 	);`
 
 	statsTableInsertSchema = `INSERT INTO %s (
-		type,
-		timestamp,
-		ip_address,
 		hostname,
+		ip_address,
 		port,
 		total_duration,
 		total_uptime,
@@ -102,15 +98,16 @@ const (
 		latency_avg,
 		latency_max,
 		start_time,
-		end_time)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);`
+		end_time
+		)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);`
 )
 
 type probeData struct {
 	reachable                 string
 	timestamp                 string
-	ipAddr                    string
 	hostname                  string
+	ipAddr                    string
 	port                      uint16
 	sourceAddr                string
 	destIsIP                  string
@@ -123,8 +120,8 @@ func (d *probeData) toArgs() []any {
 	return []any{
 		d.reachable,
 		d.timestamp,
-		d.ipAddr,
 		d.hostname,
+		d.ipAddr,
 		d.port,
 		d.sourceAddr,
 		d.destIsIP,
@@ -136,6 +133,7 @@ func (d *probeData) toArgs() []any {
 
 type probeStats struct {
 	hostname                        string
+	ipAddr                          string
 	port                            uint16
 	totalDuration                   string
 	totalUptime                     string
@@ -164,6 +162,7 @@ type probeStats struct {
 func (d *probeStats) toArgs() []any {
 	return []any{
 		d.hostname,
+		d.ipAddr,
 		d.port,
 		d.totalDuration,
 		d.totalUptime,
@@ -282,6 +281,7 @@ func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
 	data := probeData{
 		reachable:               "true",
 		hostname:                s.Hostname,
+		ipAddr:                  s.IPStr(),
 		port:                    s.Port,
 		latency:                 s.RTTStr(),
 		ongoingSuccessfulProbes: s.OngoingSuccessfulProbes,
@@ -315,6 +315,7 @@ func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 	data := probeData{
 		reachable:                 "false",
 		hostname:                  s.Hostname,
+		ipAddr:                    s.IPStr(),
 		port:                      s.Port,
 		ongoingUnsuccessfulProbes: s.OngoingUnsuccessfulProbes,
 	}
@@ -346,6 +347,7 @@ func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
 func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	data := probeStats{
 		hostname:                 s.Hostname,
+		ipAddr:                   s.IPStr(),
 		port:                     s.Port,
 		totalDuration:            s.RuntimeDuration(),
 		totalUptime:              s.TotalUptimeDuration(),
@@ -363,12 +365,14 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 			if s.HostnameChanges[i].Addr.String() == "" {
 				continue
 			}
+
 			fmt.Fprintf(&changes, "from %s to %s at %s\n",
 				s.HostnameChanges[i].Addr.String(),
 				s.HostnameChanges[i+1].Addr.String(),
 				s.HostnameChanges[i+1].WhenFormatted(),
 			)
 		}
+
 		data.hostnameChanges = changes.String()
 	}
 
