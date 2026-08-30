@@ -264,13 +264,6 @@ func sanitizeTableName(hostname, port string) string {
 	return tableName
 }
 
-// Done closes the connection to the database.
-func (p *DatabasePrinter) Done() {
-	if p.Conn != nil {
-		p.Conn.Close()
-	}
-}
-
 // PrintStart prints a message indicating that TCPing has started for the given hostname and port.
 func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 	fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.FilePath)
@@ -447,4 +440,11 @@ func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
 	PrintStats(p, s)
 	p.Done()
 	os.Exit(0)
+}
+
+// Done closes the connection to the database.
+func (p *DatabasePrinter) Done() {
+	if p.Conn != nil {
+		p.Conn.Close()
+	}
 }
