@@ -9,7 +9,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 type Prober struct {
@@ -172,7 +171,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult ProbeResult) {
 	s := p.Statistics
 
-	rttMs := utils.NanoToMillisecond(rtt.Nanoseconds())
+	rttMs := NanoToMillisecond(rtt.Nanoseconds())
 
 	s.RTT = append(s.RTT, rttMs)
 	s.LatestRTT = rttMs
@@ -228,4 +227,11 @@ func (p *Prober) finalizeStatistics() {
 		p.Statistics.TotalUptime += upDuration
 		stats.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
 	}
+}
+
+// NanoToMillisecond returns an amount of milliseconds from nanoseconds.
+// Using duration.Milliseconds() is not an option, because it drops
+// decimal points, returning an int.
+func NanoToMillisecond(nano int64) float32 {
+	return float32(nano) / float32(time.Millisecond)
 }
