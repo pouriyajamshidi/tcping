@@ -15,19 +15,14 @@ import (
 )
 
 /* TODO:
-- Implement functional pattern to chose the prober
-- Using the --show-source-address flag without -I crashes the program at func (s *Statistics) SourceAddr()
-- The PrintStatistics across printers seems like it has a LOT of duplicates. perhaps it can be refactored out
-- Cross-check the printer implementations to see how much they differ
-- See what printer methods are not used
 - Show how long we were up on failure similar to what we do for success?
 - Get DNS timeout as a user input option?
 - createDNSResolver to also account for the -I flag
 - Display name resolution times?
 - Use built-in slice functions for min max avg, etc
 - Run modernize
+- Maybe make the inclusion of timestamps in CSV filenames an option?
 - Shutdown would not be needed once the program flow is solid
-- Maybe make the inclusion of timestamps in filenames an option?
 - PrintStats can go too when we have a stats helper method in its place
 - Read the entire code once everything is done for "code smells"
 */
