@@ -13,7 +13,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/utils"
 )
 
 const minProbeInterval = 2 * time.Millisecond
@@ -331,7 +330,7 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
-	intervalBetweenProbesDuration := utils.SecondsToDuration(*intervalBetweenProbes)
+	intervalBetweenProbesDuration := SecondsToDuration(*intervalBetweenProbes)
 	if intervalBetweenProbesDuration < minProbeInterval {
 		// TODO: Do we keep this constraint?
 		fmt.Fprintln(os.Stderr, "Wait interval should be more than 2 ms")
@@ -361,7 +360,7 @@ func ProcessUserInput() Config {
 		shouldRetryResolve = true
 	}
 
-	timeoutInDuration := utils.SecondsToDuration(*timeout)
+	timeoutInDuration := SecondsToDuration(*timeout)
 
 	// TODO: double check
 	var networkInterface nic.NetworkInterface
