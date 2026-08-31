@@ -1,10 +1,37 @@
 package config
 
 import (
+	"flag"
 	"testing"
 )
 
 func TestFlagsRequiringValue(t *testing.T) {
+	oldCommandLine := flag.CommandLine
+	defer func() {
+		flag.CommandLine = oldCommandLine
+	}()
+
+	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
+
+	flag.Uint("c", 0, "")
+	flag.Float64("t", 0, "")
+	flag.Uint("r", 0, "")
+	flag.Float64("i", 0, "")
+	flag.Int("I", 0, "")
+	flag.String("dns-server", "", "")
+	flag.String("csv", "", "")
+	flag.String("db", "", "")
+
+	flag.Bool("4", false, "")
+	flag.Bool("6", false, "")
+	flag.Bool("D", false, "")
+	flag.Bool("j", false, "")
+	flag.Bool("pretty", false, "")
+	flag.Bool("non-interactive", false, "")
+	flag.Bool("no-color", false, "")
+	flag.Bool("v", false, "")
+	flag.Bool("u", false, "")
+
 	fv := flagsRequiringValue()
 
 	wantValue := []string{"c", "t", "r", "i", "I", "dns-server", "csv", "db"}
