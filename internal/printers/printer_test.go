@@ -1,6 +1,7 @@
 package printers
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -29,6 +30,8 @@ func (m *mockPrinter) PrintStatistics(s *stats.Statistics) {
 }
 
 func TestNewPrinter(t *testing.T) {
+	tempDir := t.TempDir()
+
 	tests := []struct {
 		name        string
 		cfg         PrinterConfig
@@ -54,7 +57,7 @@ func TestNewPrinter(t *testing.T) {
 		{
 			name: "CSV Printer Initialization",
 			cfg: PrinterConfig{
-				OutputCSVPath: "test.csv",
+				OutputCSVPath: filepath.Join(tempDir, "test.csv"),
 			},
 			wantErr: false,
 		},
@@ -93,6 +96,10 @@ func TestNewPrinter(t *testing.T) {
 
 			if printer == nil {
 				t.Errorf("NewPrinter() returned nil printer for valid config")
+			}
+
+			if csvPrinter, ok := printer.(*CSVPrinter); ok {
+				t.Cleanup(csvPrinter.Done)
 			}
 		})
 	}
