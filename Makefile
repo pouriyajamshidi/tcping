@@ -59,7 +59,9 @@ RELEASE_ARTIFACTS := \
 GIF_ARTIFACTS := \
 	$(GIFS_DIR)/tcping.gif \
 	$(GIFS_DIR)/tcping_resolve.gif \
-	$(GIFS_DIR)/tcping_json_pretty.gif
+	$(GIFS_DIR)/tcping_json_pretty.gif \
+	$(GIFS_DIR)/tcping_dns_timing.gif \
+	$(GIFS_DIR)/tcping_interface.gif
 
 # Conditionals
 ifeq ($(OS),Windows_NT)
