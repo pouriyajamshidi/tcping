@@ -357,10 +357,11 @@ func (p *CSVPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
-// Shutdown prints statistics, calls Done() and exits the program.
-// Statistics are already finalized by finalizeStatistics by the time this runs.
+// Shutdown prints statistics and calls Done() to flush and close the CSV
+// files. Statistics are already finalized by finalizeStatistics by the time
+// this runs. It does not exit the program - that decision belongs to the
+// caller, not the printer.
 func (p *CSVPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
 	p.Done()
-	os.Exit(0)
 }

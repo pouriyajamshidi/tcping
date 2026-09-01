@@ -2,7 +2,6 @@ package printers
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/gookit/color"
@@ -249,9 +248,9 @@ func (p *ColorPrinter) PrintError(format string, args ...any) {
 	printRed(format+"\n", args...)
 }
 
-// Shutdown prints statistics and exits the program. Statistics are already
-// finalized by finalizeStatistics by the time this runs.
+// Shutdown prints statistics. Statistics are already finalized by
+// finalizeStatistics by the time this runs. It does not exit the program -
+// that decision belongs to the caller, not the printer.
 func (p *ColorPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
-	os.Exit(0)
 }

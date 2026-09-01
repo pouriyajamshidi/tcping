@@ -67,9 +67,10 @@ type Printer interface {
 	// PrintError prints an error message in red. It takes a print verb and then the arguments.
 	PrintError(format string, args ...any)
 
-	// Shutdown prints statistics and exits the program. Statistics must
-	// already be finalized (see Prober.finalizeStatistics) by the time
-	// this is called.
+	// Shutdown prints statistics and releases any resources the printer
+	// holds (e.g. closing files). Statistics must already be finalized
+	// (see Prober.finalizeStatistics) by the time this is called. It does
+	// not exit the program - callers decide that for themselves.
 	Shutdown(s *stats.Statistics)
 }
 

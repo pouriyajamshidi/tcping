@@ -261,9 +261,9 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 	})
 }
 
-// Shutdown prints statistics and exits the program. Statistics are already
-// finalized by finalizeStatistics by the time this runs.
+// Shutdown prints statistics. Statistics are already finalized by
+// finalizeStatistics by the time this runs. It does not exit the program -
+// that decision belongs to the caller, not the printer.
 func (p *JSONPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
-	os.Exit(0)
 }
