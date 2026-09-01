@@ -61,13 +61,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 		// than waiting for a failure streak to trigger a retry.
 		if p.config.ResolveEveryProbe && !p.Statistics.DestIsIP {
 			p.Statistics.RetriedHostnameLookups++
-
-			if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
-				p.printer.PrintError("%s", err.Error())
-			} else {
-				p.Statistics.ResolvedThisProbe = true
-				p.printer.PrintNameResolutionDuration(p.Statistics)
-			}
+			p.resolveHostname(true)
 		}
 
 		pingTime := time.Now()
@@ -94,11 +88,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 
 			p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
 
-			if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
-				p.printer.PrintError("%s", err.Error())
-			} else {
-				p.printer.PrintNameResolutionDuration(p.Statistics)
-			}
+			p.resolveHostname(false)
 		}
 
 		if p.config.ProbesBeforeQuit > 0 {
@@ -131,6 +121,26 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 			}
 		}
 	}
+}
+
+// resolveHostname retries resolving the target's hostname, printing the
+// resulting duration on success or the error on failure. When
+// markResolvedThisProbe is true and resolution succeeds, it sets
+// Statistics.ResolvedThisProbe before printing, so PrintProbeSuccess/
+// PrintProbeFailure fold the duration into their own line instead of a
+// separate one. It reports whether the resolution succeeded.
+func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
+	if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
+		p.printer.PrintError("%s", err.Error())
+		return false
+	}
+
+	if markResolvedThisProbe {
+		p.Statistics.ResolvedThisProbe = true
+	}
+	p.printer.PrintNameResolutionDuration(p.Statistics)
+
+	return true
 }
 
 func (p *Prober) handleProbeFailure(pingTime time.Time) {
@@ -175,7 +185,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult ProbeResult) {
 	s := p.Statistics
 
-	rttMs := NanoToMillisecond(rtt.Nanoseconds())
+	rttMs := stats.DurationToMilliseconds(rtt)
 
 	s.LatestRTT = rttMs
 	s.LocalAddr = probeResult.LocalAddr
@@ -227,11 +237,4 @@ func (p *Prober) finalizeStatistics() {
 		p.Statistics.TotalUptime += upDuration
 		stats.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUptime)
 	}
-}
-
-// NanoToMillisecond returns an amount of milliseconds from nanoseconds.
-// Using duration.Milliseconds() is not an option, because it drops
-// decimal points, returning an int.
-func NanoToMillisecond(nano int64) float32 {
-	return float32(nano) / float32(time.Millisecond)
 }
