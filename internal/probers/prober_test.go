@@ -160,9 +160,9 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 	p.handleProbeFailure(now)
 
 	s := p.Statistics
-	if s.Failed != 1 || s.TotalUnsuccessfulProbes != 1 || s.OngoingUnsuccessfulProbes != 1 {
-		t.Fatalf("got Failed=%d TotalUnsuccessfulProbes=%d OngoingUnsuccessfulProbes=%d, want all 1",
-			s.Failed, s.TotalUnsuccessfulProbes, s.OngoingUnsuccessfulProbes)
+	if s.TotalUnsuccessfulProbes != 1 || s.OngoingUnsuccessfulProbes != 1 {
+		t.Fatalf("got TotalUnsuccessfulProbes=%d OngoingUnsuccessfulProbes=%d, want all 1",
+			s.TotalUnsuccessfulProbes, s.OngoingUnsuccessfulProbes)
 	}
 	if !s.LastProbeHadFailed {
 		t.Error("LastProbeHadFailed = false, want true")
@@ -253,9 +253,9 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 	if s.LocalAddr != localAddr {
 		t.Errorf("LocalAddr = %v, want %v", s.LocalAddr, localAddr)
 	}
-	if s.Successful != 1 || s.TotalSuccessfulProbes != 1 || s.OngoingSuccessfulProbes != 1 {
-		t.Errorf("got Successful=%d TotalSuccessfulProbes=%d OngoingSuccessfulProbes=%d, want all 1",
-			s.Successful, s.TotalSuccessfulProbes, s.OngoingSuccessfulProbes)
+	if s.TotalSuccessfulProbes != 1 || s.OngoingSuccessfulProbes != 1 {
+		t.Errorf("got TotalSuccessfulProbes=%d OngoingSuccessfulProbes=%d, want all 1",
+			s.TotalSuccessfulProbes, s.OngoingSuccessfulProbes)
 	}
 	if !s.StartOfUptime.Equal(now) {
 		t.Errorf("StartOfUptime = %v, want %v", s.StartOfUptime, now)
@@ -352,7 +352,7 @@ func TestFinalizeStatistics_NoProbesYetIsANoop(t *testing.T) {
 	if s.TotalUptime != 0 || s.TotalDowntime != 0 {
 		t.Errorf("TotalUptime=%v TotalDowntime=%v, want both 0 when no probe ever ran", s.TotalUptime, s.TotalDowntime)
 	}
-	if s.RuntimeDuration() < 0 {
+	if s.CurrentUptime < 0 {
 		t.Errorf("UpTime = %v, want >= 0", s.CurrentUptime)
 	}
 }
@@ -441,8 +441,8 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 	}
 
 	s := p.Statistics
-	if s.Failed != 2 || s.Successful != 1 {
-		t.Errorf("Failed=%d Successful=%d, want Failed=2 Successful=1", s.Failed, s.Successful)
+	if s.TotalUnsuccessfulProbes != 2 || s.TotalSuccessfulProbes != 1 {
+		t.Errorf("TotalUnsuccessfulProbes=%d TotalSuccessfulProbes=%d, want 2 and 1", s.TotalUnsuccessfulProbes, s.TotalSuccessfulProbes)
 	}
 	if s.LastProbeHadFailed {
 		t.Error("LastProbeHadFailed = true, want false after recovering")
