@@ -129,7 +129,6 @@ type Config struct {
 	IntervalBetweenProbes      time.Duration
 	PrinterConfig              printers.PrinterConfig
 	NetworkInterface           nic.NetworkInterface
-	RetryHostnameLookupAfter   uint          // Number of failed requests before retrying to resolve the hostname.
 	TargetIsIP                 bool          // Flag indicating whether the destination is an IP address (not a hostname).
 	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
 	ShouldRetryResolve         bool
@@ -191,7 +190,7 @@ func (c Config) GetShouldRetryResolve() bool {
 }
 
 func (c Config) GetRetryResolveAfterNFailures() uint {
-	return c.RetryHostnameLookupAfter
+	return c.RetryResolveAfterNFailures
 }
 
 func (c Config) GetNetworkInterface() nic.NetworkInterface {
