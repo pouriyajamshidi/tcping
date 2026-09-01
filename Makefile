@@ -197,9 +197,24 @@ $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
 # ==================================================
 
 # GIF generation
-$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape FORCE
+#
+# Built fresh from the current commit on every run (rather than relying on
+# whatever "tcping" happens to already be on PATH, which could be an older
+# system-installed build). The binary is still named "tcping" and its
+# directory is only prepended to PATH for the vhs invocation, so the
+# recorded command and its output are unaffected.
+GIF_BIN_DIR := $(TARGET_DIR)/gif
+GIF_BIN := $(GIF_BIN_DIR)/tcping
+
+.PHONY: gif-binary
+gif-binary:
+	@echo "[+] Building tcping for GIF generation (version: $(VERSION))"
+	@mkdir -p $(GIF_BIN_DIR)
+	@go build $(GO_LDFLAGS) -o $(GIF_BIN) $(GO_MAIN_PATH)
+
+$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape gif-binary FORCE
 	@echo "[+] Generating GIF: $@"
-	@vhs $< -o $@
+	@PATH="$(abspath $(GIF_BIN_DIR)):$$PATH" vhs $< -o $@
 
 # ==================================================
 # Helpers
