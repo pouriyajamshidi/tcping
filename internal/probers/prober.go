@@ -53,6 +53,20 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	// probe to run (ProbesBeforeQuit reached).
 	// we need this to avoid waiting n seconds for the first probe to run.
 	runProbe := func() (done bool) {
+		// Resolve the hostname fresh before this probe when requested,
+		// so it always dials whatever the hostname currently points to
+		// (e.g. DNS round-robin or a frequently-changing record) rather
+		// than waiting for a failure streak to trigger a retry.
+		if p.config.ResolveEveryProbe && !p.Statistics.DestIsIP {
+			p.Statistics.RetriedHostnameLookups++
+
+			if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
+				p.printer.PrintError("%s", err.Error())
+			} else {
+				p.printer.PrintNameResolutionDuration(p.Statistics)
+			}
+		}
+
 		pingTime := time.Now()
 
 		// Read the target IP fresh on every probe (not just once at
@@ -70,7 +84,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 			p.printer.PrintProbeSuccess(p.Statistics)
 		}
 
-		if p.config.ShouldRetryResolve &&
+		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&
 			p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
 
 			p.Statistics.RetriedHostnameLookups++

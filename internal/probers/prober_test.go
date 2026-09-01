@@ -633,6 +633,95 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 	}
 }
 
+// --- ResolveEveryProbe ------------------------------------------------
+
+func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
+	pinger := alwaysSucceeds()
+	cfg := config.Config{
+		IntervalBetweenProbes: 5 * time.Millisecond,
+		ProbesBeforeQuit:      3,
+		ResolveEveryProbe:     true,
+		// A literal IP resolves without touching the network.
+		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, printer := newTestProber(pinger, cfg)
+	p.Statistics.Hostname = "127.0.0.1"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	if p.Statistics.RetriedHostnameLookups != 3 {
+		t.Errorf("RetriedHostnameLookups = %d, want 3 (one resolve per probe)", p.Statistics.RetriedHostnameLookups)
+	}
+
+	snap := printer.snapshot()
+	if snap.nameResolutionCalls != 3 {
+		t.Errorf("PrintNameResolutionDuration called %d times, want 3", snap.nameResolutionCalls)
+	}
+	if snap.retryCalls != 0 {
+		t.Errorf("PrintRetryingToResolve called %d times, want 0 (this isn't a failure-triggered retry)", snap.retryCalls)
+	}
+}
+
+// Resolving a literal IP target is a meaningless no-op, so it must be
+// skipped entirely rather than printing a stream of "resolved in 0.000 ms".
+func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
+	pinger := alwaysSucceeds()
+	cfg := config.Config{
+		IntervalBetweenProbes: 5 * time.Millisecond,
+		ProbesBeforeQuit:      2,
+		ResolveEveryProbe:     true,
+		Resolver:              dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, printer := newTestProber(pinger, cfg)
+	p.Statistics.DestIsIP = true
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	if p.Statistics.RetriedHostnameLookups != 0 {
+		t.Errorf("RetriedHostnameLookups = %d, want 0 (target is a literal IP)", p.Statistics.RetriedHostnameLookups)
+	}
+	if got := printer.snapshot().nameResolutionCalls; got != 0 {
+		t.Errorf("PrintNameResolutionDuration called %d times, want 0", got)
+	}
+}
+
+// ResolveEveryProbe supersedes the failure-threshold retry entirely - it
+// must not also trigger the old ShouldRetryResolve path.
+func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testing.T) {
+	pinger := alwaysFails()
+	cfg := config.Config{
+		IntervalBetweenProbes:      5 * time.Millisecond,
+		ProbesBeforeQuit:           2,
+		ResolveEveryProbe:          true,
+		ShouldRetryResolve:         true,
+		RetryResolveAfterNFailures: 1,
+		Resolver:                   dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, printer := newTestProber(pinger, cfg)
+	p.Statistics.Hostname = "127.0.0.1"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	if p.Statistics.RetriedHostnameLookups != 2 {
+		t.Errorf("RetriedHostnameLookups = %d, want 2 (once per probe, not double-counted)", p.Statistics.RetriedHostnameLookups)
+	}
+	if got := printer.snapshot().retryCalls; got != 0 {
+		t.Errorf("PrintRetryingToResolve called %d times, want 0 (ResolveEveryProbe takes precedence)", got)
+	}
+}
+
 // A retry-resolve that changes the target IP (including to a different
 // address family) must actually change what gets dialed on the next probe,
 // not just what gets displayed - otherwise every probe after the first

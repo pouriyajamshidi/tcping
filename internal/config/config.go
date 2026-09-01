@@ -133,6 +133,7 @@ type Config struct {
 	TargetIsIP                 bool          // Flag indicating whether the destination is an IP address (not a hostname).
 	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
 	ShouldRetryResolve         bool
+	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
 	ShowFailuresOnly           bool
 	Resolver                   *dns.Resolver
 }
@@ -245,6 +246,13 @@ func ProcessUserInput() Config {
 		0,
 		`Retry resolving target's hostname after <n> number of failed probes.
 		e.g. -r 10 to retry after 10 failed probes.`)
+
+	resolveEveryProbe := flag.Bool(
+		"resolve-every-probe",
+		false,
+		`Resolve the target's hostname before every single probe instead of
+		only at startup (and after failures, if -r is set). Has no effect
+		when the target is already an IP address. Takes precedence over -r.`)
 
 	customDNSServer := flag.String(
 		"dns-server",
@@ -422,6 +430,7 @@ func ProcessUserInput() Config {
 		ShowFailuresOnly:           *showFailuresOnly,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
+		ResolveEveryProbe:          *resolveEveryProbe,
 		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
 		IfaceNameOrIPAddress:       *interfaceName,
 		NetworkInterface:           networkInterface,
