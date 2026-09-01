@@ -14,7 +14,7 @@ import (
 
 func TestAddCSVExtension(t *testing.T) {
 	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
-	timestamp = strings.ReplaceAll(timestamp, " ", "")
+	timestamp = strings.ReplaceAll(timestamp, " ", "_")
 	timestampWithExtension := "_" + timestamp + ".csv"
 	timestampWithExtensionStats := "_" + timestamp + "_stats.csv"
 
