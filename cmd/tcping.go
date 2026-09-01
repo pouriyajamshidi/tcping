@@ -23,7 +23,6 @@ import (
 - Run modernize
 - Maybe make the inclusion of timestamps in CSV filenames an option?
 - Shutdown would not be needed once the program flow is solid
-- PrintStats can go too when we have a stats helper method in its place
 - Read the entire code once everything is done for "code smells"
 */
 

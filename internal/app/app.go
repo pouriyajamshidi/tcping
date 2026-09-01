@@ -39,7 +39,7 @@ func MonitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
 		}
 
 		if strings.TrimSpace(input) == "" {
-			printers.PrintStats(p, s)
+			p.PrintStatistics(s)
 		}
 	}
 }

@@ -1,8 +1,6 @@
 package printers
 
 import (
-	"time"
-
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -57,8 +55,9 @@ type Printer interface {
 	// PrintError prints an error message in red. It takes a print verb and then the arguments.
 	PrintError(format string, args ...any)
 
-	// Shutdown sets the end time, prints statistics, and exits the program.
-	// This will be removed soon
+	// Shutdown prints statistics and exits the program. Statistics must
+	// already be finalized (see Prober.finalizeStatistics) by the time
+	// this is called.
 	Shutdown(s *stats.Statistics)
 }
 
@@ -80,17 +79,4 @@ func NewPrinter(cfg PrinterConfig) (Printer, error) {
 	default:
 		return NewColorPrinter(), nil
 	}
-}
-
-// PrintStats is a helper method for PrintStatistics of the current printer.
-// This should be used instead of directly calling the PrintStatistics
-// as it makes the common calculations beforehand.
-func PrintStats(p Printer, s *stats.Statistics) {
-	if s.LastProbeHadFailed {
-		stats.SetLongestDuration(s.StartOfDowntime, time.Since(s.StartOfDowntime), &s.LongestDowntime)
-	} else {
-		stats.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
-	}
-
-	p.PrintStatistics(s)
 }
