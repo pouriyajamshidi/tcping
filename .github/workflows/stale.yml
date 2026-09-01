@@ -9,12 +9,14 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/stale@v11.0.0
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           exempt-assignees: "pouriyajamshidi"
           exempt-pr-labels: "security"
-          exempt-issue-labels: "security"
+          # Issues are fine to remain open indefinitely - only PRs get
+          # marked stale and closed.
+          days-before-issue-stale: -1
           stale-pr-message: |
             This pull request has been automatically marked as stale because it has not had any recent activities.
             It will be closed in 7 days if no further activity occurs.
@@ -22,5 +24,5 @@ jobs:
             Thank you for your contribution!
           close-pr-message: |
             This pull request has been automatically closed because it has not had any recent activities or follow ups.
-          days-before-stale: 30
-          days-before-close: 14
+          days-before-pr-stale: 30
+          days-before-pr-close: 14
