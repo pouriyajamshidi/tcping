@@ -5,7 +5,8 @@ FROM docker.io/golang:1.26.7-alpine3.23 AS build
 WORKDIR /build
 
 # Install dependencies
-RUN apk --no-cache add bash make
+# git is needed for the Makefile to derive VERSION from git tags/branch
+RUN apk --no-cache add bash make git
 
 # Cache libraries
 COPY go.mod go.sum ./
