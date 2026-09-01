@@ -15,8 +15,6 @@ import (
 )
 
 /* TODO:
-- Run modernize
-- Maybe make the inclusion of timestamps in CSV filenames an option?
 - Read the entire code once everything is done for "code smells"
 */
 
