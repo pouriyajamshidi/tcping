@@ -54,6 +54,8 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [Basic usage](#basic-usage)
     - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
     - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
+    - [Hostname resolution timing (`--resolve-every-probe`) flag](#hostname-resolution-timing---resolve-every-probe-flag)
+    - [Source interface (`-I`) flag](#source-interface--i-flag)
   - [Contributing](#contributing)
   - [Feature Requests and Issues](#feature-requests-and-issues)
   - [Help The Project](#help-the-project)
@@ -321,22 +323,55 @@ The following flags are available to control the behavior of **tcping**:
 ### Basic usage
 
 <details>
-    <summary>Basic Usage<summary/>
-        <img src="docs/Images/gifs/tcping.gif"/>
-<!--![tcping](docs/Images/gifs/tcping.gif)-->
+<summary>Click to expand</summary>
+
+![tcping](docs/Images/gifs/tcping.gif)
+
 </details>
 
 ---
 
 ### Retry hostname lookup (`-r`) flag
 
+<details>
+<summary>Click to expand</summary>
+
 ![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+
+</details>
 
 ---
 
 ### JSON output (`-j --pretty`) flag
 
+<details>
+<summary>Click to expand</summary>
+
 ![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+
+</details>
+
+---
+
+### Hostname resolution timing (`--resolve-every-probe`) flag
+
+<details>
+<summary>Click to expand</summary>
+
+![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+
+</details>
+
+---
+
+### Source interface (`-I`) flag
+
+<details>
+<summary>Click to expand</summary>
+
+![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+
+</details>
 
 ---
 
