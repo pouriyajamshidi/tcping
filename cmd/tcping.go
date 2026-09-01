@@ -15,9 +15,7 @@ import (
 )
 
 /* TODO:
-- Get DNS timeout as a user input option?
 - Display name resolution times?
-- Use built-in slice functions for min max avg, etc
 - Run modernize
 - Maybe make the inclusion of timestamps in CSV filenames an option?
 - Read the entire code once everything is done for "code smells"
