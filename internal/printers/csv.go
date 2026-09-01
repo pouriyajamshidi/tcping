@@ -37,15 +37,18 @@ type CSVPrinter struct {
 }
 
 // NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
-func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
-	probeFilename := addDateAndCSVExtension(filePath, false)
+// When noTimestamp is true, filePath is used as-is (plus a "_stats" suffix
+// for the stats file) instead of getting a date/time suffix, so repeated
+// runs overwrite the same file rather than creating a new one each time.
+func NewCSVPrinter(filePath string, noTimestamp bool) (*CSVPrinter, error) {
+	probeFilename := addDateAndCSVExtension(filePath, false, noTimestamp)
 
 	probeFile, err := os.OpenFile(probeFilename, fileFlag, filePermission)
 	if err != nil {
 		return nil, fmt.Errorf("error creating the probe CSV file %s: %w", probeFilename, err)
 	}
 
-	statsFilename := addDateAndCSVExtension(filePath, true)
+	statsFilename := addDateAndCSVExtension(filePath, true, noTimestamp)
 
 	statsFile, err := os.OpenFile(statsFilename, fileFlag, filePermission)
 	if err != nil {
@@ -61,15 +64,22 @@ func NewCSVPrinter(filePath string) (*CSVPrinter, error) {
 	}, nil
 }
 
-func addDateAndCSVExtension(filename string, withStatsExt bool) string {
-	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
-
+func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) string {
 	ext := filepath.Ext(filename)
 	// don't mistake example.com with example.csv
 	if ext != ".csv" {
 		ext = ""
 	}
 	base := filename[:len(filename)-len(ext)]
+
+	if noTimestamp {
+		if withStatsExt {
+			return base + "_stats.csv"
+		}
+		return base + ".csv"
+	}
+
+	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
 
 	if withStatsExt {
 		return strings.ReplaceAll(base+"_"+timestamp+"_stats.csv", " ", "_")

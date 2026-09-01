@@ -301,6 +301,12 @@ func ProcessUserInput() Config {
 		`Path and file name to store the output in a CSV file.
 		The stats will be automatically saved with the same name and '_stats' suffix.`)
 
+	csvNoTimestamp := flag.Bool(
+		"csv-no-timestamp",
+		false,
+		`Do not append a date/time suffix to the CSV filename given via -csv.
+		Repeated runs will then overwrite the same file instead of creating a new one.`)
+
 	DBPath := flag.String(
 		"db",
 		"",
@@ -413,6 +419,7 @@ func ProcessUserInput() Config {
 		WithSourceAddress: *showSourceAddress,
 		OutputDBPath:      *DBPath,
 		OutputCSVPath:     *CSVPath,
+		CSVNoTimestamp:    *csvNoTimestamp,
 	}
 
 	return Config{

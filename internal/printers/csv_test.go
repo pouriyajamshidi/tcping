@@ -34,10 +34,35 @@ func TestAddCSVExtension(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := addDateAndCSVExtension(tt.filename, tt.withStatsExt)
+			result := addDateAndCSVExtension(tt.filename, tt.withStatsExt, false)
 			fmt.Println(result)
 			if result != tt.expected {
 				t.Errorf("addCSVExtension(%q, %v) = %q; expected %q", tt.filename, tt.withStatsExt, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestAddCSVExtension_NoTimestamp(t *testing.T) {
+	tests := []struct {
+		name         string
+		filename     string
+		withStatsExt bool
+		expected     string
+	}{
+		{"No extension, probe file", "results", false, "results.csv"},
+		{"No extension, stats file", "results", true, "results_stats.csv"},
+		{"Standard extension, probe file", "results.csv", false, "results.csv"},
+		{"Standard extension, stats file", "results.csv", true, "results_stats.csv"},
+		{"Multiple dots, probe file", "results.backup.2026", false, "results.backup.2026.csv"},
+		{"Multiple dots, stats file", "results.backup.2026.csv", true, "results.backup.2026_stats.csv"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := addDateAndCSVExtension(tt.filename, tt.withStatsExt, true)
+			if result != tt.expected {
+				t.Errorf("addCSVExtension(%q, %v, true) = %q; expected %q", tt.filename, tt.withStatsExt, result, tt.expected)
 			}
 		})
 	}
@@ -47,7 +72,7 @@ func TestNewCSVPrinter_CreatesFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "test_output")
 
-	p, err := NewCSVPrinter(filePath)
+	p, err := NewCSVPrinter(filePath, false)
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
@@ -68,7 +93,7 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "headers_test.csv")
 
-	p, err := NewCSVPrinter(filePath)
+	p, err := NewCSVPrinter(filePath, false)
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
@@ -126,7 +151,7 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "records_test.csv")
 
-	p, err := NewCSVPrinter(filePath)
+	p, err := NewCSVPrinter(filePath, false)
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}

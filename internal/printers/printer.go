@@ -13,6 +13,7 @@ type PrinterConfig struct {
 	WithSourceAddress bool
 	OutputDBPath      string
 	OutputCSVPath     string
+	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
 	Target            string
 	Port              uint16
 }
@@ -82,7 +83,7 @@ func NewPrinter(cfg PrinterConfig) (Printer, error) {
 		return NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
 
 	case cfg.OutputCSVPath != "":
-		return NewCSVPrinter(cfg.OutputCSVPath)
+		return NewCSVPrinter(cfg.OutputCSVPath, cfg.CSVNoTimestamp)
 
 	case cfg.NoColor:
 		return NewPlainPrinter(), nil
