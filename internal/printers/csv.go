@@ -269,10 +269,11 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 
 			to := s.HostnameChanges[i+1].Addr.String()
 
-			fmt.Fprintf(&hostnameChanges, "from %s to %s at %s - ",
+			fmt.Fprintf(&hostnameChanges, "from %s to %s at %s took %s ms - ",
 				from,
 				to,
 				s.HostnameChanges[i+1].WhenFormatted(),
+				s.HostnameChanges[i+1].DurationStr(),
 			)
 		}
 		statistics = append(statistics, []string{"Hostname Changes", hostnameChanges.String()})

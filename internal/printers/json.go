@@ -65,28 +65,34 @@ type jsonError struct {
 	Message string `json:"message"`
 }
 
+type jsonHostnameChange struct {
+	Addr       string `json:"addr"`
+	When       string `json:"when"`
+	DurationMs string `json:"durationMs"`
+}
+
 type jsonStatistics struct {
-	Hostname               string                 `json:"hostname,omitempty"`
-	IP                     string                 `json:"ipAddress"`
-	Port                   uint16                 `json:"port"`
-	TotalProbes            uint                   `json:"totalProbes"`
-	SuccessfulProbes       uint                   `json:"successfulProbes"`
-	UnsuccessfulProbes     uint                   `json:"unsuccessfulProbes"`
-	PacketLoss             float32                `json:"packetLossPercent"`
-	LastSuccessfulProbe    string                 `json:"lastSuccessfulProbe,omitempty"`
-	LastUnsuccessfulProbe  string                 `json:"lastUnsuccessfulProbe,omitempty"`
-	TotalUptime            string                 `json:"totalUptime"`
-	TotalDowntime          string                 `json:"totalDowntime"`
-	LongestUptime          string                 `json:"longestUptime,omitempty"`
-	LongestDowntime        string                 `json:"longestDowntime,omitempty"`
-	HostnameResolveRetries uint                   `json:"hostnameResolveRetries,omitempty"`
-	HostnameChanges        []stats.HostnameChange `json:"hostnameChanges,omitempty"`
-	LatencyMin             float32                `json:"latencyMin,omitempty"`
-	LatencyAvg             float32                `json:"latencyAvg,omitempty"`
-	LatencyMax             float32                `json:"latencyMax,omitempty"`
-	StartTime              string                 `json:"startTime"`
-	EndTime                string                 `json:"endTime,omitempty"`
-	Duration               string                 `json:"duration"`
+	Hostname               string               `json:"hostname,omitempty"`
+	IP                     string               `json:"ipAddress"`
+	Port                   uint16               `json:"port"`
+	TotalProbes            uint                 `json:"totalProbes"`
+	SuccessfulProbes       uint                 `json:"successfulProbes"`
+	UnsuccessfulProbes     uint                 `json:"unsuccessfulProbes"`
+	PacketLoss             float32              `json:"packetLossPercent"`
+	LastSuccessfulProbe    string               `json:"lastSuccessfulProbe,omitempty"`
+	LastUnsuccessfulProbe  string               `json:"lastUnsuccessfulProbe,omitempty"`
+	TotalUptime            string               `json:"totalUptime"`
+	TotalDowntime          string               `json:"totalDowntime"`
+	LongestUptime          string               `json:"longestUptime,omitempty"`
+	LongestDowntime        string               `json:"longestDowntime,omitempty"`
+	HostnameResolveRetries uint                 `json:"hostnameResolveRetries,omitempty"`
+	HostnameChanges        []jsonHostnameChange `json:"hostnameChanges,omitempty"`
+	LatencyMin             float32              `json:"latencyMin,omitempty"`
+	LatencyAvg             float32              `json:"latencyAvg,omitempty"`
+	LatencyMax             float32              `json:"latencyMax,omitempty"`
+	StartTime              string               `json:"startTime"`
+	EndTime                string               `json:"endTime,omitempty"`
+	Duration               string               `json:"duration"`
 }
 
 func (p *JSONPrinter) encode(event string, data any) {
@@ -207,7 +213,13 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		data.HostnameResolveRetries = s.RetriedHostnameLookups
 
 		if len(s.HostnameChanges) > 1 {
-			data.HostnameChanges = s.HostnameChanges
+			for _, change := range s.HostnameChanges {
+				data.HostnameChanges = append(data.HostnameChanges, jsonHostnameChange{
+					Addr:       change.Addr.String(),
+					When:       change.WhenFormatted(),
+					DurationMs: change.DurationStr(),
+				})
+			}
 		}
 	}
 

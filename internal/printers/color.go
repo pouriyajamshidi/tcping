@@ -182,7 +182,9 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 				printYellow(" to ")
 				printGreen(s.HostnameChanges[i+1].Addr.String())
 				printYellow(" at ")
-				printLightBlue("%s\n", s.HostnameChanges[i+1].WhenFormatted())
+				printLightBlue("%s ", s.HostnameChanges[i+1].WhenFormatted())
+				printYellow("took ")
+				printLightBlue("%s ms\n", s.HostnameChanges[i+1].DurationStr())
 			}
 		}
 	}

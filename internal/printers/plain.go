@@ -145,7 +145,8 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 			for i := 0; i < len(s.HostnameChanges)-1; i++ {
 				msg += fmt.Sprintf("  from %s ", s.HostnameChanges[i].Addr.String())
 				msg += fmt.Sprintf("to %s ", s.HostnameChanges[i+1].Addr.String())
-				msg += fmt.Sprintf("at %s\n", s.HostnameChanges[i+1].WhenFormatted())
+				msg += fmt.Sprintf("at %s ", s.HostnameChanges[i+1].WhenFormatted())
+				msg += fmt.Sprintf("took %s ms\n", s.HostnameChanges[i+1].DurationStr())
 			}
 		}
 	}

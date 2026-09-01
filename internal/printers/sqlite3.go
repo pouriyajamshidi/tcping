@@ -413,10 +413,11 @@ func hostnameChanges(s *stats.Statistics) string {
 			continue
 		}
 
-		fmt.Fprintf(&changes, "from %s to %s at %s\n",
+		fmt.Fprintf(&changes, "from %s to %s at %s took %s ms\n",
 			from,
 			s.HostnameChanges[i+1].Addr.String(),
 			s.HostnameChanges[i+1].WhenFormatted(),
+			s.HostnameChanges[i+1].DurationStr(),
 		)
 	}
 	return changes.String()

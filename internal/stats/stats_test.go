@@ -35,6 +35,14 @@ func TestNameResolutionDurationStr(t *testing.T) {
 	}
 }
 
+func TestHostnameChange_DurationStr(t *testing.T) {
+	h := &HostnameChange{Duration: 1734 * time.Microsecond}
+
+	if got, want := h.DurationStr(), "1.734"; got != want {
+		t.Errorf("DurationStr() = %q, want %q", got, want)
+	}
+}
+
 func TestRTTResultUpdate(t *testing.T) {
 	var r RTTResult
 

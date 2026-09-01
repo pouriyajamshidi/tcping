@@ -84,8 +84,9 @@ func NewStatistics(cfg Config) *Statistics {
 		LongestDowntime:        LongestTime{},
 		NameResolutionDuration: cfg.GetNameResolutionDuration(),
 		HostnameChanges: []HostnameChange{{
-			Addr: cfg.GetIP(),
-			When: time.Now(),
+			Addr:     cfg.GetIP(),
+			When:     time.Now(),
+			Duration: cfg.GetNameResolutionDuration(),
 		}},
 	}
 }
@@ -132,12 +133,19 @@ func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
 }
 
+// millisecondsStr formats d with millisecond precision, for durations that
+// are typically sub-second (hostname resolution, RTT) where DurationToString's
+// whole-second rounding would be useless.
+func millisecondsStr(d time.Duration) string {
+	ms := float32(d.Nanoseconds()) / float32(time.Millisecond)
+	return fmt.Sprintf("%.3f", ms)
+}
+
 // NameResolutionDurationStr formats NameResolutionDuration with
 // millisecond precision, matching RTT's, since hostname resolution is
 // typically sub-second.
 func (s *Statistics) NameResolutionDurationStr() string {
-	ms := float32(s.NameResolutionDuration.Nanoseconds()) / float32(time.Millisecond)
-	return fmt.Sprintf("%.3f", ms)
+	return millisecondsStr(s.NameResolutionDuration)
 }
 
 func (s *Statistics) TotalProbes() uint {
@@ -289,12 +297,17 @@ func NewLongestTime(startTime time.Time, duration time.Duration) LongestTime {
 
 // HostnameChange represents changes in the IP address associated with a hostname.
 type HostnameChange struct {
-	Addr netip.Addr // New IP address associated with the hostname.
-	When time.Time  // Timestamp of when the change occurred.
+	Addr     netip.Addr    // New IP address associated with the hostname.
+	When     time.Time     // Timestamp of when the change occurred.
+	Duration time.Duration // How long the resolution that produced Addr took.
 }
 
 func (h *HostnameChange) WhenFormatted() string {
 	return h.When.Format(time.DateTime)
+}
+
+func (h *HostnameChange) DurationStr() string {
+	return millisecondsStr(h.Duration)
 }
 
 // SetLongestDuration updates the longest uptime or downtime based on the given type.

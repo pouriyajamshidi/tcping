@@ -126,19 +126,25 @@ func localAddrForDial(network, address string, networkInterface nic.NetworkInter
 	return &net.UDPAddr{IP: localIP}
 }
 
-// RetryResolveHostname retries resolving a hostname after a certain number of failures
+// RetryResolveHostname retries resolving a hostname after a certain number
+// of failures, recording how long the resolution took on both s and, if the
+// resolved address actually changed, the new HostnameChange entry.
 func (r *Resolver) RetryResolveHostname(s *stats.Statistics) error {
+	start := time.Now()
 	newIP, err := r.ResolveHostname(s.Hostname)
+	duration := time.Since(start)
 	if err != nil {
 		return err
 	}
 
 	s.IP = newIP
+	s.NameResolutionDuration = duration
 
 	if len(s.HostnameChanges) == 0 || s.HostnameChanges[len(s.HostnameChanges)-1].Addr != newIP {
 		s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
-			Addr: newIP,
-			When: time.Now(),
+			Addr:     newIP,
+			When:     time.Now(),
+			Duration: duration,
 		})
 	}
 

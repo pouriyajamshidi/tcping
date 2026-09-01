@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 func TestDNSDialAddress(t *testing.T) {
@@ -300,6 +301,51 @@ func TestNewResolver_ZeroTimeoutMeansNoDeadline(t *testing.T) {
 	case <-time.After(300 * time.Millisecond):
 		// Still running after 300ms with nothing responding - correctly
 		// has no deadline instead of failing instantly.
+	}
+}
+
+// RetryResolveHostname must record how long it took, both on s and on the
+// HostnameChange entry it appends when the address actually changes.
+func TestRetryResolveHostname_RecordsDuration(t *testing.T) {
+	r := NewResolver("", time.Second, false, false, nic.NetworkInterface{})
+
+	s := &stats.Statistics{Hostname: "127.0.0.1"}
+
+	if err := r.RetryResolveHostname(s); err != nil {
+		t.Fatalf("RetryResolveHostname() error = %v", err)
+	}
+
+	if s.NameResolutionDuration < 0 {
+		t.Errorf("NameResolutionDuration = %v, want >= 0", s.NameResolutionDuration)
+	}
+	if len(s.HostnameChanges) != 1 {
+		t.Fatalf("len(HostnameChanges) = %d, want 1", len(s.HostnameChanges))
+	}
+	if s.HostnameChanges[0].Duration != s.NameResolutionDuration {
+		t.Errorf("HostnameChanges[0].Duration = %v, want %v (same resolution)",
+			s.HostnameChanges[0].Duration, s.NameResolutionDuration)
+	}
+}
+
+// A resolution that doesn't change the address must still update
+// NameResolutionDuration, without appending a redundant HostnameChange entry.
+func TestRetryResolveHostname_SameAddressUpdatesDurationOnly(t *testing.T) {
+	r := NewResolver("", time.Second, false, false, nic.NetworkInterface{})
+
+	s := &stats.Statistics{
+		Hostname:        "127.0.0.1",
+		HostnameChanges: []stats.HostnameChange{{Addr: netip.MustParseAddr("127.0.0.1")}},
+	}
+
+	if err := r.RetryResolveHostname(s); err != nil {
+		t.Fatalf("RetryResolveHostname() error = %v", err)
+	}
+
+	if len(s.HostnameChanges) != 1 {
+		t.Errorf("len(HostnameChanges) = %d, want 1 (no new entry for an unchanged address)", len(s.HostnameChanges))
+	}
+	if s.NameResolutionDuration < 0 {
+		t.Errorf("NameResolutionDuration = %v, want >= 0", s.NameResolutionDuration)
 	}
 }
 
