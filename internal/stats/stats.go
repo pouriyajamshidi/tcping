@@ -30,10 +30,10 @@ type Config interface {
 }
 
 type Statistics struct {
+	Hostname                  string
 	IP                        netip.Addr
 	Port                      uint16
 	Protocol                  consts.Protocol
-	Hostname                  string
 	LastProbeHadFailed        bool
 	DestIsIP                  bool
 	LocalAddr                 net.Addr
@@ -45,6 +45,8 @@ type Statistics struct {
 	Failed                    int
 	TotalSuccessfulProbes     uint
 	TotalUnsuccessfulProbes   uint
+	OngoingSuccessfulProbes   uint          // Count of ongoing successful probes.
+	OngoingUnsuccessfulProbes uint          // Count of ongoing unsuccessful probes.
 	LastSuccessfulProbe       time.Time     // Timestamp of the last successful probe.
 	LastUnsuccessfulProbe     time.Time     // Timestamp of the last unsuccessful probe.
 	TotalDowntime             time.Duration // Total accumulated downtime.
@@ -55,15 +57,12 @@ type Statistics struct {
 	LongestDowntime           LongestTime   // Data structure holding information about the longest downtime.
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
-	OngoingSuccessfulProbes   uint // Count of ongoing successful probes.
-	OngoingUnsuccessfulProbes uint // Count of ongoing unsuccessful probes.
 	LongestUp                 LongestTime
 	LongestDown               LongestTime
 	RTT                       []float32
 	LatestRTT                 float32
 	RTTResults                RTTResult
 	HostChanges               []HostnameChange
-	HasResults                bool
 	WithTimestamp             bool
 	WithSourceAddress         bool
 }
