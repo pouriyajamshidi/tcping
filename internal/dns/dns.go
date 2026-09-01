@@ -104,6 +104,11 @@ func createDNSResolver(DNSServer string, dialTimeout time.Duration, networkInter
 // mismatched family fails the dial outright with "no suitable address
 // found", which is worse than just not binding and letting the OS pick
 // a default route.
+//
+// A loopback DNS server (e.g. systemd-resolved's 127.0.0.53 stub) is left
+// unbound too: the kernel can't route a packet sourced from a physical
+// interface's address to a loopback destination, so forcing the bind would
+// make every lookup time out instead of just not honoring -I for it.
 func localAddrForDial(network, address string, networkInterface nic.NetworkInterface) net.Addr {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
@@ -112,6 +117,10 @@ func localAddrForDial(network, address string, networkInterface nic.NetworkInter
 
 	serverIP, err := netip.ParseAddr(host)
 	if err != nil {
+		return nil
+	}
+
+	if serverIP.IsLoopback() {
 		return nil
 	}
 
