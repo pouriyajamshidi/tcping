@@ -28,7 +28,7 @@ func NewNetworkInterface(
 	if interfaceAddress != nil { // we are given an IP address
 		ifaceAddrs, err := net.InterfaceAddrs()
 		if err != nil {
-			return NetworkInterface{}, fmt.Errorf("Unable to get interface IP addresses")
+			return NetworkInterface{}, fmt.Errorf("unable to get interface IP addresses")
 		}
 
 		for _, ifaceAddr := range ifaceAddrs {
@@ -47,12 +47,12 @@ func NewNetworkInterface(
 	} else { // we are probably given an interface name
 		iface, err := net.InterfaceByName(sourceAddress)
 		if err != nil {
-			return NetworkInterface{}, fmt.Errorf("Interface %s was not found\n", sourceAddress)
+			return NetworkInterface{}, fmt.Errorf("interface %s was not found", sourceAddress)
 		}
 
 		netAddrs, err := iface.Addrs()
 		if err != nil {
-			return NetworkInterface{}, fmt.Errorf("Unable to get IP addresses of %s", iface.Name)
+			return NetworkInterface{}, fmt.Errorf("unable to get IP addresses of %s", iface.Name)
 		}
 
 		for _, netAddr := range netAddrs {
@@ -78,7 +78,7 @@ func NewNetworkInterface(
 		}
 
 		if interfaceAddress == nil {
-			return NetworkInterface{}, fmt.Errorf("Unable to find an IP address associated with %s", iface.Name)
+			return NetworkInterface{}, fmt.Errorf("unable to find an IP address associated with %s", iface.Name)
 		}
 	}
 
