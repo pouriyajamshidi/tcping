@@ -15,8 +15,6 @@ import (
 )
 
 /* TODO:
-- Read the entire code once everything is done for "code smells"
-
 Library support, so other codebases can import tcping (in priority order):
 1. Move internal/config, internal/dns, internal/nic, internal/printers,
    internal/probers, internal/stats (and internal/consts) out of internal/
@@ -36,6 +34,8 @@ Library support, so other codebases can import tcping (in priority order):
    several packages to be wired together by hand
 8. Treat exported types/fields/methods as a public API contract once this
    is importable (semver discipline)
+
+- Read the entire code once everything is done for "code smells"
 */
 
 func main() {
