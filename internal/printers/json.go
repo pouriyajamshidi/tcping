@@ -52,6 +52,10 @@ type jsonDowntime struct {
 	Duration string `json:"duration"`
 }
 
+type jsonUptime struct {
+	Duration string `json:"duration"`
+}
+
 type jsonError struct {
 	Message string `json:"message"`
 }
@@ -213,6 +217,13 @@ func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
 func (p *JSONPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	p.encode("downtimeDuration", jsonDowntime{
 		Duration: s.DowntimeDuration(),
+	})
+}
+
+// PrintUpTimeDuration prints how long the target was up for, right as it stops responding.
+func (p *JSONPrinter) PrintUpTimeDuration(s *stats.Statistics) {
+	p.encode("uptimeDuration", jsonUptime{
+		Duration: s.UptimeDuration(),
 	})
 }
 

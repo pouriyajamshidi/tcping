@@ -214,6 +214,11 @@ func (p *ColorPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	printYellow("No response received for %s\n", s.DowntimeDuration())
 }
 
+// PrintUpTimeDuration prints how long the target was up for, right as it stops responding.
+func (p *ColorPrinter) PrintUpTimeDuration(s *stats.Statistics) {
+	printYellow("No response received after %s of uptime\n", s.UptimeDuration())
+}
+
 // PrintError prints an error message in red. It takes a print verb and then the arguments.
 func (p *ColorPrinter) PrintError(format string, args ...any) {
 	printRed(format+"\n", args...)

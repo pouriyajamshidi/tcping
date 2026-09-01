@@ -78,6 +78,7 @@ type fakePrinter struct {
 	statsCalls      int
 	retryCalls      int
 	downtimeCalls   int
+	uptimeCalls     int
 	errorCalls      int
 	shutdownCalls   int
 	lastRetryTarget string
@@ -120,6 +121,12 @@ func (f *fakePrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	f.downtimeCalls++
 }
 
+func (f *fakePrinter) PrintUpTimeDuration(s *stats.Statistics) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.uptimeCalls++
+}
+
 func (f *fakePrinter) PrintError(format string, args ...any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -142,6 +149,7 @@ func (f *fakePrinter) snapshot() fakePrinter {
 		statsCalls:    f.statsCalls,
 		retryCalls:    f.retryCalls,
 		downtimeCalls: f.downtimeCalls,
+		uptimeCalls:   f.uptimeCalls,
 		errorCalls:    f.errorCalls,
 		shutdownCalls: f.shutdownCalls,
 	}
@@ -186,7 +194,7 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 }
 
 func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, printer := newTestProber(nil, config.Config{})
 	start := time.Now()
 	p.Statistics.StartOfUptime = start
 	p.Statistics.OngoingSuccessfulProbes = 5
@@ -198,11 +206,43 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	if s.OngoingSuccessfulProbes != 0 {
 		t.Errorf("OngoingSuccessfulProbes = %d, want 0", s.OngoingSuccessfulProbes)
 	}
-	if s.TotalUptime != 100*time.Millisecond {
-		t.Errorf("TotalUptime = %v, want 100ms", s.TotalUptime)
+	if s.TotalUptime != 100*time.Millisecond || s.CurrentUptime != 100*time.Millisecond {
+		t.Errorf("TotalUptime=%v CurrentUptime=%v, want both 100ms", s.TotalUptime, s.CurrentUptime)
 	}
 	if s.LongestUptime.Duration != 100*time.Millisecond || !s.LongestUptime.Start.Equal(start) {
 		t.Errorf("LongestUptime = %+v, want Duration=100ms Start=%v", s.LongestUptime, start)
+	}
+	if got := printer.snapshot().uptimeCalls; got != 1 {
+		t.Errorf("PrintUpTimeDuration called %d times, want 1", got)
+	}
+}
+
+// The very first probe ever has no prior uptime streak to report (the
+// target's status before this point was simply unknown), so failing on it
+// must not print a bogus "up for 0s" (or worse, garbage) message.
+func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
+	p, printer := newTestProber(nil, config.Config{})
+
+	p.handleProbeFailure(time.Now())
+
+	if got := printer.snapshot().uptimeCalls; got != 0 {
+		t.Errorf("PrintUpTimeDuration called %d times, want 0 (no uptime streak ever started)", got)
+	}
+}
+
+// Consecutive failures are the same, single downtime streak - the "was up
+// for X" message should only ever fire once, at the moment uptime ends,
+// not be repeated on every subsequent failed probe.
+func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) {
+	p, printer := newTestProber(nil, config.Config{})
+	start := time.Now()
+	p.Statistics.StartOfUptime = start
+
+	p.handleProbeFailure(start.Add(50 * time.Millisecond))
+	p.handleProbeFailure(start.Add(100 * time.Millisecond))
+
+	if got := printer.snapshot().uptimeCalls; got != 1 {
+		t.Errorf("PrintUpTimeDuration called %d times, want 1", got)
 	}
 }
 

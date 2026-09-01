@@ -52,6 +52,11 @@ type Printer interface {
 	// but it has become available now.
 	PrintDownTimeDuration(s *stats.Statistics)
 
+	// PrintUpTimeDuration should print an uptime duration.
+	// This is called when target was available for some time
+	// but it has just become unavailable.
+	PrintUpTimeDuration(s *stats.Statistics)
+
 	// PrintError prints an error message in red. It takes a print verb and then the arguments.
 	PrintError(format string, args ...any)
 

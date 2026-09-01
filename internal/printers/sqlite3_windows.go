@@ -34,6 +34,9 @@ func (p *DatabasePrinter) PrintRetryingToResolve(_ string) {}
 // PrintDownTimeDuration satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintDownTimeDuration(_ *stats.Statistics) {}
 
+// PrintUpTimeDuration satisfies the "printer" interface but does nothing in this implementation
+func (p *DatabasePrinter) PrintUpTimeDuration(_ *stats.Statistics) {}
+
 // PrintError prints an error message to stderr and exits the program.
 func (p *DatabasePrinter) PrintError(_ string, _ ...any) {}
 

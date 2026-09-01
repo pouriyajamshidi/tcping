@@ -19,6 +19,14 @@ func TestRuntimeDuration_MatchesStartAndEndTime(t *testing.T) {
 	}
 }
 
+func TestUptimeDuration(t *testing.T) {
+	s := &Statistics{CurrentUptime: 90 * time.Second}
+
+	if got, want := s.UptimeDuration(), "1 minute 30 seconds"; got != want {
+		t.Errorf("UptimeDuration() = %q, want %q", got, want)
+	}
+}
+
 func TestRTTResultUpdate(t *testing.T) {
 	var r RTTResult
 

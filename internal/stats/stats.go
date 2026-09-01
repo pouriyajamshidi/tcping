@@ -146,6 +146,10 @@ func (s *Statistics) DowntimeDuration() string {
 	return DurationToString(s.CurrentDowntime)
 }
 
+func (s *Statistics) UptimeDuration() string {
+	return DurationToString(s.CurrentUptime)
+}
+
 func (s *Statistics) LastSuccessfulProbeFormatted() string {
 	return s.LastSuccessfulProbe.Format(time.DateTime)
 }

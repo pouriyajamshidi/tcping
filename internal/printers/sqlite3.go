@@ -361,6 +361,11 @@ func (p *DatabasePrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
 }
 
+// PrintUpTimeDuration prints how long the target was up for, right as it stops responding.
+func (p *DatabasePrinter) PrintUpTimeDuration(s *stats.Statistics) {
+	fmt.Printf("No response received after %s of uptime\n", s.UptimeDuration())
+}
+
 func (p *DatabasePrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Database Error: "+format+"\n", args...)
 }

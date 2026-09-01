@@ -173,6 +173,11 @@ func (p *PlainPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
 }
 
+// PrintUpTimeDuration prints how long the target was up for, right as it stops responding.
+func (p *PlainPrinter) PrintUpTimeDuration(s *stats.Statistics) {
+	fmt.Printf("No response received after %s of uptime\n", s.UptimeDuration())
+}
+
 // PrintError prints an error message. It takes a print verb and then the arguments.
 func (p *PlainPrinter) PrintError(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)

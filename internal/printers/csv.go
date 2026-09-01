@@ -326,6 +326,11 @@ func (p *CSVPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
 }
 
+// PrintUpTimeDuration prints how long the target was up for, right as it stops responding.
+func (p *CSVPrinter) PrintUpTimeDuration(s *stats.Statistics) {
+	fmt.Printf("No response received after %s of uptime\n", s.UptimeDuration())
+}
+
 // PrintError logs an error message to stderr.
 func (p *CSVPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)

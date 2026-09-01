@@ -137,8 +137,6 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 		s.StartOfDowntime = pingTime
 
 		uptimeDuration := pingTime.Sub(s.StartOfUptime)
-
-		// TODO: what do we do with this?
 		s.CurrentUptime = uptimeDuration
 
 		if !s.StartOfUptime.IsZero() {
@@ -149,6 +147,8 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 				uptimeDuration,
 				&s.LongestUptime,
 			)
+
+			p.printer.PrintUpTimeDuration(s)
 		}
 	}
 }
