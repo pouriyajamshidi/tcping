@@ -139,7 +139,7 @@ func (f *fakePrinter) snapshot() fakePrinter {
 
 // newTestProber builds a Prober wired up with the given pinger and a fresh
 // fakePrinter/Statistics pair, ready for either the unit-level handle*
-// tests or a full Probe/ProbeV2 run.
+// tests or a full Probe run.
 func newTestProber(pinger Pinger, cfg config.Config) (*Prober, *fakePrinter) {
 	printer := &fakePrinter{}
 	p := &Prober{
@@ -495,9 +495,9 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 	}
 }
 
-// --- ProbeV2 ----------------------------------------------------------------
+// --- Probe: immediate first probe --------------------------------------
 
-func TestProbeV2_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
+func TestProbe_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		// Deliberately much longer than the context timeout below, so a
@@ -508,8 +508,8 @@ func TestProbeV2_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	if _, err := p.ProbeV2(ctx); err != nil {
-		t.Fatalf("ProbeV2() error = %v", err)
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
 	}
 
 	if got := pinger.calls(); got != 1 {
@@ -517,12 +517,10 @@ func TestProbeV2_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 	}
 }
 
-// ProbeV2's ProbesBeforeQuit check only runs inside the ticker branch, and
-// the immediate initial probe doesn't count toward it. For a threshold of 1
-// this means two probes actually run before ProbeV2 returns: one right away,
-// and one more on the first tick because the check can't fire any earlier
-// than that. This test documents that current, slightly surprising behavior.
-func TestProbeV2_ProbesBeforeQuitOfOneRunsTwoProbes(t *testing.T) {
+// The immediate initial probe reuses the exact same runProbe body as every
+// ticked probe, so it counts toward ProbesBeforeQuit like any other: a
+// threshold of 1 now runs exactly one probe.
+func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
@@ -532,58 +530,11 @@ func TestProbeV2_ProbesBeforeQuitOfOneRunsTwoProbes(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.ProbeV2(ctx); err != nil {
-		t.Fatalf("ProbeV2() error = %v", err)
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
 	}
 
-	if got := pinger.calls(); got != 2 {
-		t.Errorf("Ping called %d times, want 2 (see comment above)", got)
-	}
-}
-
-func TestProbeV2_ProbesBeforeQuitOfThreeRunsThreeProbes(t *testing.T) {
-	pinger := alwaysSucceeds()
-	cfg := config.Config{
-		IntervalBetweenProbes: 5 * time.Millisecond,
-		ProbesBeforeQuit:      3,
-	}
-	p, _ := newTestProber(pinger, cfg)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	if _, err := p.ProbeV2(ctx); err != nil {
-		t.Fatalf("ProbeV2() error = %v", err)
-	}
-
-	if got := pinger.calls(); got != 3 {
-		t.Errorf("Ping called %d times, want 3", got)
-	}
-	if p.Statistics.TotalSuccessfulProbes != 3 {
-		t.Errorf("TotalSuccessfulProbes = %d, want 3", p.Statistics.TotalSuccessfulProbes)
-	}
-}
-
-func TestProbeV2_StopsOnContextCancellation(t *testing.T) {
-	pinger := alwaysSucceeds()
-	cfg := config.Config{IntervalBetweenProbes: 5 * time.Millisecond}
-	p, _ := newTestProber(pinger, cfg)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
-	defer cancel()
-
-	done := make(chan struct{})
-	go func() {
-		p.ProbeV2(ctx)
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("ProbeV2() did not return after its context was cancelled")
-	}
-
-	if pinger.calls() == 0 {
-		t.Error("Ping was never called before the context expired")
+	if got := pinger.calls(); got != 1 {
+		t.Errorf("Ping called %d times, want exactly 1", got)
 	}
 }

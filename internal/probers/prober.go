@@ -47,56 +47,11 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 
 	var probeCount uint
 
-	for {
-		select {
-		case <-ctx.Done():
-			p.finalizeStatistics()
-			return p.Statistics, nil
-
-		case <-p.Ticker.C:
-			pingTime := time.Now()
-
-			probeResult, err := p.pinger.Ping(ctx)
-			rtt := time.Since(pingTime)
-
-			if err != nil {
-				p.handleProbeFailure(pingTime)
-				p.printer.PrintProbeFailure(p.Statistics)
-			} else {
-				p.handleProbeSuccess(pingTime, rtt, probeResult)
-				p.printer.PrintProbeSuccess(p.Statistics)
-			}
-
-			if p.config.ShouldRetryResolve &&
-				p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
-
-				p.Statistics.RetriedHostnameLookups++
-
-				p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
-
-				if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
-					p.printer.PrintError("%s", err.Error())
-				}
-			}
-
-			if p.config.ProbesBeforeQuit > 0 {
-				probeCount++
-
-				if probeCount >= p.config.ProbesBeforeQuit {
-					p.finalizeStatistics()
-					return p.Statistics, nil
-				}
-			}
-		}
-	}
-}
-
-func (p *Prober) ProbeV2(ctx context.Context) (*stats.Statistics, error) {
-	var probeCount uint
-
-	probe := func() {
-		probeCount++
-
+	// runProbe performs a single probe, prints its result, retries hostname
+	// resolution if configured to, and reports whether that was the last
+	// probe to run (ProbesBeforeQuit reached).
+	// we need this to avoid waiting n seconds for the first probe to run.
+	runProbe := func() (done bool) {
 		pingTime := time.Now()
 
 		probeResult, err := p.pinger.Ping(ctx)
@@ -104,19 +59,40 @@ func (p *Prober) ProbeV2(ctx context.Context) (*stats.Statistics, error) {
 
 		if err != nil {
 			p.handleProbeFailure(pingTime)
+			p.printer.PrintProbeFailure(p.Statistics)
 		} else {
 			p.handleProbeSuccess(pingTime, rtt, probeResult)
+			p.printer.PrintProbeSuccess(p.Statistics)
 		}
+
+		if p.config.ShouldRetryResolve &&
+			p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
+
+			p.Statistics.RetriedHostnameLookups++
+
+			p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
+
+			if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
+				p.printer.PrintError("%s", err.Error())
+			}
+		}
+
+		if p.config.ProbesBeforeQuit > 0 {
+			probeCount++
+
+			if probeCount >= p.config.ProbesBeforeQuit {
+				return true
+			}
+		}
+
+		return false
 	}
 
-	p.Ticker = time.NewTicker(p.config.IntervalBetweenProbes)
-	defer p.Ticker.Stop()
-
-	p.Statistics.StartTime = time.Now()
-	p.printer.PrintStart(p.Statistics)
-
-	// so we do not wait the p.Ticker.C to then start probing
-	probe()
+	// Probe immediately instead of waiting for the ticker's first tick.
+	if runProbe() {
+		p.finalizeStatistics()
+		return p.Statistics, nil
+	}
 
 	for {
 		select {
@@ -125,13 +101,9 @@ func (p *Prober) ProbeV2(ctx context.Context) (*stats.Statistics, error) {
 			return p.Statistics, nil
 
 		case <-p.Ticker.C:
-			probe()
-
-			if p.config.ProbesBeforeQuit > 0 {
-				if probeCount >= p.config.ProbesBeforeQuit {
-					p.finalizeStatistics()
-					return p.Statistics, nil
-				}
+			if runProbe() {
+				p.finalizeStatistics()
+				return p.Statistics, nil
 			}
 		}
 	}
