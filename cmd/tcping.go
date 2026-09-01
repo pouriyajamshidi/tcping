@@ -16,6 +16,26 @@ import (
 
 /* TODO:
 - Read the entire code once everything is done for "code smells"
+
+Library support, so other codebases can import tcping (in priority order):
+1. Move internal/config, internal/dns, internal/nic, internal/printers,
+   internal/probers, internal/stats (and internal/consts) out of internal/
+   so they're importable by other modules - blocks everything below
+2. Make config.ProcessUserInput's CLI-only bits (os.Args, the global
+   flag.CommandLine, os.Exit on invalid input) usable programmatically
+3. Stop printers' Shutdown() from calling os.Exit directly - a library
+   caller's process must not be killed by a printer
+4. Do not let checkForUpdates make a network call or exit when reachable
+   from library code - keep it strictly opt-in CLI behavior
+5. Add a mutex/Snapshot() to Statistics so it is safe to read concurrently
+   with an active Prober (app.MonitorSummaryRequest already does this
+   unsynchronized today)
+6. Keep signal handling (app.SetupSignalHandler) and stdin monitoring
+   (app.MonitorSummaryRequest) CLI-only, out of the library's core path
+7. Design a curated top-level public API/entrypoint instead of requiring
+   several packages to be wired together by hand
+8. Treat exported types/fields/methods as a public API contract once this
+   is importable (semver discipline)
 */
 
 func main() {
