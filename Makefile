@@ -4,9 +4,27 @@
 
 # Meta
 SHELL := /bin/bash
-VERSION := 3.0.0_beta
 MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
+
+# Derived from git so a release only needs a tag pushed - no more
+# remembering to also hand-edit this file (this is exactly the failure
+# mode behind the "fix: version typo" entry in the changelog). A commit
+# exactly on a tag gets the clean tag version; anything else gets
+# <branch>-<short-sha>, with a -dirty suffix for uncommitted changes.
+GIT_EXACT_TAG := $(shell git describe --tags --exact-match 2>/dev/null)
+ifneq ($(GIT_EXACT_TAG),)
+VERSION := $(patsubst v%,%,$(GIT_EXACT_TAG))
+else
+GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null)
+GIT_DIRTY := $(shell git diff --quiet HEAD 2>/dev/null || echo -dirty)
+ifeq ($(GIT_BRANCH),)
+VERSION := unknown
+else
+VERSION := $(GIT_BRANCH)-$(GIT_SHA)$(GIT_DIRTY)
+endif
+endif
 
 VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/internal/config
 GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).version=$(VERSION)"
@@ -54,7 +72,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release clean update format vet test tidyup container gifs
+.PHONY: all build release check clean update format vet test container gifs
 
 all: build
 
@@ -72,13 +90,9 @@ clean:
 
 update:
 	@echo "[+] Updating Go dependencies"
-	@go get -u
-	@echo "[+] Done"
-
-tidyup:
-	@echo "[+] Running go mod tidy"
 	@go get -u ./...
 	@go mod tidy
+	@echo "[+] Done"
 
 format:
 	@echo "[+] Formatting files"
