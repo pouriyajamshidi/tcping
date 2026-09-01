@@ -53,6 +53,8 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	// probe to run (ProbesBeforeQuit reached).
 	// we need this to avoid waiting n seconds for the first probe to run.
 	runProbe := func() (done bool) {
+		p.Statistics.ResolvedThisProbe = false
+
 		// Resolve the hostname fresh before this probe when requested,
 		// so it always dials whatever the hostname currently points to
 		// (e.g. DNS round-robin or a frequently-changing record) rather
@@ -63,6 +65,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 			if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
 				p.printer.PrintError("%s", err.Error())
 			} else {
+				p.Statistics.ResolvedThisProbe = true
 				p.printer.PrintNameResolutionDuration(p.Statistics)
 			}
 		}

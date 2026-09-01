@@ -27,6 +27,10 @@ func (p *PlainPrinter) PrintStart(s *stats.Statistics) {
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
 func (p *PlainPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	if s.ResolvedThisProbe {
+		// Shown inline in PrintProbeSuccess/PrintProbeFailure instead.
+		return
+	}
 	fmt.Printf("Resolved in %s ms\n", s.NameResolutionDurationStr())
 }
 
@@ -50,7 +54,12 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	msg += fmt.Sprintf("TCP_conn=%d ", s.OngoingSuccessfulProbes)
-	msg += fmt.Sprintf("time=%s ms\n", s.RTTStr())
+	msg += fmt.Sprintf("time=%s ms", s.RTTStr())
+
+	if s.ResolvedThisProbe {
+		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
+	}
+	msg += "\n"
 
 	fmt.Print(msg)
 }
@@ -74,7 +83,12 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
-	msg += fmt.Sprintf("TCP_conn=%d\n", s.OngoingUnsuccessfulProbes)
+	msg += fmt.Sprintf("TCP_conn=%d", s.OngoingUnsuccessfulProbes)
+
+	if s.ResolvedThisProbe {
+		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
+	}
+	msg += "\n"
 
 	fmt.Print(msg)
 }

@@ -61,6 +61,7 @@ type Statistics struct {
 	WithTimestamp             bool
 	WithSourceAddress         bool
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
+	ResolvedThisProbe         bool          // True when ResolveEveryProbe just resolved successfully for this probe. Lets PrintProbeSuccess/PrintProbeFailure fold NameResolutionDuration into their own line instead of a separate one.
 }
 
 func NewStatistics(cfg Config) *Statistics {

@@ -620,6 +620,9 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 	if p.Statistics.RetriedHostnameLookups != 1 {
 		t.Errorf("RetriedHostnameLookups = %d, want 1", p.Statistics.RetriedHostnameLookups)
 	}
+	if p.Statistics.ResolvedThisProbe {
+		t.Error("ResolvedThisProbe = true, want false (failure-triggered retry, not ResolveEveryProbe)")
+	}
 
 	snap := printer.snapshot()
 	if snap.retryCalls != 1 {
@@ -655,6 +658,9 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 
 	if p.Statistics.RetriedHostnameLookups != 3 {
 		t.Errorf("RetriedHostnameLookups = %d, want 3 (one resolve per probe)", p.Statistics.RetriedHostnameLookups)
+	}
+	if !p.Statistics.ResolvedThisProbe {
+		t.Error("ResolvedThisProbe = false, want true (so color/plain fold the duration into their own probe line)")
 	}
 
 	snap := printer.snapshot()
