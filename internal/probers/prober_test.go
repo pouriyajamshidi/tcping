@@ -276,8 +276,8 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	if s.LastProbeHadFailed {
 		t.Error("LastProbeHadFailed = true, want false")
 	}
-	if s.TotalDowntime != 50*time.Millisecond || s.DownTime != 50*time.Millisecond {
-		t.Errorf("TotalDowntime=%v DownTime=%v, want both 50ms", s.TotalDowntime, s.DownTime)
+	if s.TotalDowntime != 50*time.Millisecond || s.CurrentDowntime != 50*time.Millisecond {
+		t.Errorf("TotalDowntime=%v DownTime=%v, want both 50ms", s.TotalDowntime, s.CurrentDowntime)
 	}
 	if s.LongestDown.Duration != 50*time.Millisecond {
 		t.Errorf("LongestDown.Duration = %v, want 50ms", s.LongestDown.Duration)
@@ -352,8 +352,8 @@ func TestFinalizeStatistics_NoProbesYetIsANoop(t *testing.T) {
 	if s.TotalUptime != 0 || s.TotalDowntime != 0 {
 		t.Errorf("TotalUptime=%v TotalDowntime=%v, want both 0 when no probe ever ran", s.TotalUptime, s.TotalDowntime)
 	}
-	if s.UpTime < 0 {
-		t.Errorf("UpTime = %v, want >= 0", s.UpTime)
+	if s.RuntimeDuration() < 0 {
+		t.Errorf("UpTime = %v, want >= 0", s.CurrentUptime)
 	}
 }
 

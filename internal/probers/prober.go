@@ -154,8 +154,12 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 		s.LastProbeHadFailed = true
 		s.StartOfDowntime = pingTime
 
+		uptimeDuration := pingTime.Sub(s.StartOfUptime)
+
+		// TODO: what do we do with this?
+		s.CurrentUptime = uptimeDuration
+
 		if !s.StartOfUptime.IsZero() {
-			uptimeDuration := pingTime.Sub(s.StartOfUptime)
 			s.TotalUptime += uptimeDuration
 
 			stats.SetLongestDuration(
@@ -190,7 +194,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 		downtimeDuration := pingTime.Sub(s.StartOfDowntime)
 
 		s.TotalDowntime += downtimeDuration
-		s.DownTime = downtimeDuration
+		s.CurrentDowntime = downtimeDuration
 
 		stats.SetLongestDuration(
 			s.StartOfDowntime,
@@ -211,7 +215,6 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 // TODO: this should replace the ShutDown and PrintStats methods
 func (p *Prober) finalizeStatistics() {
 	p.Statistics.EndTime = time.Now()
-	p.Statistics.UpTime = p.Statistics.EndTime.Sub(p.Statistics.StartTime)
 
 	if p.Statistics.LastProbeHadFailed {
 		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)

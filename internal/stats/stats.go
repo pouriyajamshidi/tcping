@@ -39,8 +39,8 @@ type Statistics struct {
 	LocalAddr                 net.Addr
 	StartTime                 time.Time
 	EndTime                   time.Time
-	UpTime                    time.Duration
-	DownTime                  time.Duration
+	CurrentUptime             time.Duration
+	CurrentDowntime           time.Duration
 	TotalSuccessfulProbes     uint
 	TotalUnsuccessfulProbes   uint
 	OngoingSuccessfulProbes   uint          // Count of ongoing successful probes.
@@ -140,7 +140,7 @@ func (s *Statistics) PacketLoss() float32 {
 }
 
 func (s *Statistics) DowntimeDuration() string {
-	return DurationToString(s.DownTime)
+	return DurationToString(s.CurrentDowntime)
 }
 
 func (s *Statistics) LastSuccessfulProbeFormatted() string {
