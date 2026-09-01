@@ -1,6 +1,6 @@
 Set Shell "bash"
 Set FontSize 18
-Set Width 1500
+Set Width 1550
 Set Height 900
 
 Type "tcping example.com 443 --resolve-every-probe -D"
