@@ -15,7 +15,6 @@ import (
 )
 
 /* TODO:
-- Display name resolution times?
 - Run modernize
 - Maybe make the inclusion of timestamps in CSV filenames an option?
 - Read the entire code once everything is done for "code smells"
