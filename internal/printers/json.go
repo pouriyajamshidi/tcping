@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
@@ -223,8 +222,9 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 	})
 }
 
+// Shutdown prints statistics and exits the program. Statistics are already
+// finalized by finalizeStatistics by the time this runs.
 func (p *JSONPrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
+	p.PrintStatistics(s)
 	os.Exit(0)
 }

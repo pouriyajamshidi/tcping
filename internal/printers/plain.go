@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
@@ -179,9 +178,9 @@ func (p *PlainPrinter) PrintError(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
 }
 
-// Shutdown sets the end time, prints statistics, and exits the program.
+// Shutdown prints statistics and exits the program. Statistics are already
+// finalized by finalizeStatistics by the time this runs.
 func (p *PlainPrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
+	p.PrintStatistics(s)
 	os.Exit(0)
 }

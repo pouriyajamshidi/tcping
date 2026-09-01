@@ -365,9 +365,10 @@ func (p *DatabasePrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Database Error: "+format+"\n", args...)
 }
 
+// Shutdown prints statistics, calls Done() and exits the program.
+// Statistics are already finalized by finalizeStatistics by the time this runs.
 func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
+	p.PrintStatistics(s)
 	p.Done()
 	os.Exit(0)
 }

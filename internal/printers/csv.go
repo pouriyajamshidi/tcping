@@ -331,10 +331,10 @@ func (p *CSVPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
-// Shutdown sets the end time, prints statistics, calls Done() and exits the program.
+// Shutdown prints statistics, calls Done() and exits the program.
+// Statistics are already finalized by finalizeStatistics by the time this runs.
 func (p *CSVPrinter) Shutdown(s *stats.Statistics) {
-	s.EndTime = time.Now()
-	PrintStats(p, s)
+	p.PrintStatistics(s)
 	p.Done()
 	os.Exit(0)
 }
