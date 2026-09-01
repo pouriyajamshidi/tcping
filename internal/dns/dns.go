@@ -29,7 +29,6 @@ var (
 	ErrNoIPAddresses = errors.New("no ip addresses")
 )
 
-// TODO: make use of these fields
 type Resolver struct {
 	Resolver *net.Resolver
 	timeout  time.Duration
@@ -38,14 +37,14 @@ type Resolver struct {
 }
 
 // NewResolver creates a Resolver that queries DNSServer (or the system
-// default, if empty). When networkInterface.Use is set, lookups are
-// performed from its source address, matching the -I flag's interface for
-// probes - using whichever of its addresses matches the DNS server's own
-// address family.
+// default, if empty), giving up after timeout (0 means no timeout). When
+// networkInterface.Use is set, lookups are performed from its source
+// address, matching the -I flag's interface for probes - using whichever
+// of its addresses matches the DNS server's own address family.
 func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) *Resolver {
 	return &Resolver{
-		Resolver: createDNSResolver(DNSServer, networkInterface),
-		timeout:  DefaultTimeout,
+		Resolver: createDNSResolver(DNSServer, timeout, networkInterface),
+		timeout:  timeout,
 		useIPv4:  useIPv4,
 		useIPv6:  useIPv6,
 	}
@@ -76,8 +75,9 @@ func getDialAddress(DNSServer string) string {
 // DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
 // When networkInterface.Use is set, lookups are dialed from whichever of
-// its addresses matches the DNS server's address family.
-func createDNSResolver(DNSServer string, networkInterface nic.NetworkInterface) *net.Resolver {
+// its addresses matches the DNS server's address family. dialTimeout of 0
+// means no timeout, matching net.Dialer's own zero-value semantics.
+func createDNSResolver(DNSServer string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
 	dialAddress := getDialAddress(DNSServer)
 
 	return &net.Resolver{
@@ -87,7 +87,7 @@ func createDNSResolver(DNSServer string, networkInterface nic.NetworkInterface) 
 				address = dialAddress
 			}
 
-			d := net.Dialer{Timeout: DefaultTimeout}
+			d := net.Dialer{Timeout: dialTimeout}
 			if networkInterface.Use {
 				d.LocalAddr = localAddrForDial(network, address, networkInterface)
 			}
@@ -186,7 +186,8 @@ func unmapAddresses(ipAddrs []netip.Addr) []netip.Addr {
 	return ipList
 }
 
-// ResolveHostname handles hostname resolution with a timeout value of `DNSTimeout (2 seconds)`
+// ResolveHostname handles hostname resolution, giving up after r.timeout
+// (0 means no timeout).
 func (r *Resolver) ResolveHostname(hostname string) (netip.Addr, error) {
 	// Ensure the target isn't already an IP address
 	ip, err := netip.ParseAddr(hostname)
@@ -194,8 +195,12 @@ func (r *Resolver) ResolveHostname(hostname string) (netip.Addr, error) {
 		return ip, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
-	defer cancel()
+	ctx := context.Background()
+	if r.timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, r.timeout)
+		defer cancel()
+	}
 
 	ipAddrs, err := r.Resolver.LookupNetIP(ctx, IPv4OrIPv6, hostname)
 	if err != nil {

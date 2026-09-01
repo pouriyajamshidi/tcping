@@ -36,7 +36,7 @@ func TestDNSDialAddress(t *testing.T) {
 }
 
 func TestCreateDNSResolver_Defaults(t *testing.T) {
-	resolver := createDNSResolver("", nic.NetworkInterface{})
+	resolver := createDNSResolver("", 2*time.Second, nic.NetworkInterface{})
 	if !resolver.PreferGo {
 		t.Error("expected PreferGo to be true")
 	}
@@ -62,7 +62,7 @@ func TestCreateDNSResolver_OverridesAddress(t *testing.T) {
 		}
 	}()
 
-	resolver := createDNSResolver(ln.Addr().String(), nic.NetworkInterface{})
+	resolver := createDNSResolver(ln.Addr().String(), 2*time.Second, nic.NetworkInterface{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -97,7 +97,7 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 		}
 	}()
 
-	resolver := createDNSResolver("", nic.NetworkInterface{})
+	resolver := createDNSResolver("", 2*time.Second, nic.NetworkInterface{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -129,7 +129,7 @@ func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
 		}
 		defer ln.Close()
 
-		resolver := createDNSResolver("", networkInterface)
+		resolver := createDNSResolver("", 2*time.Second, networkInterface)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -153,7 +153,7 @@ func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
 		}
 		defer ln.Close()
 
-		resolver := createDNSResolver("", networkInterface)
+		resolver := createDNSResolver("", 2*time.Second, networkInterface)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -184,7 +184,7 @@ func TestCreateDNSResolver_IgnoresMismatchedSourceIPFamily(t *testing.T) {
 
 	ipv6SourceIP := net.ParseIP("::1")
 	networkInterface := nic.NetworkInterface{Use: true, SourceIPv6: ipv6SourceIP}
-	resolver := createDNSResolver("", networkInterface)
+	resolver := createDNSResolver("", 2*time.Second, networkInterface)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -216,7 +216,7 @@ func TestCreateDNSResolver_PicksMatchingFamilyFromDualStackInterface(t *testing.
 	}
 	defer ln.Close()
 
-	resolver := createDNSResolver("", networkInterface)
+	resolver := createDNSResolver("", 2*time.Second, networkInterface)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -230,6 +230,76 @@ func TestCreateDNSResolver_PicksMatchingFamilyFromDualStackInterface(t *testing.
 	localIP := conn.LocalAddr().(*net.TCPAddr).IP
 	if !localIP.Equal(net.ParseIP("::1")) {
 		t.Errorf("LocalAddr IP = %v, want ::1 (the IPv6 source, matching the IPv6 server)", localIP)
+	}
+}
+
+// blackholeListener returns the address of a UDP socket that reads and
+// discards every packet it receives without ever replying, so a lookup
+// dialed at it (DNS resolution tries UDP first) reliably hangs until its
+// own timeout gives up. A TCP-only listener wouldn't do this: dialing UDP
+// at a port nothing is bound to gets an almost-instant ICMP port
+// unreachable, which is the opposite of what a hang test needs.
+func blackholeListener(t *testing.T) net.Addr {
+	t.Helper()
+
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	if err != nil {
+		t.Fatalf("failed to start UDP listener: %v", err)
+	}
+	t.Cleanup(func() { conn.Close() })
+
+	go func() {
+		buf := make([]byte, 512)
+		for {
+			if _, _, err := conn.ReadFrom(buf); err != nil {
+				return
+			}
+			// received and discarded; never reply
+		}
+	}()
+
+	return conn.LocalAddr()
+}
+
+// NewResolver must actually use the timeout it's given, not silently fall
+// back to DefaultTimeout regardless of what's passed in.
+func TestNewResolver_TimeoutIsConfigurable(t *testing.T) {
+	addr := blackholeListener(t)
+
+	r := NewResolver(addr.String(), 150*time.Millisecond, false, false, nic.NetworkInterface{})
+
+	start := time.Now()
+	_, err := r.ResolveHostname("example.com")
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("ResolveHostname() error = nil, want a timeout error")
+	}
+	if elapsed > 1500*time.Millisecond {
+		t.Errorf("ResolveHostname() took %v, want it to give up close to the configured 150ms timeout, not the 2s default", elapsed)
+	}
+}
+
+// A timeout of 0 must mean "no deadline", matching net.Dialer's own
+// zero-value semantics and the -t flag's documented convention - not an
+// already-expired context that fails every lookup instantly.
+func TestNewResolver_ZeroTimeoutMeansNoDeadline(t *testing.T) {
+	addr := blackholeListener(t)
+
+	r := NewResolver(addr.String(), 0, false, false, nic.NetworkInterface{})
+
+	done := make(chan struct{})
+	go func() {
+		r.ResolveHostname("example.com")
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		t.Fatal("ResolveHostname() returned almost immediately; a 0 timeout must not create an already-expired context")
+	case <-time.After(300 * time.Millisecond):
+		// Still running after 300ms with nothing responding - correctly
+		// has no deadline instead of failing instantly.
 	}
 }
 

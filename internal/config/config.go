@@ -125,6 +125,7 @@ type Config struct {
 	ProbesBeforeQuit           uint
 	IfaceNameOrIPAddress       string
 	Timeout                    time.Duration
+	DNSTimeout                 time.Duration
 	IntervalBetweenProbes      time.Duration
 	PrinterConfig              printers.PrinterConfig
 	NetworkInterface           nic.NetworkInterface
@@ -246,6 +247,13 @@ func ProcessUserInput() Config {
 		`Custom DNS server IP to use. Defaults to the system-wide server.
 		IP and port combination is allowed: 1.1.1.1:53`)
 
+	dnsTimeout := flag.Float64(
+		"dns-timeout",
+		dns.DefaultTimeout.Seconds(),
+		`Time to wait for a DNS response in seconds.
+		Real number allowed.
+		0 means infinite timeout.`)
+
 	interfaceName := flag.String(
 		"I",
 		"",
@@ -352,9 +360,11 @@ func ProcessUserInput() Config {
 		}
 	}
 
+	dnsTimeoutDuration := SecondsToDuration(*dnsTimeout)
+
 	resolver := dns.NewResolver(
 		*customDNSServer,
-		2*time.Second, // TODO: make this configurable
+		dnsTimeoutDuration,
 		*useIPv4,
 		*useIPv6,
 		networkInterface,
@@ -397,6 +407,7 @@ func ProcessUserInput() Config {
 		UseIPv4:                    *useIPv4,
 		UseIPv6:                    *useIPv6,
 		Timeout:                    timeoutInDuration,
+		DNSTimeout:                 dnsTimeoutDuration,
 		ProbesBeforeQuit:           *probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
