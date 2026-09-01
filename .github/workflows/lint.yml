@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Run Revive Action
-        uses: morphy2k/revive-action@v2.7.8
+        uses: morphy2k/revive-action@bd8016177e3722fe0aad85e22507805641be5bb1 # v2.7.8
         with:
           config: revive.toml
           fail-on-any: true
