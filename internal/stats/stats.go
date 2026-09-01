@@ -41,8 +41,6 @@ type Statistics struct {
 	EndTime                   time.Time
 	UpTime                    time.Duration
 	DownTime                  time.Duration
-	Successful                int
-	Failed                    int
 	TotalSuccessfulProbes     uint
 	TotalUnsuccessfulProbes   uint
 	OngoingSuccessfulProbes   uint          // Count of ongoing successful probes.
@@ -62,7 +60,6 @@ type Statistics struct {
 	RTT                       []float32
 	LatestRTT                 float32
 	RTTResults                RTTResult
-	HostChanges               []HostnameChange
 	WithTimestamp             bool
 	WithSourceAddress         bool
 }

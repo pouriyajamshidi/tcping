@@ -142,7 +142,6 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 
 	s.OngoingSuccessfulProbes = 0
 	s.OngoingUnsuccessfulProbes++
-	s.Failed++
 	s.TotalUnsuccessfulProbes++
 	s.LastUnsuccessfulProbe = pingTime
 
@@ -179,7 +178,6 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 
 	s.LocalAddr = probeResult.LocalAddr
 
-	s.Successful++
 	s.TotalSuccessfulProbes++
 	s.OngoingSuccessfulProbes++
 	s.OngoingUnsuccessfulProbes = 0
