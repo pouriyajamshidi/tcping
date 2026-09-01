@@ -175,7 +175,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 
 	s.RTT = append(s.RTT, rttMs)
 	s.LatestRTT = rttMs
-	s.HasResults = true
+	s.RTTResults.HasResults = true
 
 	s.LocalAddr = probeResult.LocalAddr
 

@@ -247,7 +247,7 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 	if s.LatestRTT != 15 {
 		t.Errorf("LatestRTT = %v, want 15", s.LatestRTT)
 	}
-	if !s.HasResults {
+	if !s.RTTResults.HasResults {
 		t.Error("HasResults = false, want true")
 	}
 	if s.LocalAddr != localAddr {
