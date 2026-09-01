@@ -82,15 +82,15 @@ tidyup:
 
 format:
 	@echo "[+] Formatting files"
-	@gofmt -w *.go
+	@gofmt -l -w .
 
 vet:
 	@echo "[+] Running Go vet"
-	@go vet
+	@go vet ./...
 
 test:
 	@echo "[+] Running tests"
-	@go test
+	@go test ./...
 
 container:
 	@echo "[+] Building container image"
