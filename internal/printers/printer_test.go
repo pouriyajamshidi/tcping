@@ -2,7 +2,6 @@ package printers
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -105,65 +104,6 @@ func TestNewPrinter(t *testing.T) {
 	}
 }
 
-func TestCalcMinAvgMaxRttTime(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []float32
-		expected stats.RTTResult
-	}{
-		{
-			name:  "Empty slice",
-			input: []float32{},
-			expected: stats.RTTResult{
-				HasResults: false,
-				Min:        0,
-				Max:        0,
-				Average:    0,
-			},
-		},
-		{
-			name:  "Single value",
-			input: []float32{15.5},
-			expected: stats.RTTResult{
-				HasResults: true,
-				Min:        15.5,
-				Max:        15.5,
-				Average:    15.5,
-			},
-		},
-		{
-			name:  "Multiple values",
-			input: []float32{10.0, 20.0, 30.0},
-			expected: stats.RTTResult{
-				HasResults: true,
-				Min:        10.0,
-				Max:        30.0,
-				Average:    20.0,
-			},
-		},
-		{
-			name:  "Values with decimals",
-			input: []float32{1.1, 2.2, 3.3, 4.4},
-			expected: stats.RTTResult{
-				HasResults: true,
-				Min:        1.1,
-				Max:        4.4,
-				Average:    2.75,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := calcMinAvgMaxRttTime(tt.input)
-
-			if !reflect.DeepEqual(got, tt.expected) {
-				t.Errorf("calcMinAvgMaxRttTime() = %+v, want %+v", got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestPrintStats(t *testing.T) {
 	t.Run("Sets Longest Downtime on Failure", func(t *testing.T) {
 		mp := &mockPrinter{}
@@ -172,7 +112,6 @@ func TestPrintStats(t *testing.T) {
 		s := &stats.Statistics{
 			LastProbeHadFailed: true,
 			StartOfDowntime:    startTime,
-			RTT:                []float32{10.0, 20.0},
 		}
 
 		PrintStats(mp, s)
@@ -184,10 +123,6 @@ func TestPrintStats(t *testing.T) {
 		if mp.lastReceivedStats.LongestDowntime.Duration < 9*time.Second {
 			t.Errorf("Expected LongestDowntime to be updated, got %v", mp.lastReceivedStats.LongestDowntime.Duration)
 		}
-
-		if mp.lastReceivedStats.RTTResults.HasResults == false {
-			t.Errorf("Expected RTTResults to be populated")
-		}
 	})
 
 	t.Run("Sets Longest Uptime on Success", func(t *testing.T) {
@@ -197,7 +132,6 @@ func TestPrintStats(t *testing.T) {
 		s := &stats.Statistics{
 			LastProbeHadFailed: false,
 			StartOfUptime:      startTime,
-			RTT:                []float32{5.0},
 		}
 
 		PrintStats(mp, s)

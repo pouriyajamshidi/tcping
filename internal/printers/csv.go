@@ -282,7 +282,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		statistics = append(statistics, []string{"Last Unsuccessful Probe", s.LastUnsuccessfulProbeFormatted()})
 	}
 
-	if s.RTTResults.HasResults {
+	if s.TotalSuccessfulProbes > 0 {
 		statistics = append(statistics,
 			[]string{"Latency Min", fmt.Sprintf("%.3f", s.RTTResults.Min)},
 			[]string{"Latency Avg", fmt.Sprintf("%.3f", s.RTTResults.Average)},

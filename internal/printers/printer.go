@@ -1,7 +1,6 @@
 package printers
 
 import (
-	"slices"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -93,30 +92,5 @@ func PrintStats(p Printer, s *stats.Statistics) {
 		stats.SetLongestDuration(s.StartOfUptime, time.Since(s.StartOfUptime), &s.LongestUptime)
 	}
 
-	s.RTTResults = calcMinAvgMaxRttTime(s.RTT)
-
 	p.PrintStatistics(s)
-}
-
-// calcMinAvgMaxRttTime calculates min, avg and max RTT values
-func calcMinAvgMaxRttTime(timeArr []float32) stats.RTTResult {
-	var result stats.RTTResult
-
-	arrLen := len(timeArr)
-	if arrLen == 0 {
-		return result
-	}
-
-	var sum float32
-
-	for _, t := range timeArr {
-		sum += t
-	}
-
-	result.Min = slices.Min(timeArr)
-	result.Max = slices.Max(timeArr)
-	result.Average = sum / float32(arrLen)
-	result.HasResults = true
-
-	return result
 }

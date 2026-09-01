@@ -179,7 +179,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 		}
 	}
 
-	if s.RTTResults.HasResults {
+	if s.TotalSuccessfulProbes > 0 {
 		printYellow("rtt ")
 		printGreen("min")
 		printYellow("/")

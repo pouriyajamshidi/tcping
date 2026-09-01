@@ -241,14 +241,14 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 	p.handleProbeSuccess(now, 15*time.Millisecond, ProbeResult{LocalAddr: localAddr})
 
 	s := p.Statistics
-	if len(s.RTT) != 1 || s.RTT[0] != 15 {
-		t.Errorf("RTT = %v, want [15]", s.RTT)
-	}
 	if s.LatestRTT != 15 {
 		t.Errorf("LatestRTT = %v, want 15", s.LatestRTT)
 	}
-	if !s.RTTResults.HasResults {
-		t.Error("HasResults = false, want true")
+	if s.TotalSuccessfulProbes == 0 {
+		t.Error("TotalSuccessfulProbes = 0, want at least 1")
+	}
+	if s.RTTResults.Min != 15 || s.RTTResults.Max != 15 || s.RTTResults.Average != 15 {
+		t.Errorf("RTTResults = %+v, want Min=Max=Average=15", s.RTTResults)
 	}
 	if s.LocalAddr != localAddr {
 		t.Errorf("LocalAddr = %v, want %v", s.LocalAddr, localAddr)

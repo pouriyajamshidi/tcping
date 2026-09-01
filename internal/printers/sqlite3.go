@@ -291,7 +291,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	latencyMin := any(nil)
 	latencyAvg := any(nil)
 	latencyMax := any(nil)
-	if s.RTTResults.HasResults {
+	if s.TotalSuccessfulProbes > 0 {
 		latencyMin = math.Round(float64(s.RTTResults.Min)*1000) / 1000
 		latencyAvg = math.Round(float64(s.RTTResults.Average)*1000) / 1000
 		latencyMax = math.Round(float64(s.RTTResults.Max)*1000) / 1000

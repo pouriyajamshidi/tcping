@@ -55,9 +55,8 @@ type Statistics struct {
 	LongestDowntime           LongestTime   // Longest downtime streak observed during the entire run.
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
-	RTT                       []float32
-	LatestRTT                 float32
-	RTTResults                RTTResult
+	LatestRTT                 float32   // RTT of the most recent successful probe.
+	RTTResults                RTTResult // Running min/average/max RTT across the entire run.
 	WithTimestamp             bool
 	WithSourceAddress         bool
 }
@@ -72,7 +71,6 @@ func NewStatistics(cfg Config) *Statistics {
 		WithTimestamp:     cfg.GetWithTimestamp(),
 		WithSourceAddress: cfg.GetWithSourceAddress(),
 		Protocol:          consts.TCP,
-		RTTResults:        RTTResult{HasResults: false},
 		LongestUptime:     LongestTime{},
 		LongestDowntime:   LongestTime{},
 		HostnameChanges: []HostnameChange{{
@@ -225,12 +223,30 @@ func DurationToString(d time.Duration) string {
 	}
 }
 
-// RTTResult holds statistics for round-trip times (RTT) results.
+// RTTResult holds running statistics for round-trip times (RTT) results.
+// Its zero value is valid and represents "no samples yet" — callers should
+// use Statistics.TotalSuccessfulProbes to tell whether any samples have
+// been recorded.
 type RTTResult struct {
-	Min        float32 // Minimum RTT value.
-	Max        float32 // Maximum RTT value.
-	Average    float32 // Average RTT value.
-	HasResults bool    // Flag indicating whether RTT results are available.
+	Min     float32 // Minimum RTT value.
+	Max     float32 // Maximum RTT value.
+	Average float32 // Average RTT value.
+}
+
+// Update folds a new RTT sample into the running min, max and average.
+// sampleCount must be the total number of successful probes observed so
+// far, including this one (e.g. Statistics.TotalSuccessfulProbes).
+func (r *RTTResult) Update(rttMs float32, sampleCount uint) {
+	if sampleCount <= 1 {
+		r.Min = rttMs
+		r.Max = rttMs
+	} else {
+		r.Min = min(r.Min, rttMs)
+		r.Max = max(r.Max, rttMs)
+	}
+
+	// Running average: avg_n = avg_(n-1) + (x_n - avg_(n-1)) / n
+	r.Average += (rttMs - r.Average) / float32(sampleCount)
 }
 
 // LongestTime holds information about the longest period of uptime or downtime.

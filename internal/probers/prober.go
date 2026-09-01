@@ -176,16 +176,15 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 
 	rttMs := NanoToMillisecond(rtt.Nanoseconds())
 
-	s.RTT = append(s.RTT, rttMs)
 	s.LatestRTT = rttMs
-	s.RTTResults.HasResults = true
-
 	s.LocalAddr = probeResult.LocalAddr
 
 	s.TotalSuccessfulProbes++
 	s.OngoingSuccessfulProbes++
 	s.OngoingUnsuccessfulProbes = 0
 	s.LastSuccessfulProbe = pingTime
+
+	s.RTTResults.Update(rttMs, s.TotalSuccessfulProbes)
 
 	if s.LastProbeHadFailed {
 		// DOWN -> UP

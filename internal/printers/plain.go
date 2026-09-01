@@ -142,7 +142,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		}
 	}
 
-	if s.RTTResults.HasResults {
+	if s.TotalSuccessfulProbes > 0 {
 		msg += "rtt min/avg/max: "
 		msg += fmt.Sprintf("%.3f/%.3f/%.3f ms\n",
 			s.RTTResults.Min,

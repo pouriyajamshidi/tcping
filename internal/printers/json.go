@@ -192,7 +192,7 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		}
 	}
 
-	if s.RTTResults.HasResults {
+	if s.TotalSuccessfulProbes > 0 {
 		data.LatencyMin = s.RTTResults.Min
 		data.LatencyAvg = s.RTTResults.Average
 		data.LatencyMax = s.RTTResults.Max
