@@ -17,7 +17,6 @@ import (
 /* TODO:
 - Show how long we were up on failure similar to what we do for success?
 - Get DNS timeout as a user input option?
-- createDNSResolver to also account for the -I flag
 - Display name resolution times?
 - Use built-in slice functions for min max avg, etc
 - Run modernize

@@ -34,7 +34,7 @@ func TestDNSDialAddress(t *testing.T) {
 }
 
 func TestCreateDNSResolver_Defaults(t *testing.T) {
-	resolver := createDNSResolver("")
+	resolver := createDNSResolver("", nil)
 	if !resolver.PreferGo {
 		t.Error("expected PreferGo to be true")
 	}
@@ -60,7 +60,7 @@ func TestCreateDNSResolver_OverridesAddress(t *testing.T) {
 		}
 	}()
 
-	resolver := createDNSResolver(ln.Addr().String())
+	resolver := createDNSResolver(ln.Addr().String(), nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -95,7 +95,7 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 		}
 	}()
 
-	resolver := createDNSResolver("")
+	resolver := createDNSResolver("", nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -111,6 +111,60 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("listener never received a connection")
 	}
+}
+
+// When a source IP is given, DNS lookups must be dialed from it, so
+// resolution honors the -I flag the same way probes do.
+func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
+	sourceIP := net.ParseIP("127.0.0.1")
+
+	t.Run("tcp", func(t *testing.T) {
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("failed to start listener: %v", err)
+		}
+		defer ln.Close()
+
+		resolver := createDNSResolver("", sourceIP)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		conn, err := resolver.Dial(ctx, "tcp", ln.Addr().String())
+		if err != nil {
+			t.Fatalf("Dial failed: %v", err)
+		}
+		defer conn.Close()
+
+		localIP := conn.LocalAddr().(*net.TCPAddr).IP
+		if !localIP.Equal(sourceIP) {
+			t.Errorf("LocalAddr IP = %v, want %v", localIP, sourceIP)
+		}
+	})
+
+	t.Run("udp", func(t *testing.T) {
+		ln, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+		if err != nil {
+			t.Fatalf("failed to start UDP listener: %v", err)
+		}
+		defer ln.Close()
+
+		resolver := createDNSResolver("", sourceIP)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		conn, err := resolver.Dial(ctx, "udp", ln.LocalAddr().String())
+		if err != nil {
+			t.Fatalf("Dial failed: %v", err)
+		}
+		defer conn.Close()
+
+		localIP := conn.LocalAddr().(*net.UDPAddr).IP
+		if !localIP.Equal(sourceIP) {
+			t.Errorf("LocalAddr IP = %v, want %v", localIP, sourceIP)
+		}
+	})
 }
 
 func TestSelectResolvedIPv4(t *testing.T) {

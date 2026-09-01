@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net"
 	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
@@ -35,9 +36,12 @@ type Resolver struct {
 	useIPv6  bool
 }
 
-func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool) *Resolver {
+// NewResolver creates a Resolver that queries DNSServer (or the system
+// default, if empty). When sourceIP is non-nil, lookups are performed from
+// that source address, matching the -I flag's interface for probes.
+func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool, sourceIP net.IP) *Resolver {
 	return &Resolver{
-		Resolver: createDNSResolver(DNSServer),
+		Resolver: createDNSResolver(DNSServer, sourceIP),
 		timeout:  DefaultTimeout,
 		useIPv4:  useIPv4,
 		useIPv6:  useIPv6,
@@ -68,7 +72,8 @@ func getDialAddress(DNSServer string) string {
 // It helps bypass incorrect OS DNS cache entries.
 // DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
-func createDNSResolver(DNSServer string) *net.Resolver {
+// When sourceIP is non-nil, lookups are dialed from that source address.
+func createDNSResolver(DNSServer string, sourceIP net.IP) *net.Resolver {
 	dialAddress := getDialAddress(DNSServer)
 
 	return &net.Resolver{
@@ -77,10 +82,26 @@ func createDNSResolver(DNSServer string) *net.Resolver {
 			if dialAddress != "" {
 				address = dialAddress
 			}
+
 			d := net.Dialer{Timeout: DefaultTimeout}
+			if sourceIP != nil {
+				d.LocalAddr = localAddrForNetwork(network, sourceIP)
+			}
+
 			return d.DialContext(ctx, network, address)
 		},
 	}
+}
+
+// localAddrForNetwork builds the net.Addr type net.Dialer.LocalAddr requires
+// for the given dial network ("udp"/"udp4"/"udp6" vs "tcp"/"tcp4"/"tcp6") -
+// the resolver may dial either, depending on response size and OS resolver
+// configuration.
+func localAddrForNetwork(network string, ip net.IP) net.Addr {
+	if strings.HasPrefix(network, "tcp") {
+		return &net.TCPAddr{IP: ip}
+	}
+	return &net.UDPAddr{IP: ip}
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures

@@ -8,17 +8,15 @@ import (
 
 // NetworkInterface represents a network interface used for connecting to the target.
 type NetworkInterface struct {
-	RemoteAddr *net.TCPAddr // Remote address for the network interface.
-	Dialer     net.Dialer   // Dialer used to make network connections.
-	Use        bool         // Flag indicating whether to use this network interface.
+	SourceIP net.IP     // Source IP address to use for outgoing connections, including DNS lookups.
+	Dialer   net.Dialer // Dialer used to make network connections.
+	Use      bool       // Flag indicating whether to use this network interface.
 }
 
 // NewNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
 // to use as the source IP address for the probes. The given IP address must exist on a NIC.
 func NewNetworkInterface(
 	sourceAddress string,
-	target netip.Addr,
-	port uint16,
 	useIPv4,
 	useIPv6 bool,
 ) (NetworkInterface, error) {
@@ -83,11 +81,8 @@ func NewNetworkInterface(
 	}
 
 	return NetworkInterface{
-		Use: true,
-		RemoteAddr: &net.TCPAddr{
-			IP:   target.AsSlice(),
-			Port: int(port),
-		},
+		Use:      true,
+		SourceIP: interfaceAddress,
 		Dialer: net.Dialer{
 			LocalAddr: &net.TCPAddr{
 				IP: interfaceAddress,

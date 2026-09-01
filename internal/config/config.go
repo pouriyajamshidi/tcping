@@ -337,11 +337,27 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
+	// Resolved before the DNS resolver so hostname lookups can also be
+	// bound to it (see createDNSResolver).
+	var networkInterface nic.NetworkInterface
+	if *interfaceName != "" {
+		networkInterface, err = nic.NewNetworkInterface(
+			*interfaceName,
+			*useIPv4,
+			*useIPv6,
+		)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+	}
+
 	resolver := dns.NewResolver(
 		*customDNSServer,
 		2*time.Second, // TODO: make this configurable
 		*useIPv4,
 		*useIPv6,
+		networkInterface.SourceIP,
 	)
 
 	var targetIsAlreadyIP bool
@@ -361,22 +377,6 @@ func ProcessUserInput() Config {
 	}
 
 	timeoutInDuration := SecondsToDuration(*timeout)
-
-	// TODO: double check
-	var networkInterface nic.NetworkInterface
-	if *interfaceName != "" {
-		networkInterface, err = nic.NewNetworkInterface(
-			*interfaceName,
-			resolvedIP,
-			validatedPort,
-			*useIPv4,
-			*useIPv6,
-		)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-	}
 
 	printerConfig := printers.PrinterConfig{
 		Target:            target,

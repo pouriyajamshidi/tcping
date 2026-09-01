@@ -468,7 +468,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 2,
 		// A literal IP resolves without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false),
+		Resolver: dns.NewResolver("", time.Second, false, false, nil),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.Statistics.Hostname = "127.0.0.1"
