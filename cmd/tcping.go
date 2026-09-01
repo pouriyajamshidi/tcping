@@ -15,13 +15,11 @@ import (
 )
 
 /* TODO:
-- Show how long we were up on failure similar to what we do for success?
 - Get DNS timeout as a user input option?
 - Display name resolution times?
 - Use built-in slice functions for min max avg, etc
 - Run modernize
 - Maybe make the inclusion of timestamps in CSV filenames an option?
-- Shutdown would not be needed once the program flow is solid
 - Read the entire code once everything is done for "code smells"
 */
 
