@@ -273,7 +273,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	longestUptime := ""
 	longestUptimeStart := ""
 	longestUptimeEnd := ""
-	if s.LongestUp.Duration != 0 {
+	if s.LongestUptime.Duration != 0 {
 		longestUptime = s.LongestUptimeDuration()
 		longestUptimeStart = s.LongestUptimeStartTime()
 		longestUptimeEnd = s.LongestUptimeEndTime()
@@ -282,7 +282,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	longestDowntime := ""
 	longestDowntimeStart := ""
 	longestDowntimeEnd := ""
-	if s.LongestDown.Duration != 0 {
+	if s.LongestDowntime.Duration != 0 {
 		longestDowntime = s.LongestDowntimeDuration()
 		longestDowntimeStart = s.LongestDowntimeStartTime()
 		longestDowntimeEnd = s.LongestDowntimeEndTime()

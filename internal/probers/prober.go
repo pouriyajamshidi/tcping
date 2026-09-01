@@ -199,7 +199,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 		stats.SetLongestDuration(
 			s.StartOfDowntime,
 			downtimeDuration,
-			&s.LongestDown,
+			&s.LongestDowntime,
 		)
 
 		p.printer.PrintDownTimeDuration(s)
@@ -219,14 +219,14 @@ func (p *Prober) finalizeStatistics() {
 	if p.Statistics.LastProbeHadFailed {
 		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
 		p.Statistics.TotalDowntime += downDuration
-		stats.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDown)
+		stats.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDowntime)
 		return
 	}
 
 	if !p.Statistics.StartOfUptime.IsZero() {
 		upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
 		p.Statistics.TotalUptime += upDuration
-		stats.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUp)
+		stats.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUptime)
 	}
 }
 

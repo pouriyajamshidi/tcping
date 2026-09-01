@@ -137,7 +137,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow("total downtime: ")
 	printRed("%s\n", s.TotalDowntimeDuration())
 
-	if s.LongestUp.Duration != 0 {
+	if s.LongestUptime.Duration != 0 {
 		printYellow("longest consecutive uptime:   ")
 		printGreen("%s ", s.LongestUptimeDuration())
 		printYellow("from ")
@@ -146,7 +146,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 		printLightBlue("%s\n", s.LongestUptimeEndTime())
 	}
 
-	if s.LongestDown.Duration != 0 {
+	if s.LongestDowntime.Duration != 0 {
 		printYellow("longest consecutive downtime: ")
 		printRed("%s ", s.LongestDowntimeDuration())
 		printYellow("from ")

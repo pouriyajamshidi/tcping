@@ -51,12 +51,10 @@ type Statistics struct {
 	TotalUptime               time.Duration // Total accumulated uptime.
 	StartOfUptime             time.Time     // Timestamp when the current uptime started.
 	StartOfDowntime           time.Time     // Timestamp when the current downtime started.
-	LongestUptime             LongestTime   // Data structure holding information about the longest uptime.
-	LongestDowntime           LongestTime   // Data structure holding information about the longest downtime.
+	LongestUptime             LongestTime   // Longest uptime streak observed during the entire run.
+	LongestDowntime           LongestTime   // Longest downtime streak observed during the entire run.
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
-	LongestUp                 LongestTime
-	LongestDown               LongestTime
 	RTT                       []float32
 	LatestRTT                 float32
 	RTTResults                RTTResult
@@ -160,27 +158,27 @@ func (s *Statistics) TotalDowntimeDuration() string {
 }
 
 func (s *Statistics) LongestUptimeDuration() string {
-	return DurationToString(s.LongestUp.Duration)
+	return DurationToString(s.LongestUptime.Duration)
 }
 
 func (s *Statistics) LongestUptimeStartTime() string {
-	return s.LongestUp.Start.Format(time.DateTime)
+	return s.LongestUptime.Start.Format(time.DateTime)
 }
 
 func (s *Statistics) LongestUptimeEndTime() string {
-	return s.LongestUp.End.Format(time.DateTime)
+	return s.LongestUptime.End.Format(time.DateTime)
 }
 
 func (s *Statistics) LongestDowntimeDuration() string {
-	return DurationToString(s.LongestDown.Duration)
+	return DurationToString(s.LongestDowntime.Duration)
 }
 
 func (s *Statistics) LongestDowntimeStartTime() string {
-	return s.LongestDown.Start.Format(time.DateTime)
+	return s.LongestDowntime.Start.Format(time.DateTime)
 }
 
 func (s *Statistics) LongestDowntimeEndTime() string {
-	return s.LongestDown.End.Format(time.DateTime)
+	return s.LongestDowntime.End.Format(time.DateTime)
 }
 
 // DurationToString creates a human-readable string for a given duration

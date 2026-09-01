@@ -176,11 +176,11 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		data.LastUnsuccessfulProbe = s.LastUnsuccessfulProbeFormatted()
 	}
 
-	if s.LongestUp.Duration != 0 {
+	if s.LongestUptime.Duration != 0 {
 		data.LongestUptime = s.LongestUptimeDuration()
 	}
 
-	if s.LongestDown.Duration != 0 {
+	if s.LongestDowntime.Duration != 0 {
 		data.LongestDowntime = s.LongestDowntimeDuration()
 	}
 

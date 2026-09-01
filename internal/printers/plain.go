@@ -108,14 +108,14 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	msg += fmt.Sprintf("total uptime: %s\n", s.TotalUptimeDuration())
 	msg += fmt.Sprintf("total downtime: %s\n", s.TotalDowntimeDuration())
 
-	if s.LongestUp.Duration != 0 {
+	if s.LongestUptime.Duration != 0 {
 		msg += "longest consecutive uptime:   "
 		msg += fmt.Sprintf("%s ", s.LongestUptimeDuration())
 		msg += fmt.Sprintf("from %s ", s.LongestUptimeStartTime())
 		msg += fmt.Sprintf("to %s\n", s.LongestUptimeEndTime())
 	}
 
-	if s.LongestDown.Duration != 0 {
+	if s.LongestDowntime.Duration != 0 {
 		msg += fmt.Sprintf("longest consecutive downtime: %s ", s.LongestDowntimeDuration())
 		msg += fmt.Sprintf("from %s ", s.LongestDowntimeStartTime())
 		msg += fmt.Sprintf("to %s\n", s.LongestDowntimeEndTime())

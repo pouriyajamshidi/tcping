@@ -216,7 +216,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		[]string{"Total Packet Loss Percentage", fmt.Sprintf("%.2f", s.PacketLoss())},
 	)
 
-	if s.LongestUp.Duration != 0 {
+	if s.LongestUptime.Duration != 0 {
 		statistics = append(statistics,
 			[]string{"Longest Uptime", s.LongestUptimeDuration()},
 			[]string{"Longest Consecutive Uptime Start", s.LongestUptimeStartTime()},
@@ -230,7 +230,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	}
 
-	if s.LongestDown.Duration != 0 {
+	if s.LongestDowntime.Duration != 0 {
 		statistics = append(statistics,
 			[]string{"Longest Downtime", s.LongestDowntimeDuration()},
 			[]string{"Longest Consecutive Downtime Start", s.LongestDowntimeStartTime()},

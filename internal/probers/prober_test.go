@@ -279,8 +279,8 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	if s.TotalDowntime != 50*time.Millisecond || s.CurrentDowntime != 50*time.Millisecond {
 		t.Errorf("TotalDowntime=%v DownTime=%v, want both 50ms", s.TotalDowntime, s.CurrentDowntime)
 	}
-	if s.LongestDown.Duration != 50*time.Millisecond {
-		t.Errorf("LongestDown.Duration = %v, want 50ms", s.LongestDown.Duration)
+	if s.LongestDowntime.Duration != 50*time.Millisecond {
+		t.Errorf("LongestDowntime.Duration = %v, want 50ms", s.LongestDowntime.Duration)
 	}
 	if !s.StartOfUptime.Equal(upAt) {
 		t.Errorf("StartOfUptime = %v, want %v", s.StartOfUptime, upAt)
@@ -322,8 +322,8 @@ func TestFinalizeStatistics_WhileDownAccruesRemainingDowntime(t *testing.T) {
 	if s.TotalDowntime < 50*time.Millisecond {
 		t.Errorf("TotalDowntime = %v, want at least 50ms", s.TotalDowntime)
 	}
-	if s.LongestDown.Duration != s.TotalDowntime {
-		t.Errorf("LongestDown.Duration = %v, want %v", s.LongestDown.Duration, s.TotalDowntime)
+	if s.LongestDowntime.Duration != s.TotalDowntime {
+		t.Errorf("LongestDowntime.Duration = %v, want %v", s.LongestDowntime.Duration, s.TotalDowntime)
 	}
 }
 
@@ -337,8 +337,8 @@ func TestFinalizeStatistics_WhileUpAccruesRemainingUptime(t *testing.T) {
 	if s.TotalUptime < 50*time.Millisecond {
 		t.Errorf("TotalUptime = %v, want at least 50ms", s.TotalUptime)
 	}
-	if s.LongestUp.Duration != s.TotalUptime {
-		t.Errorf("LongestUp.Duration = %v, want %v", s.LongestUp.Duration, s.TotalUptime)
+	if s.LongestUptime.Duration != s.TotalUptime {
+		t.Errorf("LongestUptime.Duration = %v, want %v", s.LongestUptime.Duration, s.TotalUptime)
 	}
 }
 
