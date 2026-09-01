@@ -18,6 +18,24 @@
 - dependencies: replace `github.com/google/go-github` with Go's built-in HTTP library
 - docs: grammar fix in the README.md thanks to @taiman724
 - project structure: move Artwork and Images folders to the docs folder
+- refactor (breaking): rewrite the JSON output events - each event now carries a minimal, consistent payload (`start`, `probe`, `retry`, `downtimeDuration`, `uptimeDuration`, `nameResolution`, `statistics`, `error`) instead of one large struct with inconsistent field names; the `info` event type is removed
+- refactor (breaking): rewrite the sqlite3 schema - drop the generic `type` column and rename `success` to `reachable` and `time` to `latency`
+- refactor (breaking): rename the CSV `Status` column to `Reachable` (values are now lowercase `true`/`false` instead of `Reply`/`No Reply`) and the stats file's `Metric` column to `Statistic`
+- fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
+- fix: fix a bug that showed downtime as uptime
+- fix: fix incorrect timestamp handling in the JSON printer
+- feat: CSV output filenames now get a date/time suffix by default; add `--csv-no-timestamp` to reuse the same file across runs instead
+- feat: add `--resolve-every-probe` flag to resolve the target's hostname before every probe instead of only at startup or on retry (`-r`)
+- feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
+- feat: show how long hostname resolution took - at startup, on every retry-resolve, and per-entry in the "IP address changes" summary
+- improvement: `-I` now keeps working correctly when the interface has both an IPv4 and an IPv6 address and the target's resolved address family changes mid-run
+- improvement: DNS resolution is now sourced from `-I`'s interface too, matching what probes already did
+- improvement: show how long the target was up right when it starts failing, mirroring the existing downtime message
+- improvement: probing now starts immediately instead of waiting for the first interval to elapse
+- fix: hostname retry-resolve (`-r`) now actually changes the address being probed instead of only updating what's displayed
+- fix: the summary's `duration (HH:MM:SS)` now always matches the `started at`/`ended at` timestamps instead of silently drifting from them
+- refactor: simplify RTT min/avg/max tracking into a running calculation instead of storing every sample
+- refactor: consolidate uptime/downtime tracking and remove duplicated/unused `Statistics` fields
 
 ## v2.8.0 - 2026-05-11
 
