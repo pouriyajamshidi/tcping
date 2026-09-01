@@ -18,6 +18,9 @@ func NewDatabasePrinter(_ string, _ uint16, _ string) (*DatabasePrinter, error) 
 // PrintStart prints a message indicating that TCPing has started for the given hostname and port.
 func (p *DatabasePrinter) PrintStart(_ *stats.Statistics) {}
 
+// PrintNameResolutionDuration satisfies the "printer" interface but does nothing in this implementation
+func (p *DatabasePrinter) PrintNameResolutionDuration(_ *stats.Statistics) {}
+
 // PrintProbeSuccess satisfies the "printer" interface but does nothing in this implementation
 func (p *DatabasePrinter) PrintProbeSuccess(_ *stats.Statistics) {}
 

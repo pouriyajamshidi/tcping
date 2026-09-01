@@ -245,7 +245,17 @@ func (p *DatabasePrinter) insertProbe(
 
 // PrintStart prints a message indicating that TCPing has started.
 func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
-	fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.FilePath)
+	if s.DestIsIP {
+		fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.FilePath)
+		return
+	}
+	fmt.Printf("TCPinging %s on port %d (resolved in %s ms) - saving the results to: %s\n",
+		s.Hostname, s.Port, s.NameResolutionDurationStr(), p.FilePath)
+}
+
+// PrintNameResolutionDuration prints how long a hostname resolution retry took.
+func (p *DatabasePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	fmt.Printf("Resolved in %s ms\n", s.NameResolutionDurationStr())
 }
 
 // PrintProbeSuccess writes successful probe details to the database.

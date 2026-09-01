@@ -77,8 +77,14 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 
 			p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
 
-			if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
+			resolveStart := time.Now()
+			err := p.config.Resolver.RetryResolveHostname(p.Statistics)
+			p.Statistics.NameResolutionDuration = time.Since(resolveStart)
+
+			if err != nil {
 				p.printer.PrintError("%s", err.Error())
+			} else {
+				p.printer.PrintNameResolutionDuration(p.Statistics)
 			}
 		}
 

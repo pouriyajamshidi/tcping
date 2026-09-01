@@ -27,6 +27,14 @@ func TestUptimeDuration(t *testing.T) {
 	}
 }
 
+func TestNameResolutionDurationStr(t *testing.T) {
+	s := &Statistics{NameResolutionDuration: 23456 * time.Microsecond}
+
+	if got, want := s.NameResolutionDurationStr(), "23.456"; got != want {
+		t.Errorf("NameResolutionDurationStr() = %q, want %q", got, want)
+	}
+}
+
 func TestRTTResultUpdate(t *testing.T) {
 	var r RTTResult
 

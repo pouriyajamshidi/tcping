@@ -29,8 +29,9 @@ type jsonEvent struct {
 }
 
 type jsonStart struct {
-	Hostname string `json:"hostname"`
-	Port     uint16 `json:"port"`
+	Hostname               string `json:"hostname"`
+	Port                   uint16 `json:"port"`
+	NameResolutionDuration string `json:"nameResolutionDurationMs,omitempty"`
 }
 
 type jsonProbe struct {
@@ -46,6 +47,10 @@ type jsonProbe struct {
 
 type jsonRetry struct {
 	Hostname string `json:"hostname"`
+}
+
+type jsonNameResolution struct {
+	DurationMs string `json:"durationMs"`
 }
 
 type jsonDowntime struct {
@@ -92,9 +97,20 @@ func (p *JSONPrinter) encode(event string, data any) {
 }
 
 func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
-	p.encode("start", jsonStart{
+	start := jsonStart{
 		Hostname: s.Hostname,
 		Port:     s.Port,
+	}
+	if !s.DestIsIP {
+		start.NameResolutionDuration = s.NameResolutionDurationStr()
+	}
+	p.encode("start", start)
+}
+
+// PrintNameResolutionDuration prints how long the initial hostname resolution took.
+func (p *JSONPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	p.encode("nameResolution", jsonNameResolution{
+		DurationMs: s.NameResolutionDurationStr(),
 	})
 }
 

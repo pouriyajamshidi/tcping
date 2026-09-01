@@ -72,22 +72,29 @@ func (e errFake) Error() string { return string(e) }
 type fakePrinter struct {
 	mu sync.Mutex
 
-	startCalls      int
-	successCalls    int
-	failureCalls    int
-	statsCalls      int
-	retryCalls      int
-	downtimeCalls   int
-	uptimeCalls     int
-	errorCalls      int
-	shutdownCalls   int
-	lastRetryTarget string
+	startCalls          int
+	nameResolutionCalls int
+	successCalls        int
+	failureCalls        int
+	statsCalls          int
+	retryCalls          int
+	downtimeCalls       int
+	uptimeCalls         int
+	errorCalls          int
+	shutdownCalls       int
+	lastRetryTarget     string
 }
 
 func (f *fakePrinter) PrintStart(s *stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.startCalls++
+}
+
+func (f *fakePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.nameResolutionCalls++
 }
 
 func (f *fakePrinter) PrintProbeSuccess(s *stats.Statistics) {
@@ -143,15 +150,16 @@ func (f *fakePrinter) snapshot() fakePrinter {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return fakePrinter{
-		startCalls:    f.startCalls,
-		successCalls:  f.successCalls,
-		failureCalls:  f.failureCalls,
-		statsCalls:    f.statsCalls,
-		retryCalls:    f.retryCalls,
-		downtimeCalls: f.downtimeCalls,
-		uptimeCalls:   f.uptimeCalls,
-		errorCalls:    f.errorCalls,
-		shutdownCalls: f.shutdownCalls,
+		startCalls:          f.startCalls,
+		nameResolutionCalls: f.nameResolutionCalls,
+		successCalls:        f.successCalls,
+		failureCalls:        f.failureCalls,
+		statsCalls:          f.statsCalls,
+		retryCalls:          f.retryCalls,
+		downtimeCalls:       f.downtimeCalls,
+		uptimeCalls:         f.uptimeCalls,
+		errorCalls:          f.errorCalls,
+		shutdownCalls:       f.shutdownCalls,
 	}
 }
 
@@ -438,8 +446,85 @@ func TestProbe_StopsAfterProbesBeforeQuit(t *testing.T) {
 	if snap.startCalls != 1 {
 		t.Errorf("PrintStart called %d times, want 1", snap.startCalls)
 	}
+	if snap.nameResolutionCalls != 0 {
+		t.Errorf("PrintNameResolutionDuration called %d times, want 0 (no retry-resolve happened)", snap.nameResolutionCalls)
+	}
 	if snap.successCalls != 3 {
 		t.Errorf("PrintProbeSuccess called %d times, want 3", snap.successCalls)
+	}
+}
+
+// PrintNameResolutionDuration is now only about retry-resolve (the initial
+// resolution time is folded into PrintStart's own line instead), so a
+// successful retry must print it and update Statistics.NameResolutionDuration.
+func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T) {
+	pinger := alwaysFails()
+	cfg := config.Config{
+		IntervalBetweenProbes:      5 * time.Millisecond,
+		ProbesBeforeQuit:           1,
+		ShouldRetryResolve:         true,
+		RetryResolveAfterNFailures: 1,
+		// A literal IP resolves without touching the network.
+		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, printer := newTestProber(pinger, cfg)
+	p.Statistics.Hostname = "127.0.0.1"
+
+	if _, err := p.Probe(context.Background()); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	if got := printer.snapshot().nameResolutionCalls; got != 1 {
+		t.Errorf("PrintNameResolutionDuration called %d times, want 1", got)
+	}
+	if p.Statistics.NameResolutionDuration < 0 {
+		t.Errorf("NameResolutionDuration = %v, want >= 0", p.Statistics.NameResolutionDuration)
+	}
+}
+
+// A failed retry-resolve has no successful resolution to report a duration
+// for - PrintError already covers it.
+func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing.T) {
+	// A UDP socket that reads and discards every packet without ever
+	// replying, so a lookup against it reliably times out instead of
+	// racily depending on real network/DNS behavior.
+	blackhole, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	if err != nil {
+		t.Fatalf("failed to start UDP listener: %v", err)
+	}
+	defer blackhole.Close()
+	go func() {
+		buf := make([]byte, 512)
+		for {
+			if _, _, err := blackhole.ReadFrom(buf); err != nil {
+				return
+			}
+		}
+	}()
+
+	pinger := alwaysFails()
+	cfg := config.Config{
+		IntervalBetweenProbes:      5 * time.Millisecond,
+		ProbesBeforeQuit:           1,
+		ShouldRetryResolve:         true,
+		RetryResolveAfterNFailures: 1,
+		Resolver:                   dns.NewResolver(blackhole.LocalAddr().String(), 200*time.Millisecond, false, false, nic.NetworkInterface{}),
+	}
+	p, printer := newTestProber(pinger, cfg)
+	p.Statistics.Hostname = "example.com"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	snap := printer.snapshot()
+	if snap.nameResolutionCalls != 0 {
+		t.Errorf("PrintNameResolutionDuration called %d times, want 0 (retry-resolve failed)", snap.nameResolutionCalls)
+	}
+	if snap.errorCalls != 1 {
+		t.Errorf("PrintError called %d times, want 1", snap.errorCalls)
 	}
 }
 

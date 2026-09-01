@@ -134,7 +134,17 @@ func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 	p.writeProbeHeader(s)
 	p.writeStatsHeader()
 
-	fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.ProbeFile.Name())
+	if s.DestIsIP {
+		fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.ProbeFile.Name())
+		return
+	}
+	fmt.Printf("TCPinging %s on port %d (resolved in %s ms) - saving the results to: %s\n",
+		s.Hostname, s.Port, s.NameResolutionDurationStr(), p.ProbeFile.Name())
+}
+
+// PrintNameResolutionDuration prints how long a hostname resolution retry took.
+func (p *CSVPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	fmt.Printf("Resolved in %s ms\n", s.NameResolutionDurationStr())
 }
 
 // PrintProbeSuccess logs a successful probe to the CSV file.

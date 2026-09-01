@@ -129,8 +129,9 @@ type Config struct {
 	IntervalBetweenProbes      time.Duration
 	PrinterConfig              printers.PrinterConfig
 	NetworkInterface           nic.NetworkInterface
-	RetryHostnameLookupAfter   uint // Number of failed requests before retrying to resolve the hostname.
-	TargetIsIP                 bool // Flag indicating whether the destination is an IP address (not a hostname).
+	RetryHostnameLookupAfter   uint          // Number of failed requests before retrying to resolve the hostname.
+	TargetIsIP                 bool          // Flag indicating whether the destination is an IP address (not a hostname).
+	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
 	ShouldRetryResolve         bool
 	ShowFailuresOnly           bool
 	Resolver                   *dns.Resolver
@@ -170,6 +171,10 @@ func (c Config) GetProbesBeforeQuit() uint {
 
 func (c Config) GetTargetIsIP() bool {
 	return c.TargetIsIP
+}
+
+func (c Config) GetNameResolutionDuration() time.Duration {
+	return c.NameResolutionDuration
 }
 
 func (c Config) GetIntervalBetweenProbes() string {
@@ -372,7 +377,9 @@ func ProcessUserInput() Config {
 
 	var targetIsAlreadyIP bool
 
+	resolveStart := time.Now()
 	resolvedIP, err := resolver.ResolveHostname(target)
+	nameResolutionDuration := time.Since(resolveStart)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target, err)
 		os.Exit(1)
@@ -410,6 +417,7 @@ func ProcessUserInput() Config {
 		DNSTimeout:                 dnsTimeoutDuration,
 		ProbesBeforeQuit:           *probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
+		NameResolutionDuration:     nameResolutionDuration,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
 		Resolver:                   resolver,

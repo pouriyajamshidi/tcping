@@ -32,6 +32,12 @@ type Printer interface {
 	// This message is printed only once, at the very beginning.
 	PrintStart(s *stats.Statistics)
 
+	// PrintNameResolutionDuration should print how long the initial
+	// hostname resolution took. Called once, right after PrintStart -
+	// skipped entirely when the target was already a literal IP, since no
+	// resolution happened.
+	PrintNameResolutionDuration(s *stats.Statistics)
+
 	// PrintProbeSuccess should print a message after each successful probe.
 	PrintProbeSuccess(s *stats.Statistics)
 

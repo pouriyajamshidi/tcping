@@ -27,6 +27,7 @@ type Config interface {
 	GetNetworkInterface() nic.NetworkInterface
 	GetWithTimestamp() bool
 	GetWithSourceAddress() bool
+	GetNameResolutionDuration() time.Duration
 }
 
 type Statistics struct {
@@ -59,6 +60,7 @@ type Statistics struct {
 	RTTResults                RTTResult // Running min/average/max RTT across the entire run.
 	WithTimestamp             bool
 	WithSourceAddress         bool
+	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
 }
 
 func NewStatistics(cfg Config) *Statistics {
@@ -70,16 +72,17 @@ func NewStatistics(cfg Config) *Statistics {
 	}
 
 	return &Statistics{
-		Hostname:          cfg.GetHostname(),
-		IP:                cfg.GetIP(),
-		Port:              cfg.GetPort(),
-		DestIsIP:          cfg.GetTargetIsIP(),
-		LocalAddr:         localAddr,
-		WithTimestamp:     cfg.GetWithTimestamp(),
-		WithSourceAddress: cfg.GetWithSourceAddress(),
-		Protocol:          consts.TCP,
-		LongestUptime:     LongestTime{},
-		LongestDowntime:   LongestTime{},
+		Hostname:               cfg.GetHostname(),
+		IP:                     cfg.GetIP(),
+		Port:                   cfg.GetPort(),
+		DestIsIP:               cfg.GetTargetIsIP(),
+		LocalAddr:              localAddr,
+		WithTimestamp:          cfg.GetWithTimestamp(),
+		WithSourceAddress:      cfg.GetWithSourceAddress(),
+		Protocol:               consts.TCP,
+		LongestUptime:          LongestTime{},
+		LongestDowntime:        LongestTime{},
+		NameResolutionDuration: cfg.GetNameResolutionDuration(),
 		HostnameChanges: []HostnameChange{{
 			Addr: cfg.GetIP(),
 			When: time.Now(),
@@ -127,6 +130,14 @@ func (s *Statistics) ProtocolStr() string {
 
 func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
+}
+
+// NameResolutionDurationStr formats NameResolutionDuration with
+// millisecond precision, matching RTT's, since hostname resolution is
+// typically sub-second.
+func (s *Statistics) NameResolutionDurationStr() string {
+	ms := float32(s.NameResolutionDuration.Nanoseconds()) / float32(time.Millisecond)
+	return fmt.Sprintf("%.3f", ms)
 }
 
 func (s *Statistics) TotalProbes() uint {
