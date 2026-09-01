@@ -320,54 +320,34 @@ The following flags are available to control the behavior of **tcping**:
 
 ## Demos
 
-### Basic usage
-
 <details>
 <summary>Click to expand</summary>
 
-![tcping](docs/Images/gifs/tcping.gif)
+### Basic usage
 
-</details>
+![tcping](docs/Images/gifs/tcping.gif)
 
 ---
 
 ### Retry hostname lookup (`-r`) flag
 
-<details>
-<summary>Click to expand</summary>
-
 ![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
-
-</details>
 
 ---
 
 ### JSON output (`-j --pretty`) flag
 
-<details>
-<summary>Click to expand</summary>
-
 ![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
-
-</details>
 
 ---
 
 ### Hostname resolution timing (`--resolve-every-probe`) flag
 
-<details>
-<summary>Click to expand</summary>
-
 ![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
-
-</details>
 
 ---
 
 ### Source interface (`-I`) flag
-
-<details>
-<summary>Click to expand</summary>
 
 ![tcping interface example](docs/Images/gifs/tcping_interface.gif)
 
