@@ -134,12 +134,18 @@ func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
 }
 
+// DurationToMilliseconds converts d to milliseconds as a float32, preserving
+// sub-millisecond precision that Duration.Milliseconds() (which returns an
+// int64) would drop.
+func DurationToMilliseconds(d time.Duration) float32 {
+	return float32(d.Nanoseconds()) / float32(time.Millisecond)
+}
+
 // millisecondsStr formats d with millisecond precision, for durations that
 // are typically sub-second (hostname resolution, RTT) where DurationToString's
 // whole-second rounding would be useless.
 func millisecondsStr(d time.Duration) string {
-	ms := float32(d.Nanoseconds()) / float32(time.Millisecond)
-	return fmt.Sprintf("%.3f", ms)
+	return fmt.Sprintf("%.3f", DurationToMilliseconds(d))
 }
 
 // NameResolutionDurationStr formats NameResolutionDuration with

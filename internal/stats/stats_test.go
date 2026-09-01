@@ -27,6 +27,12 @@ func TestUptimeDuration(t *testing.T) {
 	}
 }
 
+func TestDurationToMilliseconds(t *testing.T) {
+	if got, want := DurationToMilliseconds(21770*time.Microsecond), float32(21.770); got != want {
+		t.Errorf("DurationToMilliseconds() = %v, want %v", got, want)
+	}
+}
+
 func TestNameResolutionDurationStr(t *testing.T) {
 	s := &Statistics{NameResolutionDuration: 23456 * time.Microsecond}
 
