@@ -1,6 +1,23 @@
 package stats
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
+
+func TestRuntimeDuration_MatchesStartAndEndTime(t *testing.T) {
+	s := &Statistics{
+		StartTime: time.Date(2026, 9, 1, 12, 49, 25, 0, time.UTC),
+		EndTime:   time.Date(2026, 9, 1, 12, 49, 28, 0, time.UTC),
+		// Total up/downtime intentionally left smaller than EndTime-StartTime,
+		// mirroring the gap before the first probe's result comes in.
+		TotalUptime: 2 * time.Second,
+	}
+
+	if got, want := s.RuntimeDuration(), "00:00:03"; got != want {
+		t.Errorf("RuntimeDuration() = %q, want %q (must match StartTime/EndTime, not TotalUptime+TotalDowntime)", got, want)
+	}
+}
 
 func TestRTTResultUpdate(t *testing.T) {
 	var r RTTResult

@@ -352,8 +352,8 @@ func TestFinalizeStatistics_NoProbesYetIsANoop(t *testing.T) {
 	if s.TotalUptime != 0 || s.TotalDowntime != 0 {
 		t.Errorf("TotalUptime=%v TotalDowntime=%v, want both 0 when no probe ever ran", s.TotalUptime, s.TotalDowntime)
 	}
-	if s.CurrentUptime < 0 {
-		t.Errorf("UpTime = %v, want >= 0", s.CurrentUptime)
+	if s.EndTime.Before(s.StartTime) {
+		t.Errorf("EndTime = %v, want it not to be before StartTime = %v", s.EndTime, s.StartTime)
 	}
 }
 

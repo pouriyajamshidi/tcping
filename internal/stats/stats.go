@@ -111,7 +111,7 @@ func (s *Statistics) EndTimeFormatted() string {
 }
 
 func (s *Statistics) RuntimeDuration() string {
-	return time.Time{}.Add(s.TotalDowntime + s.TotalUptime).Format(time.TimeOnly)
+	return time.Time{}.Add(s.EndTime.Sub(s.StartTime)).Format(time.TimeOnly)
 }
 
 func (s *Statistics) ProtocolStr() string {
