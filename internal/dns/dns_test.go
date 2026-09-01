@@ -167,6 +167,35 @@ func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
 	})
 }
 
+// A source IP of one address family must never be forced onto a dial to a
+// server of the other family: net.Dialer requires LocalAddr and the remote
+// address to match families, so doing so would fail the lookup outright
+// instead of falling back to the default route.
+func TestCreateDNSResolver_IgnoresMismatchedSourceIPFamily(t *testing.T) {
+	ln, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to start IPv4 listener: %v", err)
+	}
+	defer ln.Close()
+
+	ipv6SourceIP := net.ParseIP("::1")
+	resolver := createDNSResolver("", ipv6SourceIP)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	conn, err := resolver.Dial(ctx, "tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatalf("Dial failed (mismatched-family source IP should have been ignored, not forced): %v", err)
+	}
+	defer conn.Close()
+
+	localIP := conn.LocalAddr().(*net.TCPAddr).IP
+	if localIP.Equal(ipv6SourceIP) {
+		t.Errorf("LocalAddr IP = %v, want anything but the mismatched-family source IP", localIP)
+	}
+}
+
 func TestSelectResolvedIPv4(t *testing.T) {
 	var (
 		ip1 = netip.MustParseAddr("172.20.10.238")

@@ -72,7 +72,8 @@ func getDialAddress(DNSServer string) string {
 // It helps bypass incorrect OS DNS cache entries.
 // DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
-// When sourceIP is non-nil, lookups are dialed from that source address.
+// When sourceIP is non-nil, lookups are dialed from that source address,
+// provided its address family matches the DNS server being dialed.
 func createDNSResolver(DNSServer string, sourceIP net.IP) *net.Resolver {
 	dialAddress := getDialAddress(DNSServer)
 
@@ -84,24 +85,40 @@ func createDNSResolver(DNSServer string, sourceIP net.IP) *net.Resolver {
 			}
 
 			d := net.Dialer{Timeout: DefaultTimeout}
-			if sourceIP != nil {
-				d.LocalAddr = localAddrForNetwork(network, sourceIP)
-			}
+			d.LocalAddr = localAddrForDial(network, address, sourceIP)
 
 			return d.DialContext(ctx, network, address)
 		},
 	}
 }
 
-// localAddrForNetwork builds the net.Addr type net.Dialer.LocalAddr requires
-// for the given dial network ("udp"/"udp4"/"udp6" vs "tcp"/"tcp4"/"tcp6") -
-// the resolver may dial either, depending on response size and OS resolver
-// configuration.
-func localAddrForNetwork(network string, ip net.IP) net.Addr {
-	if strings.HasPrefix(network, "tcp") {
-		return &net.TCPAddr{IP: ip}
+// localAddrForDial returns the net.Addr net.Dialer.LocalAddr should use to
+// bind a DNS lookup to sourceIP, or nil if sourceIP shouldn't be applied -
+// either because it wasn't given, or because its address family doesn't
+// match the server being dialed. net.Dialer requires LocalAddr and the
+// remote address to be the same family (both IPv4 or both IPv6); binding
+// a mismatched family fails the dial outright with "no suitable address
+// found", which is worse than just not binding and letting the OS pick
+// a default route.
+func localAddrForDial(network, address string, sourceIP net.IP) net.Addr {
+	if sourceIP == nil {
+		return nil
 	}
-	return &net.UDPAddr{IP: ip}
+
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		host = address
+	}
+
+	serverIP := net.ParseIP(host)
+	if serverIP == nil || (serverIP.To4() != nil) != (sourceIP.To4() != nil) {
+		return nil
+	}
+
+	if strings.HasPrefix(network, "tcp") {
+		return &net.TCPAddr{IP: sourceIP}
+	}
+	return &net.UDPAddr{IP: sourceIP}
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures
