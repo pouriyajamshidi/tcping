@@ -7,7 +7,8 @@
 ![Download](https://img.shields.io/github/downloads/pouriyajamshidi/tcping/total.svg?label=DOWNLOADS&logo=github)
 ![Docker Pulls](https://img.shields.io/docker/pulls/pouriyajamshidi/tcping)
 ![CodeFactor](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping/badge)
-![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/.github/workflows/codeql-analysis.yml/badge.svg)
+![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/codeql-analysis.yml/badge.svg)
+![Tests](https://github.com/pouriyajamshidi/tcping/actions/workflows/test.yml/badge.svg)
 ![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Go project version](https://badge.fury.io/go/github.com%2Fpouriyajamshidi%2Ftcping.svg)
@@ -29,7 +30,8 @@ Here are some of the features of **TCPING**:
 - Supports both `IPv4` or `IPv6` and lets you enforce using either.
 - Prints total connection statistics by pressing the `Enter` key, without stopping the program.
 - Reports the longest encountered `downtime` and `uptime` duration and time.
-- Retries hostname resolution after a predetermined number of probe failures by using the `-r` flag . Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
+- Retries hostname resolution after a predetermined number of probe failures using the `-r` flag, or before every single probe using `--resolve-every-probe`. Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
+- Reports how long hostname resolution itself took, at startup and on every retry.
 - uses different `TCP sequence numbering` for _successful_ and _unsuccessful_ probes to infer the total failed or successful probes at a glance.
 
 Check out the [demos](#demos) to get a look and feel of **tcping**.
@@ -82,6 +84,9 @@ If you wish to manually install **tcping**, extract the downloaded zip file and 
 
 > [!CAUTION]
 > TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official statement from the Go team [here](https://go.dev/doc/faq#virus).
+
+> [!WARNING]
+> The `--db` (sqlite3) output format is not available on Windows binaries. All other flags, including `--csv`, work as expected.
 
 ### macOS
 
@@ -156,10 +161,10 @@ These are some additional ways in which **tcping** can be installed:
 
 - Using `go install`:
 
-  > This requires at least go version `1.24.10`
+  > This requires at least go version `1.26.7`
 
   ```bash
-  go install github.com/pouriyajamshidi/tcping/v2@latest
+  go install github.com/pouriyajamshidi/tcping/v3@latest
   ```
 
 - [x tcping](https://x-cmd.com/pkg/tcping):
@@ -248,9 +253,9 @@ tcping www.example.com 443 --csv example.com.csv
 # Save the output in sqlite3 format:
 tcping www.example.com 443 --db example.com.db
 # Show the output in JSON format:
-tcping www.example.com 443 --json
+tcping www.example.com 443 -j
 # Show the output in JSON format - pretty:
-tcping www.example.com 443 --json --pretty
+tcping www.example.com 443 -j --pretty
 # Show the output in plain (no ANSI colors):
 tcping www.example.com 443 --no-color
 ```
@@ -281,27 +286,30 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 
 The following flags are available to control the behavior of **tcping**:
 
-| Flag                    | Description                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `-h`                    | Show help                                                                                                         |
-| `-4`                    | Only use IPv4 addresses                                                                                           |
-| `-6`                    | Only use IPv6 addresses                                                                                           |
-| `-r`                    | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes |
-| `-c`                    | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                           |
-| `-t`                    | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                            |
-| `-D`                    | Display date and time in probe output. Similar to Linux's ping utility but human-readable                         |
-| `-i`                    | Interval between sending probes                                                                                   |
-| `-I`                    | Interface name to use for sending probes                                                                          |
-| `--no-color`            | Do not colorize output                                                                                            |
-| `--csv`                 | Path and file name to store tcping output in `CSV` format                                                         |
-| `-j`                    | Output in `JSON` format                                                                                           |
-| `--pretty`              | Prettify the `JSON` output                                                                                        |
-| `--db`                  | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`                          |
-| `-v`                    | Print version                                                                                                     |
-| `-u`                    | Check for updates                                                                                                 |
-| `--show-failures-only`  | Only show probe failures and omit printing probe success messages                                                 |
-| `--show-source-address` | Show the source IP address and port used for probes                                                               |
-| `--non-interactive`     | Run in background mode. e.g. `nohup` or `disown`                                                                  |
+| Flag                     | Description                                                                                                                |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `-h`                     | Show help                                                                                                                  |
+| `-4`                     | Only use IPv4 addresses                                                                                                    |
+| `-6`                     | Only use IPv6 addresses                                                                                                    |
+| `-r`                     | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes         |
+| `--resolve-every-probe`  | Resolve the target's hostname before every single probe instead of only at startup (or on retry via `-r`). Takes precedence over `-r` |
+| `-c`                     | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                                   |
+| `-t`                     | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                                    |
+| `-D`                     | Display date and time in probe output. Similar to Linux's ping utility but human-readable                                 |
+| `-i`                     | Interval between sending probes                                                                                           |
+| `-I`                     | Interface name or IP address to use for sending probes and DNS lookups                                                    |
+| `--dns-server`           | Custom DNS server IP to use, instead of the system-wide server. e.g. `--dns-server 1.1.1.1:53`                            |
+| `--dns-timeout`          | Time to wait for a DNS response, in seconds. Real number allowed. 0 means infinite timeout                                |
+| `--no-color`             | Do not colorize output                                                                                                    |
+| `--csv`                  | Path and file name to store tcping output in `CSV` format                                                                 |
+| `--csv-no-timestamp`     | Do not append a date/time suffix to the CSV filename given via `--csv`, so repeated runs overwrite the same file          |
+| `-j`                     | Output in `JSON` format                                                                                                   |
+| `--pretty`               | Prettify the `JSON` output                                                                                                |
+| `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
+| `-v`                     | Print version                                                                                                             |
+| `-u`                     | Check for updates                                                                                                         |
+| `--show-failures-only`   | Only show probe failures and omit printing probe success messages                                                         |
+| `--show-source-address`  | Show the source IP address and port used for probes                                                                       |
 
 > [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
@@ -341,7 +349,7 @@ Pull requests are welcome to solve bugs, add new features and to help with the o
 1. Create a branch.
 1. Commit your work.
 1. Add tests.
-1. Run the tests `go test` or `make test` and ensure they are successful.
+1. Run the tests `go test ./...` or `make test` and ensure they are successful.
 1. Create a pull request
 
 Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
