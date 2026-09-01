@@ -62,12 +62,19 @@ type Statistics struct {
 }
 
 func NewStatistics(cfg Config) *Statistics {
+	var localAddr net.Addr
+	if networkInterface := cfg.GetNetworkInterface(); networkInterface.Use {
+		if localIP := networkInterface.LocalIPFor(cfg.GetIP()); localIP != nil {
+			localAddr = &net.TCPAddr{IP: localIP}
+		}
+	}
+
 	return &Statistics{
 		Hostname:          cfg.GetHostname(),
 		IP:                cfg.GetIP(),
 		Port:              cfg.GetPort(),
 		DestIsIP:          cfg.GetTargetIsIP(),
-		LocalAddr:         cfg.GetNetworkInterface().Dialer.LocalAddr,
+		LocalAddr:         localAddr,
 		WithTimestamp:     cfg.GetWithTimestamp(),
 		WithSourceAddress: cfg.GetWithSourceAddress(),
 		Protocol:          consts.TCP,

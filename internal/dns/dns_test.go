@@ -6,6 +6,8 @@ import (
 	"net/netip"
 	"testing"
 	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
 
 func TestDNSDialAddress(t *testing.T) {
@@ -34,7 +36,7 @@ func TestDNSDialAddress(t *testing.T) {
 }
 
 func TestCreateDNSResolver_Defaults(t *testing.T) {
-	resolver := createDNSResolver("", nil)
+	resolver := createDNSResolver("", nic.NetworkInterface{})
 	if !resolver.PreferGo {
 		t.Error("expected PreferGo to be true")
 	}
@@ -60,7 +62,7 @@ func TestCreateDNSResolver_OverridesAddress(t *testing.T) {
 		}
 	}()
 
-	resolver := createDNSResolver(ln.Addr().String(), nil)
+	resolver := createDNSResolver(ln.Addr().String(), nic.NetworkInterface{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -95,7 +97,7 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 		}
 	}()
 
-	resolver := createDNSResolver("", nil)
+	resolver := createDNSResolver("", nic.NetworkInterface{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -113,10 +115,12 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 	}
 }
 
-// When a source IP is given, DNS lookups must be dialed from it, so
-// resolution honors the -I flag the same way probes do.
+// When a network interface is given, DNS lookups must be dialed from its
+// matching-family address, so resolution honors the -I flag the same way
+// probes do.
 func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
 	sourceIP := net.ParseIP("127.0.0.1")
+	networkInterface := nic.NetworkInterface{Use: true, SourceIPv4: sourceIP}
 
 	t.Run("tcp", func(t *testing.T) {
 		ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -125,7 +129,7 @@ func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
 		}
 		defer ln.Close()
 
-		resolver := createDNSResolver("", sourceIP)
+		resolver := createDNSResolver("", networkInterface)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -149,7 +153,7 @@ func TestCreateDNSResolver_BindsToSourceIP(t *testing.T) {
 		}
 		defer ln.Close()
 
-		resolver := createDNSResolver("", sourceIP)
+		resolver := createDNSResolver("", networkInterface)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -179,7 +183,8 @@ func TestCreateDNSResolver_IgnoresMismatchedSourceIPFamily(t *testing.T) {
 	defer ln.Close()
 
 	ipv6SourceIP := net.ParseIP("::1")
-	resolver := createDNSResolver("", ipv6SourceIP)
+	networkInterface := nic.NetworkInterface{Use: true, SourceIPv6: ipv6SourceIP}
+	resolver := createDNSResolver("", networkInterface)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -193,6 +198,38 @@ func TestCreateDNSResolver_IgnoresMismatchedSourceIPFamily(t *testing.T) {
 	localIP := conn.LocalAddr().(*net.TCPAddr).IP
 	if localIP.Equal(ipv6SourceIP) {
 		t.Errorf("LocalAddr IP = %v, want anything but the mismatched-family source IP", localIP)
+	}
+}
+
+// When the interface has addresses for both families, DNS lookups should
+// bind to whichever one matches the server actually being dialed.
+func TestCreateDNSResolver_PicksMatchingFamilyFromDualStackInterface(t *testing.T) {
+	networkInterface := nic.NetworkInterface{
+		Use:        true,
+		SourceIPv4: net.ParseIP("127.0.0.1"),
+		SourceIPv6: net.ParseIP("::1"),
+	}
+
+	ln, err := net.Listen("tcp6", "[::1]:0")
+	if err != nil {
+		t.Fatalf("failed to start IPv6 listener: %v", err)
+	}
+	defer ln.Close()
+
+	resolver := createDNSResolver("", networkInterface)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	conn, err := resolver.Dial(ctx, "tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatalf("Dial failed: %v", err)
+	}
+	defer conn.Close()
+
+	localIP := conn.LocalAddr().(*net.TCPAddr).IP
+	if !localIP.Equal(net.ParseIP("::1")) {
+		t.Errorf("LocalAddr IP = %v, want ::1 (the IPv6 source, matching the IPv6 server)", localIP)
 	}
 }
 

@@ -8,19 +8,36 @@ import (
 
 // NetworkInterface represents a network interface used for connecting to the target.
 type NetworkInterface struct {
-	SourceIP net.IP     // Source IP address to use for outgoing connections, including DNS lookups.
-	Dialer   net.Dialer // Dialer used to make network connections.
-	Use      bool       // Flag indicating whether to use this network interface.
+	SourceIPv4 net.IP // Source IPv4 address to use for outgoing connections, if the interface has one.
+	SourceIPv6 net.IP // Source IPv6 address to use for outgoing connections, if the interface has one.
+	Use        bool   // Flag indicating whether to use this network interface.
 }
 
-// NewNetworkInterface uses the given source IP address or NIC name (to find its first IP address)
-// to use as the source IP address for the probes. The given IP address must exist on a NIC.
+// LocalIPFor returns the local IP address that should be used to source a
+// connection to target, or nil if this interface has no address of
+// target's family (e.g. an IPv4-only interface asked to source an IPv6
+// connection). Callers should treat a nil result as "this interface can't
+// reach a target of this family" rather than silently falling back to an
+// unrelated interface.
+func (n NetworkInterface) LocalIPFor(target netip.Addr) net.IP {
+	if target.Is4() || target.Is4In6() {
+		return n.SourceIPv4
+	}
+	return n.SourceIPv6
+}
+
+// NewNetworkInterface uses the given source IP address or NIC name to find
+// the IP address(es) to use as the source for probes and DNS lookups. The
+// given IP address must exist on a NIC. When given an interface name that
+// has both an IPv4 and an IPv6 address, both are captured (unless -4/-6
+// restrict resolution to a single family), so probing can keep working
+// correctly if the target's resolved address family changes mid-run (e.g.
+// via hostname-retry-resolve).
 func NewNetworkInterface(
 	sourceAddress string,
 	useIPv4,
 	useIPv6 bool,
 ) (NetworkInterface, error) {
-	found := false
 	interfaceAddress := net.ParseIP(sourceAddress)
 
 	if interfaceAddress != nil { // we are given an IP address
@@ -29,6 +46,7 @@ func NewNetworkInterface(
 			return NetworkInterface{}, fmt.Errorf("unable to get interface IP addresses")
 		}
 
+		found := false
 		for _, ifaceAddr := range ifaceAddrs {
 			ipNet, ok := ifaceAddr.(*net.IPNet)
 			if ok && interfaceAddress.Equal(ipNet.IP) {
@@ -42,51 +60,55 @@ func NewNetworkInterface(
 		if !found {
 			return NetworkInterface{}, fmt.Errorf("IP address %s is not assigned to any interfaces", sourceAddress)
 		}
-	} else { // we are probably given an interface name
-		iface, err := net.InterfaceByName(sourceAddress)
-		if err != nil {
-			return NetworkInterface{}, fmt.Errorf("interface %s was not found", sourceAddress)
+
+		ni := NetworkInterface{Use: true}
+		if interfaceAddress.To4() != nil {
+			ni.SourceIPv4 = interfaceAddress
+		} else {
+			ni.SourceIPv6 = interfaceAddress
+		}
+		return ni, nil
+	}
+
+	// we are probably given an interface name
+	iface, err := net.InterfaceByName(sourceAddress)
+	if err != nil {
+		return NetworkInterface{}, fmt.Errorf("interface %s was not found", sourceAddress)
+	}
+
+	netAddrs, err := iface.Addrs()
+	if err != nil {
+		return NetworkInterface{}, fmt.Errorf("unable to get IP addresses of %s", iface.Name)
+	}
+
+	ni := NetworkInterface{Use: true}
+
+	for _, netAddr := range netAddrs {
+		ip, ok := netAddr.(*net.IPNet)
+		if !ok || ip.IP == nil {
+			continue
 		}
 
-		netAddrs, err := iface.Addrs()
+		netIPAddr, err := netip.ParseAddr(ip.IP.String())
 		if err != nil {
-			return NetworkInterface{}, fmt.Errorf("unable to get IP addresses of %s", iface.Name)
+			continue
 		}
 
-		for _, netAddr := range netAddrs {
-			if ip := netAddr.(*net.IPNet).IP; ip != nil {
-				netIPAddr, err := netip.ParseAddr(ip.String())
-				if err != nil {
-					continue
-				}
+		switch {
+		case netIPAddr.Is4() && !useIPv6 && ni.SourceIPv4 == nil:
+			ni.SourceIPv4 = ip.IP
 
-				if netIPAddr.Is4() && !useIPv6 {
-					interfaceAddress = ip
-					found = true
-					break
-				} else if netIPAddr.Is6() && !useIPv4 {
-					if netIPAddr.IsLinkLocalUnicast() {
-						continue
-					}
-					interfaceAddress = ip
-					found = true
-					break
-				}
+		case netIPAddr.Is6() && !useIPv4 && ni.SourceIPv6 == nil:
+			if netIPAddr.IsLinkLocalUnicast() {
+				continue
 			}
-		}
-
-		if interfaceAddress == nil {
-			return NetworkInterface{}, fmt.Errorf("unable to find an IP address associated with %s", iface.Name)
+			ni.SourceIPv6 = ip.IP
 		}
 	}
 
-	return NetworkInterface{
-		Use:      true,
-		SourceIP: interfaceAddress,
-		Dialer: net.Dialer{
-			LocalAddr: &net.TCPAddr{
-				IP: interfaceAddress,
-			},
-		},
-	}, nil
+	if ni.SourceIPv4 == nil && ni.SourceIPv6 == nil {
+		return NetworkInterface{}, fmt.Errorf("unable to find an IP address associated with %s", iface.Name)
+	}
+
+	return ni, nil
 }

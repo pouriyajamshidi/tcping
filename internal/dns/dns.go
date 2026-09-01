@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -37,11 +38,13 @@ type Resolver struct {
 }
 
 // NewResolver creates a Resolver that queries DNSServer (or the system
-// default, if empty). When sourceIP is non-nil, lookups are performed from
-// that source address, matching the -I flag's interface for probes.
-func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool, sourceIP net.IP) *Resolver {
+// default, if empty). When networkInterface.Use is set, lookups are
+// performed from its source address, matching the -I flag's interface for
+// probes - using whichever of its addresses matches the DNS server's own
+// address family.
+func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) *Resolver {
 	return &Resolver{
-		Resolver: createDNSResolver(DNSServer, sourceIP),
+		Resolver: createDNSResolver(DNSServer, networkInterface),
 		timeout:  DefaultTimeout,
 		useIPv4:  useIPv4,
 		useIPv6:  useIPv6,
@@ -72,9 +75,9 @@ func getDialAddress(DNSServer string) string {
 // It helps bypass incorrect OS DNS cache entries.
 // DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
-// When sourceIP is non-nil, lookups are dialed from that source address,
-// provided its address family matches the DNS server being dialed.
-func createDNSResolver(DNSServer string, sourceIP net.IP) *net.Resolver {
+// When networkInterface.Use is set, lookups are dialed from whichever of
+// its addresses matches the DNS server's address family.
+func createDNSResolver(DNSServer string, networkInterface nic.NetworkInterface) *net.Resolver {
 	dialAddress := getDialAddress(DNSServer)
 
 	return &net.Resolver{
@@ -85,7 +88,9 @@ func createDNSResolver(DNSServer string, sourceIP net.IP) *net.Resolver {
 			}
 
 			d := net.Dialer{Timeout: DefaultTimeout}
-			d.LocalAddr = localAddrForDial(network, address, sourceIP)
+			if networkInterface.Use {
+				d.LocalAddr = localAddrForDial(network, address, networkInterface)
+			}
 
 			return d.DialContext(ctx, network, address)
 		},
@@ -93,32 +98,32 @@ func createDNSResolver(DNSServer string, sourceIP net.IP) *net.Resolver {
 }
 
 // localAddrForDial returns the net.Addr net.Dialer.LocalAddr should use to
-// bind a DNS lookup to sourceIP, or nil if sourceIP shouldn't be applied -
-// either because it wasn't given, or because its address family doesn't
-// match the server being dialed. net.Dialer requires LocalAddr and the
-// remote address to be the same family (both IPv4 or both IPv6); binding
-// a mismatched family fails the dial outright with "no suitable address
+// bind a DNS lookup to networkInterface's matching-family address, or nil
+// if none is available. net.Dialer requires LocalAddr and the remote
+// address to be the same family (both IPv4 or both IPv6); binding a
+// mismatched family fails the dial outright with "no suitable address
 // found", which is worse than just not binding and letting the OS pick
 // a default route.
-func localAddrForDial(network, address string, sourceIP net.IP) net.Addr {
-	if sourceIP == nil {
-		return nil
-	}
-
+func localAddrForDial(network, address string, networkInterface nic.NetworkInterface) net.Addr {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
 		host = address
 	}
 
-	serverIP := net.ParseIP(host)
-	if serverIP == nil || (serverIP.To4() != nil) != (sourceIP.To4() != nil) {
+	serverIP, err := netip.ParseAddr(host)
+	if err != nil {
+		return nil
+	}
+
+	localIP := networkInterface.LocalIPFor(serverIP)
+	if localIP == nil {
 		return nil
 	}
 
 	if strings.HasPrefix(network, "tcp") {
-		return &net.TCPAddr{IP: sourceIP}
+		return &net.TCPAddr{IP: localIP}
 	}
-	return &net.UDPAddr{IP: sourceIP}
+	return &net.UDPAddr{IP: localIP}
 }
 
 // RetryResolveHostname retries resolving a hostname after a certain number of failures

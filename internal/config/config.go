@@ -357,7 +357,7 @@ func ProcessUserInput() Config {
 		2*time.Second, // TODO: make this configurable
 		*useIPv4,
 		*useIPv6,
-		networkInterface.SourceIP,
+		networkInterface,
 	)
 
 	var targetIsAlreadyIP bool

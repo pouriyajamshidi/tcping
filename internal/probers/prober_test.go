@@ -3,6 +3,7 @@ package probers
 import (
 	"context"
 	"net"
+	"net/netip"
 	"sync"
 	"testing"
 	"time"
@@ -14,17 +15,20 @@ import (
 )
 
 // fakePinger returns a scripted result for each call to Ping, driven by
-// outcomeFn. Calls are counted so tests can assert how many probes ran.
+// outcomeFn. Calls are counted, and every IP it was called with is
+// recorded, so tests can assert how many probes ran and what they targeted.
 type fakePinger struct {
 	mu        sync.Mutex
 	callCount int
+	ipsCalled []netip.Addr
 	outcomeFn func(call int) (ProbeResult, error)
 }
 
-func (f *fakePinger) Ping(ctx context.Context) (ProbeResult, error) {
+func (f *fakePinger) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
 	f.mu.Lock()
 	call := f.callCount
 	f.callCount++
+	f.ipsCalled = append(f.ipsCalled, ip)
 	f.mu.Unlock()
 
 	return f.outcomeFn(call)
@@ -34,6 +38,12 @@ func (f *fakePinger) calls() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.callCount
+}
+
+func (f *fakePinger) ips() []netip.Addr {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]netip.Addr(nil), f.ipsCalled...)
 }
 
 // alwaysSucceeds is a convenience fakePinger that succeeds on every call.
@@ -215,19 +225,22 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotDoubleCountDowntime(t *testi
 }
 
 func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
-	sourceAddr := &net.TCPAddr{IP: net.IPv4(10, 0, 0, 5), Port: 0}
+	sourceIP := net.IPv4(10, 0, 0, 5)
 	cfg := config.Config{
 		NetworkInterface: nic.NetworkInterface{
-			Use:    true,
-			Dialer: net.Dialer{LocalAddr: sourceAddr},
+			Use:        true,
+			SourceIPv4: sourceIP,
 		},
 	}
 	p, _ := newTestProber(nil, cfg)
+	p.Statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
 
 	p.handleProbeFailure(time.Now())
 
-	if p.Statistics.LocalAddr != sourceAddr {
-		t.Errorf("LocalAddr = %v, want %v", p.Statistics.LocalAddr, sourceAddr)
+	wantAddr := &net.TCPAddr{IP: sourceIP}
+	gotAddr, ok := p.Statistics.LocalAddr.(*net.TCPAddr)
+	if !ok || !gotAddr.IP.Equal(wantAddr.IP) {
+		t.Errorf("LocalAddr = %v, want %v", p.Statistics.LocalAddr, wantAddr)
 	}
 }
 
@@ -468,7 +481,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 2,
 		// A literal IP resolves without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false, nil),
+		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.Statistics.Hostname = "127.0.0.1"
@@ -492,6 +505,48 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 	}
 	if printer.lastRetryTarget != "127.0.0.1" {
 		t.Errorf("PrintRetryingToResolve hostname = %q, want %q", printer.lastRetryTarget, "127.0.0.1")
+	}
+}
+
+// A retry-resolve that changes the target IP (including to a different
+// address family) must actually change what gets dialed on the next probe,
+// not just what gets displayed - otherwise every probe after the first
+// keeps hitting the original, possibly now-stale, address forever.
+func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
+	pinger := alwaysFails()
+	cfg := config.Config{
+		IntervalBetweenProbes:      5 * time.Millisecond,
+		ProbesBeforeQuit:           3,
+		ShouldRetryResolve:         true,
+		RetryResolveAfterNFailures: 1,
+		// Literal IPs resolve without touching the network.
+		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, _ := newTestProber(pinger, cfg)
+	p.Statistics.IP = netip.MustParseAddr("192.0.2.1")
+	p.Statistics.Hostname = "192.0.2.2" // what retry-resolve will "resolve" to
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := p.Probe(ctx); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	ips := pinger.ips()
+	if len(ips) != 3 {
+		t.Fatalf("Ping was called %d times, want 3", len(ips))
+	}
+
+	want := netip.MustParseAddr("192.0.2.1")
+	if ips[0] != want {
+		t.Errorf("ips[0] = %v, want %v (the original target, before any retry)", ips[0], want)
+	}
+
+	want = netip.MustParseAddr("192.0.2.2")
+	for i, ip := range ips[1:] {
+		if ip != want {
+			t.Errorf("ips[%d] = %v, want %v (the retry-resolved target)", i+1, ip, want)
+		}
 	}
 }
 

@@ -2,44 +2,52 @@ package probers
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
+	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
+	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
 
 const tcp = "tcp"
 
 type Tcping struct {
-	dialer *net.Dialer
-	ip     netip.Addr
-	port   uint16
+	networkInterface nic.NetworkInterface
+	timeout          time.Duration
+	port             uint16
 }
 
 func NewTcping(cfg config.Config) Tcping {
-	if cfg.NetworkInterface.Use {
-		cfg.NetworkInterface.Dialer.Timeout = cfg.Timeout
-		return Tcping{
-			dialer: &cfg.NetworkInterface.Dialer,
-			ip:     cfg.IP,
-			port:   cfg.Port,
-		}
-	}
-
 	return Tcping{
-		dialer: &net.Dialer{Timeout: cfg.Timeout},
-		ip:     cfg.IP,
-		port:   cfg.Port,
+		networkInterface: cfg.NetworkInterface,
+		timeout:          cfg.Timeout,
+		port:             cfg.Port,
 	}
 }
 
-func (t *Tcping) address() string {
-	return net.JoinHostPort(t.ip.String(), strconv.Itoa(int(t.port)))
+func address(ip netip.Addr, port uint16) string {
+	return net.JoinHostPort(ip.String(), strconv.Itoa(int(port)))
 }
 
-func (t Tcping) Ping(ctx context.Context) (ProbeResult, error) {
-	conn, err := t.dialer.DialContext(ctx, tcp, t.address())
+// Ping dials ip:port. When a network interface is configured (-I), the
+// connection is sourced from it, matching ip's address family - if the
+// interface has no address of that family, the probe fails cleanly rather
+// than silently dialing out from an unrelated, unrequested interface.
+func (t Tcping) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
+	d := net.Dialer{Timeout: t.timeout}
+
+	if t.networkInterface.Use {
+		localIP := t.networkInterface.LocalIPFor(ip)
+		if localIP == nil {
+			return ProbeResult{}, fmt.Errorf("network interface has no source address to reach %s", ip)
+		}
+		d.LocalAddr = &net.TCPAddr{IP: localIP}
+	}
+
+	conn, err := d.DialContext(ctx, tcp, address(ip, t.port))
 	if err != nil {
 		return ProbeResult{}, err
 	}

@@ -2,6 +2,7 @@ package nic
 
 import (
 	"net"
+	"net/netip"
 	"testing"
 )
 
@@ -28,11 +29,34 @@ func TestNewNetworkInterface_Loopback(t *testing.T) {
 	if !ni.Use {
 		t.Error("Use = false, want true")
 	}
-	if !ni.SourceIP.Equal(mustParseIP(t, "127.0.0.1")) {
-		t.Errorf("SourceIP = %v, want 127.0.0.1", ni.SourceIP)
+	if !ni.SourceIPv4.Equal(mustParseIP(t, "127.0.0.1")) {
+		t.Errorf("SourceIPv4 = %v, want 127.0.0.1", ni.SourceIPv4)
 	}
-	if ni.Dialer.LocalAddr == nil {
-		t.Error("Dialer.LocalAddr is nil, want it set to SourceIP")
+	if ni.SourceIPv6 != nil {
+		t.Errorf("SourceIPv6 = %v, want nil for an IPv4 literal", ni.SourceIPv6)
+	}
+}
+
+func TestNetworkInterface_LocalIPFor(t *testing.T) {
+	ni := NetworkInterface{
+		Use:        true,
+		SourceIPv4: mustParseIP(t, "192.168.1.10"),
+		SourceIPv6: mustParseIP(t, "::1"),
+	}
+
+	if got := ni.LocalIPFor(netip.MustParseAddr("93.184.216.34")); !got.Equal(ni.SourceIPv4) {
+		t.Errorf("LocalIPFor(v4 target) = %v, want %v", got, ni.SourceIPv4)
+	}
+	if got := ni.LocalIPFor(netip.MustParseAddr("2606:2800:220:1:248:1893:25c8:1946")); !got.Equal(ni.SourceIPv6) {
+		t.Errorf("LocalIPFor(v6 target) = %v, want %v", got, ni.SourceIPv6)
+	}
+}
+
+func TestNetworkInterface_LocalIPFor_MissingFamilyReturnsNil(t *testing.T) {
+	ni := NetworkInterface{Use: true, SourceIPv4: mustParseIP(t, "192.168.1.10")}
+
+	if got := ni.LocalIPFor(netip.MustParseAddr("2606:2800:220:1:248:1893:25c8:1946")); got != nil {
+		t.Errorf("LocalIPFor(v6 target) = %v, want nil (interface has no IPv6 address)", got)
 	}
 }
 

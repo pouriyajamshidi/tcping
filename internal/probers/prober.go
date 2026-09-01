@@ -4,6 +4,7 @@ package probers
 import (
 	"context"
 	"net"
+	"net/netip"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
@@ -35,7 +36,7 @@ type ProbeResult struct {
 }
 
 type Pinger interface {
-	Ping(ctx context.Context) (ProbeResult, error)
+	Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error)
 }
 
 func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
@@ -54,7 +55,11 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	runProbe := func() (done bool) {
 		pingTime := time.Now()
 
-		probeResult, err := p.pinger.Ping(ctx)
+		// Read the target IP fresh on every probe (not just once at
+		// startup), so a hostname-retry-resolve that changes it - possibly
+		// even to a different address family - actually takes effect on
+		// the next probe instead of being silently ignored.
+		probeResult, err := p.pinger.Ping(ctx, p.Statistics.IP)
 		rtt := time.Since(pingTime)
 
 		if err != nil {
@@ -118,7 +123,12 @@ func (p *Prober) handleProbeFailure(pingTime time.Time) {
 	s.LastUnsuccessfulProbe = pingTime
 
 	if p.config.NetworkInterface.Use {
-		s.LocalAddr = p.config.NetworkInterface.Dialer.LocalAddr
+		localIP := p.config.NetworkInterface.LocalIPFor(s.IP)
+		if localIP != nil {
+			s.LocalAddr = &net.TCPAddr{IP: localIP}
+		} else {
+			s.LocalAddr = nil
+		}
 	}
 
 	if !s.LastProbeHadFailed {
