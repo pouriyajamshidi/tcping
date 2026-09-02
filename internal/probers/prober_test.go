@@ -431,7 +431,7 @@ func TestProbe_StopsAfterProbesBeforeQuit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -470,7 +470,7 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
-	if _, err := p.Probe(context.Background()); err != nil {
+	if err := p.Probe(context.Background()); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -515,7 +515,7 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -574,7 +574,7 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -613,7 +613,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -652,7 +652,7 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -687,7 +687,7 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -716,7 +716,7 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -748,7 +748,7 @@ func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -783,7 +783,7 @@ func TestProbe_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -805,7 +805,7 @@ func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := p.Probe(ctx); err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -837,10 +837,11 @@ func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
 		IntervalBetweenProbes: time.Millisecond,
 	})
 
-	s, err := p.Probe(ctx)
-	if err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v, want no error", err)
 	}
+
+	s := p.statistics
 
 	if s.TotalUnsuccessfulProbes != 0 {
 		t.Errorf("TotalUnsuccessfulProbes = %d, want 0: a cancelled probe is not a failure", s.TotalUnsuccessfulProbes)
@@ -874,10 +875,11 @@ func TestProbe_RealFailureStillCounts(t *testing.T) {
 		ProbesBeforeQuit:      2,
 	})
 
-	s, err := p.Probe(ctx)
-	if err != nil {
+	if err := p.Probe(ctx); err != nil {
 		t.Fatalf("Probe() error = %v, want no error", err)
 	}
+
+	s := p.statistics
 
 	if s.TotalUnsuccessfulProbes != 2 {
 		t.Errorf("TotalUnsuccessfulProbes = %d, want 2", s.TotalUnsuccessfulProbes)
@@ -899,7 +901,7 @@ func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 	}
 	p, printer := newTestProber(pinger, cfg)
 
-	if _, err := p.Probe(context.Background()); err != nil {
+	if err := p.Probe(context.Background()); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
@@ -921,7 +923,7 @@ func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
 	}
 	p, printer := newTestProber(pinger, cfg)
 
-	if _, err := p.Probe(context.Background()); err != nil {
+	if err := p.Probe(context.Background()); err != nil {
 		t.Fatalf("Probe() error = %v", err)
 	}
 

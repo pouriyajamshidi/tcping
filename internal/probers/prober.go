@@ -51,7 +51,7 @@ type Pinger interface {
 	Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error)
 }
 
-func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
+func (p *Prober) Probe(ctx context.Context) error {
 	ticker := time.NewTicker(p.config.IntervalBetweenProbes)
 	defer ticker.Stop()
 
@@ -129,14 +129,14 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	// Probe immediately instead of waiting for the ticker's first tick.
 	if runProbe() {
 		p.finalizeStatistics()
-		return p.statistics, nil
+		return nil
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			p.finalizeStatistics()
-			return p.statistics, nil
+			return nil
 
 		case _, ok := <-p.summaryRequests:
 			if !ok {
@@ -151,7 +151,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 		case <-ticker.C:
 			if runProbe() {
 				p.finalizeStatistics()
-				return p.statistics, nil
+				return nil
 			}
 		}
 	}
