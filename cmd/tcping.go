@@ -21,21 +21,15 @@ Library support, so other codebases can import tcping (in priority order):
    so they're importable by other modules - blocks everything below
 2. Make config.ProcessUserInput's CLI-only bits (os.Args, the global
    flag.CommandLine, os.Exit on invalid input) usable programmatically
-3. Stop printers' Shutdown() from calling os.Exit directly - a library
-   caller's process must not be killed by a printer
-4. Do not let checkForUpdates make a network call or exit when reachable
+3. Do not let checkForUpdates make a network call or exit when reachable
    from library code - keep it strictly opt-in CLI behavior
-5. Add a mutex/Snapshot() to Statistics so it is safe to read concurrently
-   with an active Prober (app.MonitorSummaryRequest already does this
-   unsynchronized today)
-6. Keep signal handling (app.SetupSignalHandler) and stdin monitoring
-   (app.MonitorSummaryRequest) CLI-only, out of the library's core path
-7. Design a curated top-level public API/entrypoint instead of requiring
+4. Give Statistics a Snapshot() so a caller can read it while a Prober is
+   running. Nothing reads it unsynchronized today, but a library caller
+   has no safe way to do it either.
+5. Design a curated top-level public API/entrypoint instead of requiring
    several packages to be wired together by hand
-8. Treat exported types/fields/methods as a public API contract once this
+6. Treat exported types/fields/methods as a public API contract once this
    is importable (semver discipline)
-
-- Read the entire code once everything is done for "code smells"
 */
 
 func main() {
