@@ -44,6 +44,13 @@ func TestNewPrinter(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Alloy Printer Initialization",
+			cfg: config.PrinterConfig{
+				AlloyURL: "http://localhost:4318",
+			},
+			wantErr: false,
+		},
+		{
 			name: "Plain Printer Initialization",
 			cfg: config.PrinterConfig{
 				NoColor: true,

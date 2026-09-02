@@ -141,6 +141,9 @@ func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
 	case cfg.OutputCSVPath != "":
 		return NewCSVPrinter(cfg)
 
+	case cfg.AlloyURL != "":
+		return NewAlloyPrinter(cfg), nil
+
 	case cfg.NoColor:
 		return NewPlainPrinter(cfg), nil
 

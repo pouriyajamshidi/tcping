@@ -113,17 +113,19 @@ func permuteArgs(args []string) {
 
 // PrinterConfig holds all configuration options for Printer creation
 type PrinterConfig struct {
-	OutputJSON        bool
-	PrettyJSON        bool
-	NoColor           bool
-	WithTimestamp     bool
-	WithSourceAddress bool
-	Verbose           bool // Show everything an HTTP(S) probe learned, not just the status.
-	OutputDBPath      string
-	OutputCSVPath     string
-	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
-	Target            string
-	Port              uint16
+	OutputJSON         bool
+	PrettyJSON         bool
+	NoColor            bool
+	WithTimestamp      bool
+	WithSourceAddress  bool
+	Verbose            bool // Show everything an HTTP(S) probe learned, not just the status.
+	OutputDBPath       string
+	OutputCSVPath      string
+	AlloyURL           string        // Address of a Grafana Alloy OTLP HTTP endpoint. Empty unless -alloy was given.
+	AlloyStatsInterval time.Duration // How often the run summary is sent to Alloy.
+	CSVNoTimestamp     bool          // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
+	Target             string
+	Port               uint16
 }
 
 // Config holds all user provided settings
@@ -268,6 +270,19 @@ func ProcessUserInput() Config {
 		`Do not append a date/time suffix to the CSV filename given via -csv.
 		Repeated runs will then overwrite the same file instead of creating a new one.`)
 
+	alloyURL := flag.String(
+		"alloy",
+		"",
+		`Send the results to a Grafana Alloy OTLP HTTP endpoint as metrics
+		instead of printing them, e.g. http://localhost:4318`)
+
+	alloyStatsInterval := flag.Float64(
+		"alloy-stats-interval",
+		10,
+		`How often to send the statistics to Alloy, in seconds.
+		They are sent along with the next probe, so a longer probe interval
+		delays them. No effect without the -alloy flag.`)
+
 	DBPath := flag.String(
 		"db",
 		"",
@@ -330,6 +345,12 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
+	alloyStatsIntervalDuration := SecondsToDuration(*alloyStatsInterval)
+	if *alloyURL != "" && alloyStatsIntervalDuration <= 0 {
+		fmt.Fprintln(os.Stderr, "Alloy statistics interval should be more than 0 seconds")
+		os.Exit(1)
+	}
+
 	// Resolved before the DNS resolver so hostname lookups can also be
 	// bound to it (see createDNSResolver).
 	var networkInterface nic.NetworkInterface
@@ -376,17 +397,19 @@ func ProcessUserInput() Config {
 	timeoutInDuration := SecondsToDuration(*timeout)
 
 	printerConfig := PrinterConfig{
-		Target:            target.hostname,
-		Port:              validatedPort,
-		OutputJSON:        *outputJSON,
-		PrettyJSON:        *prettyJSON,
-		NoColor:           *noColor,
-		WithTimestamp:     *showTimestamp,
-		WithSourceAddress: *showSourceAddress,
-		Verbose:           *verbose,
-		OutputDBPath:      *DBPath,
-		OutputCSVPath:     *CSVPath,
-		CSVNoTimestamp:    *csvNoTimestamp,
+		Target:             target.hostname,
+		Port:               validatedPort,
+		OutputJSON:         *outputJSON,
+		PrettyJSON:         *prettyJSON,
+		NoColor:            *noColor,
+		WithTimestamp:      *showTimestamp,
+		WithSourceAddress:  *showSourceAddress,
+		Verbose:            *verbose,
+		OutputDBPath:       *DBPath,
+		OutputCSVPath:      *CSVPath,
+		CSVNoTimestamp:     *csvNoTimestamp,
+		AlloyURL:           *alloyURL,
+		AlloyStatsInterval: alloyStatsIntervalDuration,
 	}
 
 	protocol := target.protocol
