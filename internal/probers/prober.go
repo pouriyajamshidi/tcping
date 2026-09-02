@@ -33,6 +33,18 @@ func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats
 
 type ProbeResult struct {
 	LocalAddr net.Addr
+
+	// Everything below is filled in by HTTP probes only and left zero by
+	// TCP ones.
+	StatusCode      int
+	Status          string // e.g. "200 OK"
+	Proto           string // e.g. "HTTP/1.1", "HTTP/2.0"
+	TLSVersion      string // e.g. "TLS 1.3". Empty for plain HTTP.
+	TLSCipherSuite  string // Empty for plain HTTP.
+	CertExpiry      time.Time
+	ConnectDuration time.Duration // TCP connect only.
+	TLSDuration     time.Duration // TLS handshake only.
+	TimeToFirstByte time.Duration // Request sent until the first response byte.
 }
 
 type Pinger interface {
