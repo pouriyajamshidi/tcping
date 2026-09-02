@@ -132,14 +132,9 @@ type Config struct {
 	IP                         netip.Addr
 	Port                       uint16
 	Protocol                   consts.Protocol
-	UseIPv4                    bool
-	UseIPv6                    bool
-	ShowSourceAddress          bool
 	RetryResolveAfterNFailures uint
 	ProbesBeforeQuit           uint
-	IfaceNameOrIPAddress       string
 	Timeout                    time.Duration
-	DNSTimeout                 time.Duration
 	IntervalBetweenProbes      time.Duration
 	PrinterConfig              PrinterConfig
 	NetworkInterface           nic.NetworkInterface
@@ -389,10 +384,7 @@ func ProcessUserInput() Config {
 		IP:                         resolvedIP,
 		Port:                       validatedPort,
 		Protocol:                   target.protocol,
-		UseIPv4:                    *useIPv4,
-		UseIPv6:                    *useIPv6,
 		Timeout:                    timeoutInDuration,
-		DNSTimeout:                 dnsTimeoutDuration,
 		ProbesBeforeQuit:           *probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
 		NameResolutionDuration:     nameResolutionDuration,
@@ -404,7 +396,6 @@ func ProcessUserInput() Config {
 		ShouldRetryResolve:         shouldRetryResolve,
 		ResolveEveryProbe:          *resolveEveryProbe,
 		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
-		IfaceNameOrIPAddress:       *interfaceName,
 		NetworkInterface:           networkInterface,
 		PrinterConfig:              printerConfig,
 	}
