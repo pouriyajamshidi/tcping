@@ -63,7 +63,7 @@ func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 // Ping sends one GET to the target URL, sourcing the connection from the
 // configured network interface when there is one.
 func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
-	d, err := dialer(h.networkInterface, h.timeout, ip)
+	d, err := dialer(tcp, h.networkInterface, h.timeout, ip)
 	if err != nil {
 		return ProbeResult{}, err
 	}

@@ -20,11 +20,12 @@ func address(ip netip.Addr, port uint16) string {
 	return net.JoinHostPort(ip.String(), strconv.Itoa(int(port)))
 }
 
-// dialer builds the net.Dialer for one probe. When a network interface is
-// configured (-I), the connection is sourced from it, matching ip's address
-// family. If the interface has no address of that family the probe fails
-// here, so it does not dial out of some other interface.
-func dialer(networkInterface nic.NetworkInterface, timeout time.Duration, ip netip.Addr) (net.Dialer, error) {
+// dialer builds the net.Dialer for one probe on the given network ("tcp" or
+// "udp"). When a network interface is configured (-I), the connection is
+// sourced from it, matching ip's address family. If the interface has no
+// address of that family the probe fails here, so it does not dial out of
+// some other interface.
+func dialer(network string, networkInterface nic.NetworkInterface, timeout time.Duration, ip netip.Addr) (net.Dialer, error) {
 	d := net.Dialer{Timeout: timeout}
 
 	if !networkInterface.Use {
@@ -36,7 +37,13 @@ func dialer(networkInterface nic.NetworkInterface, timeout time.Duration, ip net
 		return net.Dialer{}, fmt.Errorf("network interface has no source address to reach %s", ip)
 	}
 
-	d.LocalAddr = &net.TCPAddr{IP: localIP}
+	// net.Dialer wants the local address to be of the same kind as the
+	// network it dials, otherwise the dial fails outright.
+	if network == udp {
+		d.LocalAddr = &net.UDPAddr{IP: localIP}
+	} else {
+		d.LocalAddr = &net.TCPAddr{IP: localIP}
+	}
 
 	return d, nil
 }
@@ -71,9 +78,12 @@ func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats
 type ProbeResult struct {
 	LocalAddr net.Addr
 
-	// Filled in by HTTP probes only, left zero by TCP ones. Shared with
+	// Filled in by HTTP probes only, left zero by the others. Shared with
 	// Statistics so the result can be handed to the printers as one value.
 	stats.HTTPInfo
+
+	// Filled in by UDP probes only, left zero by the others.
+	stats.UDPInfo
 }
 
 type Pinger interface {
@@ -230,6 +240,10 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult)
 	// keep it around for the printers. It is zero when nothing answered.
 	s.HTTP = probeResult.HTTPInfo
 
+	// A failed UDP probe still tells us whether we were refused or simply
+	// never answered, which is the whole difference for UDP.
+	s.UDP = probeResult.UDPInfo
+
 	s.OngoingSuccessfulProbes = 0
 	s.OngoingUnsuccessfulProbes++
 	s.TotalUnsuccessfulProbes++
@@ -274,6 +288,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 	s.LatestRTT = rttMs
 	s.LocalAddr = probeResult.LocalAddr
 	s.HTTP = probeResult.HTTPInfo
+	s.UDP = probeResult.UDPInfo
 
 	s.TotalSuccessfulProbes++
 	s.OngoingSuccessfulProbes++

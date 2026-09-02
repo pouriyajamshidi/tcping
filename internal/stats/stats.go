@@ -24,6 +24,15 @@ type HTTPInfo struct {
 	TimeToFirstByte time.Duration // Request sent until the first response byte.
 }
 
+// UDPInfo is what the most recent UDP probe learned. Every field stays zero
+// for the other probe types.
+type UDPInfo struct {
+	Rejected    bool   // The target sent back an ICMP port unreachable, so something refused us.
+	Echoed      bool   // The reply was exactly what we sent, so a tcping UDP server or an echo service answered.
+	ProbeNumber uint64 // The number this probe sent as its payload. It counts up for the whole run, so it says which probe a reply belongs to and which one was lost.
+	ReplySize   int    // Size of the reply in bytes. Zero when nothing answered.
+}
+
 type Statistics struct {
 	Hostname                  string
 	IP                        netip.Addr
@@ -55,6 +64,7 @@ type Statistics struct {
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
 	ResolvedThisProbe         bool          // True when ResolveEveryProbe just resolved successfully for this probe. Lets PrintProbeSuccess/PrintProbeFailure fold NameResolutionDuration into their own line instead of a separate one.
 	HTTP                      HTTPInfo      // Details of the most recent HTTP(S) probe. Zero for TCP probes.
+	UDP                       UDPInfo       // Details of the most recent UDP probe. Zero for the other probe types.
 }
 
 func NewStatistics(cfg config.Config) *Statistics {
@@ -158,6 +168,17 @@ func (s *Statistics) IsHTTP() bool {
 // A probe that never reached the server has no status to show.
 func (s *Statistics) HasHTTPResponse() bool {
 	return s.HTTP.StatusCode != 0
+}
+
+// IsUDP reports whether this run probes over UDP, which is what decides
+// whether the UDP details are worth printing at all.
+func (s *Statistics) IsUDP() bool {
+	return s.Protocol == consts.UDP
+}
+
+// ProbeNumberStr is the number the most recent UDP probe sent as its payload.
+func (s *Statistics) ProbeNumberStr() string {
+	return fmt.Sprint(s.UDP.ProbeNumber)
 }
 
 func (s *Statistics) StatusCodeStr() string {

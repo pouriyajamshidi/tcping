@@ -28,7 +28,7 @@ func NewTcping(cfg config.Config) Tcping {
 // Ping dials ip:port, sourcing the connection from the configured network
 // interface when there is one.
 func (t Tcping) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
-	d, err := dialer(t.networkInterface, t.timeout, ip)
+	d, err := dialer(tcp, t.networkInterface, t.timeout, ip)
 	if err != nil {
 		return ProbeResult{}, err
 	}
