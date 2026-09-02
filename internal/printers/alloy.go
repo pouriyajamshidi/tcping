@@ -264,17 +264,38 @@ func (p *AlloyPrinter) httpMetrics(s *stats.Statistics) []otlpMetric {
 	)
 }
 
+// udpMetrics are what a UDP probe learned. A reply that carried our own
+// payload back is the only proof that something is really listening, and an
+// ICMP refusal the only proof that nothing is, so both are worth a graph.
+func (p *AlloyPrinter) udpMetrics(s *stats.Statistics) []otlpMetric {
+	if !s.IsUDP() {
+		return nil
+	}
+
+	labels := p.labels(s)
+
+	return []otlpMetric{
+		p.gauge("tcping_udp_reply_echoed", "", oneIf(s.UDP.Echoed), labels),
+		p.gauge("tcping_udp_port_unreachable", "", oneIf(s.UDP.Rejected), labels),
+		p.gauge("tcping_udp_reply_bytes", "By", float64(s.UDP.ReplySize), labels),
+	}
+}
+
+// oneIf is how a yes or no is sent, since a metric can only carry a number.
+func oneIf(b bool) float64 {
+	if b {
+		return 1
+	}
+
+	return 0
+}
+
 // probeMetrics is what every probe sends, successful or not. The gauge says
 // what just happened and the counter says how the run is going, so a graph
 // can show both the last probe and the trend.
 func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpMetric {
-	var up float64
-	if succeeded {
-		up = 1
-	}
-
 	metrics := []otlpMetric{
-		p.gauge("tcping_probe_success", "", up, p.labels(s)),
+		p.gauge("tcping_probe_success", "", oneIf(succeeded), p.labels(s)),
 		p.counter("tcping_probes_total", "",
 			otlpPoint{
 				Value:      float64(s.TotalSuccessfulProbes),
@@ -292,7 +313,9 @@ func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpM
 		metrics = append(metrics, p.gauge("tcping_probe_rtt_milliseconds", "ms", float64(s.LatestRTT), p.labels(s)))
 	}
 
-	return append(metrics, p.httpMetrics(s)...)
+	metrics = append(metrics, p.httpMetrics(s)...)
+
+	return append(metrics, p.udpMetrics(s)...)
 }
 
 // msOf turns a duration into milliseconds, the unit the rest of tcping

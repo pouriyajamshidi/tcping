@@ -108,6 +108,48 @@ func TestAlloyPrintProbeFailureHasNoRTT(t *testing.T) {
 	}
 }
 
+// A UDP probe cannot say much, so the little it does learn has to be sent:
+// whether the reply was our own payload coming back and whether the port
+// refused us.
+func TestAlloyUDPProbeSendsWhatItLearned(t *testing.T) {
+	var got otlpPayload
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer := NewAlloyPrinter(config.PrinterConfig{AlloyURL: server.URL})
+
+	s := alloyTestStats()
+	s.Protocol = consts.UDP
+	s.UDP.Echoed = true
+	s.UDP.ReplySize = 4
+
+	printer.PrintProbeSuccess(s)
+
+	found := map[string]float64{}
+	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+		if m.Gauge != nil {
+			found[m.Name] = m.Gauge.DataPoints[0].Value
+		}
+	}
+
+	if found["tcping_udp_reply_echoed"] != 1 {
+		t.Errorf("tcping_udp_reply_echoed = %v, want 1", found["tcping_udp_reply_echoed"])
+	}
+
+	if found["tcping_udp_port_unreachable"] != 0 {
+		t.Errorf("tcping_udp_port_unreachable = %v, want 0", found["tcping_udp_port_unreachable"])
+	}
+
+	if found["tcping_udp_reply_bytes"] != 4 {
+		t.Errorf("tcping_udp_reply_bytes = %v, want 4", found["tcping_udp_reply_bytes"])
+	}
+}
+
 // An Alloy that is not there must not stop the probing, and must not repeat
 // the same complaint on every probe.
 func TestAlloyKeepsGoingWhenUnreachable(t *testing.T) {
