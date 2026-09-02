@@ -261,7 +261,7 @@ func DurationToString(d time.Duration) string {
 }
 
 // RTTResult holds running statistics for round-trip times (RTT) results.
-// Its zero value is valid and represents "no samples yet" — callers should
+// Its zero value is valid and represents "no samples yet". Callers should
 // use Statistics.TotalSuccessfulProbes to tell whether any samples have
 // been recorded.
 type RTTResult struct {
