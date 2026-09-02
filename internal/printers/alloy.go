@@ -327,8 +327,14 @@ func msOf(d time.Duration) float64 {
 // PrintStart says where the metrics are going, then leaves the terminal
 // alone for the rest of the run.
 func (p *AlloyPrinter) PrintStart(s *stats.Statistics) {
-	fmt.Printf("Probing %s on port %d over %s - sending metrics to: %s\n",
-		s.Hostname, s.Port, s.ProtocolStr(), p.endpoint)
+	if s.DestIsIP {
+		fmt.Printf("Probing %s on port %d over %s - sending metrics to: %s\n",
+			s.Hostname, s.Port, s.ProtocolStr(), p.endpoint)
+		return
+	}
+
+	fmt.Printf("Probing %s (%s) on port %d over %s (resolved in %s ms) - sending metrics to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.endpoint)
 }
 
 // PrintNameResolutionDuration sends how long the hostname resolution took.

@@ -318,3 +318,37 @@ func TestInfluxDBStatisticsRideAlongWithProbes(t *testing.T) {
 		t.Error("the summary should be written again once the interval passed")
 	}
 }
+
+// The InfluxDB printer prints nothing after this line, so it is the only
+// place the user gets to see which address is being probed.
+func TestInfluxDBPrintStartShowsTheIP(t *testing.T) {
+	p, err := NewInfluxDBPrinter(influxDBTestConfig("http://localhost:8086"))
+	if err != nil {
+		t.Fatalf("NewInfluxDBPrinter returned %v", err)
+	}
+
+	s := influxDBTestStats()
+	s.NameResolutionDuration = 12 * time.Millisecond
+
+	t.Run("hostname target", func(t *testing.T) {
+		out := captureStdout(t, func() { p.PrintStart(s) })
+
+		want := "Probing example.com (93.184.216.34) on port 443 over TCP (resolved in 12.000 ms) - sending metrics to: " + p.endpoint + "\n"
+		if out != want {
+			t.Errorf("output = %q, want %q", out, want)
+		}
+	})
+
+	t.Run("IP target", func(t *testing.T) {
+		ipTarget := influxDBTestStats()
+		ipTarget.Hostname = "93.184.216.34"
+		ipTarget.DestIsIP = true
+
+		out := captureStdout(t, func() { p.PrintStart(ipTarget) })
+
+		want := "Probing 93.184.216.34 on port 443 over TCP - sending metrics to: " + p.endpoint + "\n"
+		if out != want {
+			t.Errorf("output = %q, want %q", out, want)
+		}
+	})
+}

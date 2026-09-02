@@ -278,10 +278,18 @@ func (p *InfluxDBPrinter) dueStatistics(s *stats.Statistics) []string {
 }
 
 // PrintStart says where the metrics are going, then leaves the terminal
-// alone for the rest of the run.
+// alone for the rest of the run. That is why the resolved IP goes on this
+// line: no probe lines follow it, so this is the only place to see which
+// address is being probed.
 func (p *InfluxDBPrinter) PrintStart(s *stats.Statistics) {
-	fmt.Printf("Probing %s on port %d over %s - sending metrics to: %s\n",
-		s.Hostname, s.Port, s.ProtocolStr(), p.endpoint)
+	if s.DestIsIP {
+		fmt.Printf("Probing %s on port %d over %s - sending metrics to: %s\n",
+			s.Hostname, s.Port, s.ProtocolStr(), p.endpoint)
+		return
+	}
+
+	fmt.Printf("Probing %s (%s) on port %d over %s (resolved in %s ms) - sending metrics to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.endpoint)
 }
 
 // PrintNameResolutionDuration writes how long the hostname resolution took.

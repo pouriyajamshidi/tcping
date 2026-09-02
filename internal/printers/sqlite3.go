@@ -338,8 +338,8 @@ func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.filePath)
 		return
 	}
-	fmt.Printf("Probing %s on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
-		s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.filePath)
+	fmt.Printf("Probing %s (%s) on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.filePath)
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.

@@ -213,3 +213,34 @@ func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
 		t.Error("the summary should be sent again once the interval passed")
 	}
 }
+
+// The Alloy printer prints nothing after this line, so it is the only place
+// the user gets to see which address is being probed.
+func TestAlloyPrintStartShowsTheIP(t *testing.T) {
+	p := NewAlloyPrinter(config.PrinterConfig{AlloyURL: "http://localhost:4318"})
+
+	s := alloyTestStats()
+	s.NameResolutionDuration = 12 * time.Millisecond
+
+	t.Run("hostname target", func(t *testing.T) {
+		out := captureStdout(t, func() { p.PrintStart(s) })
+
+		want := "Probing example.com (93.184.216.34) on port 443 over TCP (resolved in 12.000 ms) - sending metrics to: " + p.endpoint + "\n"
+		if out != want {
+			t.Errorf("output = %q, want %q", out, want)
+		}
+	})
+
+	t.Run("IP target", func(t *testing.T) {
+		ipTarget := alloyTestStats()
+		ipTarget.Hostname = "93.184.216.34"
+		ipTarget.DestIsIP = true
+
+		out := captureStdout(t, func() { p.PrintStart(ipTarget) })
+
+		want := "Probing 93.184.216.34 on port 443 over TCP - sending metrics to: " + p.endpoint + "\n"
+		if out != want {
+			t.Errorf("output = %q, want %q", out, want)
+		}
+	})
+}
