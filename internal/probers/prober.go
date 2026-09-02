@@ -18,14 +18,23 @@ type Prober struct {
 	config     config.Config
 	Ticker     *time.Ticker
 	Statistics *stats.Statistics
+
+	// Asks for the statistics to be printed mid-run. Reading them here,
+	// between probes, is what keeps them from being read while a probe is
+	// busy updating them. Nil when nobody can make the request.
+	summaryRequests <-chan struct{}
 }
 
-func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats *stats.Statistics) *Prober {
+// NewProber wires up a prober. summaryRequests may be nil; when it is not,
+// the statistics are printed every time it yields a value (see
+// app.SummaryRequests).
+func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats *stats.Statistics, summaryRequests <-chan struct{}) *Prober {
 	pr := Prober{
-		pinger:     pinger,
-		printer:    printer,
-		config:     cfg,
-		Statistics: stats,
+		pinger:          pinger,
+		printer:         printer,
+		config:          cfg,
+		Statistics:      stats,
+		summaryRequests: summaryRequests,
 	}
 
 	return &pr
@@ -129,6 +138,16 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 		case <-ctx.Done():
 			p.finalizeStatistics()
 			return p.Statistics, nil
+
+		case _, ok := <-p.summaryRequests:
+			if !ok {
+				// stdin is gone, so stop waiting on it. A nil channel
+				// never fires again, unlike a closed one.
+				p.summaryRequests = nil
+				continue
+			}
+
+			p.printer.PrintStatistics(p.Statistics)
 
 		case <-p.Ticker.C:
 			if runProbe() {

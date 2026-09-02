@@ -7,9 +7,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-
-	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 // SetupSignalHandler catches SIGINT and SIGTERM
@@ -27,19 +24,38 @@ func SetupSignalHandler(ctx context.Context) context.Context {
 	return ctx
 }
 
-// MonitorSummaryRequest checks stdin to see whether the 'Enter' key was pressed
-// if so, it prints the statistics
-func MonitorSummaryRequest(p printers.Printer, s *stats.Statistics) {
-	reader := bufio.NewReader(os.Stdin)
+// SummaryRequests watches stdin and reports every time the user hits the
+// 'Enter' key, so the statistics can be printed by whoever owns them rather
+// than from this goroutine. The channel is closed when stdin runs out.
+func SummaryRequests() <-chan struct{} {
+	// One buffered slot: if a probe is in flight when 'Enter' is pressed we
+	// keep the request and hand it over as soon as the prober asks, and
+	// holding on to more than one is pointless since they all print the
+	// same thing.
+	requests := make(chan struct{}, 1)
 
-	for {
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			continue
-		}
+	// Bind to stdin here rather than inside the goroutine, so the caller
+	// decides what is being read.
+	scanner := bufio.NewScanner(os.Stdin)
 
-		if strings.TrimSpace(input) == "" {
-			p.PrintStatistics(s)
+	go func() {
+		defer close(requests)
+
+		for scanner.Scan() {
+			if scanner.Err() != nil {
+				continue
+			}
+
+			if strings.TrimSpace(scanner.Text()) != "" {
+				continue
+			}
+
+			select {
+			case requests <- struct{}{}:
+			default:
+			}
 		}
-	}
+	}()
+
+	return requests
 }

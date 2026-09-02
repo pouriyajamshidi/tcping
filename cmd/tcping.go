@@ -62,11 +62,14 @@ func main() {
 		pinger = probers.NewTcping(cfg)
 	}
 
+	// Only worth watching stdin when there is a user at a keyboard to
+	// press 'Enter'.
+	var summaryRequests <-chan struct{}
 	if app.IsForegroundTerminal() {
-		go app.MonitorSummaryRequest(printer, stats)
+		summaryRequests = app.SummaryRequests()
 	}
 
-	prober := probers.NewProber(pinger, printer, cfg, stats)
+	prober := probers.NewProber(pinger, printer, cfg, stats, summaryRequests)
 	stats, err = prober.Probe(probeCtx)
 	if err != nil {
 		printer.PrintError("%v", err)
