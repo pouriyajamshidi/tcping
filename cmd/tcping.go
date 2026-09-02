@@ -4,13 +4,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
+	"strconv"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/app"
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
+	"github.com/pouriyajamshidi/tcping/v3/internal/server"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -35,6 +38,18 @@ Library support, so other codebases can import tcping (in priority order):
 func main() {
 	cfg := config.ProcessUserInput()
 
+	if cfg.UDPServer {
+		ctx := app.SetupSignalHandler(context.Background())
+
+		listenAddr := net.JoinHostPort(cfg.IP.String(), strconv.Itoa(int(cfg.Port)))
+		if err := server.ListenUDP(ctx, listenAddr); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to listen on %s: %s\n", listenAddr, err)
+			os.Exit(1)
+		}
+
+		return
+	}
+
 	stats := stats.NewStatistics(cfg)
 
 	printer, err := printers.NewPrinter(cfg.PrinterConfig)
@@ -50,6 +65,8 @@ func main() {
 	switch cfg.Protocol {
 	case consts.HTTP, consts.HTTPS:
 		pinger = probers.NewHTTPing(cfg)
+	case consts.UDP:
+		pinger = probers.NewUDPing(cfg)
 	default:
 		pinger = probers.NewTcping(cfg)
 	}
