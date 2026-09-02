@@ -34,6 +34,7 @@ Library support, so other codebases can import tcping (in priority order):
 6. Treat exported types/fields/methods as a public API contract once this
    is importable (semver discipline)
 7. Sending over proxy connections
+8. add system name to Alloy and Influx printers? so that we can distinguish them when graphing
 */
 
 func main() {
