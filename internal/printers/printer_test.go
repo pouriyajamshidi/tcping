@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
@@ -15,20 +16,20 @@ func TestNewPrinter(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		cfg         PrinterConfig
+		cfg         config.PrinterConfig
 		wantErr     bool
 		expectedErr string
 	}{
 		{
 			name: "JSON Printer Initialization",
-			cfg: PrinterConfig{
+			cfg: config.PrinterConfig{
 				OutputJSON: true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Database Printer Initialization",
-			cfg: PrinterConfig{
+			cfg: config.PrinterConfig{
 				OutputDBPath: ":memory:",
 				Target:       "example.com",
 				Port:         443,
@@ -37,21 +38,21 @@ func TestNewPrinter(t *testing.T) {
 		},
 		{
 			name: "CSV Printer Initialization",
-			cfg: PrinterConfig{
+			cfg: config.PrinterConfig{
 				OutputCSVPath: filepath.Join(tempDir, "test.csv"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Plain Printer Initialization",
-			cfg: PrinterConfig{
+			cfg: config.PrinterConfig{
 				NoColor: true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Default Color Printer Initialization",
-			cfg: PrinterConfig{
+			cfg: config.PrinterConfig{
 				NoColor: false,
 			},
 			wantErr: false,
