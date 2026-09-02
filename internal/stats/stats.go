@@ -80,7 +80,7 @@ func NewStatistics(cfg Config) *Statistics {
 		LocalAddr:              localAddr,
 		WithTimestamp:          cfg.GetWithTimestamp(),
 		WithSourceAddress:      cfg.GetWithSourceAddress(),
-		Protocol:               consts.TCP,
+		Protocol:               cfg.GetProtocol(),
 		LongestUptime:          LongestTime{},
 		LongestDowntime:        LongestTime{},
 		NameResolutionDuration: cfg.GetNameResolutionDuration(),
