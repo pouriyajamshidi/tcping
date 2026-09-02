@@ -90,7 +90,11 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 			p.printer.PrintProbeFailure(p.Statistics)
 		} else {
 			p.handleProbeSuccess(pingTime, rtt, probeResult)
-			p.printer.PrintProbeSuccess(p.Statistics)
+
+			// The probe is still counted, we just do not report it.
+			if !p.config.ShowFailuresOnly {
+				p.printer.PrintProbeSuccess(p.Statistics)
+			}
 		}
 
 		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&

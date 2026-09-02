@@ -887,3 +887,45 @@ func TestProbe_RealFailureStillCounts(t *testing.T) {
 		t.Errorf("PrintProbeFailure was called %d times, want 2", got)
 	}
 }
+
+// -show-failures-only hides successful probes from the printer, but the
+// probe itself must still be counted, otherwise the summary would be wrong.
+func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
+	pinger := alwaysSucceeds()
+	cfg := config.Config{
+		IntervalBetweenProbes: 5 * time.Millisecond,
+		ProbesBeforeQuit:      3,
+		ShowFailuresOnly:      true,
+	}
+	p, printer := newTestProber(pinger, cfg)
+
+	if _, err := p.Probe(context.Background()); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	if got := printer.snapshot().successCalls; got != 0 {
+		t.Errorf("PrintProbeSuccess called %d times, want 0", got)
+	}
+	if p.Statistics.TotalSuccessfulProbes != 3 {
+		t.Errorf("TotalSuccessfulProbes = %d, want 3", p.Statistics.TotalSuccessfulProbes)
+	}
+}
+
+// Failures are the whole point of -show-failures-only, so they keep printing.
+func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
+	pinger := alwaysFails()
+	cfg := config.Config{
+		IntervalBetweenProbes: 5 * time.Millisecond,
+		ProbesBeforeQuit:      2,
+		ShowFailuresOnly:      true,
+	}
+	p, printer := newTestProber(pinger, cfg)
+
+	if _, err := p.Probe(context.Background()); err != nil {
+		t.Fatalf("Probe() error = %v", err)
+	}
+
+	if got := printer.snapshot().failureCalls; got != 2 {
+		t.Errorf("PrintProbeFailure called %d times, want 2", got)
+	}
+}
