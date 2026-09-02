@@ -229,7 +229,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	if err := p.ProbeWriter.Write(record); err != nil {
-		p.PrintError("failed to write success record: %w", err)
+		p.PrintError("failed to write success record: %v", err)
 	}
 
 	p.ProbeWriter.Flush()
@@ -248,10 +248,12 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 		"false",
 		s.Hostname,
 		s.IPStr(),
-		strconv.Itoa(int(s.Port)),
+		s.PortStr(),
 	)
 
-	if s.WithSourceAddress && s.SourceAddr() != "" {
+	// Always write the column when the header has one, even if the address
+	// is empty, otherwise the row is short and every later column shifts.
+	if s.WithSourceAddress {
 		record = append(record, s.SourceAddr())
 	}
 

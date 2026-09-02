@@ -192,3 +192,58 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 		t.Errorf("Expected second record to be a 'false', got %q", records[1][0])
 	}
 }
+
+// A failed probe usually has no source address to report. The column is
+// still in the header, so the row has to carry an empty value for it,
+// otherwise every column after it shifts left by one.
+func TestCSVPrinter_FailureRowKeepsSourceAddressColumn(t *testing.T) {
+	filePath := filepath.Join(t.TempDir(), "failure_alignment.csv")
+
+	p, err := NewCSVPrinter(filePath, false)
+	if err != nil {
+		t.Fatalf("NewCSVPrinter failed: %v", err)
+	}
+	defer p.Done()
+
+	s := &stats.Statistics{
+		Hostname:                  "example.com",
+		Port:                      443,
+		WithSourceAddress:         true,
+		OngoingUnsuccessfulProbes: 1,
+	}
+
+	p.PrintStart(s)
+	p.PrintProbeFailure(s)
+	p.Done()
+
+	probeFile, err := os.Open(p.ProbeFile.Name())
+	if err != nil {
+		t.Fatalf("Failed to open probe file: %v", err)
+	}
+	defer probeFile.Close()
+
+	// csv.Reader defaults to requiring every record to match the header's
+	// field count, so a short row fails right here.
+	records, err := csv.NewReader(probeFile).ReadAll()
+	if err != nil {
+		t.Fatalf("Failed to read probe CSV: %v", err)
+	}
+
+	if len(records) != 2 {
+		t.Fatalf("got %d rows, want 2 (header + one probe)", len(records))
+	}
+
+	header, row := records[0], records[1]
+	if len(row) != len(header) {
+		t.Fatalf("row has %d fields, header has %d", len(row), len(header))
+	}
+
+	for i, name := range header {
+		if name != colSourceAddress {
+			continue
+		}
+		if row[i] != "" {
+			t.Errorf("%s = %q, want empty", colSourceAddress, row[i])
+		}
+	}
+}
