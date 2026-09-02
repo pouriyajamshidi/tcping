@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -310,7 +311,7 @@ func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpM
 
 	// A failed probe has no round trip time to report.
 	if succeeded {
-		metrics = append(metrics, p.gauge("tcping_probe_rtt_milliseconds", "ms", float64(s.LatestRTT), p.labels(s)))
+		metrics = append(metrics, p.gauge("tcping_probe_rtt_milliseconds", "ms", rttOf(s.LatestRTT), p.labels(s)))
 	}
 
 	metrics = append(metrics, p.httpMetrics(s)...)
@@ -322,6 +323,13 @@ func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpM
 // reports latencies in.
 func msOf(d time.Duration) float64 {
 	return float64(d) / float64(time.Millisecond)
+}
+
+// rttOf widens an RTT for a data point, which can only carry a float64.
+// Rounding to three decimals, the precision the console printers use, keeps
+// the widening from turning 2.1 into 2.0999999046325684.
+func rttOf(rtt float32) float64 {
+	return math.Round(float64(rtt)*1000) / 1000
 }
 
 // PrintStart says where the metrics are going, then leaves the terminal
@@ -393,10 +401,10 @@ func (p *AlloyPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 	// and sending zeros would look like a very fast target.
 	if s.TotalSuccessfulProbes > 0 {
 		metrics = append(metrics,
-			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Min), p.labels(s, attr("stat", "min"))),
-			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Average), p.labels(s, attr("stat", "avg"))),
-			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Max), p.labels(s, attr("stat", "max"))),
-			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Mdev), p.labels(s, attr("stat", "mdev"))),
+			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Min), p.labels(s, attr("stat", "min"))),
+			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Average), p.labels(s, attr("stat", "avg"))),
+			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Max), p.labels(s, attr("stat", "max"))),
+			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Mdev), p.labels(s, attr("stat", "mdev"))),
 		)
 	}
 
