@@ -72,3 +72,29 @@ func TestColorPrinter_ZoneIDInTargetIsNotTreatedAsAVerb(t *testing.T) {
 		})
 	}
 }
+
+// Without -I there is no source address to show, so -D has to leave the
+// "using" part out rather than print an empty one.
+func TestColorProbeWithoutASourceAddress(t *testing.T) {
+	p := NewColorPrinter(config.PrinterConfig{WithSourceAddress: true})
+	s := &stats.Statistics{
+		Hostname:                "example.com",
+		Port:                    443,
+		Protocol:                "TCP",
+		OngoingSuccessfulProbes: 1,
+	}
+
+	for _, tc := range []struct {
+		name  string
+		print func()
+	}{
+		{"success", func() { p.PrintProbeSuccess(s) }},
+		{"failure", func() { p.PrintProbeFailure(s) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if out := captureStdout(t, tc.print); strings.Contains(out, "using ") {
+				t.Errorf("output = %q, want no source address", out)
+			}
+		})
+	}
+}

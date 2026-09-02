@@ -162,6 +162,28 @@ func TestPlainProbeTimestampAndSourceAddress(t *testing.T) {
 	}
 }
 
+// Without -I there is no source address to show, so -D has to leave the
+// "using" part out rather than print an empty one.
+func TestPlainProbeWithoutASourceAddress(t *testing.T) {
+	s := plainTestStats()
+
+	for _, tt := range []struct {
+		name  string
+		print func(p *PlainPrinter)
+	}{
+		{"success", func(p *PlainPrinter) { p.PrintProbeSuccess(s) }},
+		{"failure", func(p *PlainPrinter) { p.PrintProbeFailure(s) }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			out := captureStdout(t, func() {
+				tt.print(NewPlainPrinter(config.PrinterConfig{WithSourceAddress: true}))
+			})
+
+			wantNoLines(t, out, "using ")
+		})
+	}
+}
+
 // When the hostname is resolved for every probe, the probe line says how
 // long that took instead of taking up a line of its own.
 func TestPlainProbeShowsResolutionInline(t *testing.T) {

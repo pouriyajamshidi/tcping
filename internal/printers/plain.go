@@ -52,7 +52,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
-	if p.cfg.WithSourceAddress {
+	if p.cfg.WithSourceAddress && s.SourceAddr() != "" {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
