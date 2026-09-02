@@ -352,8 +352,8 @@ type LongestTime struct {
 	Duration time.Duration // Duration of the longest period.
 }
 
-// NewLongestTime creates and returns a LongestTime instance with the provided start time and duration.
-func NewLongestTime(startTime time.Time, duration time.Duration) LongestTime {
+// newLongestTime creates and returns a LongestTime instance with the provided start time and duration.
+func newLongestTime(startTime time.Time, duration time.Duration) LongestTime {
 	return LongestTime{
 		Start:    startTime,
 		End:      startTime.Add(duration),
@@ -382,7 +382,7 @@ func SetLongestDuration(start time.Time, duration time.Duration, longest *Longes
 		return
 	}
 
-	newLongest := NewLongestTime(start, duration)
+	newLongest := newLongestTime(start, duration)
 
 	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
 		*longest = newLongest
