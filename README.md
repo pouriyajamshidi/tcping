@@ -360,7 +360,9 @@ forward it to Prometheus and turn a run into a graph. Every probe sends
 `tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
 `tcping_probes_total`, labelled with the target, IP, port and protocol. An
 HTTP(S) target also sends the status code, the connect, TLS handshake and
-first-byte timings, and the days left on the certificate.
+first-byte timings, and the days left on the certificate. A UDP target sends
+whether the reply was echoed back, whether the port refused us and how big
+the reply was.
 
 The statistics you would normally see on exit, such as the packet loss and the
 minimum, average and maximum latency, are sent every 10 seconds so a run that
@@ -395,6 +397,30 @@ prometheus.remote_write "local" {
 > [!NOTE]
 > Prometheus needs to be started with `--web.enable-remote-write-receiver`
 > for Alloy to be able to push to it.
+
+11. Send the results to InfluxDB:
+
+```bash
+export INFLUXDB_TOKEN=your-api-token
+tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping
+```
+
+Instead of printing each probe, tcping writes it to InfluxDB v2 or v3 as line
+protocol. Every probe writes one point, named after what was probed:
+`tcping_tcp`, `tcping_udp` or `tcping_http`, tagged with the target, IP, port
+and protocol. All three hold `success`, `rtt_ms` and the successful and
+unsuccessful probe counts. A `tcping_http` point also carries the status code,
+the connect, TLS handshake and first-byte timings and the days left on the
+certificate, and a `tcping_udp` point carries the probe number, the size of
+the reply and whether it was echoed back or refused.
+
+The statistics you would normally see on exit, such as the packet loss and the
+minimum, average and maximum latency, are written to `tcping_statistics` every
+10 seconds so a run that nobody is watching still reports them. Use
+`--influxdb-stats-interval` to change that.
+
+The API token is only read from the `INFLUXDB_TOKEN` environment variable, so
+it never ends up in your shell history.
 
 > [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
@@ -444,6 +470,10 @@ The following flags are available to control the behavior of **tcping**:
 | `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
 | `--alloy`                | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them. e.g. `--alloy http://localhost:4318` |
 | `--alloy-stats-interval` | How often to send the statistics to Alloy, in seconds. Defaults to 10. No effect without `--alloy`                        |
+| `--influxdb`             | Send the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as metrics instead of printing them. e.g. `--influxdb http://localhost:8086`. The API token is read from the `INFLUXDB_TOKEN` environment variable |
+| `--influxdb-org`         | InfluxDB organization to write to. Required with `--influxdb`                                                             |
+| `--influxdb-bucket`      | InfluxDB bucket to write to. Required with `--influxdb`                                                                   |
+| `--influxdb-stats-interval` | How often to write the statistics to InfluxDB, in seconds. Defaults to 10. No effect without `--influxdb`               |
 | `--skip-tls`             | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
 | `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. For a UDP target, shows whether the reply carried our own payload back. No effect on TCP targets |
 | `--udp-server`           | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |

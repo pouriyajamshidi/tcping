@@ -30,6 +30,8 @@
 - feat: add `--resolve-every-probe` flag to resolve the target's hostname before every probe instead of only at startup or on retry (`-r`)
 - feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
 - feat: show how long hostname resolution took - at startup, on every retry-resolve, and per-entry in the "IP address changes" summary
+- feat: add `--alloy` flag to send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, along with `--alloy-stats-interval` to control how often the statistics are sent
+- feat: add `--influxdb` flag to write the results to an InfluxDB v2 or v3 server as line protocol, along with `--influxdb-org`, `--influxdb-bucket` and `--influxdb-stats-interval`. The API token is read from the `INFLUXDB_TOKEN` environment variable
 - improvement: `-I` now keeps working correctly when the interface has both an IPv4 and an IPv6 address and the target's resolved address family changes mid-run
 - improvement: DNS resolution is now sourced from `-I`'s interface too, matching what probes already did
 - improvement: show how long the target was up right when it starts failing, mirroring the existing downtime message
