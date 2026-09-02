@@ -38,7 +38,9 @@ const (
 		certificate_expiry TEXT,
 		connect_ms REAL,
 		tls_handshake_ms REAL,
-		ttfb_ms REAL
+		ttfb_ms REAL,
+		udp_probe_number INTEGER,
+		udp_result TEXT
 	);`
 
 	statsTableSchema = `CREATE TABLE IF NOT EXISTS %s (
@@ -91,8 +93,10 @@ const (
 		certificate_expiry,
 		connect_ms,
 		tls_handshake_ms,
-		ttfb_ms
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+		ttfb_ms,
+		udp_probe_number,
+		udp_result
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	statsInsert = `INSERT INTO %s (
 		hostname,
@@ -237,6 +241,32 @@ func httpArgs(s *stats.Statistics) []any {
 	}
 }
 
+// udpArgs returns the UDP columns for one probe, in the order the probe
+// insert lists them. They are NULL for the other probe types. The result
+// says what the probe learned, since "reachable" alone cannot tell a refusal
+// apart from silence, and the probe number says which probe it was.
+func udpArgs(s *stats.Statistics) []any {
+	if !s.IsUDP() {
+		return make([]any, 2)
+	}
+
+	return []any{s.UDP.ProbeNumber, udpResultText(s)}
+}
+
+// udpResultText describes in one word what a UDP probe learned.
+func udpResultText(s *stats.Statistics) string {
+	switch {
+	case s.UDP.Echoed:
+		return "echoed"
+	case s.UDP.ReplySize > 0:
+		return "replied"
+	case s.UDP.Rejected:
+		return "port unreachable"
+	default:
+		return "no reply"
+	}
+}
+
 func nullIfEmpty(v string) any {
 	if v == "" {
 		return nil
@@ -289,6 +319,7 @@ func (p *DatabasePrinter) insertProbe(
 		s.ProtocolStr(),
 	}
 	args = append(args, httpArgs(s)...)
+	args = append(args, udpArgs(s)...)
 
 	if err := sqlitex.Execute(
 		p.conn,

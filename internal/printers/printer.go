@@ -89,6 +89,46 @@ func httpProbeDetails(s *stats.Statistics, verbose bool) string {
 	return msg
 }
 
+// udpProbeFailureReason says what a failed UDP probe actually told us, e.g.
+// " (port unreachable)". It is empty for the other probe types.
+func udpProbeFailureReason(s *stats.Statistics) string {
+	if !s.IsUDP() {
+		return ""
+	}
+
+	if s.UDP.Rejected {
+		return " (port unreachable)"
+	}
+
+	// Nothing came back at all. UDP gives us no way to tell an open port
+	// that stays quiet from a packet that never arrived.
+	return " (port may still be open)"
+}
+
+// udpProbeDetails is the indented block printed under a UDP probe line when
+// verbose is on. Every probe sends its own number as the payload, so an
+// echoed reply names the probe it belongs to and a gap in those numbers is
+// exactly which probe was lost.
+func udpProbeDetails(s *stats.Statistics, verbose bool) string {
+	if !verbose || !s.IsUDP() {
+		return ""
+	}
+
+	switch {
+	case s.UDP.Echoed:
+		return fmt.Sprintf("    reply echoed back probe %s\n", s.ProbeNumberStr())
+
+	case s.UDP.ReplySize > 0:
+		return fmt.Sprintf("    reply of %d bytes did not match probe %s\n", s.UDP.ReplySize, s.ProbeNumberStr())
+
+	case s.UDP.Rejected:
+		return fmt.Sprintf("    probe %s was refused\n", s.ProbeNumberStr())
+
+	default:
+		return fmt.Sprintf("    probe %s got no reply\n", s.ProbeNumberStr())
+	}
+}
+
 // NewPrinter creates and returns an appropriate printer based on configuration
 func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
 	switch {

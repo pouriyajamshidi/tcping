@@ -65,6 +65,28 @@ func httpRecord(s *stats.Statistics) []string {
 	}
 }
 
+// Extra columns written for UDP targets only, for the same reason: a TCP run
+// keeps the CSV shape it has always had.
+const (
+	colUDPProbeNumber string = "UDP Probe"
+	colUDPResult      string = "UDP Result"
+)
+
+// udpResult describes what one UDP probe learned, since "Reachable" alone
+// cannot tell a refusal apart from silence.
+func udpResult(s *stats.Statistics) string {
+	switch {
+	case s.UDP.Echoed:
+		return "echoed"
+	case s.UDP.ReplySize > 0:
+		return "replied"
+	case s.UDP.Rejected:
+		return "port unreachable"
+	default:
+		return "no reply"
+	}
+}
+
 const (
 	filePermission os.FileMode = 0644
 	fileFlag       int         = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
@@ -171,6 +193,10 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 		headers = append(headers, httpColumns...)
 	}
 
+	if s.IsUDP() {
+		headers = append(headers, colUDPProbeNumber, colUDPResult)
+	}
+
 	if err := p.probeWriter.Write(headers); err != nil {
 		return fmt.Errorf("failed to write headers: %w", err)
 	}
@@ -234,6 +260,10 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		record = append(record, httpRecord(s)...)
 	}
 
+	if s.IsUDP() {
+		record = append(record, s.ProbeNumberStr(), udpResult(s))
+	}
+
 	if err := p.probeWriter.Write(record); err != nil {
 		p.PrintError("failed to write success record: %v", err)
 	}
@@ -267,6 +297,10 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	if s.IsHTTP() {
 		record = append(record, httpRecord(s)...)
+	}
+
+	if s.IsUDP() {
+		record = append(record, s.ProbeNumberStr(), udpResult(s))
 	}
 
 	if err := p.probeWriter.Write(record); err != nil {

@@ -65,6 +65,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 	msg += "\n"
 	msg += httpProbeDetails(s, p.cfg.Verbose)
+	msg += udpProbeDetails(s, p.cfg.Verbose)
 
 	fmt.Print(msg)
 }
@@ -90,12 +91,14 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s_conn=%d", s.ProtocolStr(), s.OngoingUnsuccessfulProbes)
 	msg += httpProbeSummary(s)
+	msg += udpProbeFailureReason(s)
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
 	}
 	msg += "\n"
 	msg += httpProbeDetails(s, p.cfg.Verbose)
+	msg += udpProbeDetails(s, p.cfg.Verbose)
 
 	fmt.Print(msg)
 }

@@ -79,6 +79,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	printLightGreen("%s", msg)
 	printLightBlue("%s", httpProbeDetails(s, p.cfg.Verbose))
+	printLightBlue("%s", udpProbeDetails(s, p.cfg.Verbose))
 }
 
 // PrintProbeFailure prints a message the probe has failed.
@@ -102,6 +103,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s_conn=%d", s.ProtocolStr(), s.OngoingUnsuccessfulProbes)
 	msg += httpProbeSummary(s)
+	msg += udpProbeFailureReason(s)
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
@@ -110,6 +112,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	printRed("%s", msg)
 	printLightBlue("%s", httpProbeDetails(s, p.cfg.Verbose))
+	printLightBlue("%s", udpProbeDetails(s, p.cfg.Verbose))
 }
 
 // PrintStatistics prints the summary of all probe statistics.

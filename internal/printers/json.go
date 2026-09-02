@@ -47,6 +47,30 @@ type jsonProbe struct {
 	Connections uint      `json:"connections"`
 	Timestamp   string    `json:"timestamp,omitempty"`
 	HTTP        *jsonHTTP `json:"http,omitempty"`
+	UDP         *jsonUDP  `json:"udp,omitempty"`
+}
+
+// jsonUDP is attached to a probe only when the target is UDP, so the output
+// of the other probe types is unchanged. It is what tells a reply apart from
+// a refusal and from silence, which for UDP is the whole story.
+type jsonUDP struct {
+	ProbeNumber uint64 `json:"probeNumber"`
+	Rejected    bool   `json:"rejected"`
+	Echoed      bool   `json:"echoed"`
+	ReplyBytes  int    `json:"replyBytes"`
+}
+
+func newJSONUDP(s *stats.Statistics) *jsonUDP {
+	if !s.IsUDP() {
+		return nil
+	}
+
+	return &jsonUDP{
+		ProbeNumber: s.UDP.ProbeNumber,
+		Rejected:    s.UDP.Rejected,
+		Echoed:      s.UDP.Echoed,
+		ReplyBytes:  s.UDP.ReplySize,
+	}
 }
 
 // jsonHTTP is attached to a probe only when the target is HTTP(S) and the
@@ -179,6 +203,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		Latency:     float32(latency),
 		Connections: s.OngoingSuccessfulProbes,
 		HTTP:        newJSONHTTP(s),
+		UDP:         newJSONUDP(s),
 	}
 
 	if p.cfg.WithTimestamp {
@@ -205,6 +230,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		Success:     false,
 		Connections: s.OngoingUnsuccessfulProbes,
 		HTTP:        newJSONHTTP(s),
+		UDP:         newJSONUDP(s),
 	}
 
 	if p.cfg.WithTimestamp {
