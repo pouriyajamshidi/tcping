@@ -114,6 +114,7 @@ func permuteArgs(args []string) {
 
 // Config holds all user provided settings
 type Config struct {
+	URL                        string // Full target URL. HTTP(S) targets only, empty otherwise.
 	Hostname                   string
 	IP                         netip.Addr
 	Port                       uint16
@@ -134,11 +135,16 @@ type Config struct {
 	ShouldRetryResolve         bool
 	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
 	ShowFailuresOnly           bool
+	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
 	Resolver                   *dns.Resolver
 }
 
 func (c Config) GetHostname() string {
 	return c.Hostname
+}
+
+func (c Config) GetURL() string {
+	return c.URL
 }
 
 func (c Config) GetIP() netip.Addr {
@@ -281,6 +287,12 @@ func ProcessUserInput() Config {
 		false,
 		"Show only the failed probes.")
 
+	skipTLSVerify := flag.Bool(
+		"skip-tls",
+		false,
+		`Do not check the server certificate when probing an https:// target.
+		Useful for self-signed or expired certificates.`)
+
 	noColor := flag.Bool("no-color", false, "Do not colorize output.")
 
 	outputJSON := flag.Bool(
@@ -341,16 +353,21 @@ func ProcessUserInput() Config {
 
 	args := flag.Args()
 
-	// host and port must be specified
-	// Support both "host port" and "host:port" formats
-	target, port := parseHostPortArgs(args)
+	// The target says which protocol to speak: an http(s):// URL selects an
+	// HTTP probe, anything else is a TCP one given as "host port" or
+	// "host:port".
+	target, err := parseTarget(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 
-	if target == "" || port == "" {
+	if target.hostname == "" || target.port == "" {
 		fmt.Fprintln(os.Stderr, "At least the host and port or host:port format must be specified")
 		usage()
 	}
 
-	validatedPort, err := convertAndValidatePort(port)
+	validatedPort, err := convertAndValidatePort(target.port)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -391,13 +408,13 @@ func ProcessUserInput() Config {
 	var targetIsAlreadyIP bool
 
 	resolveStart := time.Now()
-	resolvedIP, err := resolver.ResolveHostname(target)
+	resolvedIP, err := resolver.ResolveHostname(target.hostname)
 	nameResolutionDuration := time.Since(resolveStart)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target, err)
+		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target.hostname, err)
 		os.Exit(1)
 	}
-	if resolvedIP.String() == target {
+	if resolvedIP.String() == target.hostname {
 		targetIsAlreadyIP = true
 	}
 
@@ -409,7 +426,7 @@ func ProcessUserInput() Config {
 	timeoutInDuration := SecondsToDuration(*timeout)
 
 	printerConfig := printers.PrinterConfig{
-		Target:            target,
+		Target:            target.hostname,
 		Port:              validatedPort,
 		OutputJSON:        *outputJSON,
 		PrettyJSON:        *prettyJSON,
@@ -422,9 +439,11 @@ func ProcessUserInput() Config {
 	}
 
 	return Config{
-		Hostname:                   target,
+		Hostname:                   target.hostname,
+		URL:                        target.url,
 		IP:                         resolvedIP,
 		Port:                       validatedPort,
+		Protocol:                   target.protocol,
 		UseIPv4:                    *useIPv4,
 		UseIPv6:                    *useIPv6,
 		Timeout:                    timeoutInDuration,
@@ -434,6 +453,7 @@ func ProcessUserInput() Config {
 		NameResolutionDuration:     nameResolutionDuration,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
+		SkipTLSVerify:              *skipTLSVerify,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
 		ResolveEveryProbe:          *resolveEveryProbe,

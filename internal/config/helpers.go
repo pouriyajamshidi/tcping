@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
 // version is set at compile time via the Makefile
@@ -51,6 +54,85 @@ func parseHostPortArgs(args []string) (host string, port string) {
 	return args[0], args[1]
 }
 
+// probeTarget is what the user asked us to probe, extracted from the
+// positional arguments.
+type probeTarget struct {
+	hostname string
+	port     string
+	protocol consts.Protocol
+	url      string // Full URL, HTTP(S) targets only.
+}
+
+// parseTarget picks the protocol from the user input: an
+// http:// or https:// prefix means an HTTP probe, anything else is the plain
+// TCP probe tcping has always done. default port is
+// (80 or 443) but can still be overridden by the URL's own port or
+// a trailing port argument.
+func parseTarget(args []string) (probeTarget, error) {
+	if len(args) == 0 {
+		return probeTarget{}, nil
+	}
+
+	protocol, isURL := schemeProtocol(args[0])
+	if !isURL {
+		host, port := parseHostPortArgs(args)
+		return probeTarget{hostname: host, port: port, protocol: consts.TCP}, nil
+	}
+
+	u, err := url.Parse(args[0])
+	if err != nil || u.Hostname() == "" {
+		return probeTarget{}, fmt.Errorf("invalid URL %q", args[0])
+	}
+
+	target := probeTarget{
+		hostname: u.Hostname(),
+		port:     u.Port(),
+		protocol: protocol,
+	}
+
+	// A trailing port argument wins over the one embedded in the URL.
+	if len(args) > 1 {
+		target.port = args[1]
+	}
+
+	if target.port == "" {
+		target.port = defaultPort(protocol)
+	}
+
+	// Rebuild the host so the Host header matches the port we will dial,
+	// while still omitting the port when it is the scheme's default - some
+	// virtual hosts only match the bare name.
+	if target.port == defaultPort(protocol) {
+		u.Host = target.hostname
+	} else {
+		u.Host = net.JoinHostPort(target.hostname, target.port)
+	}
+
+	target.url = u.String()
+
+	return target, nil
+}
+
+// schemeProtocol reports the protocol implied by target's URL scheme, and
+// whether it had one we handle at all.
+func schemeProtocol(target string) (consts.Protocol, bool) {
+	switch {
+	case strings.HasPrefix(target, "http://"):
+		return consts.HTTP, true
+	case strings.HasPrefix(target, "https://"):
+		return consts.HTTPS, true
+	default:
+		return "", false
+	}
+}
+
+func defaultPort(protocol consts.Protocol) string {
+	if protocol == consts.HTTPS {
+		return "443"
+	}
+	return "80"
+}
+
 // usage prints how tcping should be run
 func usage() {
 	fmt.Printf("\nTCPING version %s\n\n", version)
@@ -58,6 +140,8 @@ func usage() {
 	fmt.Println("tcping www.example.com 443")
 	fmt.Println("Or use the <hostname/ip:port> format:")
 	fmt.Println("tcping www.example.com:443")
+	fmt.Println("Or probe over HTTP(S) by giving a URL:")
+	fmt.Println("tcping https://www.example.com/health")
 	fmt.Printf("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
