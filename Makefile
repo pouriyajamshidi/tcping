@@ -95,7 +95,7 @@ clean:
 
 update:
 	@echo "[+] Updating Go dependencies"
-	@go get -u ./...
+	@go get -u -v ./...
 	@go mod tidy
 	@echo "[+] Done"
 
