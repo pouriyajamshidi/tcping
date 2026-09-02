@@ -288,6 +288,27 @@ func TestParseTarget(t *testing.T) {
 			wantURL:      "https://[2606:4700::1]:8443/",
 		},
 		{
+			name:         "udp URL with a port in it",
+			args:         []string{"udp://example.com:53"},
+			wantHostname: "example.com",
+			wantPort:     "53",
+			wantProtocol: consts.UDP,
+		},
+		{
+			name:         "udp URL with a trailing port argument",
+			args:         []string{"udp://example.com", "9999"},
+			wantHostname: "example.com",
+			wantPort:     "9999",
+			wantProtocol: consts.UDP,
+		},
+		{
+			name:         "udp has no default port",
+			args:         []string{"udp://example.com"},
+			wantHostname: "example.com",
+			wantPort:     "",
+			wantProtocol: consts.UDP,
+		},
+		{
 			name:    "a URL without a host is rejected",
 			args:    []string{"https://"},
 			wantErr: true,

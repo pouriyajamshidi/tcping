@@ -64,10 +64,10 @@ type probeTarget struct {
 }
 
 // parseTarget picks the protocol from the user input: an
-// http:// or https:// prefix means an HTTP probe, anything else is the plain
-// TCP probe tcping has always done. default port is
-// (80 or 443) but can still be overridden by the URL's own port or
-// a trailing port argument.
+// http:// or https:// prefix means an HTTP probe, a udp:// one means a UDP
+// probe, anything else is the plain TCP probe tcping has always done. HTTP
+// gets a default port (80 or 443) but it can still be overridden by the
+// URL's own port or a trailing port argument. UDP has no default port.
 func parseTarget(args []string) (probeTarget, error) {
 	if len(args) == 0 {
 		return probeTarget{}, nil
@@ -93,6 +93,12 @@ func parseTarget(args []string) (probeTarget, error) {
 	// A trailing port argument wins over the one embedded in the URL.
 	if len(args) > 1 {
 		target.port = args[1]
+	}
+
+	// UDP has no URL to request, just a host and a port to send a datagram
+	// to, so there is nothing left to build here.
+	if protocol == consts.UDP {
+		return target, nil
 	}
 
 	if target.port == "" {
@@ -121,6 +127,8 @@ func schemeProtocol(target string) (consts.Protocol, bool) {
 		return consts.HTTP, true
 	case strings.HasPrefix(target, "https://"):
 		return consts.HTTPS, true
+	case strings.HasPrefix(target, "udp://"):
+		return consts.UDP, true
 	default:
 		return "", false
 	}
@@ -142,6 +150,8 @@ func usage() {
 	fmt.Println("tcping www.example.com:443")
 	fmt.Println("Or probe over HTTP(S) by giving a URL:")
 	fmt.Println("tcping https://www.example.com/health")
+	fmt.Println("Or probe over UDP:")
+	fmt.Println("tcping udp://www.example.com 53")
 	fmt.Printf("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {

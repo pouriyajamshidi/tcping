@@ -145,6 +145,7 @@ type Config struct {
 	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
 	ShowFailuresOnly           bool
 	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
+	UDPServer                  bool // Listen on the given address and echo datagrams back instead of probing.
 	Resolver                   *dns.Resolver
 }
 
@@ -225,13 +226,22 @@ func ProcessUserInput() Config {
 		false,
 		`Show all the details an HTTP(S) probe collects: the HTTP version,
 		the TLS version and cipher, the certificate expiry and the
-		connect/TLS/first-byte timings. No effect on TCP targets.`)
+		connect/TLS/first-byte timings. For a UDP target, shows the number of
+		the probe and whether the reply carried it back, so a lost probe can
+		be told apart from the rest. No effect on TCP targets.`)
 
 	skipTLSVerify := flag.Bool(
 		"skip-tls",
 		false,
 		`Do not check the server certificate when probing an https:// target.
 		Useful for self-signed or expired certificates.`)
+
+	udpServer := flag.Bool(
+		"udp-server",
+		false,
+		`Do not probe. Listen on the given host and port and echo every UDP
+		datagram back to its sender, so a UDP probe pointed at this machine
+		gets a reply and can tell that its packet arrived.`)
 
 	noColor := flag.Bool("no-color", false, "Do not colorize output.")
 
@@ -379,12 +389,17 @@ func ProcessUserInput() Config {
 		CSVNoTimestamp:    *csvNoTimestamp,
 	}
 
+	protocol := target.protocol
+	if *udpServer {
+		protocol = consts.UDP
+	}
+
 	return Config{
 		Hostname:                   target.hostname,
 		URL:                        target.url,
 		IP:                         resolvedIP,
 		Port:                       validatedPort,
-		Protocol:                   target.protocol,
+		Protocol:                   protocol,
 		Timeout:                    timeoutInDuration,
 		ProbesBeforeQuit:           *probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
@@ -392,6 +407,7 @@ func ProcessUserInput() Config {
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
 		SkipTLSVerify:              *skipTLSVerify,
+		UDPServer:                  *udpServer,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
 		ResolveEveryProbe:          *resolveEveryProbe,
