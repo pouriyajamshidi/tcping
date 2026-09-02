@@ -183,7 +183,7 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 	now := time.Now()
 
-	p.handleProbeFailure(now)
+	p.handleProbeFailure(now, ProbeResult{})
 
 	s := p.Statistics
 	if s.TotalUnsuccessfulProbes != 1 || s.OngoingUnsuccessfulProbes != 1 {
@@ -208,7 +208,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	p.Statistics.OngoingSuccessfulProbes = 5
 
 	failAt := start.Add(100 * time.Millisecond)
-	p.handleProbeFailure(failAt)
+	p.handleProbeFailure(failAt, ProbeResult{})
 
 	s := p.Statistics
 	if s.OngoingSuccessfulProbes != 0 {
@@ -231,7 +231,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 	p, printer := newTestProber(nil, config.Config{})
 
-	p.handleProbeFailure(time.Now())
+	p.handleProbeFailure(time.Now(), ProbeResult{})
 
 	if got := printer.snapshot().uptimeCalls; got != 0 {
 		t.Errorf("PrintUpTimeDuration called %d times, want 0 (no uptime streak ever started)", got)
@@ -246,8 +246,8 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) 
 	start := time.Now()
 	p.Statistics.StartOfUptime = start
 
-	p.handleProbeFailure(start.Add(50 * time.Millisecond))
-	p.handleProbeFailure(start.Add(100 * time.Millisecond))
+	p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{})
+	p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{})
 
 	if got := printer.snapshot().uptimeCalls; got != 1 {
 		t.Errorf("PrintUpTimeDuration called %d times, want 1", got)
@@ -259,8 +259,8 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotDoubleCountDowntime(t *testi
 	first := time.Now()
 	second := first.Add(50 * time.Millisecond)
 
-	p.handleProbeFailure(first)
-	p.handleProbeFailure(second)
+	p.handleProbeFailure(first, ProbeResult{})
+	p.handleProbeFailure(second, ProbeResult{})
 
 	s := p.Statistics
 	if s.OngoingUnsuccessfulProbes != 2 {
@@ -283,7 +283,7 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 	p, _ := newTestProber(nil, cfg)
 	p.Statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
 
-	p.handleProbeFailure(time.Now())
+	p.handleProbeFailure(time.Now(), ProbeResult{})
 
 	wantAddr := &net.TCPAddr{IP: sourceIP}
 	gotAddr, ok := p.Statistics.LocalAddr.(*net.TCPAddr)
@@ -811,5 +811,79 @@ func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 
 	if got := pinger.calls(); got != 1 {
 		t.Errorf("Ping called %d times, want exactly 1", got)
+	}
+}
+
+// --- cancelled probes ---------------------------------------------------
+
+// TestProbe_CancelledProbeIsNotAFailure covers hitting Ctrl+C while a probe
+// is in flight. The probe returns an error because we cancelled it, but it
+// must not be counted as a failure, or the run reports packet loss and a
+// downtime that never happened.
+func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	pinger := &fakePinger{outcomeFn: func(call int) (ProbeResult, error) {
+		if call == 0 {
+			return ProbeResult{LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)}}, nil
+		}
+
+		// The second probe is the one the user interrupts.
+		cancel()
+		return ProbeResult{}, ctx.Err()
+	}}
+
+	p, printer := newTestProber(pinger, config.Config{
+		IntervalBetweenProbes: time.Millisecond,
+	})
+
+	s, err := p.Probe(ctx)
+	if err != nil {
+		t.Fatalf("Probe() error = %v, want no error", err)
+	}
+
+	if s.TotalUnsuccessfulProbes != 0 {
+		t.Errorf("TotalUnsuccessfulProbes = %d, want 0: a cancelled probe is not a failure", s.TotalUnsuccessfulProbes)
+	}
+
+	if s.TotalSuccessfulProbes != 1 {
+		t.Errorf("TotalSuccessfulProbes = %d, want 1", s.TotalSuccessfulProbes)
+	}
+
+	if got := s.PacketLoss(); got != 0 {
+		t.Errorf("PacketLoss() = %v, want 0", got)
+	}
+
+	if s.LongestDowntime.Duration != 0 {
+		t.Errorf("LongestDowntime = %v, want 0: no downtime ever happened", s.LongestDowntime.Duration)
+	}
+
+	if got := printer.snapshot().failureCalls; got != 0 {
+		t.Errorf("PrintProbeFailure was called %d times, want 0", got)
+	}
+}
+
+// TestProbe_RealFailureStillCounts makes sure the cancellation check above
+// only skips probes we cancelled, not genuine failures.
+func TestProbe_RealFailureStillCounts(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	p, printer := newTestProber(alwaysFails(), config.Config{
+		IntervalBetweenProbes: time.Millisecond,
+		ProbesBeforeQuit:      2,
+	})
+
+	s, err := p.Probe(ctx)
+	if err != nil {
+		t.Fatalf("Probe() error = %v, want no error", err)
+	}
+
+	if s.TotalUnsuccessfulProbes != 2 {
+		t.Errorf("TotalUnsuccessfulProbes = %d, want 2", s.TotalUnsuccessfulProbes)
+	}
+
+	if got := printer.snapshot().failureCalls; got != 2 {
+		t.Errorf("PrintProbeFailure was called %d times, want 2", got)
 	}
 }

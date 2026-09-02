@@ -1,6 +1,8 @@
 package printers
 
 import (
+	"fmt"
+
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -72,6 +74,40 @@ type Printer interface {
 	// (see Prober.finalizeStatistics) by the time this is called. It does
 	// not exit the program - callers decide that for themselves.
 	Shutdown(s *stats.Statistics)
+}
+
+// httpProbeSummary is the short HTTP part of a probe line, e.g. " status=200".
+// It is empty for TCP probes and for HTTP probes that never got a response.
+func httpProbeSummary(s *stats.Statistics) string {
+	if !s.IsHTTP() || !s.HasHTTPResponse() {
+		return ""
+	}
+
+	return fmt.Sprintf(" status=%s", s.StatusCodeStr())
+}
+
+// httpProbeDetails is the indented block printed under a probe line when
+// -verbose is on. It is empty unless this is an HTTP probe that got a
+// response. The TLS lines are skipped for plain HTTP.
+func httpProbeDetails(s *stats.Statistics) string {
+	if !s.Verbose || !s.IsHTTP() || !s.HasHTTPResponse() {
+		return ""
+	}
+
+	msg := fmt.Sprintf("    %s %s\n", s.HTTP.Proto, s.HTTP.Status)
+
+	if s.HTTP.TLSVersion != "" {
+		msg += fmt.Sprintf("    %s %s\n", s.HTTP.TLSVersion, s.HTTP.TLSCipherSuite)
+		msg += fmt.Sprintf("    certificate expires %s (%d days)\n", s.CertExpiryStr(), s.CertDaysRemaining())
+	}
+
+	msg += fmt.Sprintf("    connect=%s ms", s.ConnectDurationStr())
+	if s.HTTP.TLSVersion != "" {
+		msg += fmt.Sprintf(" tls=%s ms", s.TLSDurationStr())
+	}
+	msg += fmt.Sprintf(" ttfb=%s ms\n", s.TimeToFirstByteStr())
+
+	return msg
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration

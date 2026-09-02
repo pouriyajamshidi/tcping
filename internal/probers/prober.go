@@ -34,17 +34,9 @@ func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats
 type ProbeResult struct {
 	LocalAddr net.Addr
 
-	// Everything below is filled in by HTTP probes only and left zero by
-	// TCP ones.
-	StatusCode      int
-	Status          string // e.g. "200 OK"
-	Proto           string // e.g. "HTTP/1.1", "HTTP/2.0"
-	TLSVersion      string // e.g. "TLS 1.3". Empty for plain HTTP.
-	TLSCipherSuite  string // Empty for plain HTTP.
-	CertExpiry      time.Time
-	ConnectDuration time.Duration // TCP connect only.
-	TLSDuration     time.Duration // TLS handshake only.
-	TimeToFirstByte time.Duration // Request sent until the first response byte.
+	// Filled in by HTTP probes only, left zero by TCP ones. Shared with
+	// Statistics so the result can be handed to the printers as one value.
+	stats.HTTPInfo
 }
 
 type Pinger interface {
@@ -85,8 +77,16 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 		probeResult, err := p.pinger.Ping(ctx, p.Statistics.IP)
 		rtt := time.Since(pingTime)
 
+		// A probe that only failed because we cancelled it ourselves, when
+		// the user hits Ctrl+C while it is in flight, is not a failed probe.
+		// Counting it would report a failure, a packet loss and a downtime
+		// that never happened.
+		if err != nil && ctx.Err() != nil {
+			return true
+		}
+
 		if err != nil {
-			p.handleProbeFailure(pingTime)
+			p.handleProbeFailure(pingTime, probeResult)
 			p.printer.PrintProbeFailure(p.Statistics)
 		} else {
 			p.handleProbeSuccess(pingTime, rtt, probeResult)
@@ -155,8 +155,12 @@ func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
 	return true
 }
 
-func (p *Prober) handleProbeFailure(pingTime time.Time) {
+func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult) {
 	s := p.Statistics
+
+	// A 4xx or 5xx is a failed probe that still came with a response, so
+	// keep it around for the printers. It is zero when nothing answered.
+	s.HTTP = probeResult.HTTPInfo
 
 	s.OngoingSuccessfulProbes = 0
 	s.OngoingUnsuccessfulProbes++
@@ -201,6 +205,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 
 	s.LatestRTT = rttMs
 	s.LocalAddr = probeResult.LocalAddr
+	s.HTTP = probeResult.HTTPInfo
 
 	s.TotalSuccessfulProbes++
 	s.OngoingSuccessfulProbes++

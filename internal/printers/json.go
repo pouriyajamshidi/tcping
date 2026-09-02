@@ -31,18 +31,57 @@ type jsonEvent struct {
 type jsonStart struct {
 	Hostname               string `json:"hostname"`
 	Port                   uint16 `json:"port"`
+	Protocol               string `json:"protocol"`
 	NameResolutionDuration string `json:"nameResolutionDurationMs,omitempty"`
 }
 
 type jsonProbe struct {
-	Hostname    string  `json:"hostname,omitempty"`
-	IP          string  `json:"ipAddress"`
-	Port        uint16  `json:"port"`
-	Success     bool    `json:"success"`
-	Latency     float32 `json:"latency,omitempty"`
-	Source      string  `json:"sourceAddress,omitempty"`
-	Connections uint    `json:"connections"`
-	Timestamp   string  `json:"timestamp,omitempty"`
+	Hostname    string    `json:"hostname,omitempty"`
+	IP          string    `json:"ipAddress"`
+	Port        uint16    `json:"port"`
+	Success     bool      `json:"success"`
+	Latency     float32   `json:"latency,omitempty"`
+	Source      string    `json:"sourceAddress,omitempty"`
+	Connections uint      `json:"connections"`
+	Timestamp   string    `json:"timestamp,omitempty"`
+	HTTP        *jsonHTTP `json:"http,omitempty"`
+}
+
+// jsonHTTP is attached to a probe only when the target is HTTP(S) and the
+// server actually responded, so TCP output is unchanged.
+type jsonHTTP struct {
+	StatusCode     int    `json:"statusCode"`
+	Status         string `json:"status"`
+	Version        string `json:"version"`
+	TLSVersion     string `json:"tlsVersion,omitempty"`
+	TLSCipherSuite string `json:"tlsCipherSuite,omitempty"`
+	CertExpiry     string `json:"certificateExpiry,omitempty"`
+	ConnectMs      string `json:"connectMs"`
+	TLSMs          string `json:"tlsHandshakeMs,omitempty"`
+	TTFBMs         string `json:"timeToFirstByteMs"`
+}
+
+func newJSONHTTP(s *stats.Statistics) *jsonHTTP {
+	if !s.IsHTTP() || !s.HasHTTPResponse() {
+		return nil
+	}
+
+	h := &jsonHTTP{
+		StatusCode: s.HTTP.StatusCode,
+		Status:     s.HTTP.Status,
+		Version:    s.HTTP.Proto,
+		ConnectMs:  s.ConnectDurationStr(),
+		TTFBMs:     s.TimeToFirstByteStr(),
+	}
+
+	if s.HTTP.TLSVersion != "" {
+		h.TLSVersion = s.HTTP.TLSVersion
+		h.TLSCipherSuite = s.HTTP.TLSCipherSuite
+		h.CertExpiry = s.CertExpiryStr()
+		h.TLSMs = s.TLSDurationStr()
+	}
+
+	return h
 }
 
 type jsonRetry struct {
@@ -75,6 +114,7 @@ type jsonStatistics struct {
 	Hostname               string               `json:"hostname,omitempty"`
 	IP                     string               `json:"ipAddress"`
 	Port                   uint16               `json:"port"`
+	Protocol               string               `json:"protocol"`
 	TotalProbes            uint                 `json:"totalProbes"`
 	SuccessfulProbes       uint                 `json:"successfulProbes"`
 	UnsuccessfulProbes     uint                 `json:"unsuccessfulProbes"`
@@ -106,6 +146,7 @@ func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 	start := jsonStart{
 		Hostname: s.Hostname,
 		Port:     s.Port,
+		Protocol: s.ProtocolStr(),
 	}
 	if !s.DestIsIP {
 		start.NameResolutionDuration = s.NameResolutionDurationStr()
@@ -135,6 +176,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		Success:     true,
 		Latency:     float32(latency),
 		Connections: s.OngoingSuccessfulProbes,
+		HTTP:        newJSONHTTP(s),
 	}
 
 	if s.WithTimestamp {
@@ -160,6 +202,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		Port:        s.Port,
 		Success:     false,
 		Connections: s.OngoingUnsuccessfulProbes,
+		HTTP:        newJSONHTTP(s),
 	}
 
 	if s.WithTimestamp {
@@ -183,6 +226,7 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		Hostname:           hostname,
 		IP:                 s.IPStr(),
 		Port:               s.Port,
+		Protocol:           s.ProtocolStr(),
 		TotalProbes:        s.TotalProbes(),
 		SuccessfulProbes:   s.TotalSuccessfulProbes,
 		UnsuccessfulProbes: s.TotalUnsuccessfulProbes,

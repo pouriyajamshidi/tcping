@@ -3,6 +3,8 @@ package stats
 import (
 	"testing"
 	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
 func TestRuntimeDuration_MatchesStartAndEndTime(t *testing.T) {
@@ -76,5 +78,160 @@ func TestRTTResultUpdate_SingleSample(t *testing.T) {
 
 	if r.Min != 15 || r.Max != 15 || r.Average != 15 {
 		t.Errorf("RTTResult = %+v, want Min=Max=Average=15", r)
+	}
+}
+
+// TestRuntimeDuration_AgreesWithUptime guards the mismatch where a 6.6
+// second run reported "00:00:06" next to a "7 seconds" uptime, because
+// RuntimeDuration truncated while DurationToString rounded.
+func TestRuntimeDuration_AgreesWithUptime(t *testing.T) {
+	tests := []struct {
+		name        string
+		elapsed     time.Duration
+		wantRuntime string
+		wantUptime  string
+	}{
+		{"rounds down", 6200 * time.Millisecond, "00:00:06", "6 seconds"},
+		{"half rounds up", 6500 * time.Millisecond, "00:00:07", "7 seconds"},
+		{"rounds up", 6600 * time.Millisecond, "00:00:07", "7 seconds"},
+		{"just under a minute", 59700 * time.Millisecond, "00:01:00", "1 minute"},
+	}
+
+	start := time.Date(2026, 9, 2, 10, 48, 20, 0, time.UTC)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Statistics{StartTime: start, EndTime: start.Add(tt.elapsed)}
+
+			if got := s.RuntimeDuration(); got != tt.wantRuntime {
+				t.Errorf("RuntimeDuration() = %q, want %q", got, tt.wantRuntime)
+			}
+
+			if got := DurationToString(tt.elapsed); got != tt.wantUptime {
+				t.Errorf("DurationToString(%v) = %q, want %q", tt.elapsed, got, tt.wantUptime)
+			}
+		})
+	}
+}
+
+// TestDurationToString_NoSixtySeconds makes sure the seconds part never
+// carries over, which used to print 1m59.7s as "1 minute 60 seconds".
+func TestDurationToString_NoSixtySeconds(t *testing.T) {
+	tests := []struct {
+		d    time.Duration
+		want string
+	}{
+		{119700 * time.Millisecond, "2 minutes 0 seconds"},
+		{59600 * time.Millisecond, "1 minute"},
+		{3599700 * time.Millisecond, "1 hour"},
+		{0, "0 seconds"},
+		{1500 * time.Millisecond, "2 seconds"},
+	}
+
+	for _, tt := range tests {
+		if got := DurationToString(tt.d); got != tt.want {
+			t.Errorf("DurationToString(%v) = %q, want %q", tt.d, got, tt.want)
+		}
+	}
+}
+
+// TestDurationToString_SubSecond guards against reporting a gap that really
+// happened as "0 seconds", which is what a Ctrl+C in the middle of a probe
+// used to produce on the "longest consecutive downtime" line.
+func TestDurationToString_SubSecond(t *testing.T) {
+	tests := []struct {
+		d    time.Duration
+		want string
+	}{
+		{0, "0 seconds"},
+		{5 * time.Millisecond, "5.000 ms"},
+		{40 * time.Millisecond, "40.000 ms"},
+		{300 * time.Millisecond, "0.3 seconds"},
+		{892 * time.Millisecond, "0.9 seconds"},
+		{999 * time.Millisecond, "1.0 seconds"},
+		{time.Second, "1 second"},
+	}
+
+	for _, tt := range tests {
+		if got := DurationToString(tt.d); got != tt.want {
+			t.Errorf("DurationToString(%v) = %q, want %q", tt.d, got, tt.want)
+		}
+	}
+}
+
+func TestIsHTTPAndHasHTTPResponse(t *testing.T) {
+	tests := []struct {
+		name            string
+		protocol        consts.Protocol
+		statusCode      int
+		wantIsHTTP      bool
+		wantHasResponse bool
+	}{
+		{"tcp target", consts.TCP, 0, false, false},
+		{"http target with a response", consts.HTTP, 200, true, true},
+		{"https target with a response", consts.HTTPS, 503, true, true},
+		{"https target that never connected", consts.HTTPS, 0, true, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Statistics{Protocol: tt.protocol, HTTP: HTTPInfo{StatusCode: tt.statusCode}}
+
+			if got := s.IsHTTP(); got != tt.wantIsHTTP {
+				t.Errorf("IsHTTP() = %v, want %v", got, tt.wantIsHTTP)
+			}
+
+			if got := s.HasHTTPResponse(); got != tt.wantHasResponse {
+				t.Errorf("HasHTTPResponse() = %v, want %v", got, tt.wantHasResponse)
+			}
+		})
+	}
+}
+
+func TestCertHelpers(t *testing.T) {
+	s := &Statistics{}
+
+	if got := s.CertExpiryStr(); got != "" {
+		t.Errorf("CertExpiryStr() with no certificate = %q, want an empty string", got)
+	}
+
+	if got := s.CertDaysRemaining(); got != 0 {
+		t.Errorf("CertDaysRemaining() with no certificate = %d, want 0", got)
+	}
+
+	s.HTTP.CertExpiry = time.Now().Add(10*24*time.Hour + time.Hour)
+
+	if got := s.CertDaysRemaining(); got != 10 {
+		t.Errorf("CertDaysRemaining() = %d, want 10", got)
+	}
+
+	s.HTTP.CertExpiry = time.Now().Add(-48 * time.Hour)
+
+	if got := s.CertDaysRemaining(); got >= 0 {
+		t.Errorf("CertDaysRemaining() for an expired certificate = %d, want a negative number", got)
+	}
+}
+
+func TestHTTPDurationStrings(t *testing.T) {
+	s := &Statistics{HTTP: HTTPInfo{
+		StatusCode:      404,
+		ConnectDuration: 12500 * time.Microsecond,
+		TLSDuration:     3200 * time.Microsecond,
+		TimeToFirstByte: 41750 * time.Microsecond,
+	}}
+
+	for _, tt := range []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"StatusCodeStr", s.StatusCodeStr(), "404"},
+		{"ConnectDurationStr", s.ConnectDurationStr(), "12.500"},
+		{"TLSDurationStr", s.TLSDurationStr(), "3.200"},
+		{"TimeToFirstByteStr", s.TimeToFirstByteStr(), "41.750"},
+	} {
+		if tt.got != tt.want {
+			t.Errorf("%s() = %q, want %q", tt.name, tt.got, tt.want)
+		}
 	}
 }

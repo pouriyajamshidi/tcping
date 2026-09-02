@@ -28,13 +28,23 @@ const (
 		destination_is_ip INTEGER NOT NULL CHECK (destination_is_ip IN (0, 1)),
 		latency REAL,
 		ongoing_successful_probes INTEGER NOT NULL DEFAULT 0,
-		ongoing_unsuccessful_probes INTEGER NOT NULL DEFAULT 0
+		ongoing_unsuccessful_probes INTEGER NOT NULL DEFAULT 0,
+		protocol TEXT,
+		status_code INTEGER,
+		http_version TEXT,
+		tls_version TEXT,
+		tls_cipher_suite TEXT,
+		certificate_expiry TEXT,
+		connect_ms REAL,
+		tls_handshake_ms REAL,
+		ttfb_ms REAL
 	);`
 
 	statsTableSchema = `CREATE TABLE IF NOT EXISTS %s (
 		hostname TEXT NOT NULL,
 		ip_address TEXT NOT NULL,
 		port INTEGER NOT NULL,
+		protocol TEXT,
 		total_duration TEXT,
 		total_uptime TEXT,
 		total_downtime TEXT,
@@ -71,13 +81,23 @@ const (
 		destination_is_ip,
 		latency,
 		ongoing_successful_probes,
-		ongoing_unsuccessful_probes
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+		ongoing_unsuccessful_probes,
+		protocol,
+		status_code,
+		http_version,
+		tls_version,
+		tls_cipher_suite,
+		certificate_expiry,
+		connect_ms,
+		tls_handshake_ms,
+		ttfb_ms
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	statsInsert = `INSERT INTO %s (
 		hostname,
 		ip_address,
 		port,
+		protocol,
 		total_duration,
 		total_uptime,
 		total_downtime,
@@ -100,7 +120,7 @@ const (
 		latency_max,
 		start_time,
 		end_time
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // DatabasePrinter stores one probe stream and its final statistics in SQLite.
@@ -194,6 +214,37 @@ func sanitizeIdentifierPart(s string) string {
 	return b.String()
 }
 
+// httpArgs returns the HTTP(S) columns for one probe, in the order the probe
+// insert lists them. They are all NULL for TCP targets and for HTTP probes
+// that never got a response.
+func httpArgs(s *stats.Statistics) []any {
+	if !s.IsHTTP() || !s.HasHTTPResponse() {
+		return make([]any, 8)
+	}
+
+	return []any{
+		s.HTTP.StatusCode,
+		s.HTTP.Proto,
+		nullIfEmpty(s.HTTP.TLSVersion),
+		nullIfEmpty(s.HTTP.TLSCipherSuite),
+		nullIfEmpty(s.CertExpiryStr()),
+		millisecondsFloat(s.HTTP.ConnectDuration),
+		millisecondsFloat(s.HTTP.TLSDuration),
+		millisecondsFloat(s.HTTP.TimeToFirstByte),
+	}
+}
+
+func nullIfEmpty(v string) any {
+	if v == "" {
+		return nil
+	}
+	return v
+}
+
+func millisecondsFloat(d time.Duration) float64 {
+	return math.Round(float64(d.Nanoseconds())/float64(time.Millisecond)*1000) / 1000
+}
+
 func (p *DatabasePrinter) insertProbe(
 	reachable bool,
 	s *stats.Statistics,
@@ -232,7 +283,9 @@ func (p *DatabasePrinter) insertProbe(
 		latencyValue,
 		successfulProbes,
 		unsuccessfulProbes,
+		s.ProtocolStr(),
 	}
+	args = append(args, httpArgs(s)...)
 
 	if err := sqlitex.Execute(
 		p.Conn,
@@ -321,6 +374,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 		s.Hostname,
 		s.IPStr(),
 		s.Port,
+		s.ProtocolStr(),
 		s.RuntimeDuration(),
 		s.TotalUptimeDuration(),
 		s.TotalDowntimeDuration(),

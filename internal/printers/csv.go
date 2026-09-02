@@ -23,6 +23,47 @@ const (
 	colLatency       string = "Latency(ms)"
 )
 
+// Extra columns written for HTTP(S) targets only, so a TCP run keeps the
+// same CSV shape it has always had.
+const (
+	colStatusCode  string = "Status Code"
+	colHTTPVersion string = "HTTP Version"
+	colTLSVersion  string = "TLS Version"
+	colCertExpiry  string = "Certificate Expiry"
+	colConnectTime string = "Connect(ms)"
+	colTLSTime     string = "TLS Handshake(ms)"
+	colTTFB        string = "TTFB(ms)"
+)
+
+// httpColumns are the HTTP(S) header names in the order httpRecord fills them.
+var httpColumns = []string{
+	colStatusCode,
+	colHTTPVersion,
+	colTLSVersion,
+	colCertExpiry,
+	colConnectTime,
+	colTLSTime,
+	colTTFB,
+}
+
+// httpRecord returns the HTTP(S) values for one probe, in httpColumns order.
+// A probe that got no response leaves them all empty.
+func httpRecord(s *stats.Statistics) []string {
+	if !s.HasHTTPResponse() {
+		return make([]string, len(httpColumns))
+	}
+
+	return []string{
+		s.StatusCodeStr(),
+		s.HTTP.Proto,
+		s.HTTP.TLSVersion,
+		s.CertExpiryStr(),
+		s.ConnectDurationStr(),
+		s.TLSDurationStr(),
+		s.TimeToFirstByteStr(),
+	}
+}
+
 const (
 	filePermission os.FileMode = 0644
 	fileFlag       int         = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
@@ -120,6 +161,10 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 
 	headers = append(headers, colConnection, colLatency)
 
+	if s.IsHTTP() {
+		headers = append(headers, httpColumns...)
+	}
+
 	if err := p.ProbeWriter.Write(headers); err != nil {
 		return fmt.Errorf("failed to write headers: %w", err)
 	}
@@ -179,6 +224,10 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	record = append(record, strconv.Itoa(int(s.OngoingSuccessfulProbes)), s.RTTStr())
 
+	if s.IsHTTP() {
+		record = append(record, httpRecord(s)...)
+	}
+
 	if err := p.ProbeWriter.Write(record); err != nil {
 		p.PrintError("failed to write success record: %w", err)
 	}
@@ -208,6 +257,10 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	record = append(record, strconv.Itoa(int(s.OngoingUnsuccessfulProbes)), "")
 
+	if s.IsHTTP() {
+		record = append(record, httpRecord(s)...)
+	}
+
 	if err := p.ProbeWriter.Write(record); err != nil {
 		p.PrintError("failed to write failure record: %v", err)
 	}
@@ -227,6 +280,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 
 	statistics = append(statistics,
 		[]string{"Port", s.PortStr()},
+		[]string{"Protocol", s.ProtocolStr()},
 		[]string{"Total Duration", s.RuntimeDuration()},
 		[]string{"Total Uptime", s.TotalUptimeDuration()},
 		[]string{"Total Downtime", s.TotalDowntimeDuration()},

@@ -27,7 +27,22 @@ type Config interface {
 	GetNetworkInterface() nic.NetworkInterface
 	GetWithTimestamp() bool
 	GetWithSourceAddress() bool
+	GetVerbose() bool
 	GetNameResolutionDuration() time.Duration
+}
+
+// HTTPInfo is what the most recent HTTP(S) probe learned about the response.
+// Every field stays zero for TCP probes.
+type HTTPInfo struct {
+	StatusCode      int
+	Status          string        // e.g. "200 OK"
+	Proto           string        // e.g. "HTTP/1.1", "HTTP/2.0"
+	TLSVersion      string        // e.g. "TLS 1.3". Empty for plain HTTP.
+	TLSCipherSuite  string        // Empty for plain HTTP.
+	CertExpiry      time.Time     // Zero for plain HTTP.
+	ConnectDuration time.Duration // TCP connect only.
+	TLSDuration     time.Duration // TLS handshake only.
+	TimeToFirstByte time.Duration // Request sent until the first response byte.
 }
 
 type Statistics struct {
@@ -62,6 +77,8 @@ type Statistics struct {
 	WithSourceAddress         bool
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
 	ResolvedThisProbe         bool          // True when ResolveEveryProbe just resolved successfully for this probe. Lets PrintProbeSuccess/PrintProbeFailure fold NameResolutionDuration into their own line instead of a separate one.
+	HTTP                      HTTPInfo      // Details of the most recent HTTP(S) probe. Zero for TCP probes.
+	Verbose                   bool          // Show everything an HTTP(S) probe learned, not just the status.
 }
 
 func NewStatistics(cfg Config) *Statistics {
@@ -80,6 +97,7 @@ func NewStatistics(cfg Config) *Statistics {
 		LocalAddr:              localAddr,
 		WithTimestamp:          cfg.GetWithTimestamp(),
 		WithSourceAddress:      cfg.GetWithSourceAddress(),
+		Verbose:                cfg.GetVerbose(),
 		Protocol:               cfg.GetProtocol(),
 		LongestUptime:          LongestTime{},
 		LongestDowntime:        LongestTime{},
@@ -123,7 +141,11 @@ func (s *Statistics) EndTimeFormatted() string {
 }
 
 func (s *Statistics) RuntimeDuration() string {
-	return time.Time{}.Add(s.EndTime.Sub(s.StartTime)).Format(time.TimeOnly)
+	// Round instead of truncating so this agrees with the uptime and
+	// downtime totals, which DurationToString also rounds. Truncating here
+	// is what made a 6.6 second run report "00:00:06" next to "7 seconds".
+	d := s.EndTime.Sub(s.StartTime).Round(time.Second)
+	return time.Time{}.Add(d).Format(time.TimeOnly)
 }
 
 func (s *Statistics) ProtocolStr() string {
@@ -153,6 +175,50 @@ func millisecondsStr(d time.Duration) string {
 // typically sub-second.
 func (s *Statistics) NameResolutionDurationStr() string {
 	return millisecondsStr(s.NameResolutionDuration)
+}
+
+// IsHTTP reports whether this run probes over HTTP or HTTPS, which is what
+// decides whether the HTTP details are worth printing at all.
+func (s *Statistics) IsHTTP() bool {
+	return s.Protocol == consts.HTTP || s.Protocol == consts.HTTPS
+}
+
+// HasHTTPResponse reports whether the last probe got an actual HTTP response.
+// A probe that never reached the server has no status to show.
+func (s *Statistics) HasHTTPResponse() bool {
+	return s.HTTP.StatusCode != 0
+}
+
+func (s *Statistics) StatusCodeStr() string {
+	return fmt.Sprint(s.HTTP.StatusCode)
+}
+
+func (s *Statistics) ConnectDurationStr() string {
+	return millisecondsStr(s.HTTP.ConnectDuration)
+}
+
+func (s *Statistics) TLSDurationStr() string {
+	return millisecondsStr(s.HTTP.TLSDuration)
+}
+
+func (s *Statistics) TimeToFirstByteStr() string {
+	return millisecondsStr(s.HTTP.TimeToFirstByte)
+}
+
+func (s *Statistics) CertExpiryStr() string {
+	if s.HTTP.CertExpiry.IsZero() {
+		return ""
+	}
+	return s.HTTP.CertExpiry.Format(time.DateOnly)
+}
+
+// CertDaysRemaining returns how many days are left on the server certificate.
+// It goes negative once the certificate has expired.
+func (s *Statistics) CertDaysRemaining() int {
+	if s.HTTP.CertExpiry.IsZero() {
+		return 0
+	}
+	return int(time.Until(s.HTTP.CertExpiry).Hours() / 24)
 }
 
 func (s *Statistics) TotalProbes() uint {
@@ -219,6 +285,28 @@ func (s *Statistics) LongestDowntimeEndTime() string {
 // DurationToString creates a human-readable string for a given duration
 // TODO: unexport this when all printers are using the helper methods
 func DurationToString(d time.Duration) string {
+	if d == 0 {
+		return "0 seconds"
+	}
+
+	// Anything shorter than a second keeps its real value instead of being
+	// rounded to a whole second, which would report a gap that did happen
+	// as "0 seconds". Tenths keep it in the same unit as the rest of the
+	// summary, and milliseconds take over below the point where a tenth
+	// would itself round down to zero.
+	if d < 50*time.Millisecond {
+		return millisecondsStr(d) + " ms"
+	}
+
+	if d < time.Second {
+		return fmt.Sprintf("%.1f seconds", d.Seconds())
+	}
+
+	// Round up front so the hour, minute and second parts are taken from the
+	// same value. Rounding only the seconds at the end used to let 1m59.7s
+	// print as "1 minute 60 seconds".
+	d = d.Round(time.Second)
+
 	hours := d / time.Hour
 	d %= time.Hour
 
@@ -246,14 +334,8 @@ func DurationToString(d time.Duration) string {
 		}
 		return fmt.Sprintf("1 minute %.0f seconds", seconds)
 
-	case seconds == 0:
-		return "0 seconds"
-
-	case seconds < 1.1:
+	case seconds == 1:
 		return "1 second"
-
-	case seconds < 2:
-		return fmt.Sprintf("%.1f seconds", seconds)
 
 	default:
 		return fmt.Sprintf("%.0f seconds", seconds)

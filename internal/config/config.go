@@ -293,7 +293,7 @@ func ProcessUserInput() Config {
 		"Show only the failed probes.")
 
 	verbose := flag.Bool(
-		"verbose",
+		"v",
 		false,
 		`Show all the details an HTTP(S) probe collects: the HTTP version,
 		the TLS version and cipher, the certificate expiry and the
@@ -335,7 +335,7 @@ func ProcessUserInput() Config {
 		"",
 		"Path and file name to store the output in a sqlite3 database.")
 
-	showVer := flag.Bool("v", false, "Show version and exit.")
+	showVer := flag.Bool("version", false, "Show version and exit.")
 
 	checkUpdates := flag.Bool("u", false, "Check for updates and exit.")
 

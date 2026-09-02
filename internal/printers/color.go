@@ -65,8 +65,9 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
-	msg += fmt.Sprintf("TCP_conn=%d ", s.OngoingSuccessfulProbes)
-	msg += fmt.Sprintf("time=%s ms", s.RTTStr())
+	msg += fmt.Sprintf("%s_conn=%d", s.ProtocolStr(), s.OngoingSuccessfulProbes)
+	msg += httpProbeSummary(s)
+	msg += fmt.Sprintf(" time=%s ms", s.RTTStr())
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
@@ -74,6 +75,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg += "\n"
 
 	printLightGreen(msg)
+	printLightBlue("%s", httpProbeDetails(s))
 }
 
 // PrintProbeFailure prints a message the probe has failed.
@@ -95,7 +97,8 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
-	msg += fmt.Sprintf("TCP_conn=%d", s.OngoingUnsuccessfulProbes)
+	msg += fmt.Sprintf("%s_conn=%d", s.ProtocolStr(), s.OngoingUnsuccessfulProbes)
+	msg += httpProbeSummary(s)
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
@@ -103,6 +106,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg += "\n"
 
 	printRed(msg)
+	printLightBlue("%s", httpProbeDetails(s))
 }
 
 // PrintStatistics prints the summary of all probe statistics.
@@ -114,8 +118,9 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow("TCPing statistics ---\n")
 
 	printYellow(
-		"%d probes transmitted on port %d | %d received, ",
+		"%d %s probes transmitted on port %d | %d received, ",
 		s.TotalProbes(),
+		s.ProtocolStr(),
 		s.Port,
 		s.TotalSuccessfulProbes,
 	)

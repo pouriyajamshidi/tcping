@@ -2,7 +2,12 @@ package printers
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
+	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 func TestNewPrinter(t *testing.T) {
@@ -79,4 +84,121 @@ func TestNewPrinter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHTTPProbeSummary(t *testing.T) {
+	tests := []struct {
+		name string
+		s    *stats.Statistics
+		want string
+	}{
+		{
+			name: "tcp probe says nothing",
+			s:    &stats.Statistics{Protocol: consts.TCP, HTTP: stats.HTTPInfo{StatusCode: 200}},
+			want: "",
+		},
+		{
+			name: "http probe shows the status",
+			s:    &stats.Statistics{Protocol: consts.HTTP, HTTP: stats.HTTPInfo{StatusCode: 200}},
+			want: " status=200",
+		},
+		{
+			name: "a probe that never got a response says nothing",
+			s:    &stats.Statistics{Protocol: consts.HTTPS},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := httpProbeSummary(tt.s); got != tt.want {
+				t.Errorf("httpProbeSummary() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHTTPProbeDetails(t *testing.T) {
+	https := func() *stats.Statistics {
+		return &stats.Statistics{
+			Protocol: consts.HTTPS,
+			Verbose:  true,
+			HTTP: stats.HTTPInfo{
+				StatusCode:      200,
+				Status:          "200 OK",
+				Proto:           "HTTP/2.0",
+				TLSVersion:      "TLS 1.3",
+				TLSCipherSuite:  "TLS_AES_128_GCM_SHA256",
+				CertExpiry:      time.Now().Add(48 * time.Hour),
+				ConnectDuration: 10 * time.Millisecond,
+				TLSDuration:     5 * time.Millisecond,
+				TimeToFirstByte: 20 * time.Millisecond,
+			},
+		}
+	}
+
+	t.Run("off without verbose", func(t *testing.T) {
+		s := https()
+		s.Verbose = false
+
+		if got := httpProbeDetails(s); got != "" {
+			t.Errorf("httpProbeDetails() without -verbose = %q, want an empty string", got)
+		}
+	})
+
+	t.Run("off for TCP", func(t *testing.T) {
+		s := https()
+		s.Protocol = consts.TCP
+
+		if got := httpProbeDetails(s); got != "" {
+			t.Errorf("httpProbeDetails() for a TCP probe = %q, want an empty string", got)
+		}
+	})
+
+	t.Run("off without a response", func(t *testing.T) {
+		s := https()
+		s.HTTP.StatusCode = 0
+
+		if got := httpProbeDetails(s); got != "" {
+			t.Errorf("httpProbeDetails() without a response = %q, want an empty string", got)
+		}
+	})
+
+	t.Run("https shows everything", func(t *testing.T) {
+		got := httpProbeDetails(https())
+
+		for _, want := range []string{
+			"HTTP/2.0 200 OK",
+			"TLS 1.3 TLS_AES_128_GCM_SHA256",
+			"certificate expires ",
+			"connect=10.000 ms",
+			"tls=5.000 ms",
+			"ttfb=20.000 ms",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("httpProbeDetails() = %q, want it to contain %q", got, want)
+			}
+		}
+	})
+
+	t.Run("plain http leaves the TLS parts out", func(t *testing.T) {
+		s := https()
+		s.Protocol = consts.HTTP
+		s.HTTP.Proto = "HTTP/1.1"
+		s.HTTP.TLSVersion = ""
+		s.HTTP.TLSCipherSuite = ""
+		s.HTTP.CertExpiry = time.Time{}
+
+		got := httpProbeDetails(s)
+
+		for _, unwanted := range []string{"TLS", "certificate", "tls="} {
+			if strings.Contains(got, unwanted) {
+				t.Errorf("httpProbeDetails() = %q, want no %q for a plain HTTP probe", got, unwanted)
+			}
+		}
+
+		if !strings.Contains(got, "connect=10.000 ms") || !strings.Contains(got, "ttfb=20.000 ms") {
+			t.Errorf("httpProbeDetails() = %q, want the connect and first-byte timings", got)
+		}
+	})
 }
