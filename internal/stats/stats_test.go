@@ -69,6 +69,26 @@ func TestRTTResultUpdate(t *testing.T) {
 	if got, want := r.Average, float32(10.8125); got < want-0.0001 || got > want+0.0001 {
 		t.Errorf("Average = %v, want %v", got, want)
 	}
+
+	// The same number ping would print for these samples, which is the
+	// deviation over the whole population and not over a sample of it.
+	if got, want := r.Mdev, float32(9.625933); got < want-0.001 || got > want+0.001 {
+		t.Errorf("Mdev = %v, want %v", got, want)
+	}
+}
+
+// Probes that all take the same time have nothing to deviate by, and that
+// has to come out as an exact zero rather than as rounding noise.
+func TestRTTResultUpdate_IdenticalSamplesHaveNoDeviation(t *testing.T) {
+	var r RTTResult
+
+	for i := 1; i <= 5; i++ {
+		r.Update(7.5, uint(i)) //nolint:gosec // i is always positive and small
+	}
+
+	if r.Mdev != 0 {
+		t.Errorf("Mdev = %v, want 0", r.Mdev)
+	}
 }
 
 func TestRTTResultUpdate_SingleSample(t *testing.T) {
@@ -78,6 +98,10 @@ func TestRTTResultUpdate_SingleSample(t *testing.T) {
 
 	if r.Min != 15 || r.Max != 15 || r.Average != 15 {
 		t.Errorf("RTTResult = %+v, want Min=Max=Average=15", r)
+	}
+
+	if r.Mdev != 0 {
+		t.Errorf("Mdev = %v, want 0, a single sample cannot deviate from itself", r.Mdev)
 	}
 }
 

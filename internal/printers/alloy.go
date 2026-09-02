@@ -390,6 +390,7 @@ func (p *AlloyPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Min), p.labels(s, attr("stat", "min"))),
 			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Average), p.labels(s, attr("stat", "avg"))),
 			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Max), p.labels(s, attr("stat", "max"))),
+			p.gauge("tcping_rtt_milliseconds", "ms", float64(s.RTTResults.Mdev), p.labels(s, attr("stat", "mdev"))),
 		)
 	}
 

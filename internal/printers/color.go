@@ -219,12 +219,16 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 		printYellow("/")
 		printCyan("avg")
 		printYellow("/")
-		printRed("max: ")
+		printRed("max")
+		printYellow("/")
+		printLightBlue("mdev: ")
 		printGreen("%.3f", s.RTTResults.Min)
 		printYellow("/")
 		printCyan("%.3f", s.RTTResults.Average)
 		printYellow("/")
 		printRed("%.3f", s.RTTResults.Max)
+		printYellow("/")
+		printLightBlue("%.3f", s.RTTResults.Mdev)
 		printYellow(" ms\n")
 	}
 

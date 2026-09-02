@@ -365,8 +365,8 @@ whether the reply was echoed back, whether the port refused us and how big
 the reply was.
 
 The statistics you would normally see on exit, such as the packet loss and the
-minimum, average and maximum latency, are sent every 10 seconds so a run that
-nobody is watching still reports them. Use `--alloy-stats-interval` to change
+minimum, average, maximum and mean deviation of the latency, are sent every 10
+seconds so a run that nobody is watching still reports them. Use `--alloy-stats-interval` to change
 that.
 
 On the Alloy side, the matching configuration is an OTLP receiver pointed at
@@ -415,8 +415,8 @@ certificate, and a `tcping_udp` point carries the probe number, the size of
 the reply and whether it was echoed back or refused.
 
 The statistics you would normally see on exit, such as the packet loss and the
-minimum, average and maximum latency, are written to `tcping_statistics` every
-10 seconds so a run that nobody is watching still reports them. Use
+minimum, average, maximum and mean deviation of the latency, are written to
+`tcping_statistics` every 10 seconds so a run that nobody is watching still reports them. Use
 `--influxdb-stats-interval` to change that.
 
 The API token is only read from the `INFLUXDB_TOKEN` environment variable, so

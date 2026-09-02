@@ -68,6 +68,7 @@ const (
 		latency_min REAL,
 		latency_avg REAL,
 		latency_max REAL,
+		latency_mdev REAL,
 		start_time TEXT,
 		end_time TEXT
 	);`
@@ -123,9 +124,10 @@ const (
 		latency_min,
 		latency_avg,
 		latency_max,
+		latency_mdev,
 		start_time,
 		end_time
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // DatabasePrinter stores one probe stream and its final statistics in SQLite.
@@ -388,10 +390,12 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	latencyMin := any(nil)
 	latencyAvg := any(nil)
 	latencyMax := any(nil)
+	latencyMdev := any(nil)
 	if s.TotalSuccessfulProbes > 0 {
 		latencyMin = math.Round(float64(s.RTTResults.Min)*1000) / 1000
 		latencyAvg = math.Round(float64(s.RTTResults.Average)*1000) / 1000
 		latencyMax = math.Round(float64(s.RTTResults.Max)*1000) / 1000
+		latencyMdev = math.Round(float64(s.RTTResults.Mdev)*1000) / 1000
 	}
 
 	endTime := ""
@@ -429,6 +433,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 		latencyMin,
 		latencyAvg,
 		latencyMax,
+		latencyMdev,
 		s.StartTimeFormatted(),
 		endTime,
 	}

@@ -156,6 +156,7 @@ type jsonStatistics struct {
 	LatencyMin             float32              `json:"latencyMin,omitempty"`
 	LatencyAvg             float32              `json:"latencyAvg,omitempty"`
 	LatencyMax             float32              `json:"latencyMax,omitempty"`
+	LatencyMdev            float32              `json:"latencyMdev,omitempty"`
 	StartTime              string               `json:"startTime"`
 	EndTime                string               `json:"endTime,omitempty"`
 	Duration               string               `json:"duration"`
@@ -299,6 +300,7 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		data.LatencyMin = s.RTTResults.Min
 		data.LatencyAvg = s.RTTResults.Average
 		data.LatencyMax = s.RTTResults.Max
+		data.LatencyMdev = s.RTTResults.Mdev
 	}
 
 	if !s.EndTime.IsZero() {

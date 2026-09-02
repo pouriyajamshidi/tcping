@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/netip"
 	"time"
@@ -60,7 +61,7 @@ type Statistics struct {
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
 	LatestRTT                 float32       // RTT of the most recent successful probe.
-	RTTResults                RTTResult     // Running min/average/max RTT across the entire run.
+	RTTResults                RTTResult     // Running min/average/max/mdev RTT across the entire run.
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
 	ResolvedThisProbe         bool          // True when ResolveEveryProbe just resolved successfully for this probe. Lets PrintProbeSuccess/PrintProbeFailure fold NameResolutionDuration into their own line instead of a separate one.
 	HTTP                      HTTPInfo      // Details of the most recent HTTP(S) probe. Zero for TCP probes.
@@ -342,11 +343,19 @@ type RTTResult struct {
 	Min     float32 // Minimum RTT value.
 	Max     float32 // Maximum RTT value.
 	Average float32 // Average RTT value.
+	// Mdev is how far the samples sit from the average, the same number
+	// ping ends its summary with. A small one means every probe took about
+	// as long as the last, a large one means the latency is jumping around.
+	Mdev float32
+
+	// Running sum of (sample - average) squared, which Mdev is the root of.
+	// Accumulated as the samples come in so none of them has to be kept.
+	squaredDeltas float32
 }
 
-// Update folds a new RTT sample into the running min, max and average.
-// sampleCount must be the total number of successful probes observed so
-// far, including this one (e.g. Statistics.TotalSuccessfulProbes).
+// Update folds a new RTT sample into the running min, max, average and
+// mdev. sampleCount must be the total number of successful probes observed
+// so far, including this one (e.g. Statistics.TotalSuccessfulProbes).
 func (r *RTTResult) Update(rttMs float32, sampleCount uint) {
 	if sampleCount <= 1 {
 		r.Min = rttMs
@@ -357,7 +366,13 @@ func (r *RTTResult) Update(rttMs float32, sampleCount uint) {
 	}
 
 	// Running average: avg_n = avg_(n-1) + (x_n - avg_(n-1)) / n
-	r.Average += (rttMs - r.Average) / float32(sampleCount)
+	// The distance from the average is taken before and after that step,
+	// which is what keeps the sum from losing precision on a long run.
+	delta := rttMs - r.Average
+	r.Average += delta / float32(sampleCount)
+	r.squaredDeltas += delta * (rttMs - r.Average)
+
+	r.Mdev = float32(math.Sqrt(float64(r.squaredDeltas / float32(sampleCount))))
 }
 
 // LongestTime holds information about the longest period of uptime or downtime.

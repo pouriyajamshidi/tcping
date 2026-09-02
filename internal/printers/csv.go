@@ -404,12 +404,14 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 			[]string{"Latency Min", fmt.Sprintf("%.3f", s.RTTResults.Min)},
 			[]string{"Latency Avg", fmt.Sprintf("%.3f", s.RTTResults.Average)},
 			[]string{"Latency Max", fmt.Sprintf("%.3f", s.RTTResults.Max)},
+			[]string{"Latency Mdev", fmt.Sprintf("%.3f", s.RTTResults.Mdev)},
 		)
 	} else {
 		statistics = append(statistics,
 			[]string{"Latency Min", ""},
 			[]string{"Latency Avg", ""},
 			[]string{"Latency Max", ""},
+			[]string{"Latency Mdev", ""},
 		)
 	}
 

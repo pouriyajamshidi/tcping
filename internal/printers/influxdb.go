@@ -252,10 +252,11 @@ func (p *InfluxDBPrinter) statisticsLines(s *stats.Statistics) []string {
 	// Without a single successful probe there is no latency to summarize,
 	// and writing zeros would look like a very fast target.
 	if s.TotalSuccessfulProbes > 0 {
-		fields += fmt.Sprintf(",rtt_min_ms=%g,rtt_avg_ms=%g,rtt_max_ms=%g",
+		fields += fmt.Sprintf(",rtt_min_ms=%g,rtt_avg_ms=%g,rtt_max_ms=%g,rtt_mdev_ms=%g",
 			s.RTTResults.Min,
 			s.RTTResults.Average,
 			s.RTTResults.Max,
+			s.RTTResults.Mdev,
 		)
 	}
 
