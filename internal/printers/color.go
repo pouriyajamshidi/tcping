@@ -74,7 +74,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 	msg += "\n"
 
-	printLightGreen(msg)
+	printLightGreen("%s", msg)
 	printLightBlue("%s", httpProbeDetails(s))
 }
 
@@ -105,7 +105,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 	msg += "\n"
 
-	printRed(msg)
+	printRed("%s", msg)
 	printLightBlue("%s", httpProbeDetails(s))
 }
 
@@ -196,9 +196,9 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 			printYellow("IP address changes:\n")
 			for i := 0; i < len(s.HostnameChanges)-1; i++ {
 				printYellow("  from ")
-				printRed(s.HostnameChanges[i].Addr.String())
+				printRed("%s", s.HostnameChanges[i].Addr.String())
 				printYellow(" to ")
-				printGreen(s.HostnameChanges[i+1].Addr.String())
+				printGreen("%s", s.HostnameChanges[i+1].Addr.String())
 				printYellow(" at ")
 				printLightBlue("%s ", s.HostnameChanges[i+1].WhenFormatted())
 				printYellow("took ")
@@ -222,7 +222,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 		printYellow(" ms\n")
 	}
 
-	printYellow(strings.Repeat("-", 40) + "\n")
+	printYellow("%s\n", strings.Repeat("-", 40))
 	printYellow("TCPing started at: %s\n", s.StartTimeFormatted())
 
 	// If the program was not terminated, no need to show the end time
