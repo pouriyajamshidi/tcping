@@ -145,11 +145,11 @@ func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 	p.writeStatsHeader()
 
 	if s.DestIsIP {
-		fmt.Printf("TCPinging %s on port %d - saving the results to: %s\n", s.Hostname, s.Port, p.ProbeFile.Name())
+		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.ProbeFile.Name())
 		return
 	}
-	fmt.Printf("TCPinging %s on port %d (resolved in %s ms) - saving the results to: %s\n",
-		s.Hostname, s.Port, s.NameResolutionDurationStr(), p.ProbeFile.Name())
+	fmt.Printf("Probing %s on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
+		s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.ProbeFile.Name())
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.

@@ -18,10 +18,10 @@ func NewPlainPrinter() *PlainPrinter {
 // PrintStart prints the first message to indicate the target's address and port.
 func (p *PlainPrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
-		fmt.Printf("TCPinging %s on port %d\n", s.Hostname, s.Port)
+		fmt.Printf("Probing %s on port %d over %s\n", s.Hostname, s.Port, s.ProtocolStr())
 		return
 	}
-	fmt.Printf("TCPinging %s on port %d (resolved in %s ms)\n", s.Hostname, s.Port, s.NameResolutionDurationStr())
+	fmt.Printf("Probing %s on port %d over %s (resolved in %s ms)\n", s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr())
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
@@ -96,7 +96,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	msg := fmt.Sprintf("\n--- %s ", s.Hostname)
 	if !s.DestIsIP {
-		msg = fmt.Sprintf("(%s) ", s.IP)
+		msg += fmt.Sprintf("(%s) ", s.IP)
 	}
 	msg += "TCPing statistics ---\n"
 
