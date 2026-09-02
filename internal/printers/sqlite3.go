@@ -12,6 +12,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -129,14 +130,15 @@ type DatabasePrinter struct {
 	probeTableName string
 	statsTableName string
 	filePath       string
+	cfg            config.PrinterConfig
 }
 
 // NewDatabasePrinter opens the database and creates the probe and statistics tables.
-func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabasePrinter, error) {
-	portStr := strconv.FormatUint(uint64(port), 10)
-	probeTableName := sanitizeTableName(target, portStr)
+func NewDatabasePrinter(cfg config.PrinterConfig) (*DatabasePrinter, error) {
+	portStr := strconv.FormatUint(uint64(cfg.Port), 10)
+	probeTableName := sanitizeTableName(cfg.Target, portStr)
 	statsTableName := probeTableName + "_stats"
-	filePath = addDbExtension(filePath)
+	filePath := addDbExtension(cfg.OutputDBPath)
 
 	flags := sqlite.OpenCreate | sqlite.OpenReadWrite
 	if filePath != ":memory:" {
@@ -172,6 +174,7 @@ func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabaseP
 		probeTableName: probeTableName,
 		statsTableName: statsTableName,
 		filePath:       filePath,
+		cfg:            cfg,
 	}, nil
 }
 
@@ -253,12 +256,12 @@ func (p *DatabasePrinter) insertProbe(
 	unsuccessfulProbes uint,
 ) {
 	timestamp := ""
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		timestamp = s.CurrentTimestamp()
 	}
 
 	sourceAddr := ""
-	if s.WithSourceAddress {
+	if p.cfg.WithSourceAddress {
 		sourceAddr = s.SourceAddr()
 	}
 

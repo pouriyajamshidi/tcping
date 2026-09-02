@@ -6,21 +6,23 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 type JSONPrinter struct {
 	encoder *json.Encoder
+	cfg     config.PrinterConfig
 }
 
-func NewJSONPrinter(pretty bool) *JSONPrinter {
+func NewJSONPrinter(cfg config.PrinterConfig) *JSONPrinter {
 	encoder := json.NewEncoder(os.Stdout)
 
-	if pretty {
+	if cfg.PrettyJSON {
 		encoder.SetIndent("", "\t")
 	}
 
-	return &JSONPrinter{encoder: encoder}
+	return &JSONPrinter{encoder: encoder, cfg: cfg}
 }
 
 type jsonEvent struct {
@@ -179,11 +181,11 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		HTTP:        newJSONHTTP(s),
 	}
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		data.Timestamp = s.CurrentTimestamp()
 	}
 
-	if s.WithSourceAddress && s.SourceAddr() != "" {
+	if p.cfg.WithSourceAddress && s.SourceAddr() != "" {
 		data.Source = s.SourceAddr()
 	}
 
@@ -205,11 +207,11 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		HTTP:        newJSONHTTP(s),
 	}
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		data.Timestamp = s.CurrentTimestamp()
 	}
 
-	if s.WithSourceAddress && s.SourceAddr() != "" {
+	if p.cfg.WithSourceAddress && s.SourceAddr() != "" {
 		data.Source = s.SourceAddr()
 	}
 

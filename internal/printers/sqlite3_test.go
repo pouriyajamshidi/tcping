@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -53,7 +54,7 @@ func TestSanitizeTableName(t *testing.T) {
 func TestNewDatabasePrinterConfiguresSQLite(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "results.db")
 
-	printer, err := NewDatabasePrinter("example.com", 443, dbPath)
+	printer, err := NewDatabasePrinter(config.PrinterConfig{Target: "example.com", Port: 443, OutputDBPath: dbPath})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +88,7 @@ func TestNewDatabasePrinterConfiguresSQLite(t *testing.T) {
 }
 
 func TestNewDatabasePrinterSchema(t *testing.T) {
-	printer, err := NewDatabasePrinter("example.com", 443, ":memory:")
+	printer, err := NewDatabasePrinter(config.PrinterConfig{Target: "example.com", Port: 443, OutputDBPath: ":memory:"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +137,7 @@ func TestNewDatabasePrinterSchema(t *testing.T) {
 }
 
 func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
-	printer, err := NewDatabasePrinter("example.com", 443, ":memory:")
+	printer, err := NewDatabasePrinter(config.PrinterConfig{Target: "example.com", Port: 443, OutputDBPath: ":memory:"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +150,6 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 		IP:                      ip,
 		Port:                    443,
 		DestIsIP:                true,
-		WithTimestamp:           true,
 		OngoingSuccessfulProbes: 7,
 	}
 	printer.insertProbe(true, probeStats, "12.345", 7, 0)

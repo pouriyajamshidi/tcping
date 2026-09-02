@@ -66,10 +66,10 @@ func httpProbeSummary(s *stats.Statistics) string {
 }
 
 // httpProbeDetails is the indented block printed under a probe line when
-// -verbose is on. It is empty unless this is an HTTP probe that got a
+// verbose is on. It is empty unless this is an HTTP probe that got a
 // response. The TLS lines are skipped for plain HTTP.
-func httpProbeDetails(s *stats.Statistics) string {
-	if !s.Verbose || !s.IsHTTP() || !s.HasHTTPResponse() {
+func httpProbeDetails(s *stats.Statistics, verbose bool) string {
+	if !verbose || !s.IsHTTP() || !s.HasHTTPResponse() {
 		return ""
 	}
 
@@ -93,18 +93,18 @@ func httpProbeDetails(s *stats.Statistics) string {
 func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
 	switch {
 	case cfg.OutputJSON:
-		return NewJSONPrinter(cfg.PrettyJSON), nil
+		return NewJSONPrinter(cfg), nil
 
 	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg.Target, cfg.Port, cfg.OutputDBPath)
+		return NewDatabasePrinter(cfg)
 
 	case cfg.OutputCSVPath != "":
-		return NewCSVPrinter(cfg.OutputCSVPath, cfg.CSVNoTimestamp)
+		return NewCSVPrinter(cfg)
 
 	case cfg.NoColor:
-		return NewPlainPrinter(), nil
+		return NewPlainPrinter(cfg), nil
 
 	default:
-		return NewColorPrinter(), nil
+		return NewColorPrinter(cfg), nil
 	}
 }

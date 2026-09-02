@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -21,11 +22,13 @@ var (
 )
 
 // ColorPrinter provides functionality for printing colored messages.
-type ColorPrinter struct{}
+type ColorPrinter struct {
+	cfg config.PrinterConfig
+}
 
 // NewColorPrinter creates a new ColorPrinter instance.
-func NewColorPrinter() *ColorPrinter {
-	return &ColorPrinter{}
+func NewColorPrinter(cfg config.PrinterConfig) *ColorPrinter {
+	return &ColorPrinter{cfg: cfg}
 }
 
 // PrintStart prints the first message to indicate the target's address and port.
@@ -50,7 +53,7 @@ func (p *ColorPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
@@ -61,7 +64,7 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
-	if s.WithSourceAddress {
+	if p.cfg.WithSourceAddress {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
@@ -75,14 +78,14 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg += "\n"
 
 	printLightGreen("%s", msg)
-	printLightBlue("%s", httpProbeDetails(s))
+	printLightBlue("%s", httpProbeDetails(s, p.cfg.Verbose))
 }
 
 // PrintProbeFailure prints a message the probe has failed.
 func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
@@ -93,7 +96,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
-	if s.WithSourceAddress && s.SourceAddr() != "" {
+	if p.cfg.WithSourceAddress && s.SourceAddr() != "" {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
@@ -106,7 +109,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg += "\n"
 
 	printRed("%s", msg)
-	printLightBlue("%s", httpProbeDetails(s))
+	printLightBlue("%s", httpProbeDetails(s, p.cfg.Verbose))
 }
 
 // PrintStatistics prints the summary of all probe statistics.

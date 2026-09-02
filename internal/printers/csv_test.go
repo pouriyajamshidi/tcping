@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -72,7 +73,7 @@ func TestNewCSVPrinter_CreatesFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "test_output")
 
-	p, err := NewCSVPrinter(filePath, false)
+	p, err := NewCSVPrinter(config.PrinterConfig{OutputCSVPath: filePath})
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
@@ -93,7 +94,11 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "headers_test.csv")
 
-	p, err := NewCSVPrinter(filePath, false)
+	p, err := NewCSVPrinter(config.PrinterConfig{
+		OutputCSVPath:     filePath,
+		WithTimestamp:     true,
+		WithSourceAddress: true,
+	})
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
@@ -101,10 +106,8 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 
 	// Dummy stats object for testing
 	dummyStats := &stats.Statistics{
-		Hostname:          "example.com",
-		Port:              443,
-		WithTimestamp:     true,
-		WithSourceAddress: true,
+		Hostname: "example.com",
+		Port:     443,
 	}
 
 	p.PrintStart(dummyStats)
@@ -151,7 +154,7 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "records_test.csv")
 
-	p, err := NewCSVPrinter(filePath, false)
+	p, err := NewCSVPrinter(config.PrinterConfig{OutputCSVPath: filePath})
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
@@ -199,7 +202,10 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 func TestCSVPrinter_FailureRowKeepsSourceAddressColumn(t *testing.T) {
 	filePath := filepath.Join(t.TempDir(), "failure_alignment.csv")
 
-	p, err := NewCSVPrinter(filePath, false)
+	p, err := NewCSVPrinter(config.PrinterConfig{
+		OutputCSVPath:     filePath,
+		WithSourceAddress: true,
+	})
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
@@ -208,7 +214,6 @@ func TestCSVPrinter_FailureRowKeepsSourceAddressColumn(t *testing.T) {
 	s := &stats.Statistics{
 		Hostname:                  "example.com",
 		Port:                      443,
-		WithSourceAddress:         true,
 		OngoingUnsuccessfulProbes: 1,
 	}
 

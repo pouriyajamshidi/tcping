@@ -123,7 +123,6 @@ func TestHTTPProbeDetails(t *testing.T) {
 	https := func() *stats.Statistics {
 		return &stats.Statistics{
 			Protocol: consts.HTTPS,
-			Verbose:  true,
 			HTTP: stats.HTTPInfo{
 				StatusCode:      200,
 				Status:          "200 OK",
@@ -140,9 +139,8 @@ func TestHTTPProbeDetails(t *testing.T) {
 
 	t.Run("off without verbose", func(t *testing.T) {
 		s := https()
-		s.Verbose = false
 
-		if got := httpProbeDetails(s); got != "" {
+		if got := httpProbeDetails(s, false); got != "" {
 			t.Errorf("httpProbeDetails() without -verbose = %q, want an empty string", got)
 		}
 	})
@@ -151,7 +149,7 @@ func TestHTTPProbeDetails(t *testing.T) {
 		s := https()
 		s.Protocol = consts.TCP
 
-		if got := httpProbeDetails(s); got != "" {
+		if got := httpProbeDetails(s, true); got != "" {
 			t.Errorf("httpProbeDetails() for a TCP probe = %q, want an empty string", got)
 		}
 	})
@@ -160,13 +158,13 @@ func TestHTTPProbeDetails(t *testing.T) {
 		s := https()
 		s.HTTP.StatusCode = 0
 
-		if got := httpProbeDetails(s); got != "" {
+		if got := httpProbeDetails(s, true); got != "" {
 			t.Errorf("httpProbeDetails() without a response = %q, want an empty string", got)
 		}
 	})
 
 	t.Run("https shows everything", func(t *testing.T) {
-		got := httpProbeDetails(https())
+		got := httpProbeDetails(https(), true)
 
 		for _, want := range []string{
 			"HTTP/2.0 200 OK",
@@ -190,7 +188,7 @@ func TestHTTPProbeDetails(t *testing.T) {
 		s.HTTP.TLSCipherSuite = ""
 		s.HTTP.CertExpiry = time.Time{}
 
-		got := httpProbeDetails(s)
+		got := httpProbeDetails(s, true)
 
 		for _, unwanted := range []string{"TLS", "certificate", "tls="} {
 			if strings.Contains(got, unwanted) {

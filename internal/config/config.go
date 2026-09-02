@@ -118,6 +118,7 @@ type PrinterConfig struct {
 	NoColor           bool
 	WithTimestamp     bool
 	WithSourceAddress bool
+	Verbose           bool // Show everything an HTTP(S) probe learned, not just the status.
 	OutputDBPath      string
 	OutputCSVPath     string
 	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
@@ -143,7 +144,6 @@ type Config struct {
 	ShouldRetryResolve         bool
 	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
 	ShowFailuresOnly           bool
-	Verbose                    bool // Show everything an HTTP(S) probe learned, not just the status.
 	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
 	Resolver                   *dns.Resolver
 }
@@ -373,6 +373,7 @@ func ProcessUserInput() Config {
 		NoColor:           *noColor,
 		WithTimestamp:     *showTimestamp,
 		WithSourceAddress: *showSourceAddress,
+		Verbose:           *verbose,
 		OutputDBPath:      *DBPath,
 		OutputCSVPath:     *CSVPath,
 		CSVNoTimestamp:    *csvNoTimestamp,
@@ -390,7 +391,6 @@ func ProcessUserInput() Config {
 		NameResolutionDuration:     nameResolutionDuration,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
-		Verbose:                    *verbose,
 		SkipTLSVerify:              *skipTLSVerify,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,

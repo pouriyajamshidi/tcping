@@ -4,15 +4,19 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
+
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
 // PlainPrinter provides functionality for printing messages in plain text (colorless).
-type PlainPrinter struct{}
+type PlainPrinter struct {
+	cfg config.PrinterConfig
+}
 
 // NewPlainPrinter creates a new PlainPrinter instance.
-func NewPlainPrinter() *PlainPrinter {
-	return &PlainPrinter{}
+func NewPlainPrinter(cfg config.PrinterConfig) *PlainPrinter {
+	return &PlainPrinter{cfg: cfg}
 }
 
 // PrintStart prints the first message to indicate the target's address and port.
@@ -37,7 +41,7 @@ func (p *PlainPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	msg := "Reply from "
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
@@ -48,7 +52,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
-	if s.WithSourceAddress {
+	if p.cfg.WithSourceAddress {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
@@ -60,7 +64,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
 	}
 	msg += "\n"
-	msg += httpProbeDetails(s)
+	msg += httpProbeDetails(s, p.cfg.Verbose)
 
 	fmt.Print(msg)
 }
@@ -69,7 +73,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 	msg := "No reply from "
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
@@ -80,7 +84,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s on port %d ", target, s.Port)
 
-	if s.WithSourceAddress && s.SourceAddr() != "" {
+	if p.cfg.WithSourceAddress && s.SourceAddr() != "" {
 		msg += fmt.Sprintf("using %s ", s.SourceAddr())
 	}
 
@@ -91,7 +95,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
 	}
 	msg += "\n"
-	msg += httpProbeDetails(s)
+	msg += httpProbeDetails(s, p.cfg.Verbose)
 
 	fmt.Print(msg)
 }

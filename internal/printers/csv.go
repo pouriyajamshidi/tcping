@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -75,13 +76,17 @@ type CSVPrinter struct {
 	statsWriter *csv.Writer
 	probeFile   *os.File
 	statsFile   *os.File
+	cfg         config.PrinterConfig
 }
 
-// NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
-// When noTimestamp is true, filePath is used as-is (plus a "_stats" suffix
-// for the stats file) instead of getting a date/time suffix, so repeated
-// runs overwrite the same file rather than creating a new one each time.
-func NewCSVPrinter(filePath string, noTimestamp bool) (*CSVPrinter, error) {
+// NewCSVPrinter initializes a CSVPrinter instance from the printer config.
+// When cfg.CSVNoTimestamp is true, cfg.OutputCSVPath is used as-is (plus a
+// "_stats" suffix for the stats file) instead of getting a date/time suffix,
+// so repeated runs overwrite the same file rather than creating a new one
+// each time.
+func NewCSVPrinter(cfg config.PrinterConfig) (*CSVPrinter, error) {
+	filePath, noTimestamp := cfg.OutputCSVPath, cfg.CSVNoTimestamp
+
 	probeFilename := addDateAndCSVExtension(filePath, false, noTimestamp)
 
 	probeFile, err := os.OpenFile(probeFilename, fileFlag, filePermission)
@@ -102,6 +107,7 @@ func NewCSVPrinter(filePath string, noTimestamp bool) (*CSVPrinter, error) {
 		statsWriter: csv.NewWriter(statsFile),
 		probeFile:   probeFile,
 		statsFile:   statsFile,
+		cfg:         cfg,
 	}, nil
 }
 
@@ -149,13 +155,13 @@ func (p *CSVPrinter) done() {
 func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 	var headers []string
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		headers = append(headers, colTimestamp)
 	}
 
 	headers = append(headers, colStatus, colHostname, colIP, colPort)
 
-	if s.WithSourceAddress {
+	if p.cfg.WithSourceAddress {
 		headers = append(headers, colSourceAddress)
 	}
 
@@ -206,7 +212,7 @@ func (p *CSVPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	var record []string
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		record = append(record, s.CurrentTimestamp())
 	}
 
@@ -218,7 +224,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		s.PortStr(),
 	)
 
-	if s.WithSourceAddress {
+	if p.cfg.WithSourceAddress {
 		record = append(record, s.SourceAddr())
 	}
 
@@ -239,7 +245,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 	var record []string
 
-	if s.WithTimestamp {
+	if p.cfg.WithTimestamp {
 		record = append(record, s.CurrentTimestamp())
 	}
 
@@ -253,7 +259,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	// Always write the column when the header has one, even if the address
 	// is empty, otherwise the row is short and every later column shifts.
-	if s.WithSourceAddress {
+	if p.cfg.WithSourceAddress {
 		record = append(record, s.SourceAddr())
 	}
 

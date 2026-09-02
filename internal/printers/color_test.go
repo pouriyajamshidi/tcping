@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gookit/color"
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -44,7 +45,7 @@ func captureStdout(t *testing.T, f func()) string {
 // probe line is built first and then printed, so handing it to a Printf as
 // the format string turned that % into "%!e(MISSING)".
 func TestColorPrinter_ZoneIDInTargetIsNotTreatedAsAVerb(t *testing.T) {
-	p := NewColorPrinter()
+	p := NewColorPrinter(config.PrinterConfig{})
 	s := &stats.Statistics{
 		Hostname:                "fe80::1%eth0",
 		Port:                    80,
