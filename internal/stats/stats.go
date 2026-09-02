@@ -50,14 +50,11 @@ type Statistics struct {
 	LongestDowntime           LongestTime   // Longest downtime streak observed during the entire run.
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
-	LatestRTT                 float32   // RTT of the most recent successful probe.
-	RTTResults                RTTResult // Running min/average/max RTT across the entire run.
-	WithTimestamp             bool
-	WithSourceAddress         bool
+	LatestRTT                 float32       // RTT of the most recent successful probe.
+	RTTResults                RTTResult     // Running min/average/max RTT across the entire run.
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
 	ResolvedThisProbe         bool          // True when ResolveEveryProbe just resolved successfully for this probe. Lets PrintProbeSuccess/PrintProbeFailure fold NameResolutionDuration into their own line instead of a separate one.
 	HTTP                      HTTPInfo      // Details of the most recent HTTP(S) probe. Zero for TCP probes.
-	Verbose                   bool          // Show everything an HTTP(S) probe learned, not just the status.
 }
 
 func NewStatistics(cfg config.Config) *Statistics {
@@ -74,9 +71,6 @@ func NewStatistics(cfg config.Config) *Statistics {
 		Port:                   cfg.Port,
 		DestIsIP:               cfg.TargetIsIP,
 		LocalAddr:              localAddr,
-		WithTimestamp:          cfg.PrinterConfig.WithTimestamp,
-		WithSourceAddress:      cfg.PrinterConfig.WithSourceAddress,
-		Verbose:                cfg.Verbose,
 		Protocol:               cfg.Protocol,
 		NameResolutionDuration: cfg.NameResolutionDuration,
 		HostnameChanges: []HostnameChange{{
