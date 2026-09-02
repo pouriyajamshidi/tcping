@@ -349,6 +349,53 @@ Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
     reply echoed back probe 4
 ```
 
+10. Send the results to Grafana Alloy as metrics:
+
+```bash
+tcping www.example.com 443 --alloy http://localhost:4318
+```
+
+Instead of printing each probe, tcping sends it to Alloy over OTLP, which can
+forward it to Prometheus and turn a run into a graph. Every probe sends
+`tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
+`tcping_probes_total`, labelled with the target, IP, port and protocol. An
+HTTP(S) target also sends the status code, the connect, TLS handshake and
+first-byte timings, and the days left on the certificate.
+
+The statistics you would normally see on exit, such as the packet loss and the
+minimum, average and maximum latency, are sent every 10 seconds so a run that
+nobody is watching still reports them. Use `--alloy-stats-interval` to change
+that.
+
+On the Alloy side, the matching configuration is an OTLP receiver pointed at
+Prometheus:
+
+```alloy
+otelcol.receiver.otlp "tcping" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.exporter.prometheus.tcping.input]
+  }
+}
+
+otelcol.exporter.prometheus "tcping" {
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.remote_write "local" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+```
+
+> [!NOTE]
+> Prometheus needs to be started with `--web.enable-remote-write-receiver`
+> for Alloy to be able to push to it.
+
 > [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
 
@@ -395,6 +442,8 @@ The following flags are available to control the behavior of **tcping**:
 | `-j`                     | Output in `JSON` format                                                                                                   |
 | `--pretty`               | Prettify the `JSON` output                                                                                                |
 | `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
+| `--alloy`                | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them. e.g. `--alloy http://localhost:4318` |
+| `--alloy-stats-interval` | How often to send the statistics to Alloy, in seconds. Defaults to 10. No effect without `--alloy`                        |
 | `--skip-tls`             | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
 | `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. For a UDP target, shows whether the reply carried our own payload back. No effect on TCP targets |
 | `--udp-server`           | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
