@@ -2,6 +2,8 @@ package config
 
 import (
 	"testing"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
 func TestParseHostPortArgs(t *testing.T) {
@@ -200,6 +202,118 @@ func TestCompareVersions(t *testing.T) {
 			got := compareVersions(tt.v1, tt.v2)
 			if got != tt.want {
 				t.Errorf("compareVersions(%q, %q) = %d, want %d", tt.v1, tt.v2, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseTarget(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		wantHostname string
+		wantPort     string
+		wantProtocol consts.Protocol
+		wantURL      string
+		wantErr      bool
+	}{
+		{
+			name:         "host and port stays TCP",
+			args:         []string{"example.com", "8080"},
+			wantHostname: "example.com",
+			wantPort:     "8080",
+			wantProtocol: consts.TCP,
+		},
+		{
+			name:         "host:port stays TCP",
+			args:         []string{"example.com:8080"},
+			wantHostname: "example.com",
+			wantPort:     "8080",
+			wantProtocol: consts.TCP,
+		},
+		{
+			name:         "https URL defaults to port 443",
+			args:         []string{"https://example.com"},
+			wantHostname: "example.com",
+			wantPort:     "443",
+			wantProtocol: consts.HTTPS,
+			wantURL:      "https://example.com",
+		},
+		{
+			name:         "http URL defaults to port 80",
+			args:         []string{"http://example.com"},
+			wantHostname: "example.com",
+			wantPort:     "80",
+			wantProtocol: consts.HTTP,
+			wantURL:      "http://example.com",
+		},
+		{
+			name:         "the path is kept",
+			args:         []string{"https://example.com/health"},
+			wantHostname: "example.com",
+			wantPort:     "443",
+			wantProtocol: consts.HTTPS,
+			wantURL:      "https://example.com/health",
+		},
+		{
+			name:         "a port in the URL wins over the default",
+			args:         []string{"https://example.com:8443/live"},
+			wantHostname: "example.com",
+			wantPort:     "8443",
+			wantProtocol: consts.HTTPS,
+			wantURL:      "https://example.com:8443/live",
+		},
+		{
+			name:         "a trailing port argument wins over the URL",
+			args:         []string{"https://example.com:8443", "9443"},
+			wantHostname: "example.com",
+			wantPort:     "9443",
+			wantProtocol: consts.HTTPS,
+			wantURL:      "https://example.com:9443",
+		},
+		{
+			name:         "the default port is left out of the Host header",
+			args:         []string{"https://example.com", "443"},
+			wantHostname: "example.com",
+			wantPort:     "443",
+			wantProtocol: consts.HTTPS,
+			wantURL:      "https://example.com",
+		},
+		{
+			name:         "IPv6 URL",
+			args:         []string{"https://[2606:4700::1]:8443/"},
+			wantHostname: "2606:4700::1",
+			wantPort:     "8443",
+			wantProtocol: consts.HTTPS,
+			wantURL:      "https://[2606:4700::1]:8443/",
+		},
+		{
+			name:    "a URL without a host is rejected",
+			args:    []string{"https://"},
+			wantErr: true,
+		},
+		{
+			name: "no arguments at all",
+			args: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseTarget(tt.args)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseTarget(%v) error = %v, wantErr %v", tt.args, err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+
+			if got.hostname != tt.wantHostname || got.port != tt.wantPort ||
+				got.protocol != tt.wantProtocol || got.url != tt.wantURL {
+				t.Errorf("parseTarget(%v) = (%q, %q, %q, %q), want (%q, %q, %q, %q)",
+					tt.args, got.hostname, got.port, got.protocol, got.url,
+					tt.wantHostname, tt.wantPort, tt.wantProtocol, tt.wantURL)
 			}
 		})
 	}
