@@ -12,7 +12,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
-	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 )
 
 const minProbeInterval = 2 * time.Millisecond
@@ -112,6 +111,20 @@ func permuteArgs(args []string) {
 	copy(args, append(flagArgs, nonFlagArgs...))
 }
 
+// PrinterConfig holds all configuration options for Printer creation
+type PrinterConfig struct {
+	OutputJSON        bool
+	PrettyJSON        bool
+	NoColor           bool
+	WithTimestamp     bool
+	WithSourceAddress bool
+	OutputDBPath      string
+	OutputCSVPath     string
+	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
+	Target            string
+	Port              uint16
+}
+
 // Config holds all user provided settings
 type Config struct {
 	URL                        string // Full target URL. HTTP(S) targets only, empty otherwise.
@@ -128,7 +141,7 @@ type Config struct {
 	Timeout                    time.Duration
 	DNSTimeout                 time.Duration
 	IntervalBetweenProbes      time.Duration
-	PrinterConfig              printers.PrinterConfig
+	PrinterConfig              PrinterConfig
 	NetworkInterface           nic.NetworkInterface
 	TargetIsIP                 bool          // Flag indicating whether the destination is an IP address (not a hostname).
 	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
@@ -138,86 +151,6 @@ type Config struct {
 	Verbose                    bool // Show everything an HTTP(S) probe learned, not just the status.
 	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
 	Resolver                   *dns.Resolver
-}
-
-func (c Config) GetHostname() string {
-	return c.Hostname
-}
-
-func (c Config) GetURL() string {
-	return c.URL
-}
-
-func (c Config) GetIP() netip.Addr {
-	return c.IP
-}
-
-func (c Config) GetPort() uint16 {
-	return c.Port
-}
-
-func (c Config) GetProtocol() consts.Protocol {
-	return c.Protocol
-}
-
-func (c Config) GetUseIPv4() bool {
-	return c.UseIPv4
-}
-
-func (c Config) GetUseIPv6() bool {
-	return c.UseIPv6
-}
-
-func (c Config) GetTimeout() string {
-	return c.Timeout.String()
-}
-
-func (c Config) GetProbesBeforeQuit() uint {
-	return c.ProbesBeforeQuit
-}
-
-func (c Config) GetTargetIsIP() bool {
-	return c.TargetIsIP
-}
-
-func (c Config) GetNameResolutionDuration() time.Duration {
-	return c.NameResolutionDuration
-}
-
-func (c Config) GetIntervalBetweenProbes() string {
-	return c.IntervalBetweenProbes.String()
-}
-
-func (c Config) GetShowFailuresOnly() bool {
-	return c.ShowFailuresOnly
-}
-
-func (c Config) GetShouldRetryResolve() bool {
-	return c.ShouldRetryResolve
-}
-
-func (c Config) GetRetryResolveAfterNFailures() uint {
-	return c.RetryResolveAfterNFailures
-}
-
-func (c Config) GetNetworkInterface() nic.NetworkInterface {
-	return c.NetworkInterface
-}
-
-func (c Config) GetPrinterConfig() printers.PrinterConfig {
-	return c.PrinterConfig
-}
-
-func (c Config) GetWithTimestamp() bool {
-	return c.PrinterConfig.WithTimestamp
-}
-
-func (c Config) GetWithSourceAddress() bool {
-	return c.PrinterConfig.WithSourceAddress
-}
-
-func (c Config) GetVerbose() bool {
-	return c.Verbose
 }
 
 // ProcessUserInput gets and validate user input
@@ -437,7 +370,7 @@ func ProcessUserInput() Config {
 
 	timeoutInDuration := SecondsToDuration(*timeout)
 
-	printerConfig := printers.PrinterConfig{
+	printerConfig := PrinterConfig{
 		Target:            target.hostname,
 		Port:              validatedPort,
 		OutputJSON:        *outputJSON,
