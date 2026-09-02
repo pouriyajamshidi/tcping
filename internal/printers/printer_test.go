@@ -81,7 +81,7 @@ func TestNewPrinter(t *testing.T) {
 			}
 
 			if csvPrinter, ok := printer.(*CSVPrinter); ok {
-				t.Cleanup(csvPrinter.Done)
+				t.Cleanup(csvPrinter.done)
 			}
 		})
 	}

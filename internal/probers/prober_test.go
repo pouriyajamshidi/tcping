@@ -172,7 +172,7 @@ func newTestProber(pinger Pinger, cfg config.Config) (*Prober, *fakePrinter) {
 		pinger:     pinger,
 		printer:    printer,
 		config:     cfg,
-		Statistics: &stats.Statistics{},
+		statistics: &stats.Statistics{},
 	}
 	return p, printer
 }
@@ -185,7 +185,7 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 
 	p.handleProbeFailure(now, ProbeResult{})
 
-	s := p.Statistics
+	s := p.statistics
 	if s.TotalUnsuccessfulProbes != 1 || s.OngoingUnsuccessfulProbes != 1 {
 		t.Fatalf("got TotalUnsuccessfulProbes=%d OngoingUnsuccessfulProbes=%d, want all 1",
 			s.TotalUnsuccessfulProbes, s.OngoingUnsuccessfulProbes)
@@ -204,13 +204,13 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	p, printer := newTestProber(nil, config.Config{})
 	start := time.Now()
-	p.Statistics.StartOfUptime = start
-	p.Statistics.OngoingSuccessfulProbes = 5
+	p.statistics.StartOfUptime = start
+	p.statistics.OngoingSuccessfulProbes = 5
 
 	failAt := start.Add(100 * time.Millisecond)
 	p.handleProbeFailure(failAt, ProbeResult{})
 
-	s := p.Statistics
+	s := p.statistics
 	if s.OngoingSuccessfulProbes != 0 {
 		t.Errorf("OngoingSuccessfulProbes = %d, want 0", s.OngoingSuccessfulProbes)
 	}
@@ -244,7 +244,7 @@ func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) {
 	p, printer := newTestProber(nil, config.Config{})
 	start := time.Now()
-	p.Statistics.StartOfUptime = start
+	p.statistics.StartOfUptime = start
 
 	p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{})
 	p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{})
@@ -262,7 +262,7 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotDoubleCountDowntime(t *testi
 	p.handleProbeFailure(first, ProbeResult{})
 	p.handleProbeFailure(second, ProbeResult{})
 
-	s := p.Statistics
+	s := p.statistics
 	if s.OngoingUnsuccessfulProbes != 2 {
 		t.Errorf("OngoingUnsuccessfulProbes = %d, want 2", s.OngoingUnsuccessfulProbes)
 	}
@@ -281,14 +281,14 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 		},
 	}
 	p, _ := newTestProber(nil, cfg)
-	p.Statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
+	p.statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
 
 	p.handleProbeFailure(time.Now(), ProbeResult{})
 
 	wantAddr := &net.TCPAddr{IP: sourceIP}
-	gotAddr, ok := p.Statistics.LocalAddr.(*net.TCPAddr)
+	gotAddr, ok := p.statistics.LocalAddr.(*net.TCPAddr)
 	if !ok || !gotAddr.IP.Equal(wantAddr.IP) {
-		t.Errorf("LocalAddr = %v, want %v", p.Statistics.LocalAddr, wantAddr)
+		t.Errorf("LocalAddr = %v, want %v", p.statistics.LocalAddr, wantAddr)
 	}
 }
 
@@ -301,7 +301,7 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 
 	p.handleProbeSuccess(now, 15*time.Millisecond, ProbeResult{LocalAddr: localAddr})
 
-	s := p.Statistics
+	s := p.statistics
 	if s.LatestRTT != 15 {
 		t.Errorf("LatestRTT = %v, want 15", s.LatestRTT)
 	}
@@ -326,14 +326,14 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	p, printer := newTestProber(nil, config.Config{})
 	start := time.Now()
-	p.Statistics.LastProbeHadFailed = true
-	p.Statistics.StartOfDowntime = start
-	p.Statistics.OngoingUnsuccessfulProbes = 3
+	p.statistics.LastProbeHadFailed = true
+	p.statistics.StartOfDowntime = start
+	p.statistics.OngoingUnsuccessfulProbes = 3
 
 	upAt := start.Add(50 * time.Millisecond)
 	p.handleProbeSuccess(upAt, time.Millisecond, ProbeResult{})
 
-	s := p.Statistics
+	s := p.statistics
 	if s.LastProbeHadFailed {
 		t.Error("LastProbeHadFailed = true, want false")
 	}
@@ -354,7 +354,7 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
 	p, printer := newTestProber(nil, config.Config{})
 	start := time.Now()
-	p.Statistics.StartOfUptime = start
+	p.statistics.StartOfUptime = start
 
 	p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, ProbeResult{})
 	p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, ProbeResult{})
@@ -362,8 +362,8 @@ func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
 	if got := printer.snapshot().downtimeCalls; got != 0 {
 		t.Errorf("PrintDownTimeDuration called %d times, want 0 (never went down)", got)
 	}
-	if p.Statistics.OngoingSuccessfulProbes != 2 {
-		t.Errorf("OngoingSuccessfulProbes = %d, want 2", p.Statistics.OngoingSuccessfulProbes)
+	if p.statistics.OngoingSuccessfulProbes != 2 {
+		t.Errorf("OngoingSuccessfulProbes = %d, want 2", p.statistics.OngoingSuccessfulProbes)
 	}
 }
 
@@ -371,12 +371,12 @@ func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
 
 func TestFinalizeStatistics_WhileDownAccruesRemainingDowntime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
-	p.Statistics.LastProbeHadFailed = true
-	p.Statistics.StartOfDowntime = time.Now().Add(-50 * time.Millisecond)
+	p.statistics.LastProbeHadFailed = true
+	p.statistics.StartOfDowntime = time.Now().Add(-50 * time.Millisecond)
 
 	p.finalizeStatistics()
 
-	s := p.Statistics
+	s := p.statistics
 	if s.EndTime.IsZero() {
 		t.Fatal("EndTime was not set")
 	}
@@ -390,11 +390,11 @@ func TestFinalizeStatistics_WhileDownAccruesRemainingDowntime(t *testing.T) {
 
 func TestFinalizeStatistics_WhileUpAccruesRemainingUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
-	p.Statistics.StartOfUptime = time.Now().Add(-50 * time.Millisecond)
+	p.statistics.StartOfUptime = time.Now().Add(-50 * time.Millisecond)
 
 	p.finalizeStatistics()
 
-	s := p.Statistics
+	s := p.statistics
 	if s.TotalUptime < 50*time.Millisecond {
 		t.Errorf("TotalUptime = %v, want at least 50ms", s.TotalUptime)
 	}
@@ -405,11 +405,11 @@ func TestFinalizeStatistics_WhileUpAccruesRemainingUptime(t *testing.T) {
 
 func TestFinalizeStatistics_NoProbesYetIsANoop(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
-	p.Statistics.StartTime = time.Now()
+	p.statistics.StartTime = time.Now()
 
 	p.finalizeStatistics()
 
-	s := p.Statistics
+	s := p.statistics
 	if s.TotalUptime != 0 || s.TotalDowntime != 0 {
 		t.Errorf("TotalUptime=%v TotalDowntime=%v, want both 0 when no probe ever ran", s.TotalUptime, s.TotalDowntime)
 	}
@@ -438,8 +438,8 @@ func TestProbe_StopsAfterProbesBeforeQuit(t *testing.T) {
 	if got := pinger.calls(); got != 3 {
 		t.Errorf("Ping called %d times, want 3", got)
 	}
-	if p.Statistics.TotalSuccessfulProbes != 3 {
-		t.Errorf("TotalSuccessfulProbes = %d, want 3", p.Statistics.TotalSuccessfulProbes)
+	if p.statistics.TotalSuccessfulProbes != 3 {
+		t.Errorf("TotalSuccessfulProbes = %d, want 3", p.statistics.TotalSuccessfulProbes)
 	}
 
 	snap := printer.snapshot()
@@ -468,7 +468,7 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
-	p.Statistics.Hostname = "127.0.0.1"
+	p.statistics.Hostname = "127.0.0.1"
 
 	if _, err := p.Probe(context.Background()); err != nil {
 		t.Fatalf("Probe() error = %v", err)
@@ -477,8 +477,8 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 	if got := printer.snapshot().nameResolutionCalls; got != 1 {
 		t.Errorf("PrintNameResolutionDuration called %d times, want 1", got)
 	}
-	if p.Statistics.NameResolutionDuration < 0 {
-		t.Errorf("NameResolutionDuration = %v, want >= 0", p.Statistics.NameResolutionDuration)
+	if p.statistics.NameResolutionDuration < 0 {
+		t.Errorf("NameResolutionDuration = %v, want >= 0", p.statistics.NameResolutionDuration)
 	}
 }
 
@@ -511,7 +511,7 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 		Resolver:                   dns.NewResolver(blackhole.LocalAddr().String(), 200*time.Millisecond, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
-	p.Statistics.Hostname = "example.com"
+	p.statistics.Hostname = "example.com"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -554,7 +554,7 @@ func TestProbe_StopsOnContextCancellation(t *testing.T) {
 	if pinger.calls() == 0 {
 		t.Error("Ping was never called before the context expired")
 	}
-	if !p.Statistics.EndTime.After(p.Statistics.StartTime) {
+	if !p.statistics.EndTime.After(p.statistics.StartTime) {
 		t.Error("finalizeStatistics does not appear to have run: EndTime is not after StartTime")
 	}
 }
@@ -578,7 +578,7 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
-	s := p.Statistics
+	s := p.statistics
 	if s.TotalUnsuccessfulProbes != 2 || s.TotalSuccessfulProbes != 1 {
 		t.Errorf("TotalUnsuccessfulProbes=%d TotalSuccessfulProbes=%d, want 2 and 1", s.TotalUnsuccessfulProbes, s.TotalSuccessfulProbes)
 	}
@@ -609,7 +609,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
-	p.Statistics.Hostname = "127.0.0.1"
+	p.statistics.Hostname = "127.0.0.1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -617,10 +617,10 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
-	if p.Statistics.RetriedHostnameLookups != 1 {
-		t.Errorf("RetriedHostnameLookups = %d, want 1", p.Statistics.RetriedHostnameLookups)
+	if p.statistics.RetriedHostnameLookups != 1 {
+		t.Errorf("RetriedHostnameLookups = %d, want 1", p.statistics.RetriedHostnameLookups)
 	}
-	if p.Statistics.ResolvedThisProbe {
+	if p.statistics.ResolvedThisProbe {
 		t.Error("ResolvedThisProbe = true, want false (failure-triggered retry, not ResolveEveryProbe)")
 	}
 
@@ -648,7 +648,7 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
-	p.Statistics.Hostname = "127.0.0.1"
+	p.statistics.Hostname = "127.0.0.1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -656,10 +656,10 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
-	if p.Statistics.RetriedHostnameLookups != 3 {
-		t.Errorf("RetriedHostnameLookups = %d, want 3 (one resolve per probe)", p.Statistics.RetriedHostnameLookups)
+	if p.statistics.RetriedHostnameLookups != 3 {
+		t.Errorf("RetriedHostnameLookups = %d, want 3 (one resolve per probe)", p.statistics.RetriedHostnameLookups)
 	}
-	if !p.Statistics.ResolvedThisProbe {
+	if !p.statistics.ResolvedThisProbe {
 		t.Error("ResolvedThisProbe = false, want true (so color/plain fold the duration into their own probe line)")
 	}
 
@@ -683,7 +683,7 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 		Resolver:              dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
-	p.Statistics.DestIsIP = true
+	p.statistics.DestIsIP = true
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -691,8 +691,8 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 		t.Fatalf("Probe() error = %v", err)
 	}
 
-	if p.Statistics.RetriedHostnameLookups != 0 {
-		t.Errorf("RetriedHostnameLookups = %d, want 0 (target is a literal IP)", p.Statistics.RetriedHostnameLookups)
+	if p.statistics.RetriedHostnameLookups != 0 {
+		t.Errorf("RetriedHostnameLookups = %d, want 0 (target is a literal IP)", p.statistics.RetriedHostnameLookups)
 	}
 	if got := printer.snapshot().nameResolutionCalls; got != 0 {
 		t.Errorf("PrintNameResolutionDuration called %d times, want 0", got)
@@ -712,7 +712,7 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 		Resolver:                   dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, printer := newTestProber(pinger, cfg)
-	p.Statistics.Hostname = "127.0.0.1"
+	p.statistics.Hostname = "127.0.0.1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -720,8 +720,8 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 		t.Fatalf("Probe() error = %v", err)
 	}
 
-	if p.Statistics.RetriedHostnameLookups != 2 {
-		t.Errorf("RetriedHostnameLookups = %d, want 2 (once per probe, not double-counted)", p.Statistics.RetriedHostnameLookups)
+	if p.statistics.RetriedHostnameLookups != 2 {
+		t.Errorf("RetriedHostnameLookups = %d, want 2 (once per probe, not double-counted)", p.statistics.RetriedHostnameLookups)
 	}
 	if got := printer.snapshot().retryCalls; got != 0 {
 		t.Errorf("PrintRetryingToResolve called %d times, want 0 (ResolveEveryProbe takes precedence)", got)
@@ -743,8 +743,8 @@ func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, _ := newTestProber(pinger, cfg)
-	p.Statistics.IP = netip.MustParseAddr("192.0.2.1")
-	p.Statistics.Hostname = "192.0.2.2" // what retry-resolve will "resolve" to
+	p.statistics.IP = netip.MustParseAddr("192.0.2.1")
+	p.statistics.Hostname = "192.0.2.2" // what retry-resolve will "resolve" to
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -906,8 +906,8 @@ func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 	if got := printer.snapshot().successCalls; got != 0 {
 		t.Errorf("PrintProbeSuccess called %d times, want 0", got)
 	}
-	if p.Statistics.TotalSuccessfulProbes != 3 {
-		t.Errorf("TotalSuccessfulProbes = %d, want 3", p.Statistics.TotalSuccessfulProbes)
+	if p.statistics.TotalSuccessfulProbes != 3 {
+		t.Errorf("TotalSuccessfulProbes = %d, want 3", p.statistics.TotalSuccessfulProbes)
 	}
 }
 
@@ -938,13 +938,13 @@ func TestResolveHostname_RecordsDuration(t *testing.T) {
 		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, _ := newTestProber(nil, cfg)
-	p.Statistics.Hostname = "127.0.0.1"
+	p.statistics.Hostname = "127.0.0.1"
 
 	if !p.resolveHostname(false) {
 		t.Fatal("resolveHostname() = false, want true")
 	}
 
-	s := p.Statistics
+	s := p.statistics
 	if s.NameResolutionDuration < 0 {
 		t.Errorf("NameResolutionDuration = %v, want >= 0", s.NameResolutionDuration)
 	}
@@ -964,8 +964,8 @@ func TestResolveHostname_SameAddressUpdatesDurationOnly(t *testing.T) {
 		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
 	}
 	p, _ := newTestProber(nil, cfg)
-	p.Statistics.Hostname = "127.0.0.1"
-	p.Statistics.HostnameChanges = []stats.HostnameChange{
+	p.statistics.Hostname = "127.0.0.1"
+	p.statistics.HostnameChanges = []stats.HostnameChange{
 		{Addr: netip.MustParseAddr("127.0.0.1")},
 	}
 
@@ -973,7 +973,7 @@ func TestResolveHostname_SameAddressUpdatesDurationOnly(t *testing.T) {
 		t.Fatal("resolveHostname() = false, want true")
 	}
 
-	s := p.Statistics
+	s := p.statistics
 	if len(s.HostnameChanges) != 1 {
 		t.Errorf("len(HostnameChanges) = %d, want 1 (no new entry for an unchanged address)", len(s.HostnameChanges))
 	}

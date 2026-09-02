@@ -29,7 +29,7 @@ var (
 )
 
 type Resolver struct {
-	Resolver *net.Resolver
+	resolver *net.Resolver
 	timeout  time.Duration
 	useIPv4  bool
 	useIPv6  bool
@@ -42,7 +42,7 @@ type Resolver struct {
 // of its addresses matches the DNS server's own address family.
 func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) *Resolver {
 	return &Resolver{
-		Resolver: createDNSResolver(DNSServer, timeout, networkInterface),
+		resolver: createDNSResolver(DNSServer, timeout, networkInterface),
 		timeout:  timeout,
 		useIPv4:  useIPv4,
 		useIPv6:  useIPv6,
@@ -191,7 +191,7 @@ func (r *Resolver) ResolveHostname(hostname string) (netip.Addr, error) {
 		defer cancel()
 	}
 
-	ipAddrs, err := r.Resolver.LookupNetIP(ctx, IPv4OrIPv6, hostname)
+	ipAddrs, err := r.resolver.LookupNetIP(ctx, IPv4OrIPv6, hostname)
 	if err != nil {
 		return ip, err
 	}

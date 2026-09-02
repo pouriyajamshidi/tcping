@@ -125,10 +125,10 @@ const (
 
 // DatabasePrinter stores one probe stream and its final statistics in SQLite.
 type DatabasePrinter struct {
-	Conn           *sqlite.Conn
+	conn           *sqlite.Conn
 	probeTableName string
 	statsTableName string
-	FilePath       string
+	filePath       string
 }
 
 // NewDatabasePrinter opens the database and creates the probe and statistics tables.
@@ -168,10 +168,10 @@ func NewDatabasePrinter(target string, port uint16, filePath string) (*DatabaseP
 	}
 
 	return &DatabasePrinter{
-		Conn:           conn,
+		conn:           conn,
 		probeTableName: probeTableName,
 		statsTableName: statsTableName,
-		FilePath:       filePath,
+		filePath:       filePath,
 	}, nil
 }
 
@@ -288,7 +288,7 @@ func (p *DatabasePrinter) insertProbe(
 	args = append(args, httpArgs(s)...)
 
 	if err := sqlitex.Execute(
-		p.Conn,
+		p.conn,
 		fmt.Sprintf(probeInsert, p.probeTableName),
 		&sqlitex.ExecOptions{Args: args},
 	); err != nil {
@@ -299,11 +299,11 @@ func (p *DatabasePrinter) insertProbe(
 // PrintStart prints a message indicating that TCPing has started.
 func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
-		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.FilePath)
+		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.filePath)
 		return
 	}
 	fmt.Printf("Probing %s on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
-		s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.FilePath)
+		s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.filePath)
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
@@ -400,7 +400,7 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if err := sqlitex.Execute(
-		p.Conn,
+		p.conn,
 		fmt.Sprintf(statsInsert, p.statsTableName),
 		&sqlitex.ExecOptions{Args: args},
 	); err != nil {
@@ -440,12 +440,12 @@ func (p *DatabasePrinter) PrintError(format string, args ...any) {
 // caller, not the printer.
 func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
-	p.Done()
+	p.done()
 }
 
-func (p *DatabasePrinter) Done() {
-	if p.Conn != nil {
-		_ = p.Conn.Close()
+func (p *DatabasePrinter) done() {
+	if p.conn != nil {
+		_ = p.conn.Close()
 	}
 }
 

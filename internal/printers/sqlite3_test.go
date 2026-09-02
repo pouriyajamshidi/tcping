@@ -57,10 +57,10 @@ func TestNewDatabasePrinterConfiguresSQLite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer printer.Done()
+	defer printer.done()
 
 	var journalMode, synchronous, busyTimeout string
-	err = sqlitex.Execute(printer.Conn,
+	err = sqlitex.Execute(printer.conn,
 		"SELECT (SELECT journal_mode FROM pragma_journal_mode), (SELECT synchronous FROM pragma_synchronous), (SELECT timeout FROM pragma_busy_timeout)",
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -91,13 +91,13 @@ func TestNewDatabasePrinterSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer printer.Done()
+	defer printer.done()
 
 	assertColumns := func(table string, expected map[string]string) {
 		t.Helper()
 
 		got := make(map[string]string)
-		err := sqlitex.Execute(printer.Conn,
+		err := sqlitex.Execute(printer.conn,
 			"SELECT name, type FROM pragma_table_info(?)",
 			&sqlitex.ExecOptions{
 				Args: []any{table},
@@ -140,7 +140,7 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer printer.Done()
+	defer printer.done()
 
 	ip := netip.MustParseAddr("192.0.2.10")
 
@@ -161,7 +161,7 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 		successfulProbes string
 	)
 
-	if err := sqlitex.Execute(printer.Conn,
+	if err := sqlitex.Execute(printer.conn,
 		fmt.Sprintf(`SELECT typeof(reachable), typeof(destination_is_ip), typeof(latency), typeof(ongoing_successful_probes) FROM %s`, printer.probeTableName),
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {

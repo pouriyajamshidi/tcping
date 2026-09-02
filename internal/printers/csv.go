@@ -71,10 +71,10 @@ const (
 
 // CSVPrinter is responsible for writing probe results and statistics to CSV files.
 type CSVPrinter struct {
-	ProbeWriter *csv.Writer
-	StatsWriter *csv.Writer
-	ProbeFile   *os.File
-	StatsFile   *os.File
+	probeWriter *csv.Writer
+	statsWriter *csv.Writer
+	probeFile   *os.File
+	statsFile   *os.File
 }
 
 // NewCSVPrinter initializes a CSVPrinter instance with the given filename and settings.
@@ -98,10 +98,10 @@ func NewCSVPrinter(filePath string, noTimestamp bool) (*CSVPrinter, error) {
 	}
 
 	return &CSVPrinter{
-		ProbeWriter: csv.NewWriter(probeFile),
-		StatsWriter: csv.NewWriter(statsFile),
-		ProbeFile:   probeFile,
-		StatsFile:   statsFile,
+		probeWriter: csv.NewWriter(probeFile),
+		statsWriter: csv.NewWriter(statsFile),
+		probeFile:   probeFile,
+		statsFile:   statsFile,
 	}, nil
 }
 
@@ -130,19 +130,19 @@ func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) str
 }
 
 // Done flushes the buffer of writers and closes the probe and stats files.
-func (p *CSVPrinter) Done() {
-	if p.ProbeWriter != nil {
-		p.ProbeWriter.Flush()
+func (p *CSVPrinter) done() {
+	if p.probeWriter != nil {
+		p.probeWriter.Flush()
 	}
-	if p.ProbeFile != nil {
-		p.ProbeFile.Close()
+	if p.probeFile != nil {
+		p.probeFile.Close()
 	}
 
-	if p.StatsWriter != nil {
-		p.StatsWriter.Flush()
+	if p.statsWriter != nil {
+		p.statsWriter.Flush()
 	}
-	if p.StatsFile != nil {
-		p.StatsFile.Close()
+	if p.statsFile != nil {
+		p.statsFile.Close()
 	}
 }
 
@@ -165,23 +165,23 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 		headers = append(headers, httpColumns...)
 	}
 
-	if err := p.ProbeWriter.Write(headers); err != nil {
+	if err := p.probeWriter.Write(headers); err != nil {
 		return fmt.Errorf("failed to write headers: %w", err)
 	}
 
-	p.ProbeWriter.Flush()
-	return p.ProbeWriter.Error()
+	p.probeWriter.Flush()
+	return p.probeWriter.Error()
 }
 
 func (p *CSVPrinter) writeStatsHeader() error {
 	headers := []string{"Statistic", "Value"}
 
-	if err := p.StatsWriter.Write(headers); err != nil {
+	if err := p.statsWriter.Write(headers); err != nil {
 		return fmt.Errorf("failed to write statistics headers: %w", err)
 	}
 
-	p.StatsWriter.Flush()
-	return p.StatsWriter.Error()
+	p.statsWriter.Flush()
+	return p.statsWriter.Error()
 }
 
 // PrintStart logs the beginning of a TCPing session.
@@ -190,11 +190,11 @@ func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 	p.writeStatsHeader()
 
 	if s.DestIsIP {
-		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.ProbeFile.Name())
+		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.probeFile.Name())
 		return
 	}
 	fmt.Printf("Probing %s on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
-		s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.ProbeFile.Name())
+		s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.probeFile.Name())
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
@@ -228,11 +228,11 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		record = append(record, httpRecord(s)...)
 	}
 
-	if err := p.ProbeWriter.Write(record); err != nil {
+	if err := p.probeWriter.Write(record); err != nil {
 		p.PrintError("failed to write success record: %v", err)
 	}
 
-	p.ProbeWriter.Flush()
+	p.probeWriter.Flush()
 }
 
 // PrintProbeFailure logs a failed probe attempt to the CSV file.
@@ -263,11 +263,11 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 		record = append(record, httpRecord(s)...)
 	}
 
-	if err := p.ProbeWriter.Write(record); err != nil {
+	if err := p.probeWriter.Write(record); err != nil {
 		p.PrintError("failed to write failure record: %v", err)
 	}
 
-	p.ProbeWriter.Flush()
+	p.probeWriter.Flush()
 }
 
 // PrintStatistics logs TCPing statistics to a CSV file.
@@ -382,15 +382,15 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	for _, record := range statistics {
-		if err := p.StatsWriter.Write(record); err != nil {
+		if err := p.statsWriter.Write(record); err != nil {
 			p.PrintError("failed to write statistics record: %v", err)
 			return
 		}
 	}
 
-	p.StatsWriter.Flush()
+	p.statsWriter.Flush()
 
-	fmt.Printf("\nStatistics have been saved to: %s\n", p.StatsFile.Name())
+	fmt.Printf("\nStatistics have been saved to: %s\n", p.statsFile.Name())
 }
 
 // PrintRetryingToResolve logs an attempt to resolve a hostname.
@@ -419,5 +419,5 @@ func (p *CSVPrinter) PrintError(format string, args ...any) {
 // caller, not the printer.
 func (p *CSVPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
-	p.Done()
+	p.done()
 }

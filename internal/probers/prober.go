@@ -16,8 +16,7 @@ type Prober struct {
 	pinger     Pinger
 	printer    printers.Printer
 	config     config.Config
-	Ticker     *time.Ticker
-	Statistics *stats.Statistics
+	statistics *stats.Statistics
 
 	// Asks for the statistics to be printed mid-run. Reading them here,
 	// between probes, is what keeps them from being read while a probe is
@@ -33,7 +32,7 @@ func NewProber(pinger Pinger, printer printers.Printer, cfg config.Config, stats
 		pinger:          pinger,
 		printer:         printer,
 		config:          cfg,
-		Statistics:      stats,
+		statistics:      stats,
 		summaryRequests: summaryRequests,
 	}
 
@@ -53,11 +52,11 @@ type Pinger interface {
 }
 
 func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
-	p.Ticker = time.NewTicker(p.config.IntervalBetweenProbes)
-	defer p.Ticker.Stop()
+	ticker := time.NewTicker(p.config.IntervalBetweenProbes)
+	defer ticker.Stop()
 
-	p.Statistics.StartTime = time.Now()
-	p.printer.PrintStart(p.Statistics)
+	p.statistics.StartTime = time.Now()
+	p.printer.PrintStart(p.statistics)
 
 	var probeCount uint
 
@@ -66,14 +65,14 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	// probe to run (ProbesBeforeQuit reached).
 	// we need this to avoid waiting n seconds for the first probe to run.
 	runProbe := func() (done bool) {
-		p.Statistics.ResolvedThisProbe = false
+		p.statistics.ResolvedThisProbe = false
 
 		// Resolve the hostname fresh before this probe when requested,
 		// so it always dials whatever the hostname currently points to
 		// (e.g. DNS round-robin or a frequently-changing record) rather
 		// than waiting for a failure streak to trigger a retry.
-		if p.config.ResolveEveryProbe && !p.Statistics.DestIsIP {
-			p.Statistics.RetriedHostnameLookups++
+		if p.config.ResolveEveryProbe && !p.statistics.DestIsIP {
+			p.statistics.RetriedHostnameLookups++
 			p.resolveHostname(true)
 		}
 
@@ -83,7 +82,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 		// startup), so a hostname-retry-resolve that changes it - possibly
 		// even to a different address family - actually takes effect on
 		// the next probe instead of being silently ignored.
-		probeResult, err := p.pinger.Ping(ctx, p.Statistics.IP)
+		probeResult, err := p.pinger.Ping(ctx, p.statistics.IP)
 		rtt := time.Since(pingTime)
 
 		// A probe that only failed because we cancelled it ourselves, when
@@ -96,22 +95,22 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 
 		if err != nil {
 			p.handleProbeFailure(pingTime, probeResult)
-			p.printer.PrintProbeFailure(p.Statistics)
+			p.printer.PrintProbeFailure(p.statistics)
 		} else {
 			p.handleProbeSuccess(pingTime, rtt, probeResult)
 
 			// The probe is still counted, we just do not report it.
 			if !p.config.ShowFailuresOnly {
-				p.printer.PrintProbeSuccess(p.Statistics)
+				p.printer.PrintProbeSuccess(p.statistics)
 			}
 		}
 
 		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&
-			p.Statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
+			p.statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
 
-			p.Statistics.RetriedHostnameLookups++
+			p.statistics.RetriedHostnameLookups++
 
-			p.printer.PrintRetryingToResolve(p.Statistics.Hostname)
+			p.printer.PrintRetryingToResolve(p.statistics.Hostname)
 
 			p.resolveHostname(false)
 		}
@@ -130,14 +129,14 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	// Probe immediately instead of waiting for the ticker's first tick.
 	if runProbe() {
 		p.finalizeStatistics()
-		return p.Statistics, nil
+		return p.statistics, nil
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			p.finalizeStatistics()
-			return p.Statistics, nil
+			return p.statistics, nil
 
 		case _, ok := <-p.summaryRequests:
 			if !ok {
@@ -147,12 +146,12 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 				continue
 			}
 
-			p.printer.PrintStatistics(p.Statistics)
+			p.printer.PrintStatistics(p.statistics)
 
-		case <-p.Ticker.C:
+		case <-ticker.C:
 			if runProbe() {
 				p.finalizeStatistics()
-				return p.Statistics, nil
+				return p.statistics, nil
 			}
 		}
 	}
@@ -166,7 +165,7 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 // PrintProbeFailure fold the duration into their own line instead of a
 // separate one. It reports whether the resolution succeeded.
 func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
-	s := p.Statistics
+	s := p.statistics
 
 	start := time.Now()
 	newIP, err := p.config.Resolver.ResolveHostname(s.Hostname)
@@ -196,7 +195,7 @@ func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
 }
 
 func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult) {
-	s := p.Statistics
+	s := p.statistics
 
 	// A 4xx or 5xx is a failed probe that still came with a response, so
 	// keep it around for the printers. It is zero when nothing answered.
@@ -239,7 +238,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult)
 }
 
 func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult ProbeResult) {
-	s := p.Statistics
+	s := p.statistics
 
 	rttMs := stats.DurationToMilliseconds(rtt)
 
@@ -280,18 +279,18 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 }
 
 func (p *Prober) finalizeStatistics() {
-	p.Statistics.EndTime = time.Now()
+	p.statistics.EndTime = time.Now()
 
-	if p.Statistics.LastProbeHadFailed {
-		downDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfDowntime)
-		p.Statistics.TotalDowntime += downDuration
-		stats.SetLongestDuration(p.Statistics.StartOfDowntime, downDuration, &p.Statistics.LongestDowntime)
+	if p.statistics.LastProbeHadFailed {
+		downDuration := p.statistics.EndTime.Sub(p.statistics.StartOfDowntime)
+		p.statistics.TotalDowntime += downDuration
+		stats.SetLongestDuration(p.statistics.StartOfDowntime, downDuration, &p.statistics.LongestDowntime)
 		return
 	}
 
-	if !p.Statistics.StartOfUptime.IsZero() {
-		upDuration := p.Statistics.EndTime.Sub(p.Statistics.StartOfUptime)
-		p.Statistics.TotalUptime += upDuration
-		stats.SetLongestDuration(p.Statistics.StartOfUptime, upDuration, &p.Statistics.LongestUptime)
+	if !p.statistics.StartOfUptime.IsZero() {
+		upDuration := p.statistics.EndTime.Sub(p.statistics.StartOfUptime)
+		p.statistics.TotalUptime += upDuration
+		stats.SetLongestDuration(p.statistics.StartOfUptime, upDuration, &p.statistics.LongestUptime)
 	}
 }

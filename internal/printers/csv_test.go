@@ -76,16 +76,16 @@ func TestNewCSVPrinter_CreatesFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
-	defer p.Done()
+	defer p.done()
 
 	// Verify Probe File
-	if _, err := os.Stat(p.ProbeFile.Name()); os.IsNotExist(err) {
-		t.Errorf("Expected probe file to be created at %s, but it was not", p.ProbeFile.Name())
+	if _, err := os.Stat(p.probeFile.Name()); os.IsNotExist(err) {
+		t.Errorf("Expected probe file to be created at %s, but it was not", p.probeFile.Name())
 	}
 
 	// Verify Stats File
-	if _, err := os.Stat(p.StatsFile.Name()); os.IsNotExist(err) {
-		t.Errorf("Expected stats file to be created at %s, but it was not", p.StatsFile.Name())
+	if _, err := os.Stat(p.statsFile.Name()); os.IsNotExist(err) {
+		t.Errorf("Expected stats file to be created at %s, but it was not", p.statsFile.Name())
 	}
 }
 
@@ -97,7 +97,7 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
-	defer p.Done()
+	defer p.done()
 
 	// Dummy stats object for testing
 	dummyStats := &stats.Statistics{
@@ -108,10 +108,10 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 	}
 
 	p.PrintStart(dummyStats)
-	p.Done() // Close and flush so we can read
+	p.done() // Close and flush so we can read
 
 	// Verify Probe CSV Headers
-	probeFile, err := os.Open(p.ProbeFile.Name())
+	probeFile, err := os.Open(p.probeFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to open probe file: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 	}
 
 	// Verify Stats CSV Headers
-	statsFile, err := os.Open(p.StatsFile.Name())
+	statsFile, err := os.Open(p.statsFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to open stats file: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
-	defer p.Done()
+	defer p.done()
 
 	dummyStats := &stats.Statistics{
 		Hostname: "example.com",
@@ -165,10 +165,10 @@ func TestCSVPrinter_ProbeRecords(t *testing.T) {
 	// Write one success and one failure
 	p.PrintProbeSuccess(dummyStats)
 	p.PrintProbeFailure(dummyStats)
-	p.Done()
+	p.done()
 
 	// Read back the records
-	probeFile, err := os.Open(p.ProbeFile.Name())
+	probeFile, err := os.Open(p.probeFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to open probe file: %v", err)
 	}
@@ -203,7 +203,7 @@ func TestCSVPrinter_FailureRowKeepsSourceAddressColumn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCSVPrinter failed: %v", err)
 	}
-	defer p.Done()
+	defer p.done()
 
 	s := &stats.Statistics{
 		Hostname:                  "example.com",
@@ -214,9 +214,9 @@ func TestCSVPrinter_FailureRowKeepsSourceAddressColumn(t *testing.T) {
 
 	p.PrintStart(s)
 	p.PrintProbeFailure(s)
-	p.Done()
+	p.done()
 
-	probeFile, err := os.Open(p.ProbeFile.Name())
+	probeFile, err := os.Open(p.probeFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to open probe file: %v", err)
 	}
