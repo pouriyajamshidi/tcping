@@ -929,3 +929,55 @@ func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
 		t.Errorf("PrintProbeFailure called %d times, want 2", got)
 	}
 }
+
+// resolveHostname must record how long the lookup took, both on Statistics
+// and on the HostnameChange entry it appends when the address changes.
+func TestResolveHostname_RecordsDuration(t *testing.T) {
+	cfg := config.Config{
+		// A literal IP resolves without touching the network.
+		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, _ := newTestProber(nil, cfg)
+	p.Statistics.Hostname = "127.0.0.1"
+
+	if !p.resolveHostname(false) {
+		t.Fatal("resolveHostname() = false, want true")
+	}
+
+	s := p.Statistics
+	if s.NameResolutionDuration < 0 {
+		t.Errorf("NameResolutionDuration = %v, want >= 0", s.NameResolutionDuration)
+	}
+	if len(s.HostnameChanges) != 1 {
+		t.Fatalf("len(HostnameChanges) = %d, want 1", len(s.HostnameChanges))
+	}
+	if s.HostnameChanges[0].Duration != s.NameResolutionDuration {
+		t.Errorf("HostnameChanges[0].Duration = %v, want %v (same resolution)",
+			s.HostnameChanges[0].Duration, s.NameResolutionDuration)
+	}
+}
+
+// A resolution that does not change the address must still update
+// NameResolutionDuration, without appending a redundant HostnameChange.
+func TestResolveHostname_SameAddressUpdatesDurationOnly(t *testing.T) {
+	cfg := config.Config{
+		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+	}
+	p, _ := newTestProber(nil, cfg)
+	p.Statistics.Hostname = "127.0.0.1"
+	p.Statistics.HostnameChanges = []stats.HostnameChange{
+		{Addr: netip.MustParseAddr("127.0.0.1")},
+	}
+
+	if !p.resolveHostname(false) {
+		t.Fatal("resolveHostname() = false, want true")
+	}
+
+	s := p.Statistics
+	if len(s.HostnameChanges) != 1 {
+		t.Errorf("len(HostnameChanges) = %d, want 1 (no new entry for an unchanged address)", len(s.HostnameChanges))
+	}
+	if s.NameResolutionDuration < 0 {
+		t.Errorf("NameResolutionDuration = %v, want >= 0", s.NameResolutionDuration)
+	}
+}
