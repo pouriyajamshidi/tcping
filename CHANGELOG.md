@@ -25,6 +25,7 @@
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
 - fix: fix incorrect timestamp handling in the JSON printer
+- feat: add HTTP(S) probing by giving a URL as the target, e.g. `tcping https://example.com/health`, with `-v` to show the HTTP and TLS details of every probe and `--skip-tls` to skip certificate verification
 - feat: CSV output filenames now get a date/time suffix by default; add `--csv-no-timestamp` to reuse the same file across runs instead
 - feat: add `--resolve-every-probe` flag to resolve the target's hostname before every probe instead of only at startup or on retry (`-r`)
 - feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
