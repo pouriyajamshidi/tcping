@@ -135,6 +135,7 @@ type Config struct {
 	ShouldRetryResolve         bool
 	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
 	ShowFailuresOnly           bool
+	Verbose                    bool // Show everything an HTTP(S) probe learned, not just the status.
 	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
 	Resolver                   *dns.Resolver
 }
@@ -215,6 +216,10 @@ func (c Config) GetWithSourceAddress() bool {
 	return c.PrinterConfig.WithSourceAddress
 }
 
+func (c Config) GetVerbose() bool {
+	return c.Verbose
+}
+
 // ProcessUserInput gets and validate user input
 func ProcessUserInput() Config {
 	useIPv4 := flag.Bool("4", false, "Only use IPv4 to initiate probes.")
@@ -286,6 +291,13 @@ func ProcessUserInput() Config {
 		"show-failures-only",
 		false,
 		"Show only the failed probes.")
+
+	verbose := flag.Bool(
+		"verbose",
+		false,
+		`Show all the details an HTTP(S) probe collects: the HTTP version,
+		the TLS version and cipher, the certificate expiry and the
+		connect/TLS/first-byte timings. No effect on TCP targets.`)
 
 	skipTLSVerify := flag.Bool(
 		"skip-tls",
@@ -453,6 +465,7 @@ func ProcessUserInput() Config {
 		NameResolutionDuration:     nameResolutionDuration,
 		IntervalBetweenProbes:      intervalBetweenProbesDuration,
 		ShowFailuresOnly:           *showFailuresOnly,
+		Verbose:                    *verbose,
 		SkipTLSVerify:              *skipTLSVerify,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
