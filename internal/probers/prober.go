@@ -158,22 +158,39 @@ func (p *Prober) Probe(ctx context.Context) (*stats.Statistics, error) {
 	}
 }
 
-// resolveHostname retries resolving the target's hostname, printing the
-// resulting duration on success or the error on failure. When
+// resolveHostname resolves the target's hostname again, recording how long
+// it took and appending a HostnameChange when the address actually changed.
+// It prints the resulting duration on success or the error on failure. When
 // markResolvedThisProbe is true and resolution succeeds, it sets
 // Statistics.ResolvedThisProbe before printing, so PrintProbeSuccess/
 // PrintProbeFailure fold the duration into their own line instead of a
 // separate one. It reports whether the resolution succeeded.
 func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
-	if err := p.config.Resolver.RetryResolveHostname(p.Statistics); err != nil {
+	s := p.Statistics
+
+	start := time.Now()
+	newIP, err := p.config.Resolver.ResolveHostname(s.Hostname)
+	duration := time.Since(start)
+	if err != nil {
 		p.printer.PrintError("%s", err.Error())
 		return false
 	}
 
-	if markResolvedThisProbe {
-		p.Statistics.ResolvedThisProbe = true
+	s.IP = newIP
+	s.NameResolutionDuration = duration
+
+	if len(s.HostnameChanges) == 0 || s.HostnameChanges[len(s.HostnameChanges)-1].Addr != newIP {
+		s.HostnameChanges = append(s.HostnameChanges, stats.HostnameChange{
+			Addr:     newIP,
+			When:     time.Now(),
+			Duration: duration,
+		})
 	}
-	p.printer.PrintNameResolutionDuration(p.Statistics)
+
+	if markResolvedThisProbe {
+		s.ResolvedThisProbe = true
+	}
+	p.printer.PrintNameResolutionDuration(s)
 
 	return true
 }
