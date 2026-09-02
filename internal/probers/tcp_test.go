@@ -21,7 +21,10 @@ import (
 func testServerListen(t *testing.T) net.Listener {
 	srv, err := net.Listen("tcp", ":12345")
 	if err != nil {
-		t.Errorf("test server: %v", err)
+		// Fatal, not an error: carrying on would hand back a nil
+		// listener and the accept loop below would panic instead of
+		// saying what actually went wrong.
+		t.Fatalf("test server: %v", err)
 	}
 
 	go func() {
