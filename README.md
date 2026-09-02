@@ -42,6 +42,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 - [TCPING](#tcping)
   - [Table of Contents](#table-of-contents)
+  - [Demos](#demos)
+    - [Basic usage](#basic-usage)
+    - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
+    - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
+    - [Hostname resolution timing (`--resolve-every-probe`) flag](#hostname-resolution-timing---resolve-every-probe-flag)
+    - [Source interface (`-I`) flag](#source-interface--i-flag)
   - [Download and Installation](#download-and-installation)
     - [Windows](#windows)
     - [macOS](#macos)
@@ -50,16 +56,66 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [Alternative Ways](#alternative-ways)
   - [Usage](#usage)
   - [Flags](#flags)
-  - [Demos](#demos)
-    - [Basic usage](#basic-usage)
-    - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
-    - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
-    - [Hostname resolution timing (`--resolve-every-probe`) flag](#hostname-resolution-timing---resolve-every-probe-flag)
-    - [Source interface (`-I`) flag](#source-interface--i-flag)
   - [Contributing](#contributing)
   - [Feature Requests and Issues](#feature-requests-and-issues)
   - [Help The Project](#help-the-project)
   - [License](#license)
+
+---
+
+
+## Demos
+
+<details>
+<summary>Click to expand</summary>
+
+### Basic usage
+
+![tcping](docs/Images/gifs/tcping.gif)
+
+---
+
+### Retry hostname lookup (`-r`) flag
+
+![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+
+---
+
+### JSON output (`-j --pretty`) flag
+
+![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+
+---
+
+### Hostname resolution timing (`--resolve-every-probe`) flag
+
+![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+
+---
+
+### Source interface (`-I`) flag
+
+![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+
+---
+
+### HTTP(S) probes
+
+![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+
+---
+
+### HTTP(S) probe details (`-v`) flag
+
+![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+
+---
+
+### Skipping certificate verification (`--skip-tls`) flag
+
+![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+
+</details>
 
 ---
 
@@ -349,61 +405,6 @@ The following flags are available to control the behavior of **tcping**:
 
 > [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
-
----
-
-## Demos
-
-<details>
-<summary>Click to expand</summary>
-
-### Basic usage
-
-![tcping](docs/Images/gifs/tcping.gif)
-
----
-
-### Retry hostname lookup (`-r`) flag
-
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
-
----
-
-### JSON output (`-j --pretty`) flag
-
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
-
----
-
-### Hostname resolution timing (`--resolve-every-probe`) flag
-
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
-
----
-
-### Source interface (`-I`) flag
-
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
-
----
-
-### HTTP(S) probes
-
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
-
----
-
-### HTTP(S) probe details (`-v`) flag
-
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
-
----
-
-### Skipping certificate verification (`--skip-tls`) flag
-
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
-
-</details>
 
 ---
 
