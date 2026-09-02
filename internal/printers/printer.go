@@ -3,30 +3,9 @@ package printers
 import (
 	"fmt"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
-
-// PrinterConfig holds all configuration options for Printer creation
-type PrinterConfig struct {
-	OutputJSON        bool
-	PrettyJSON        bool
-	NoColor           bool
-	WithTimestamp     bool
-	WithSourceAddress bool
-	OutputDBPath      string
-	OutputCSVPath     string
-	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
-	Target            string
-	Port              uint16
-}
-
-func (p PrinterConfig) GetWithTimestamp() bool {
-	return p.WithTimestamp
-}
-
-func (p PrinterConfig) GetWithSourceAddress() bool {
-	return p.WithSourceAddress
-}
 
 // Printer defines a set of methods that any printer implementation must provide.
 // Printers are responsible for outputting information, but should not modify data or perform calculations.
@@ -111,7 +90,7 @@ func httpProbeDetails(s *stats.Statistics) string {
 }
 
 // NewPrinter creates and returns an appropriate printer based on configuration
-func NewPrinter(cfg PrinterConfig) (Printer, error) {
+func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
 	switch {
 	case cfg.OutputJSON:
 		return NewJSONPrinter(cfg.PrettyJSON), nil
