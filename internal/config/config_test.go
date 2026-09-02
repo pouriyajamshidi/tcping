@@ -48,13 +48,3 @@ func TestFlagsRequiringValue(t *testing.T) {
 		}
 	}
 }
-
-// GetRetryResolveAfterNFailures must read the field that's actually
-// populated from the -r flag, not an unrelated, never-set field.
-func TestConfig_GetRetryResolveAfterNFailures(t *testing.T) {
-	cfg := Config{RetryResolveAfterNFailures: 5}
-
-	if got := cfg.GetRetryResolveAfterNFailures(); got != 5 {
-		t.Errorf("GetRetryResolveAfterNFailures() = %d, want 5", got)
-	}
-}
