@@ -2,10 +2,7 @@ package probers
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"net/netip"
-	"strconv"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
@@ -28,23 +25,12 @@ func NewTcping(cfg config.Config) Tcping {
 	}
 }
 
-func address(ip netip.Addr, port uint16) string {
-	return net.JoinHostPort(ip.String(), strconv.Itoa(int(port)))
-}
-
-// Ping dials ip:port. When a network interface is configured (-I), the
-// connection is sourced from it, matching ip's address family - if the
-// interface has no address of that family, the probe fails cleanly rather
-// than silently dialing out from an unrelated, unrequested interface.
+// Ping dials ip:port, sourcing the connection from the configured network
+// interface when there is one.
 func (t Tcping) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
-	d := net.Dialer{Timeout: t.timeout}
-
-	if t.networkInterface.Use {
-		localIP := t.networkInterface.LocalIPFor(ip)
-		if localIP == nil {
-			return ProbeResult{}, fmt.Errorf("network interface has no source address to reach %s", ip)
-		}
-		d.LocalAddr = &net.TCPAddr{IP: localIP}
+	d, err := dialer(t.networkInterface, t.timeout, ip)
+	if err != nil {
+		return ProbeResult{}, err
 	}
 
 	conn, err := d.DialContext(ctx, tcp, address(ip, t.port))

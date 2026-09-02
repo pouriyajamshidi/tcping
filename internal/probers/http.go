@@ -60,19 +60,12 @@ func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 	}
 }
 
-// Ping sends one GET to the target URL. When a network interface is
-// configured (-I), the connection is sourced from it, matching ip's address
-// family. If the interface has no address of that family, the probe fails
-// right away instead of going out of some other interface.
+// Ping sends one GET to the target URL, sourcing the connection from the
+// configured network interface when there is one.
 func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
-	d := net.Dialer{Timeout: h.timeout}
-
-	if h.networkInterface.Use {
-		localIP := h.networkInterface.LocalIPFor(ip)
-		if localIP == nil {
-			return ProbeResult{}, fmt.Errorf("network interface has no source address to reach %s", ip)
-		}
-		d.LocalAddr = &net.TCPAddr{IP: localIP}
+	d, err := dialer(h.networkInterface, h.timeout, ip)
+	if err != nil {
+		return ProbeResult{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.url, nil)

@@ -3,14 +3,43 @@ package probers
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/netip"
+	"strconv"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
+	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
+
+// address is the "ip:port" a probe dials.
+func address(ip netip.Addr, port uint16) string {
+	return net.JoinHostPort(ip.String(), strconv.Itoa(int(port)))
+}
+
+// dialer builds the net.Dialer for one probe. When a network interface is
+// configured (-I), the connection is sourced from it, matching ip's address
+// family. If the interface has no address of that family the probe fails
+// here, so it does not dial out of some other interface.
+func dialer(networkInterface nic.NetworkInterface, timeout time.Duration, ip netip.Addr) (net.Dialer, error) {
+	d := net.Dialer{Timeout: timeout}
+
+	if !networkInterface.Use {
+		return d, nil
+	}
+
+	localIP := networkInterface.LocalIPFor(ip)
+	if localIP == nil {
+		return net.Dialer{}, fmt.Errorf("network interface has no source address to reach %s", ip)
+	}
+
+	d.LocalAddr = &net.TCPAddr{IP: localIP}
+
+	return d, nil
+}
 
 type Prober struct {
 	pinger     Pinger
