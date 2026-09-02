@@ -144,6 +144,9 @@ func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
 	case cfg.AlloyURL != "":
 		return NewAlloyPrinter(cfg), nil
 
+	case cfg.InfluxDBURL != "":
+		return NewInfluxDBPrinter(cfg)
+
 	case cfg.NoColor:
 		return NewPlainPrinter(cfg), nil
 

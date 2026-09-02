@@ -51,6 +51,26 @@ func TestNewPrinter(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "InfluxDB Printer Initialization",
+			cfg: config.PrinterConfig{
+				InfluxDBURL:    "http://localhost:8086",
+				InfluxDBOrg:    "home",
+				InfluxDBBucket: "tcping",
+				InfluxDBToken:  "secret",
+			},
+			wantErr: false,
+		},
+		{
+			name: "InfluxDB Printer Without A Token",
+			cfg: config.PrinterConfig{
+				InfluxDBURL:    "http://localhost:8086",
+				InfluxDBOrg:    "home",
+				InfluxDBBucket: "tcping",
+			},
+			wantErr:     true,
+			expectedErr: "InfluxDB needs an API token, put it in the INFLUXDB_TOKEN environment variable",
+		},
+		{
 			name: "Plain Printer Initialization",
 			cfg: config.PrinterConfig{
 				NoColor: true,

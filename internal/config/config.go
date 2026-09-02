@@ -126,6 +126,12 @@ type PrinterConfig struct {
 	CSVNoTimestamp     bool          // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
 	Target             string
 	Port               uint16
+
+	InfluxDBURL           string        // Address of an InfluxDB server. Empty unless -influxdb was given.
+	InfluxDBOrg           string        // InfluxDB organization to write to.
+	InfluxDBBucket        string        // InfluxDB bucket to write to.
+	InfluxDBToken         string        // InfluxDB API token, taken from the INFLUXDB_TOKEN environment variable.
+	InfluxDBStatsInterval time.Duration // How often the run summary is written to InfluxDB.
 }
 
 // Config holds all user provided settings
@@ -283,6 +289,30 @@ func ProcessUserInput() Config {
 		They are sent along with the next probe, so a longer probe interval
 		delays them. No effect without the -alloy flag.`)
 
+	influxDBURL := flag.String(
+		"influxdb",
+		"",
+		`Send the results to an InfluxDB v2 or v3 server as metrics instead
+		of printing them, e.g. http://localhost:8086
+		The API token is read from the INFLUXDB_TOKEN environment variable.`)
+
+	influxDBOrg := flag.String(
+		"influxdb-org",
+		"",
+		`InfluxDB organization to write to. Required with the -influxdb flag.`)
+
+	influxDBBucket := flag.String(
+		"influxdb-bucket",
+		"",
+		`InfluxDB bucket to write to. Required with the -influxdb flag.`)
+
+	influxDBStatsInterval := flag.Float64(
+		"influxdb-stats-interval",
+		10,
+		`How often to write the statistics to InfluxDB, in seconds.
+		They are written along with the next probe, so a longer probe
+		interval delays them. No effect without the -influxdb flag.`)
+
 	DBPath := flag.String(
 		"db",
 		"",
@@ -351,6 +381,12 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
+	influxDBStatsIntervalDuration := SecondsToDuration(*influxDBStatsInterval)
+	if *influxDBURL != "" && influxDBStatsIntervalDuration <= 0 {
+		fmt.Fprintln(os.Stderr, "InfluxDB statistics interval should be more than 0 seconds")
+		os.Exit(1)
+	}
+
 	// Resolved before the DNS resolver so hostname lookups can also be
 	// bound to it (see createDNSResolver).
 	var networkInterface nic.NetworkInterface
@@ -410,6 +446,14 @@ func ProcessUserInput() Config {
 		CSVNoTimestamp:     *csvNoTimestamp,
 		AlloyURL:           *alloyURL,
 		AlloyStatsInterval: alloyStatsIntervalDuration,
+
+		InfluxDBURL:    *influxDBURL,
+		InfluxDBOrg:    *influxDBOrg,
+		InfluxDBBucket: *influxDBBucket,
+		// The token is kept out of the flags so it never ends up in the
+		// shell history.
+		InfluxDBToken:         os.Getenv("INFLUXDB_TOKEN"),
+		InfluxDBStatsInterval: influxDBStatsIntervalDuration,
 	}
 
 	protocol := target.protocol
