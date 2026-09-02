@@ -21,6 +21,7 @@
 - refactor (breaking): rewrite the JSON output events - each event now carries a minimal, consistent payload (`start`, `probe`, `retry`, `downtimeDuration`, `uptimeDuration`, `nameResolution`, `statistics`, `error`) instead of one large struct with inconsistent field names; the `info` event type is removed
 - refactor (breaking): rewrite the sqlite3 schema - drop the generic `type` column and rename `success` to `reachable` and `time` to `latency`
 - refactor (breaking): rename the CSV `Status` column to `Reachable` (values are now lowercase `true`/`false` instead of `Reply`/`No Reply`) and the stats file's `Metric` column to `Statistic`
+- refactor (breaking): `-v` now turns on verbose output for HTTP(S) probes; the version is printed with `--version` instead
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
 - fix: fix incorrect timestamp handling in the JSON printer

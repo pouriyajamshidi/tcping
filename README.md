@@ -308,7 +308,8 @@ The following flags are available to control the behavior of **tcping**:
 | `-j`                     | Output in `JSON` format                                                                                                   |
 | `--pretty`               | Prettify the `JSON` output                                                                                                |
 | `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
-| `-v`                     | Print version                                                                                                             |
+| `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. No effect on TCP targets |
+| `--version`              | Print version                                                                                                             |
 | `-u`                     | Check for updates                                                                                                         |
 | `--show-failures-only`   | Only show probe failures and omit printing probe success messages                                                         |
 | `--show-source-address`  | Show the source IP address and port used for probes                                                                       |
