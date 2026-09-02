@@ -6,30 +6,9 @@ import (
 	"net/netip"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
-	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
-
-type Config interface {
-	GetHostname() string
-	GetIP() netip.Addr
-	GetPort() uint16
-	GetProtocol() consts.Protocol
-	GetUseIPv4() bool
-	GetUseIPv6() bool
-	GetTimeout() string
-	GetProbesBeforeQuit() uint
-	GetTargetIsIP() bool
-	GetIntervalBetweenProbes() string
-	GetShowFailuresOnly() bool
-	GetShouldRetryResolve() bool
-	GetRetryResolveAfterNFailures() uint
-	GetNetworkInterface() nic.NetworkInterface
-	GetWithTimestamp() bool
-	GetWithSourceAddress() bool
-	GetVerbose() bool
-	GetNameResolutionDuration() time.Duration
-}
 
 // HTTPInfo is what the most recent HTTP(S) probe learned about the response.
 // Every field stays zero for TCP probes.
@@ -81,31 +60,29 @@ type Statistics struct {
 	Verbose                   bool          // Show everything an HTTP(S) probe learned, not just the status.
 }
 
-func NewStatistics(cfg Config) *Statistics {
+func NewStatistics(cfg config.Config) *Statistics {
 	var localAddr net.Addr
-	if networkInterface := cfg.GetNetworkInterface(); networkInterface.Use {
-		if localIP := networkInterface.LocalIPFor(cfg.GetIP()); localIP != nil {
+	if cfg.NetworkInterface.Use {
+		if localIP := cfg.NetworkInterface.LocalIPFor(cfg.IP); localIP != nil {
 			localAddr = &net.TCPAddr{IP: localIP}
 		}
 	}
 
 	return &Statistics{
-		Hostname:               cfg.GetHostname(),
-		IP:                     cfg.GetIP(),
-		Port:                   cfg.GetPort(),
-		DestIsIP:               cfg.GetTargetIsIP(),
+		Hostname:               cfg.Hostname,
+		IP:                     cfg.IP,
+		Port:                   cfg.Port,
+		DestIsIP:               cfg.TargetIsIP,
 		LocalAddr:              localAddr,
-		WithTimestamp:          cfg.GetWithTimestamp(),
-		WithSourceAddress:      cfg.GetWithSourceAddress(),
-		Verbose:                cfg.GetVerbose(),
-		Protocol:               cfg.GetProtocol(),
-		LongestUptime:          LongestTime{},
-		LongestDowntime:        LongestTime{},
-		NameResolutionDuration: cfg.GetNameResolutionDuration(),
+		WithTimestamp:          cfg.PrinterConfig.WithTimestamp,
+		WithSourceAddress:      cfg.PrinterConfig.WithSourceAddress,
+		Verbose:                cfg.Verbose,
+		Protocol:               cfg.Protocol,
+		NameResolutionDuration: cfg.NameResolutionDuration,
 		HostnameChanges: []HostnameChange{{
-			Addr:     cfg.GetIP(),
+			Addr:     cfg.IP,
 			When:     time.Now(),
-			Duration: cfg.GetNameResolutionDuration(),
+			Duration: cfg.NameResolutionDuration,
 		}},
 	}
 }
