@@ -262,6 +262,37 @@ tcping www.example.com 443 -j --pretty
 tcping www.example.com 443 --no-color
 ```
 
+9. Probe a UDP port:
+
+```bash
+tcping udp://127.0.0.1 53
+```
+
+UDP has no handshake, so a probe only succeeds when the other end answers it.
+To get an answer, run tcping as a UDP server on the other end, which echoes
+every datagram back to its sender:
+
+```bash
+# on the machine being probed:
+tcping --udp-server 127.0.0.1 9999
+# on the machine probing it:
+tcping udp://127.0.0.1 9999
+```
+
+> [!NOTE]
+> A UDP probe that is refused reports `port unreachable`, which means
+> something is blocking us. A probe that gets no answer at all is reported as
+> a failure too, but it cannot tell an open port that stays quiet from a
+> packet that was dropped on the way.
+
+Every UDP probe sends its own number as the payload, which the server echoes
+back. Adding `-v` shows that number on each line, so a lost probe can be named:
+
+```text
+Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
+    reply echoed back probe 4
+```
+
 > [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
 
@@ -309,7 +340,8 @@ The following flags are available to control the behavior of **tcping**:
 | `--pretty`               | Prettify the `JSON` output                                                                                                |
 | `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
 | `--skip-tls`             | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
-| `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. No effect on TCP targets |
+| `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. For a UDP target, shows whether the reply carried our own payload back. No effect on TCP targets |
+| `--udp-server`           | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 | `--version`              | Print version                                                                                                             |
 | `-u`                     | Check for updates                                                                                                         |
 | `--show-failures-only`   | Only show probe failures and omit printing probe success messages                                                         |
