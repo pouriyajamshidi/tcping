@@ -353,6 +353,24 @@ The following flags are available to control the behavior of **tcping**:
 
 ![tcping interface example](docs/Images/gifs/tcping_interface.gif)
 
+---
+
+### HTTP(S) probes
+
+![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+
+---
+
+### HTTP(S) probe details (`-v`) flag
+
+![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+
+---
+
+### Skipping certificate verification (`--skip-tls`) flag
+
+![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+
 </details>
 
 ---
