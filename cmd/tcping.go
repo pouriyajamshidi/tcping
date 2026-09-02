@@ -56,8 +56,6 @@ func main() {
 	switch cfg.Protocol {
 	case consts.HTTP, consts.HTTPS:
 		pinger = probers.NewHTTPing(cfg)
-	case consts.TCP:
-		pinger = probers.NewTcping(cfg)
 	default:
 		pinger = probers.NewTcping(cfg)
 	}
