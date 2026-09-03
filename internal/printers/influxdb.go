@@ -101,13 +101,16 @@ func NewInfluxDBPrinter(cfg config.PrinterConfig) (*InfluxDBPrinter, error) {
 }
 
 // tags are put on every line, which is what makes them the columns you can
-// group and filter by on the other end. The IP can change mid-run when the
-// hostname is resolved again, so they are built fresh every time.
+// group and filter by on the other end.
+//
+// The resolved IP is not one of them. Tags are what identify a series, so a
+// hostname that resolves to a different address mid-run would start a new
+// series and leave the old one behind. It is written as a field instead, so
+// it is still on every point without splitting anything.
 func (p *InfluxDBPrinter) tags(s *stats.Statistics) string {
-	return fmt.Sprintf("source=%s,target=%s,ip=%s,port=%s,protocol=%s",
+	return fmt.Sprintf("source=%s,target=%s,port=%s,protocol=%s",
 		influxDBEscaper.Replace(p.source),
 		influxDBEscaper.Replace(s.Hostname),
-		influxDBEscaper.Replace(s.IPStr()),
 		s.PortStr(),
 		influxDBEscaper.Replace(s.ProtocolStr()),
 	)
@@ -232,8 +235,9 @@ func (p *InfluxDBPrinter) probeLine(s *stats.Statistics, succeeded bool) string 
 		up = 1
 	}
 
-	fields := fmt.Sprintf("success=%di,successful_probes=%di,unsuccessful_probes=%di",
-		up, s.TotalSuccessfulProbes, s.TotalUnsuccessfulProbes)
+	// A string field has to be quoted, unlike every other field we write.
+	fields := fmt.Sprintf("success=%di,successful_probes=%di,unsuccessful_probes=%di,ip=%q",
+		up, s.TotalSuccessfulProbes, s.TotalUnsuccessfulProbes, s.IPStr())
 
 	// A failed probe has no round trip time to report.
 	if succeeded {

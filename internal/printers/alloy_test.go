@@ -284,3 +284,53 @@ func TestAlloySourceLabelIsOnEveryDataPoint(t *testing.T) {
 		}
 	}
 }
+
+// The resolved IP has to stay off the probe metrics. As a label it would
+// identify the series, so a hostname that resolves somewhere else mid-run
+// would leave the old series behind and start a new one. It gets a metric
+// of its own instead.
+func TestAlloyResolvedIPHasItsOwnMetric(t *testing.T) {
+	var got otlpPayload
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer := NewAlloyPrinter(config.PrinterConfig{AlloyURL: server.URL, SourceLabel: "probe-1"})
+	printer.PrintProbeSuccess(alloyTestStats())
+
+	var address *otlpMetric
+
+	for i, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+		points := []otlpPoint{}
+		if m.Gauge != nil {
+			points = m.Gauge.DataPoints
+		}
+		if m.Sum != nil {
+			points = m.Sum.DataPoints
+		}
+
+		for _, point := range points {
+			for _, a := range point.Attributes {
+				if a.Key == "ip" && m.Name != "tcping_target_address" {
+					t.Errorf("%s carries the IP as a label", m.Name)
+				}
+			}
+		}
+
+		if m.Name == "tcping_target_address" {
+			address = &got.ResourceMetrics[0].ScopeMetrics[0].Metrics[i]
+		}
+	}
+
+	if address == nil {
+		t.Fatal("no tcping_target_address metric was sent")
+	}
+
+	if address.Gauge.DataPoints[0].Value != 1 {
+		t.Errorf("tcping_target_address = %v, want 1", address.Gauge.DataPoints[0].Value)
+	}
+}

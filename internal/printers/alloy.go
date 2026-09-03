@@ -151,11 +151,15 @@ func NewAlloyPrinter(cfg config.PrinterConfig) *AlloyPrinter {
 // a data point attribute rather than a resource attribute, because Alloy's
 // Prometheus exporter puts resource attributes on a separate target_info
 // metric instead of on the series itself.
+//
+// The resolved IP is deliberately not here. It is part of what identifies a
+// series, so a hostname that resolves to a different address mid-run would
+// start a new series and leave the old one behind. It is sent on its own as
+// tcping_target_address instead.
 func (p *AlloyPrinter) labels(s *stats.Statistics, extra ...otlpAttr) []otlpAttr {
 	labels := []otlpAttr{
 		attr("source", p.cfg.SourceLabel),
 		attr("target", s.Hostname),
-		attr("ip", s.IPStr()),
 		attr("port", s.PortStr()),
 		attr("protocol", s.ProtocolStr()),
 	}
@@ -303,6 +307,9 @@ func oneIf(b bool) float64 {
 func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpMetric {
 	metrics := []otlpMetric{
 		p.gauge("tcping_probe_success", "", oneIf(succeeded), p.labels(s)),
+		// Always 1. The value means nothing, the labels are the point: this
+		// is where you look up which address the target resolved to.
+		p.gauge("tcping_target_address", "", 1, p.labels(s, attr("ip", s.IPStr()))),
 		p.counter("tcping_probes_total", "",
 			otlpPoint{
 				Value:      float64(s.TotalSuccessfulProbes),

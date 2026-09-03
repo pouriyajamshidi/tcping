@@ -120,8 +120,8 @@ func TestInfluxDBPrintProbeSuccess(t *testing.T) {
 
 	probe := writes[0][0]
 
-	want := "tcping_tcp,source=probe-1,target=example.com,ip=93.184.216.34,port=443,protocol=TCP " +
-		"success=1i,successful_probes=2i,unsuccessful_probes=0i,rtt_ms=3.5 "
+	want := "tcping_tcp,source=probe-1,target=example.com,port=443,protocol=TCP " +
+		`success=1i,successful_probes=2i,unsuccessful_probes=0i,ip="93.184.216.34",rtt_ms=3.5 `
 
 	if !strings.HasPrefix(probe, want) {
 		t.Errorf("probe line = %q, want it to start with %q", probe, want)
@@ -352,4 +352,36 @@ func TestInfluxDBPrintStartShowsTheIP(t *testing.T) {
 			t.Errorf("output = %q, want %q", out, want)
 		}
 	})
+}
+
+// The resolved IP has to stay a field. As a tag it would identify the
+// series, so a hostname that resolves somewhere else mid-run would leave
+// the old series behind and start a new one.
+func TestInfluxDBResolvedIPDoesNotSplitTheSeries(t *testing.T) {
+	var writes [][]string
+
+	server := influxDBServer(t, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s := influxDBTestStats()
+	printer.PrintProbeSuccess(s)
+
+	s.IP = netip.MustParseAddr("93.184.216.35")
+	printer.PrintProbeSuccess(s)
+
+	first := strings.Split(writes[0][0], " ")[0]
+	second := strings.Split(writes[1][0], " ")[0]
+
+	if first != second {
+		t.Errorf("the address change moved the point to another series:\n%s\n%s", first, second)
+	}
+
+	if !strings.Contains(writes[1][0], `ip="93.184.216.35"`) {
+		t.Errorf("the new address was not written: %q", writes[1][0])
+	}
 }
