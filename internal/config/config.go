@@ -113,20 +113,22 @@ func permuteArgs(args []string) {
 
 // PrinterConfig holds all configuration options for Printer creation
 type PrinterConfig struct {
-	OutputJSON         bool
-	PrettyJSON         bool
-	NoColor            bool
-	WithTimestamp      bool
-	WithSourceAddress  bool
-	OmitStatistics     bool // Do not show the statistics. Only available for terminal printers
-	Verbose            bool // Show everything an HTTP(S) probe learned, not just the status.
-	OutputDBPath       string
-	OutputCSVPath      string
+	OutputJSON        bool
+	PrettyJSON        bool
+	NoColor           bool
+	WithTimestamp     bool
+	WithSourceAddress bool
+	OmitStatistics    bool // Do not show the statistics. Only available for terminal printers
+	Verbose           bool // Show everything an HTTP(S) probe learned, not just the status.
+	OutputDBPath      string
+	OutputCSVPath     string
+	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
+
+	Target string
+	Port   uint16
+
 	AlloyURL           string        // Address of a Grafana Alloy OTLP HTTP endpoint. Empty unless -alloy was given.
 	AlloyStatsInterval time.Duration // How often the run summary is sent to Alloy.
-	CSVNoTimestamp     bool          // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
-	Target             string
-	Port               uint16
 
 	InfluxDBURL           string        // Address of an InfluxDB server. Empty unless -influxdb was given.
 	InfluxDBOrg           string        // InfluxDB organization to write to.
