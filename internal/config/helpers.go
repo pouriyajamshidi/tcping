@@ -268,5 +268,5 @@ func checkForUpdates() {
 
 // SecondsToDuration returns the corresponding duration from seconds expressed with a float.
 func SecondsToDuration(seconds float64) time.Duration {
-	return time.Duration(1000*seconds) * time.Millisecond
+	return time.Duration(seconds * float64(time.Second))
 }

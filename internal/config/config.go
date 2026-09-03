@@ -14,11 +14,6 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
 
-// Probing is driven by a time.Ticker, which panics on a zero or negative
-// interval. SecondsToDuration floors to whole milliseconds, so anything below
-// 0.001 seconds reaches the ticker as zero.
-const minProbeInterval = time.Millisecond
-
 // flagsRequiringValue inspects every flag registered on flag.CommandLine and
 // returns the set of flag names that expect a value on the command line
 // (i.e. anything that isn't a bool flag). Derived directly from the flag
@@ -423,8 +418,10 @@ func (f *flags) validate() {
 		usage()
 	}
 
-	if SecondsToDuration(f.intervalBetweenProbes) < minProbeInterval {
-		fmt.Fprintln(os.Stderr, "Interval between probes should be at least 1 ms")
+	// Probing is driven by a time.Ticker, which panics on a zero or
+	// negative interval.
+	if SecondsToDuration(f.intervalBetweenProbes) <= 0 {
+		fmt.Fprintln(os.Stderr, "Interval between probes should be more than 0 seconds")
 		os.Exit(1)
 	}
 
