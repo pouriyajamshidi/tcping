@@ -133,7 +133,7 @@ type PrinterConfig struct {
 	InfluxDBURL           string        // Address of an InfluxDB server. Empty unless -influxdb was given.
 	InfluxDBOrg           string        // InfluxDB organization to write to.
 	InfluxDBBucket        string        // InfluxDB bucket to write to.
-	InfluxDBToken         string        // InfluxDB API token, taken from the INFLUXDB_TOKEN environment variable.
+	InfluxDBToken         string        // InfluxDB API token, from the -influxdb-token flag or the INFLUXDB_TOKEN environment variable.
 	InfluxDBStatsInterval time.Duration // How often the run summary is written to InfluxDB.
 
 	SourceLabel string // Names the machine tcping runs on in the metrics sent to Alloy and InfluxDB. Defaults to the hostname.
@@ -304,8 +304,7 @@ func ProcessUserInput() Config {
 		"influxdb",
 		"",
 		`Send the results to an InfluxDB v2 or v3 server as metrics instead
-		of printing them, e.g. http://localhost:8086
-		The API token is read from the INFLUXDB_TOKEN environment variable.`)
+		of printing them, e.g. http://localhost:8086`)
 
 	influxDBOrg := flag.String(
 		"influxdb-org",
@@ -316,6 +315,13 @@ func ProcessUserInput() Config {
 		"influxdb-bucket",
 		"",
 		`InfluxDB bucket to write to. Required with the -influxdb flag.`)
+
+	influxDBToken := flag.String(
+		"influxdb-token",
+		"",
+		`InfluxDB API token. Required with the -influxdb flag.
+		Can also be given in the INFLUXDB_TOKEN environment variable, which
+		keeps it out of the shell history.`)
 
 	influxDBStatsInterval := flag.Float64(
 		"influxdb-stats-interval",
@@ -413,6 +419,13 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
+	// The flag wins, but the environment variable is still accepted so the
+	// token can be kept out of the shell history.
+	influxDBTokenValue := *influxDBToken
+	if influxDBTokenValue == "" {
+		influxDBTokenValue = os.Getenv("INFLUXDB_TOKEN")
+	}
+
 	// Resolved before the DNS resolver so hostname lookups can also be
 	// bound to it (see createDNSResolver).
 	var networkInterface nic.NetworkInterface
@@ -485,12 +498,10 @@ func ProcessUserInput() Config {
 		AlloyURL:           *alloyURL,
 		AlloyStatsInterval: alloyStatsIntervalDuration,
 
-		InfluxDBURL:    *influxDBURL,
-		InfluxDBOrg:    *influxDBOrg,
-		InfluxDBBucket: *influxDBBucket,
-		// The token is kept out of the flags so it never ends up in the
-		// shell history.
-		InfluxDBToken:         os.Getenv("INFLUXDB_TOKEN"),
+		InfluxDBURL:           *influxDBURL,
+		InfluxDBOrg:           *influxDBOrg,
+		InfluxDBBucket:        *influxDBBucket,
+		InfluxDBToken:         influxDBTokenValue,
 		InfluxDBStatsInterval: influxDBStatsIntervalDuration,
 
 		SourceLabel: srclabel,

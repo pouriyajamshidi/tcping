@@ -68,7 +68,7 @@ func TestNewPrinter(t *testing.T) {
 				InfluxDBBucket: "tcping",
 			},
 			wantErr:     true,
-			expectedErr: "InfluxDB needs an API token, put it in the INFLUXDB_TOKEN environment variable",
+			expectedErr: "InfluxDB needs an API token, give it with -influxdb-token or the INFLUXDB_TOKEN environment variable",
 		},
 		{
 			name: "Plain Printer Initialization",

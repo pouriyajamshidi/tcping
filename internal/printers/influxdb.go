@@ -66,7 +66,7 @@ func NewInfluxDBPrinter(cfg config.PrinterConfig) (*InfluxDBPrinter, error) {
 	}
 
 	if cfg.InfluxDBToken == "" {
-		return nil, fmt.Errorf("InfluxDB needs an API token, put it in the INFLUXDB_TOKEN environment variable")
+		return nil, fmt.Errorf("InfluxDB needs an API token, give it with -influxdb-token or the INFLUXDB_TOKEN environment variable")
 	}
 
 	endpoint := cfg.InfluxDBURL

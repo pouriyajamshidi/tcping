@@ -462,8 +462,9 @@ tcping www.example.com 443 --influxdb http://localhost:8086 \
   --influxdb-org home --influxdb-bucket tcping --source-label paris
 ```
 
-The API token is only read from the `INFLUXDB_TOKEN` environment variable, so
-it never ends up in your shell history.
+The API token can be given with `--influxdb-token`, or in the `INFLUXDB_TOKEN`
+environment variable, which keeps it out of your shell history. The flag wins
+if both are set.
 
 > [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
@@ -513,9 +514,10 @@ The following flags are available to control the behavior of **tcping**:
 | `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
 | `--alloy`                | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them. e.g. `--alloy http://localhost:4318` |
 | `--alloy-stats-interval` | How often to send the statistics to Alloy, in seconds. Defaults to 10. No effect without `--alloy`                        |
-| `--influxdb`             | Send the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as metrics instead of printing them. e.g. `--influxdb http://localhost:8086`. The API token is read from the `INFLUXDB_TOKEN` environment variable |
+| `--influxdb`             | Send the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as metrics instead of printing them. e.g. `--influxdb http://localhost:8086` |
 | `--influxdb-org`         | InfluxDB organization to write to. Required with `--influxdb`                                                             |
 | `--influxdb-bucket`      | InfluxDB bucket to write to. Required with `--influxdb`                                                                   |
+| `--influxdb-token`       | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable            |
 | `--influxdb-stats-interval` | How often to write the statistics to InfluxDB, in seconds. Defaults to 10. No effect without `--influxdb`               |
 | `--source-label`         | Name this machine in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart. Defaults to the machine's hostname |
 | `--skip-tls`             | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
