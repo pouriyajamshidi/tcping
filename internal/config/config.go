@@ -236,7 +236,7 @@ func ProcessUserInput() Config {
 		the TLS version and cipher, the certificate expiry and the
 		connect/TLS/first-byte timings. For a UDP target, shows the number of
 		the probe and whether the reply carried it back, so a lost probe can
-		be told apart from the rest. No effect on TCP targets.`)
+		be told apart from the rest. No effect on other targets.`)
 
 	skipTLSVerify := flag.Bool(
 		"skip-tls",
