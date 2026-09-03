@@ -6,8 +6,8 @@ import "github.com/pouriyajamshidi/tcping/v3/internal/app"
 /* TODO:
 Library support, so other codebases can import tcping (in priority order):
 1. Move internal/config, internal/dns, internal/nic, internal/printers,
-   internal/probers, internal/stats (and internal/consts) out of internal/
-   so they're importable by other modules - blocks everything below
+   internal/probers and internal/stats out of internal/ so they're
+   importable by other modules - blocks everything below
 2. Make config.ProcessUserInput's CLI-only bits (os.Args, the global
    flag.CommandLine, os.Exit on invalid input) usable programmatically
 3. Do not let checkForUpdates make a network call or exit when reachable
