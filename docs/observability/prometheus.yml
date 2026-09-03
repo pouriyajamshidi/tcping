@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+# Nothing to scrape: tcping data arrives through Alloy's remote write.
+# To check whether Alloy is receiving anything, open its UI on
+# http://localhost:12346 and look at the component health.
+scrape_configs: []

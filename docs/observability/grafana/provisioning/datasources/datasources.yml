@@ -1,0 +1,24 @@
+# Both places tcping can send to, so the dashboard works without anyone
+# clicking through the setup.
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    uid: influxdb
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    isDefault: true
+    jsonData:
+      version: Flux
+      organization: home
+      defaultBucket: tcping
+      httpMode: POST
+    secureJsonData:
+      token: tcping-dev-token
+
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090

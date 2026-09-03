@@ -1,0 +1,22 @@
+// Take OTLP metrics from tcping over HTTP on 4318.
+otelcol.receiver.otlp "tcping" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.exporter.prometheus.tcping.input]
+  }
+}
+
+// Turn them into Prometheus metrics.
+otelcol.exporter.prometheus "tcping" {
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+// And push them to Prometheus.
+prometheus.remote_write "local" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}

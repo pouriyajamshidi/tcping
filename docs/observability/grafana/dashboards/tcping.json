@@ -1,0 +1,373 @@
+{
+ "uid": "tcping",
+ "title": "tcping",
+ "tags": [
+  "tcping"
+ ],
+ "timezone": "browser",
+ "editable": true,
+ "schemaVersion": 39,
+ "refresh": "5s",
+ "time": {
+  "from": "now-15m",
+  "to": "now"
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "Round trip time",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"source\", \"target\", \"_measurement\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 10,
+      "showPoints": "never"
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "description": "How long each probe took, per target."
+  },
+  {
+   "id": 2,
+   "type": "timeseries",
+   "title": "Probe result",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"source\", \"target\", \"_measurement\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "stepAfter",
+      "lineWidth": 2,
+      "fillOpacity": 20,
+      "showPoints": "never"
+     },
+     "min": 0,
+     "max": 1
+    },
+    "overrides": []
+   },
+   "options": {},
+   "description": "1 while the target answers, 0 for every probe that failed."
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Packet loss",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 6,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"packet_loss_percent\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {},
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 1
+       },
+       {
+        "color": "red",
+        "value": 10
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "value",
+    "graphMode": "area",
+    "textMode": "auto"
+   }
+  },
+  {
+   "id": 4,
+   "type": "timeseries",
+   "title": "Latency min / average / max / mdev",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 8,
+    "w": 18,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\", \"source\", \"target\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "showPoints": "never"
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "description": "The running summary tcping writes every --influxdb-stats-interval."
+  },
+  {
+   "id": 5,
+   "type": "timeseries",
+   "title": "HTTP timings",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 14,
+    "w": 12,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\", \"source\", \"target\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 10,
+      "showPoints": "never"
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "description": "Only fills in for an http:// or https:// target."
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "Round trip time, through Alloy",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 14,
+    "w": 12,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "tcping_probe_rtt_milliseconds{source=~\"$source\"}",
+     "legendFormat": "{{source}} {{target}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 10,
+      "showPoints": "never"
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "description": "The same probes taking the --alloy route into Prometheus."
+  },
+  {
+   "id": 7,
+   "type": "table",
+   "title": "Resolved address, through Alloy",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 21,
+    "w": 24,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "tcping_target_address{source=~\"$source\"}",
+     "instant": true,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true,
+       "Value": true,
+       "__name__": true,
+       "job": true
+      },
+      "indexByName": {
+       "source": 0,
+       "target": 1,
+       "ip": 2,
+       "port": 3,
+       "protocol": 4
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "source"
+       },
+       {
+        "field": "target"
+       },
+       {
+        "field": "ip"
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {},
+   "description": "The address each target resolved to. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+  }
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "source",
+    "label": "Source",
+    "type": "query",
+    "datasource": {
+     "type": "influxdb",
+     "uid": "influxdb"
+    },
+    "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"tcping\", tag: \"source\")",
+    "refresh": 2,
+    "multi": true,
+    "includeAll": true,
+    "allValue": ".*",
+    "sort": 1,
+    "current": {
+     "selected": true,
+     "text": [
+      "All"
+     ],
+     "value": [
+      "$__all"
+     ]
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,114 @@
+# A sample observability stack for tcping. See README.md next to this file
+# for how to run it and what the dashboard shows.
+#
+# WARNING: every password and token below is a throwaway one, written in
+# plain text so the stack starts without any setup. Do not reuse them, and do
+# not put this stack on a network you do not control.
+
+# Fixed so the stack keeps the same name no matter where it is started from.
+name: tcping
+
+services:
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      - alloy-data:/var/lib/alloy/data
+    ports:
+      - "4318:4318"   # OTLP over HTTP, this is where tcping sends to
+      - "12346:12345" # Alloy UI
+    networks:
+      - tcping
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --storage.tsdb.retention.time=6h
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - tcping
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  influxdb:
+    image: influxdb:2
+    container_name: influxdb
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: tcping
+      DOCKER_INFLUXDB_INIT_PASSWORD: tcping-dev-password
+      DOCKER_INFLUXDB_INIT_ORG: home
+      DOCKER_INFLUXDB_INIT_BUCKET: tcping
+      DOCKER_INFLUXDB_INIT_RETENTION: 6h
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: tcping-dev-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    ports:
+      - "8086:8086" # This is where tcping writes to
+    networks:
+      - tcping
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # No login screen between you and the graphs.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - tcping
+    depends_on:
+      - influxdb
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+networks:
+  tcping:
+    driver: bridge
+
+volumes:
+  alloy-data:
+  prometheus-data:
+  influxdb-data:
+  grafana-data:

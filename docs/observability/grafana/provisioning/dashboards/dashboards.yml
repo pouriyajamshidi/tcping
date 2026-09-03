@@ -1,0 +1,9 @@
+# Load whatever dashboard JSON is sitting in the mounted folder.
+apiVersion: 1
+
+providers:
+  - name: tcping
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
