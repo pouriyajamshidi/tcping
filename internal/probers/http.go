@@ -96,7 +96,7 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
 		GotFirstResponseByte: func() { result.TimeToFirstByte = time.Since(start) },
 	}
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-	req.Header.Set("User-Agent", "pouriyajamshidi/tcping/v3")
+	req.Header.Set("User-Agent", config.UserAgent)
 
 	client := &http.Client{
 		Timeout:   h.timeout,
