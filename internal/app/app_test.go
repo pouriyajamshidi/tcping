@@ -32,7 +32,7 @@ func withStdin(t *testing.T) *os.File {
 
 func TestSummaryRequests_ReportsEmptyLines(t *testing.T) {
 	stdin := withStdin(t)
-	requests := SummaryRequests()
+	requests := summaryRequests()
 
 	if _, err := stdin.WriteString("\n"); err != nil {
 		t.Fatalf("writing to stdin failed: %v", err)
@@ -50,7 +50,7 @@ func TestSummaryRequests_ReportsEmptyLines(t *testing.T) {
 
 func TestSummaryRequests_IgnoresActualInput(t *testing.T) {
 	stdin := withStdin(t)
-	requests := SummaryRequests()
+	requests := summaryRequests()
 
 	if _, err := stdin.WriteString("hello\n"); err != nil {
 		t.Fatalf("writing to stdin failed: %v", err)
@@ -68,7 +68,7 @@ func TestSummaryRequests_IgnoresActualInput(t *testing.T) {
 // has to end the goroutine instead.
 func TestSummaryRequests_ClosesWhenStdinEnds(t *testing.T) {
 	stdin := withStdin(t)
-	requests := SummaryRequests()
+	requests := summaryRequests()
 
 	stdin.Close()
 

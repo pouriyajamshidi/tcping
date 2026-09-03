@@ -1,21 +1,7 @@
 // tcping.go probes a target using TCP
 package main
 
-import (
-	"context"
-	"fmt"
-	"net"
-	"os"
-	"strconv"
-
-	"github.com/pouriyajamshidi/tcping/v3/internal/app"
-	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
-	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/server"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
-)
+import "github.com/pouriyajamshidi/tcping/v3/internal/app"
 
 /* TODO:
 Library support, so other codebases can import tcping (in priority order):
@@ -38,52 +24,5 @@ Library support, so other codebases can import tcping (in priority order):
 */
 
 func main() {
-	cfg := config.ProcessUserInput()
-
-	if cfg.UDPServer {
-		ctx := app.SetupSignalHandler(context.Background())
-
-		listenAddr := net.JoinHostPort(cfg.IP.String(), strconv.Itoa(int(cfg.Port)))
-		if err := server.ListenUDP(ctx, listenAddr); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to listen on %s: %s\n", listenAddr, err)
-			os.Exit(1)
-		}
-
-		return
-	}
-
-	stats := stats.NewStatistics(cfg)
-
-	printer, err := printers.NewPrinter(cfg.PrinterConfig)
-	if err != nil {
-		fmt.Printf("Failed to create printer: %s\n", err.Error())
-		os.Exit(1)
-	}
-
-	probeCtx := app.SetupSignalHandler(context.Background())
-
-	var pinger probers.Pinger
-
-	switch cfg.Protocol {
-	case consts.HTTP, consts.HTTPS:
-		pinger = probers.NewHTTPing(cfg)
-	case consts.UDP:
-		pinger = probers.NewUDPing(cfg)
-	default:
-		pinger = probers.NewTcping(cfg)
-	}
-
-	// Only worth watching stdin when there is a user at a keyboard to
-	// press 'Enter'.
-	var summaryRequests <-chan struct{}
-	if app.IsForegroundTerminal() {
-		summaryRequests = app.SummaryRequests()
-	}
-
-	prober := probers.NewProber(pinger, printer, cfg, stats, summaryRequests)
-	if err := prober.Probe(probeCtx); err != nil {
-		printer.PrintError("%v", err)
-	}
-
-	printer.Shutdown(stats)
+	app.Run()
 }

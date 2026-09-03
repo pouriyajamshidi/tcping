@@ -9,9 +9,9 @@ import (
 	"golang.org/x/term"
 )
 
-// IsForegroundTerminal reports whether we are running attached to a terminal
+// isForegroundTerminal reports whether we are running attached to a terminal
 // and are in the foreground process group (i.e., safe to read from stdin).
-func IsForegroundTerminal() bool {
+func isForegroundTerminal() bool {
 	// Must be a terminal first
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
 		return false
