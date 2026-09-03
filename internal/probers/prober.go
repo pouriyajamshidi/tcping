@@ -228,6 +228,7 @@ func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
 	if markResolvedThisProbe {
 		s.ResolvedThisProbe = true
 	}
+
 	p.printer.PrintNameResolutionDuration(s)
 
 	return true
