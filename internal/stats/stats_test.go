@@ -1,10 +1,9 @@
 package stats
 
 import (
+	"github.com/pouriyajamshidi/tcping/v3/internal/config"
 	"testing"
 	"time"
-
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
 func TestRuntimeDuration_MatchesStartAndEndTime(t *testing.T) {
@@ -186,15 +185,15 @@ func TestDurationToString_SubSecond(t *testing.T) {
 func TestIsHTTPAndHasHTTPResponse(t *testing.T) {
 	tests := []struct {
 		name            string
-		protocol        consts.Protocol
+		protocol        config.Protocol
 		statusCode      int
 		wantIsHTTP      bool
 		wantHasResponse bool
 	}{
-		{"tcp target", consts.TCP, 0, false, false},
-		{"http target with a response", consts.HTTP, 200, true, true},
-		{"https target with a response", consts.HTTPS, 503, true, true},
-		{"https target that never connected", consts.HTTPS, 0, true, false},
+		{"tcp target", config.TCP, 0, false, false},
+		{"http target with a response", config.HTTP, 200, true, true},
+		{"https target with a response", config.HTTPS, 503, true, true},
+		{"https target that never connected", config.HTTPS, 0, true, false},
 	}
 
 	for _, tt := range tests {

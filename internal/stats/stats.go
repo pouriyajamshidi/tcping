@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
 // HTTPInfo is what the most recent HTTP(S) probe learned about the response.
@@ -38,7 +37,7 @@ type Statistics struct {
 	Hostname                  string
 	IP                        netip.Addr
 	Port                      uint16
-	Protocol                  consts.Protocol
+	Protocol                  config.Protocol
 	LastProbeHadFailed        bool
 	DestIsIP                  bool
 	LocalAddr                 net.Addr
@@ -162,7 +161,7 @@ func (s *Statistics) NameResolutionDurationStr() string {
 // IsHTTP reports whether this run probes over HTTP or HTTPS, which is what
 // decides whether the HTTP details are worth printing at all.
 func (s *Statistics) IsHTTP() bool {
-	return s.Protocol == consts.HTTP || s.Protocol == consts.HTTPS
+	return s.Protocol == config.HTTP || s.Protocol == config.HTTPS
 }
 
 // HasHTTPResponse reports whether the last probe got an actual HTTP response.
@@ -174,7 +173,7 @@ func (s *Statistics) HasHTTPResponse() bool {
 // IsUDP reports whether this run probes over UDP, which is what decides
 // whether the UDP details are worth printing at all.
 func (s *Statistics) IsUDP() bool {
-	return s.Protocol == consts.UDP
+	return s.Protocol == config.UDP
 }
 
 // ProbeNumberStr is the number the most recent UDP probe sent as its payload.
