@@ -14,7 +14,10 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
 )
 
-const minProbeInterval = 2 * time.Millisecond
+// Probing is driven by a time.Ticker, which panics on a zero or negative
+// interval. SecondsToDuration floors to whole milliseconds, so anything below
+// 0.001 seconds reaches the ticker as zero.
+const minProbeInterval = time.Millisecond
 
 // flagsRequiringValue inspects every flag registered on flag.CommandLine and
 // returns the set of flag names that expect a value on the command line
@@ -421,8 +424,7 @@ func (f *flags) validate() {
 	}
 
 	if SecondsToDuration(f.intervalBetweenProbes) < minProbeInterval {
-		// TODO: Do we keep this constraint?
-		fmt.Fprintln(os.Stderr, "Wait interval should be more than 2 ms")
+		fmt.Fprintln(os.Stderr, "Interval between probes should be at least 1 ms")
 		os.Exit(1)
 	}
 
