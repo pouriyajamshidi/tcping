@@ -399,34 +399,10 @@ minimum, average, maximum and mean deviation of the latency, are sent every 10
 seconds so a run that nobody is watching still reports them. Use `--alloy-stats-interval` to change
 that.
 
-On the Alloy side, the matching configuration is an OTLP receiver pointed at
-Prometheus:
-
-```alloy
-otelcol.receiver.otlp "tcping" {
-  http {
-    endpoint = "0.0.0.0:4318"
-  }
-
-  output {
-    metrics = [otelcol.exporter.prometheus.tcping.input]
-  }
-}
-
-otelcol.exporter.prometheus "tcping" {
-  forward_to = [prometheus.remote_write.local.receiver]
-}
-
-prometheus.remote_write "local" {
-  endpoint {
-    url = "http://prometheus:9090/api/v1/write"
-  }
-}
-```
-
-> [!NOTE]
-> Prometheus needs to be started with `--web.enable-remote-write-receiver`
-> for Alloy to be able to push to it.
+On the Alloy side you need an OTLP receiver pointed at Prometheus. A working
+one, along with a Prometheus, an InfluxDB and a Grafana dashboard you can
+start in one command, is in
+[docs/observability](docs/observability/README.md).
 
 11. Send the results to InfluxDB:
 
@@ -465,6 +441,9 @@ tcping www.example.com 443 --influxdb http://localhost:8086 \
 The API token can be given with `--influxdb-token`, or in the `INFLUXDB_TOKEN`
 environment variable, which keeps it out of your shell history. The flag wins
 if both are set.
+
+To try this without setting a server up first, there is a ready made stack in
+[docs/observability](docs/observability/README.md).
 
 > [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
