@@ -358,11 +358,32 @@ tcping www.example.com 443 --alloy http://localhost:4318
 Instead of printing each probe, tcping sends it to Alloy over OTLP, which can
 forward it to Prometheus and turn a run into a graph. Every probe sends
 `tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
-`tcping_probes_total`, labelled with the source, target, IP, port and
-protocol. An HTTP(S) target also sends the status code, the connect, TLS
-handshake and first-byte timings, and the days left on the certificate. A UDP
-target sends whether the reply was echoed back, whether the port refused us
-and how big the reply was.
+`tcping_probes_total`, labelled with the source, target, port and protocol. An
+HTTP(S) target also sends the status code, the connect, TLS handshake and
+first-byte timings, and the days left on the certificate. A UDP target sends
+whether the reply was echoed back, whether the port refused us and how big the
+reply was.
+
+The address the target resolved to is sent on its own as
+`tcping_target_address`, which is always 1 and carries the address as a label.
+It is kept off the probe metrics because a label is part of what identifies a
+series: with `-r` or `--resolve-every-probe` a hostname that resolves somewhere
+else mid-run would leave the old series behind and start a new one, which
+breaks a graph into pieces and makes the counters add up wrong. Query it on its
+own to see which addresses a target has been answering from:
+
+```promql
+tcping_target_address{target="www.example.com"}
+```
+
+If you want the address alongside the probes, join to it, keeping in mind that
+this only works while the target has one address at a time. A round-robin
+hostname has several of them live at once and the join has nothing to pick
+between them:
+
+```promql
+tcping_probe_rtt_milliseconds * on (source, target, port) group_left (ip) tcping_target_address
+```
 
 The `source` label says which machine the probe was sent from. It defaults to
 that machine's hostname, so several machines probing the same target land in
@@ -417,8 +438,11 @@ tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home 
 Instead of printing each probe, tcping writes it to InfluxDB v2 or v3 as line
 protocol. Every probe writes one point, named after what was probed:
 `tcping_tcp`, `tcping_udp` or `tcping_http`, tagged with the source, target,
-IP, port and protocol. All three hold `success`, `rtt_ms` and the successful and
-unsuccessful probe counts. A `tcping_http` point also carries the status code,
+port and protocol. All three hold `success`, `rtt_ms`, the address the target
+resolved to in the `ip` field, and the successful and unsuccessful probe
+counts. The address is a field rather than a tag because tags identify a
+series: with `-r` or `--resolve-every-probe` a hostname that resolves somewhere
+else mid-run would otherwise leave the old series behind and start a new one. A `tcping_http` point also carries the status code,
 the connect, TLS handshake and first-byte timings and the days left on the
 certificate, and a `tcping_udp` point carries the probe number, the size of
 the reply and whether it was echoed back or refused.

@@ -34,6 +34,7 @@
 - feat: add `--alloy` flag to send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, along with `--alloy-stats-interval` to control how often the statistics are sent
 - feat: add `--influxdb` flag to write the results to an InfluxDB v2 or v3 server as line protocol, along with `--influxdb-org`, `--influxdb-bucket` and `--influxdb-stats-interval`. The API token is read from the `INFLUXDB_TOKEN` environment variable
 - feat: add `--source-label` flag to name the machine in the metrics sent to Alloy and InfluxDB, so that several machines probing the same target do not all write to the same series. It defaults to the machine's hostname and shows up as the `source` label or tag
+- fix: the resolved IP no longer identifies the series in the Alloy and InfluxDB output. A hostname that resolved to a different address mid-run (`-r` or `--resolve-every-probe`) used to leave the old series behind and start a new one, which broke graphs into pieces and made the counters add up wrong. Alloy now sends the address as its own `tcping_target_address` metric and InfluxDB writes it as an `ip` field instead of a tag
 - improvement: `-I` now keeps working correctly when the interface has both an IPv4 and an IPv6 address and the target's resolved address family changes mid-run
 - improvement: DNS resolution is now sourced from `-I`'s interface too, matching what probes already did
 - improvement: show how long the target was up right when it starts failing, mirroring the existing downtime message
