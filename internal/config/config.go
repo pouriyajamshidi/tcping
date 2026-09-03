@@ -162,85 +162,135 @@ type Config struct {
 	Resolver                   *dns.Resolver
 }
 
-// ProcessUserInput gets and validate user input
-func ProcessUserInput() Config {
-	useIPv4 := flag.Bool("4", false, "Only use IPv4 to initiate probes.")
+// flags holds the raw value of every command line flag.
+type flags struct {
+	useIPv4 bool
+	useIPv6 bool
 
-	useIPv6 := flag.Bool("6", false, "Only use IPv6 to initiate probes.")
+	probesBeforeQuit                   uint
+	intervalBetweenProbes              float64
+	timeout                            float64
+	retryHostnameResolveAfterNFailures uint
+	resolveEveryProbe                  bool
 
-	probesBeforeQuit := flag.Uint(
+	customDNSServer string
+	dnsTimeout      float64
+	interfaceName   string
+
+	showTimestamp     bool
+	showSourceAddress bool
+	showFailuresOnly  bool
+	omitStatistics    bool
+	verbose           bool
+	noColor           bool
+
+	skipTLSVerify bool
+	udpServer     bool
+
+	outputJSON bool
+	prettyJSON bool
+
+	CSVPath        string
+	csvNoTimestamp bool
+	DBPath         string
+
+	alloyURL           string
+	alloyStatsInterval float64
+
+	influxDBURL           string
+	influxDBOrg           string
+	influxDBBucket        string
+	influxDBToken         string
+	influxDBStatsInterval float64
+
+	sourceLabel string
+
+	showVer      bool
+	checkUpdates bool
+}
+
+// registerFlags declares every command line flag and returns the struct that
+// flag.Parse will fill in.
+func registerFlags() *flags {
+	var f flags
+
+	flag.BoolVar(&f.useIPv4, "4", false, "Only use IPv4 to initiate probes.")
+
+	flag.BoolVar(&f.useIPv6, "6", false, "Only use IPv6 to initiate probes.")
+
+	flag.UintVar(&f.probesBeforeQuit,
 		"c",
 		0,
 		`Stop after <n> probes, regardless of the result.
 		By default, no limit will be applied.`)
 
-	intervalBetweenProbes := flag.Float64(
+	flag.Float64Var(&f.intervalBetweenProbes,
 		"i",
 		1,
 		`Interval between probes.
 		Real number allowed with dot as a decimal separator.
 		The default value is one second`)
 
-	timeout := flag.Float64(
+	flag.Float64Var(&f.timeout,
 		"t",
 		1,
 		`Time to wait for a response in seconds.
 		Real number allowed.
 		0 means infinite timeout.`)
 
-	showTimestamp := flag.Bool(
+	flag.BoolVar(&f.showTimestamp,
 		"D",
 		false,
 		"Show a timestamp for each probe in the output.")
 
-	retryHostnameResolveAfterNFailures := flag.Uint(
+	flag.UintVar(&f.retryHostnameResolveAfterNFailures,
 		"r",
 		0,
 		`Retry resolving target's hostname after <n> number of failed probes.
 		e.g. -r 10 to retry after 10 failed probes.`)
 
-	resolveEveryProbe := flag.Bool(
+	flag.BoolVar(&f.resolveEveryProbe,
 		"resolve-every-probe",
 		false,
 		`Resolve the target's hostname before every single probe instead of
 		only at startup (and after failures, if -r is set). Has no effect
 		when the target is already an IP address. Takes precedence over -r.`)
 
-	customDNSServer := flag.String(
+	flag.StringVar(&f.customDNSServer,
 		"dns-server",
 		"",
 		`Custom DNS server IP to use. Defaults to the system-wide server.
 		IP and port combination is allowed: 1.1.1.1:53`)
 
-	dnsTimeout := flag.Float64(
+	flag.Float64Var(&f.dnsTimeout,
 		"dns-timeout",
 		dns.DefaultTimeout.Seconds(),
 		`Time to wait for a DNS response in seconds.
 		Real number allowed.
 		0 means infinite timeout.`)
 
-	interfaceName := flag.String(
+	flag.StringVar(&f.interfaceName,
 		"I",
 		"",
 		"Use a specific interface name or IP address to initiate the probes.")
 
-	showSourceAddress := flag.Bool(
+	flag.BoolVar(&f.showSourceAddress,
 		"show-source-address",
 		false,
 		"Show source address and port used for probes.")
 
-	showFailuresOnly := flag.Bool(
+	flag.BoolVar(&f.showFailuresOnly,
 		"show-failures-only",
 		false,
 		"Show only the failed probes.")
 
-	omitStatistics := flag.Bool(
+	flag.BoolVar(&f.omitStatistics,
 		"omit-stats",
 		false,
 		`Do not show the statistics at program exit. Only applicable to terminal output.
 		Pressing enter still shows the statistics.`)
 
-	verbose := flag.Bool(
+	flag.BoolVar(&f.verbose,
 		"v",
 		false,
 		`Show all the details an HTTP(S) probe collects: the HTTP version,
@@ -249,88 +299,88 @@ func ProcessUserInput() Config {
 		the probe and whether the reply carried it back, so a lost probe can
 		be told apart from the rest. No effect on other targets.`)
 
-	skipTLSVerify := flag.Bool(
+	flag.BoolVar(&f.skipTLSVerify,
 		"skip-tls",
 		false,
 		`Do not check the server certificate when probing an https:// target.
 		Useful for self-signed or expired certificates.`)
 
-	udpServer := flag.Bool(
+	flag.BoolVar(&f.udpServer,
 		"udp-server",
 		false,
 		`Do not probe. Listen on the given host and port and echo every UDP
 		datagram back to its sender, so a UDP probe pointed at this machine
 		gets a reply and can tell that its packet arrived.`)
 
-	noColor := flag.Bool("no-color", false, "Do not colorize output.")
+	flag.BoolVar(&f.noColor, "no-color", false, "Do not colorize output.")
 
-	outputJSON := flag.Bool(
+	flag.BoolVar(&f.outputJSON,
 		"j",
 		false,
 		"Output in JSON format.")
 
-	prettyJSON := flag.Bool(
+	flag.BoolVar(&f.prettyJSON,
 		"pretty",
 		false,
 		`Prettify the JSON output.
 		No effect without the '-j' flag.`)
 
-	CSVPath := flag.String(
+	flag.StringVar(&f.CSVPath,
 		"csv",
 		"",
 		`Path and file name to store the output in a CSV file.
 		The stats will be automatically saved with the same name and '_stats' suffix.`)
 
-	csvNoTimestamp := flag.Bool(
+	flag.BoolVar(&f.csvNoTimestamp,
 		"csv-no-timestamp",
 		false,
 		`Do not append a date/time suffix to the CSV filename given via -csv.
 		Repeated runs will then overwrite the same file instead of creating a new one.`)
 
-	alloyURL := flag.String(
+	flag.StringVar(&f.alloyURL,
 		"alloy",
 		"",
 		`Send the results to a Grafana Alloy OTLP HTTP endpoint as metrics
 		instead of printing them, e.g. http://localhost:4318`)
 
-	alloyStatsInterval := flag.Float64(
+	flag.Float64Var(&f.alloyStatsInterval,
 		"alloy-stats-interval",
 		10,
 		`How often to send the statistics to Alloy, in seconds.
 		They are sent along with the next probe, so a longer probe interval
 		delays them. No effect without the -alloy flag.`)
 
-	influxDBURL := flag.String(
+	flag.StringVar(&f.influxDBURL,
 		"influxdb",
 		"",
 		`Send the results to an InfluxDB v2 or v3 server as metrics instead
 		of printing them, e.g. http://localhost:8086`)
 
-	influxDBOrg := flag.String(
+	flag.StringVar(&f.influxDBOrg,
 		"influxdb-org",
 		"",
 		`InfluxDB organization to write to. Required with the -influxdb flag.`)
 
-	influxDBBucket := flag.String(
+	flag.StringVar(&f.influxDBBucket,
 		"influxdb-bucket",
 		"",
 		`InfluxDB bucket to write to. Required with the -influxdb flag.`)
 
-	influxDBToken := flag.String(
+	flag.StringVar(&f.influxDBToken,
 		"influxdb-token",
 		"",
 		`InfluxDB API token. Required with the -influxdb flag.
 		Can also be given in the INFLUXDB_TOKEN environment variable, which
 		keeps it out of the shell history.`)
 
-	influxDBStatsInterval := flag.Float64(
+	flag.Float64Var(&f.influxDBStatsInterval,
 		"influxdb-stats-interval",
 		10,
 		`How often to write the statistics to InfluxDB, in seconds.
 		They are written along with the next probe, so a longer probe
 		interval delays them. No effect without the -influxdb flag.`)
 
-	sourceLabel := flag.String(
+	flag.StringVar(&f.sourceLabel,
 		"source-label",
 		"",
 		`Name this machine in the metrics sent to Alloy or InfluxDB, so that
@@ -338,14 +388,104 @@ func ProcessUserInput() Config {
 		Defaults to the machine's hostname. No effect without the -alloy or
 		-influxdb flag.`)
 
-	DBPath := flag.String(
+	flag.StringVar(&f.DBPath,
 		"db",
 		"",
 		"Path and file name to store the output in a sqlite3 database.")
 
-	showVer := flag.Bool("version", false, "Show version and exit.")
+	flag.BoolVar(&f.showVer, "version", false, "Show version and exit.")
 
-	checkUpdates := flag.Bool("u", false, "Check for updates and exit.")
+	flag.BoolVar(&f.checkUpdates, "u", false, "Check for updates and exit.")
+
+	return &f
+}
+
+// validate rejects flag combinations that do not make sense. It exits the
+// program instead of returning, like the rest of the input handling.
+func (f *flags) validate() {
+	if f.useIPv4 && f.useIPv6 {
+		fmt.Fprintln(os.Stderr, "Only one IP version can be specified")
+		usage()
+	}
+
+	if f.prettyJSON && !f.outputJSON {
+		fmt.Fprintln(os.Stderr, "--pretty has no effect without the -j flag")
+		usage()
+	}
+
+	// The file and metric printers always write their final record, so
+	// there are no statistics to omit.
+	if f.omitStatistics && (f.DBPath != "" || f.CSVPath != "" || f.alloyURL != "" || f.influxDBURL != "") {
+		fmt.Fprintln(os.Stderr, "--omit-stats has no effect when the output goes to a file, a database or a metrics endpoint")
+		usage()
+	}
+
+	if SecondsToDuration(f.intervalBetweenProbes) < minProbeInterval {
+		// TODO: Do we keep this constraint?
+		fmt.Fprintln(os.Stderr, "Wait interval should be more than 2 ms")
+		os.Exit(1)
+	}
+
+	if f.alloyURL != "" && SecondsToDuration(f.alloyStatsInterval) <= 0 {
+		fmt.Fprintln(os.Stderr, "Alloy statistics interval should be more than 0 seconds")
+		os.Exit(1)
+	}
+
+	if f.influxDBURL != "" && SecondsToDuration(f.influxDBStatsInterval) <= 0 {
+		fmt.Fprintln(os.Stderr, "InfluxDB statistics interval should be more than 0 seconds")
+		os.Exit(1)
+	}
+}
+
+// newPrinterConfig collects everything the printers need out of the flags.
+func (f *flags) newPrinterConfig(target string, port uint16) PrinterConfig {
+	// The flag wins, but the environment variable is still accepted so the
+	// token can be kept out of the shell history.
+	influxDBToken := f.influxDBToken
+	if influxDBToken == "" {
+		influxDBToken = os.Getenv("INFLUXDB_TOKEN")
+	}
+
+	// Without this, several machines probing the same target would all
+	// write to the same series and their numbers would be mixed together.
+	sourceLabel := f.sourceLabel
+	if sourceLabel == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			hostname = "unknown"
+		}
+		sourceLabel = hostname
+	}
+
+	return PrinterConfig{
+		Target:             target,
+		Port:               port,
+		OutputJSON:         f.outputJSON,
+		PrettyJSON:         f.prettyJSON,
+		NoColor:            f.noColor,
+		WithTimestamp:      f.showTimestamp,
+		WithSourceAddress:  f.showSourceAddress,
+		OmitStatistics:     f.omitStatistics,
+		Verbose:            f.verbose,
+		OutputDBPath:       f.DBPath,
+		OutputCSVPath:      f.CSVPath,
+		CSVNoTimestamp:     f.csvNoTimestamp,
+		AlloyURL:           f.alloyURL,
+		AlloyStatsInterval: SecondsToDuration(f.alloyStatsInterval),
+
+		InfluxDBURL:           f.influxDBURL,
+		InfluxDBOrg:           f.influxDBOrg,
+		InfluxDBBucket:        f.influxDBBucket,
+		InfluxDBToken:         influxDBToken,
+		InfluxDBStatsInterval: SecondsToDuration(f.influxDBStatsInterval),
+
+		SourceLabel: sourceLabel,
+	}
+}
+
+// ProcessUserInput gets and validate user input
+func ProcessUserInput() Config {
+	f := registerFlags()
 
 	flag.CommandLine.Usage = usage
 
@@ -353,37 +493,20 @@ func ProcessUserInput() Config {
 
 	flag.Parse()
 
-	if *showVer {
+	if f.showVer {
 		showVersion()
 	}
 
-	if *checkUpdates {
+	if f.checkUpdates {
 		checkForUpdates()
 	}
 
-	if *useIPv4 && *useIPv6 {
-		fmt.Fprintln(os.Stderr, "Only one IP version can be specified")
-		usage()
-	}
-
-	if *prettyJSON && !*outputJSON {
-		fmt.Fprintln(os.Stderr, "--pretty has no effect without the -j flag")
-		usage()
-	}
-
-	// The file and metric printers always write their final record, so
-	// there are no statistics to omit.
-	if *omitStatistics && (*DBPath != "" || *CSVPath != "" || *alloyURL != "" || *influxDBURL != "") {
-		fmt.Fprintln(os.Stderr, "--omit-stats has no effect when the output goes to a file, a database or a metrics endpoint")
-		usage()
-	}
-
-	args := flag.Args()
+	f.validate()
 
 	// The target says which protocol to speak: an http(s):// URL selects an
 	// HTTP probe, anything else is a TCP one given as "host port" or
 	// "host:port".
-	target, err := parseTarget(args)
+	target, err := parseTarget(flag.Args())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -400,40 +523,14 @@ func ProcessUserInput() Config {
 		os.Exit(1)
 	}
 
-	intervalBetweenProbesDuration := SecondsToDuration(*intervalBetweenProbes)
-	if intervalBetweenProbesDuration < minProbeInterval {
-		// TODO: Do we keep this constraint?
-		fmt.Fprintln(os.Stderr, "Wait interval should be more than 2 ms")
-		os.Exit(1)
-	}
-
-	alloyStatsIntervalDuration := SecondsToDuration(*alloyStatsInterval)
-	if *alloyURL != "" && alloyStatsIntervalDuration <= 0 {
-		fmt.Fprintln(os.Stderr, "Alloy statistics interval should be more than 0 seconds")
-		os.Exit(1)
-	}
-
-	influxDBStatsIntervalDuration := SecondsToDuration(*influxDBStatsInterval)
-	if *influxDBURL != "" && influxDBStatsIntervalDuration <= 0 {
-		fmt.Fprintln(os.Stderr, "InfluxDB statistics interval should be more than 0 seconds")
-		os.Exit(1)
-	}
-
-	// The flag wins, but the environment variable is still accepted so the
-	// token can be kept out of the shell history.
-	influxDBTokenValue := *influxDBToken
-	if influxDBTokenValue == "" {
-		influxDBTokenValue = os.Getenv("INFLUXDB_TOKEN")
-	}
-
 	// Resolved before the DNS resolver so hostname lookups can also be
 	// bound to it (see createDNSResolver).
 	var networkInterface nic.NetworkInterface
-	if *interfaceName != "" {
+	if f.interfaceName != "" {
 		networkInterface, err = nic.NewNetworkInterface(
-			*interfaceName,
-			*useIPv4,
-			*useIPv6,
+			f.interfaceName,
+			f.useIPv4,
+			f.useIPv6,
 		)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
@@ -441,17 +538,13 @@ func ProcessUserInput() Config {
 		}
 	}
 
-	dnsTimeoutDuration := SecondsToDuration(*dnsTimeout)
-
 	resolver := dns.NewResolver(
-		*customDNSServer,
-		dnsTimeoutDuration,
-		*useIPv4,
-		*useIPv6,
+		f.customDNSServer,
+		SecondsToDuration(f.dnsTimeout),
+		f.useIPv4,
+		f.useIPv6,
 		networkInterface,
 	)
-
-	var targetIsAlreadyIP bool
 
 	resolveStart := time.Now()
 	resolvedIP, err := resolver.ResolveHostname(target.hostname)
@@ -460,55 +553,13 @@ func ProcessUserInput() Config {
 		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target.hostname, err)
 		os.Exit(1)
 	}
-	if resolvedIP.String() == target.hostname {
-		targetIsAlreadyIP = true
-	}
 
-	var shouldRetryResolve bool
-	if *retryHostnameResolveAfterNFailures > 0 && !targetIsAlreadyIP {
-		shouldRetryResolve = true
-	}
+	targetIsAlreadyIP := resolvedIP.String() == target.hostname
 
-	timeoutInDuration := SecondsToDuration(*timeout)
-
-	// Without this, several machines probing the same target would all
-	// write to the same series and their numbers would be mixed together.
-	srclabel := *sourceLabel
-	if srclabel == "" {
-		hostname, err := os.Hostname()
-		if err != nil {
-			hostname = "unknown"
-		}
-		srclabel = hostname
-	}
-
-	printerConfig := PrinterConfig{
-		Target:             target.hostname,
-		Port:               validatedPort,
-		OutputJSON:         *outputJSON,
-		PrettyJSON:         *prettyJSON,
-		NoColor:            *noColor,
-		WithTimestamp:      *showTimestamp,
-		WithSourceAddress:  *showSourceAddress,
-		OmitStatistics:     *omitStatistics,
-		Verbose:            *verbose,
-		OutputDBPath:       *DBPath,
-		OutputCSVPath:      *CSVPath,
-		CSVNoTimestamp:     *csvNoTimestamp,
-		AlloyURL:           *alloyURL,
-		AlloyStatsInterval: alloyStatsIntervalDuration,
-
-		InfluxDBURL:           *influxDBURL,
-		InfluxDBOrg:           *influxDBOrg,
-		InfluxDBBucket:        *influxDBBucket,
-		InfluxDBToken:         influxDBTokenValue,
-		InfluxDBStatsInterval: influxDBStatsIntervalDuration,
-
-		SourceLabel: srclabel,
-	}
+	shouldRetryResolve := f.retryHostnameResolveAfterNFailures > 0 && !targetIsAlreadyIP
 
 	protocol := target.protocol
-	if *udpServer {
+	if f.udpServer {
 		protocol = consts.UDP
 	}
 
@@ -518,19 +569,19 @@ func ProcessUserInput() Config {
 		IP:                         resolvedIP,
 		Port:                       validatedPort,
 		Protocol:                   protocol,
-		Timeout:                    timeoutInDuration,
-		ProbesBeforeQuit:           *probesBeforeQuit,
+		Timeout:                    SecondsToDuration(f.timeout),
+		ProbesBeforeQuit:           f.probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
 		NameResolutionDuration:     nameResolutionDuration,
-		IntervalBetweenProbes:      intervalBetweenProbesDuration,
-		ShowFailuresOnly:           *showFailuresOnly,
-		SkipTLSVerify:              *skipTLSVerify,
-		UDPServer:                  *udpServer,
+		IntervalBetweenProbes:      SecondsToDuration(f.intervalBetweenProbes),
+		ShowFailuresOnly:           f.showFailuresOnly,
+		SkipTLSVerify:              f.skipTLSVerify,
+		UDPServer:                  f.udpServer,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
-		ResolveEveryProbe:          *resolveEveryProbe,
-		RetryResolveAfterNFailures: *retryHostnameResolveAfterNFailures,
+		ResolveEveryProbe:          f.resolveEveryProbe,
+		RetryResolveAfterNFailures: f.retryHostnameResolveAfterNFailures,
 		NetworkInterface:           networkInterface,
-		PrinterConfig:              printerConfig,
+		PrinterConfig:              f.newPrinterConfig(target.hostname, validatedPort),
 	}
 }
