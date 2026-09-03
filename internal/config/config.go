@@ -524,7 +524,7 @@ func ProcessUserInput() Config {
 	}
 
 	// Resolved before the DNS resolver so hostname lookups can also be
-	// bound to it (see createDNSResolver).
+	// bound to it (see dns.NewResolver).
 	var networkInterface nic.NetworkInterface
 	if f.interfaceName != "" {
 		networkInterface, err = nic.NewNetworkInterface(
