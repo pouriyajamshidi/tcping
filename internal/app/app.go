@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
 	"github.com/pouriyajamshidi/tcping/v3/internal/server"
@@ -98,9 +97,9 @@ func Run() {
 	var pinger probers.Pinger
 
 	switch cfg.Protocol {
-	case consts.HTTP, consts.HTTPS:
+	case config.HTTP, config.HTTPS:
 		pinger = probers.NewHTTPing(cfg)
-	case consts.UDP:
+	case config.UDP:
 		pinger = probers.NewUDPing(cfg)
 	default:
 		pinger = probers.NewTcping(cfg)
