@@ -46,7 +46,10 @@ type InfluxDBPrinter struct {
 	// summary would only be written when you press Enter or when tcping
 	// exits, which never happens on a long run that no one is watching.
 	statsInterval time.Duration
-	warned        bool // Whether we already complained about a write that failed.
+	// Names the machine we are probing from, so that several machines
+	// writing to the same bucket do not land in the same series.
+	source string
+	warned bool // Whether we already complained about a write that failed.
 }
 
 // NewInfluxDBPrinter creates an InfluxDBPrinter pointed at the given
@@ -93,6 +96,7 @@ func NewInfluxDBPrinter(cfg config.PrinterConfig) (*InfluxDBPrinter, error) {
 		endpoint:      endpoint + "?" + query.Encode(),
 		token:         cfg.InfluxDBToken,
 		statsInterval: statsInterval,
+		source:        cfg.SourceLabel,
 	}, nil
 }
 
@@ -100,7 +104,8 @@ func NewInfluxDBPrinter(cfg config.PrinterConfig) (*InfluxDBPrinter, error) {
 // group and filter by on the other end. The IP can change mid-run when the
 // hostname is resolved again, so they are built fresh every time.
 func (p *InfluxDBPrinter) tags(s *stats.Statistics) string {
-	return fmt.Sprintf("target=%s,ip=%s,port=%s,protocol=%s",
+	return fmt.Sprintf("source=%s,target=%s,ip=%s,port=%s,protocol=%s",
+		influxDBEscaper.Replace(p.source),
 		influxDBEscaper.Replace(s.Hostname),
 		influxDBEscaper.Replace(s.IPStr()),
 		s.PortStr(),

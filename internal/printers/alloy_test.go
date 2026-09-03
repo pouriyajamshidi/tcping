@@ -244,3 +244,43 @@ func TestAlloyPrintStartShowsTheIP(t *testing.T) {
 		}
 	})
 }
+
+// Several machines can send to the same Alloy, so every data point has to
+// say which one it came from. It has to be on the point itself, not on the
+// resource, or Prometheus would not have it as a label.
+func TestAlloySourceLabelIsOnEveryDataPoint(t *testing.T) {
+	var got otlpPayload
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer := NewAlloyPrinter(config.PrinterConfig{AlloyURL: server.URL, SourceLabel: "probe-1"})
+	printer.PrintProbeSuccess(alloyTestStats())
+
+	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+		points := []otlpPoint{}
+		if m.Gauge != nil {
+			points = m.Gauge.DataPoints
+		}
+		if m.Sum != nil {
+			points = m.Sum.DataPoints
+		}
+
+		for _, point := range points {
+			var source string
+			for _, a := range point.Attributes {
+				if a.Key == "source" {
+					source = a.Value.String
+				}
+			}
+
+			if source != "probe-1" {
+				t.Errorf("%s has source %q, want %q", m.Name, source, "probe-1")
+			}
+		}
+	}
+}

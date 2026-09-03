@@ -22,6 +22,7 @@ func influxDBTestConfig(url string) config.PrinterConfig {
 		InfluxDBOrg:    "home",
 		InfluxDBBucket: "tcping",
 		InfluxDBToken:  "secret",
+		SourceLabel:    "probe-1",
 	}
 }
 
@@ -119,7 +120,7 @@ func TestInfluxDBPrintProbeSuccess(t *testing.T) {
 
 	probe := writes[0][0]
 
-	want := "tcping_tcp,target=example.com,ip=93.184.216.34,port=443,protocol=TCP " +
+	want := "tcping_tcp,source=probe-1,target=example.com,ip=93.184.216.34,port=443,protocol=TCP " +
 		"success=1i,successful_probes=2i,unsuccessful_probes=0i,rtt_ms=3.5 "
 
 	if !strings.HasPrefix(probe, want) {

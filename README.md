@@ -358,11 +358,20 @@ tcping www.example.com 443 --alloy http://localhost:4318
 Instead of printing each probe, tcping sends it to Alloy over OTLP, which can
 forward it to Prometheus and turn a run into a graph. Every probe sends
 `tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
-`tcping_probes_total`, labelled with the target, IP, port and protocol. An
-HTTP(S) target also sends the status code, the connect, TLS handshake and
-first-byte timings, and the days left on the certificate. A UDP target sends
-whether the reply was echoed back, whether the port refused us and how big
-the reply was.
+`tcping_probes_total`, labelled with the source, target, IP, port and
+protocol. An HTTP(S) target also sends the status code, the connect, TLS
+handshake and first-byte timings, and the days left on the certificate. A UDP
+target sends whether the reply was echoed back, whether the port refused us
+and how big the reply was.
+
+The `source` label says which machine the probe was sent from. It defaults to
+that machine's hostname, so several machines probing the same target land in
+their own series instead of on top of each other. Use `--source-label` to name
+them yourself:
+
+```bash
+tcping www.example.com 443 --alloy http://localhost:4318 --source-label paris
+```
 
 The statistics you would normally see on exit, such as the packet loss and the
 minimum, average, maximum and mean deviation of the latency, are sent every 10
@@ -407,8 +416,8 @@ tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home 
 
 Instead of printing each probe, tcping writes it to InfluxDB v2 or v3 as line
 protocol. Every probe writes one point, named after what was probed:
-`tcping_tcp`, `tcping_udp` or `tcping_http`, tagged with the target, IP, port
-and protocol. All three hold `success`, `rtt_ms` and the successful and
+`tcping_tcp`, `tcping_udp` or `tcping_http`, tagged with the source, target,
+IP, port and protocol. All three hold `success`, `rtt_ms` and the successful and
 unsuccessful probe counts. A `tcping_http` point also carries the status code,
 the connect, TLS handshake and first-byte timings and the days left on the
 certificate, and a `tcping_udp` point carries the probe number, the size of
@@ -418,6 +427,16 @@ The statistics you would normally see on exit, such as the packet loss and the
 minimum, average, maximum and mean deviation of the latency, are written to
 `tcping_statistics` every 10 seconds so a run that nobody is watching still reports them. Use
 `--influxdb-stats-interval` to change that.
+
+The `source` tag says which machine the probe was sent from. It defaults to
+that machine's hostname, so several machines writing to the same bucket land
+in their own series instead of on top of each other. Use `--source-label` to
+name them yourself:
+
+```bash
+tcping www.example.com 443 --influxdb http://localhost:8086 \
+  --influxdb-org home --influxdb-bucket tcping --source-label paris
+```
 
 The API token is only read from the `INFLUXDB_TOKEN` environment variable, so
 it never ends up in your shell history.
@@ -474,6 +493,7 @@ The following flags are available to control the behavior of **tcping**:
 | `--influxdb-org`         | InfluxDB organization to write to. Required with `--influxdb`                                                             |
 | `--influxdb-bucket`      | InfluxDB bucket to write to. Required with `--influxdb`                                                                   |
 | `--influxdb-stats-interval` | How often to write the statistics to InfluxDB, in seconds. Defaults to 10. No effect without `--influxdb`               |
+| `--source-label`         | Name this machine in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart. Defaults to the machine's hostname |
 | `--skip-tls`             | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
 | `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. For a UDP target, shows whether the reply carried our own payload back. No effect on TCP targets |
 | `--udp-server`           | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |

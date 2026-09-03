@@ -146,8 +146,14 @@ func NewAlloyPrinter(cfg config.PrinterConfig) *AlloyPrinter {
 // them Prometheus labels on the other end. Anything extra for a single
 // metric is passed in, and each call builds its own slice so two callers
 // can never scribble over each other's labels.
+//
+// The source label says which machine the probe was sent from. It has to be
+// a data point attribute rather than a resource attribute, because Alloy's
+// Prometheus exporter puts resource attributes on a separate target_info
+// metric instead of on the series itself.
 func (p *AlloyPrinter) labels(s *stats.Statistics, extra ...otlpAttr) []otlpAttr {
 	labels := []otlpAttr{
+		attr("source", p.cfg.SourceLabel),
 		attr("target", s.Hostname),
 		attr("ip", s.IPStr()),
 		attr("port", s.PortStr()),

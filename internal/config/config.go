@@ -133,6 +133,8 @@ type PrinterConfig struct {
 	InfluxDBBucket        string        // InfluxDB bucket to write to.
 	InfluxDBToken         string        // InfluxDB API token, taken from the INFLUXDB_TOKEN environment variable.
 	InfluxDBStatsInterval time.Duration // How often the run summary is written to InfluxDB.
+
+	SourceLabel string // Names the machine tcping runs on in the metrics sent to Alloy and InfluxDB. Defaults to the hostname.
 }
 
 // Config holds all user provided settings
@@ -320,6 +322,14 @@ func ProcessUserInput() Config {
 		They are written along with the next probe, so a longer probe
 		interval delays them. No effect without the -influxdb flag.`)
 
+	sourceLabel := flag.String(
+		"source-label",
+		"",
+		`Name this machine in the metrics sent to Alloy or InfluxDB, so that
+		several machines probing the same target can be told apart.
+		Defaults to the machine's hostname. No effect without the -alloy or
+		-influxdb flag.`)
+
 	DBPath := flag.String(
 		"db",
 		"",
@@ -446,6 +456,17 @@ func ProcessUserInput() Config {
 
 	timeoutInDuration := SecondsToDuration(*timeout)
 
+	// Without this, several machines probing the same target would all
+	// write to the same series and their numbers would be mixed together.
+	srclabel := *sourceLabel
+	if srclabel == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			hostname = "unknown"
+		}
+		srclabel = hostname
+	}
+
 	printerConfig := PrinterConfig{
 		Target:             target.hostname,
 		Port:               validatedPort,
@@ -469,6 +490,8 @@ func ProcessUserInput() Config {
 		// shell history.
 		InfluxDBToken:         os.Getenv("INFLUXDB_TOKEN"),
 		InfluxDBStatsInterval: influxDBStatsIntervalDuration,
+
+		SourceLabel: srclabel,
 	}
 
 	protocol := target.protocol
