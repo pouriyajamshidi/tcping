@@ -27,7 +27,7 @@ endif
 endif
 
 VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/internal/config
-GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).version=$(VERSION)"
+GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).Version=$(VERSION)"
 GO_MAIN_PATH := ./cmd/tcping.go
 
 # IO directories
