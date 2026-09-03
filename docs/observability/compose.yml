@@ -10,7 +10,7 @@ name: tcping
 
 services:
   alloy:
-    image: grafana/alloy:latest
+    image: grafana/alloy:v1.19.2
     container_name: alloy
     command:
       - run
@@ -34,7 +34,7 @@ services:
           memory: 256M
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.14.0
     container_name: prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -54,7 +54,7 @@ services:
           memory: 512M
 
   influxdb:
-    image: influxdb:2
+    image: influxdb:2.9.1
     container_name: influxdb
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
@@ -77,7 +77,7 @@ services:
           memory: 512M
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.2.1
     container_name: grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
