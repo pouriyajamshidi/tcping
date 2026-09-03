@@ -55,6 +55,32 @@ type Printer interface {
 	Shutdown(s *stats.Statistics)
 }
 
+// NewPrinter creates and returns an appropriate printer based on configuration
+func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
+	switch {
+	case cfg.OutputJSON:
+		return NewJSONPrinter(cfg), nil
+
+	case cfg.OutputDBPath != "":
+		return NewDatabasePrinter(cfg)
+
+	case cfg.OutputCSVPath != "":
+		return NewCSVPrinter(cfg)
+
+	case cfg.AlloyURL != "":
+		return NewAlloyPrinter(cfg), nil
+
+	case cfg.InfluxDBURL != "":
+		return NewInfluxDBPrinter(cfg)
+
+	case cfg.NoColor:
+		return NewPlainPrinter(cfg), nil
+
+	default:
+		return NewColorPrinter(cfg), nil
+	}
+}
+
 // httpProbeSummary is the short HTTP part of a probe line, e.g. " status=200".
 // It is empty for TCP probes and for HTTP probes that never got a response.
 func httpProbeSummary(s *stats.Statistics) string {
@@ -126,31 +152,5 @@ func udpProbeDetails(s *stats.Statistics, verbose bool) string {
 
 	default:
 		return fmt.Sprintf("    probe %s got no reply\n", s.ProbeNumberStr())
-	}
-}
-
-// NewPrinter creates and returns an appropriate printer based on configuration
-func NewPrinter(cfg config.PrinterConfig) (Printer, error) {
-	switch {
-	case cfg.OutputJSON:
-		return NewJSONPrinter(cfg), nil
-
-	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg)
-
-	case cfg.OutputCSVPath != "":
-		return NewCSVPrinter(cfg)
-
-	case cfg.AlloyURL != "":
-		return NewAlloyPrinter(cfg), nil
-
-	case cfg.InfluxDBURL != "":
-		return NewInfluxDBPrinter(cfg)
-
-	case cfg.NoColor:
-		return NewPlainPrinter(cfg), nil
-
-	default:
-		return NewColorPrinter(cfg), nil
 	}
 }
