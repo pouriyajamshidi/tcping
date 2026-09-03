@@ -13,12 +13,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
-// version is set at compile time via the Makefile
-var version = "beta"
+// Version is set at compile time via the Makefile
+var Version = "beta"
+
+// UserAgent is the User-Agent header tcping sends on every HTTP request it
+// makes, so the receiving side can tell which tcping it is talking to.
+var UserAgent = "pouriyajamshidi/tcping/" + Version
 
 // Used when checking for updates
 const (
@@ -59,7 +61,7 @@ func parseHostPortArgs(args []string) (host string, port string) {
 type probeTarget struct {
 	hostname string
 	port     string
-	protocol consts.Protocol
+	protocol Protocol
 	url      string // Full URL, HTTP(S) targets only.
 }
 
@@ -76,7 +78,7 @@ func parseTarget(args []string) (probeTarget, error) {
 	protocol, isURL := schemeProtocol(args[0])
 	if !isURL {
 		host, port := parseHostPortArgs(args)
-		return probeTarget{hostname: host, port: port, protocol: consts.TCP}, nil
+		return probeTarget{hostname: host, port: port, protocol: TCP}, nil
 	}
 
 	u, err := url.Parse(args[0])
@@ -97,7 +99,7 @@ func parseTarget(args []string) (probeTarget, error) {
 
 	// UDP has no URL to request, just a host and a port to send a datagram
 	// to, so there is nothing left to build here.
-	if protocol == consts.UDP {
+	if protocol == UDP {
 		return target, nil
 	}
 
@@ -121,21 +123,21 @@ func parseTarget(args []string) (probeTarget, error) {
 
 // schemeProtocol reports the protocol implied by target's URL scheme, and
 // whether it had one we handle at all.
-func schemeProtocol(target string) (consts.Protocol, bool) {
+func schemeProtocol(target string) (Protocol, bool) {
 	switch {
 	case strings.HasPrefix(target, "http://"):
-		return consts.HTTP, true
+		return HTTP, true
 	case strings.HasPrefix(target, "https://"):
-		return consts.HTTPS, true
+		return HTTPS, true
 	case strings.HasPrefix(target, "udp://"):
-		return consts.UDP, true
+		return UDP, true
 	default:
 		return "", false
 	}
 }
 
-func defaultPort(protocol consts.Protocol) string {
-	if protocol == consts.HTTPS {
+func defaultPort(protocol Protocol) string {
+	if protocol == HTTPS {
 		return "443"
 	}
 	return "80"
@@ -143,7 +145,7 @@ func defaultPort(protocol consts.Protocol) string {
 
 // usage prints how tcping should be run
 func usage() {
-	fmt.Printf("\nTCPING version %s\n\n", version)
+	fmt.Printf("\nTCPING version %s\n\n", Version)
 	fmt.Println("Try running tcping like:")
 	fmt.Println("tcping www.example.com 443")
 	fmt.Println("Or use the <hostname/ip:port> format:")
@@ -168,7 +170,7 @@ func usage() {
 
 // showVersion displays the version and exits
 func showVersion() {
-	fmt.Printf("TCPING version %s\n", version)
+	fmt.Printf("TCPING version %s\n", Version)
 	os.Exit(0)
 }
 
@@ -215,7 +217,7 @@ func checkForUpdates() {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// optional (GitHub recommends)
-	req.Header.Set("User-Agent", "pouriyajamshidi-tcping-update-check")
+	req.Header.Set("User-Agent", UserAgent)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -249,7 +251,7 @@ func checkForUpdates() {
 
 	latestVer := m[1]
 
-	comparison := compareVersions(version, latestVer)
+	comparison := compareVersions(Version, latestVer)
 
 	if comparison < 0 {
 		fmt.Printf("Found newer version: %s\n", latestVer)
@@ -258,9 +260,9 @@ func checkForUpdates() {
 			owner, repo, latestTagName)
 	} else if comparison > 0 {
 		fmt.Printf("Current version %s is newer than the latest release %s\n",
-			version, latestVer)
+			Version, latestVer)
 	} else {
-		fmt.Printf("You have the latest version: %s\n", version)
+		fmt.Printf("You have the latest version: %s\n", Version)
 	}
 
 	os.Exit(0)

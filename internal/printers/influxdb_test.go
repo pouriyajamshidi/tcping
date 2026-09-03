@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -33,7 +32,7 @@ func influxDBTestStats() *stats.Statistics {
 		Hostname:              "example.com",
 		IP:                    netip.MustParseAddr("93.184.216.34"),
 		Port:                  443,
-		Protocol:              consts.TCP,
+		Protocol:              config.TCP,
 		LatestRTT:             3.5,
 		TotalSuccessfulProbes: 2,
 		StartTime:             time.Now(),
@@ -172,7 +171,7 @@ func TestInfluxDBHTTPProbeWritesItsOwnMeasurement(t *testing.T) {
 	}
 
 	s := influxDBTestStats()
-	s.Protocol = consts.HTTPS
+	s.Protocol = config.HTTPS
 	s.HTTP.StatusCode = 200
 	s.HTTP.TLSVersion = "TLS 1.3"
 	s.HTTP.CertExpiry = time.Now().Add(30 * 24 * time.Hour)
@@ -213,7 +212,7 @@ func TestInfluxDBUDPProbeWritesWhatItLearned(t *testing.T) {
 	}
 
 	s := influxDBTestStats()
-	s.Protocol = consts.UDP
+	s.Protocol = config.UDP
 	s.UDP.Echoed = true
 	s.UDP.ProbeNumber = 7
 	s.UDP.ReplySize = 4

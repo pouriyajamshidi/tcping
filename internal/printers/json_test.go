@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -21,7 +20,7 @@ func jsonTestStats() *stats.Statistics {
 		Hostname:                  "example.com",
 		IP:                        netip.MustParseAddr("93.184.216.34"),
 		Port:                      443,
-		Protocol:                  consts.TCP,
+		Protocol:                  config.TCP,
 		LatestRTT:                 3.5,
 		OngoingSuccessfulProbes:   2,
 		OngoingUnsuccessfulProbes: 5,
@@ -213,7 +212,7 @@ func TestJSONProbeTimestampAndSourceAddress(t *testing.T) {
 
 func TestJSONProbeUDPDetails(t *testing.T) {
 	s := jsonTestStats()
-	s.Protocol = consts.UDP
+	s.Protocol = config.UDP
 	s.UDP = stats.UDPInfo{ProbeNumber: 7, Echoed: true, ReplySize: 12}
 
 	_, data := printOneJSONEvent(t, config.PrinterConfig{}, func(p *JSONPrinter) {
@@ -236,7 +235,7 @@ func TestJSONProbeUDPDetails(t *testing.T) {
 func TestJSONProbeHTTPDetails(t *testing.T) {
 	https := func() *stats.Statistics {
 		s := jsonTestStats()
-		s.Protocol = consts.HTTPS
+		s.Protocol = config.HTTPS
 		s.HTTP = stats.HTTPInfo{
 			StatusCode:      200,
 			Status:          "200 OK",
@@ -275,7 +274,7 @@ func TestJSONProbeHTTPDetails(t *testing.T) {
 
 	t.Run("plain http has no TLS details", func(t *testing.T) {
 		s := https()
-		s.Protocol = consts.HTTP
+		s.Protocol = config.HTTP
 		s.HTTP.TLSVersion = ""
 		s.HTTP.TLSCipherSuite = ""
 		s.HTTP.CertExpiry = time.Time{}

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -41,7 +40,7 @@ func alloyTestStats() *stats.Statistics {
 		Hostname:              "example.com",
 		IP:                    netip.MustParseAddr("93.184.216.34"),
 		Port:                  443,
-		Protocol:              consts.TCP,
+		Protocol:              config.TCP,
 		LatestRTT:             3.5,
 		TotalSuccessfulProbes: 2,
 		StartTime:             time.Now(),
@@ -124,7 +123,7 @@ func TestAlloyUDPProbeSendsWhatItLearned(t *testing.T) {
 	printer := NewAlloyPrinter(config.PrinterConfig{AlloyURL: server.URL})
 
 	s := alloyTestStats()
-	s.Protocol = consts.UDP
+	s.Protocol = config.UDP
 	s.UDP.Echoed = true
 	s.UDP.ReplySize = 4
 

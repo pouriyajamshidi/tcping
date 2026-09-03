@@ -3,8 +3,6 @@ package config
 import (
 	"testing"
 	"time"
-
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 )
 
 func TestParseHostPortArgs(t *testing.T) {
@@ -214,7 +212,7 @@ func TestParseTarget(t *testing.T) {
 		args         []string
 		wantHostname string
 		wantPort     string
-		wantProtocol consts.Protocol
+		wantProtocol Protocol
 		wantURL      string
 		wantErr      bool
 	}{
@@ -223,21 +221,21 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"example.com", "8080"},
 			wantHostname: "example.com",
 			wantPort:     "8080",
-			wantProtocol: consts.TCP,
+			wantProtocol: TCP,
 		},
 		{
 			name:         "host:port stays TCP",
 			args:         []string{"example.com:8080"},
 			wantHostname: "example.com",
 			wantPort:     "8080",
-			wantProtocol: consts.TCP,
+			wantProtocol: TCP,
 		},
 		{
 			name:         "https URL defaults to port 443",
 			args:         []string{"https://example.com"},
 			wantHostname: "example.com",
 			wantPort:     "443",
-			wantProtocol: consts.HTTPS,
+			wantProtocol: HTTPS,
 			wantURL:      "https://example.com",
 		},
 		{
@@ -245,7 +243,7 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"http://example.com"},
 			wantHostname: "example.com",
 			wantPort:     "80",
-			wantProtocol: consts.HTTP,
+			wantProtocol: HTTP,
 			wantURL:      "http://example.com",
 		},
 		{
@@ -253,7 +251,7 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"https://example.com/health"},
 			wantHostname: "example.com",
 			wantPort:     "443",
-			wantProtocol: consts.HTTPS,
+			wantProtocol: HTTPS,
 			wantURL:      "https://example.com/health",
 		},
 		{
@@ -261,7 +259,7 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"https://example.com:8443/live"},
 			wantHostname: "example.com",
 			wantPort:     "8443",
-			wantProtocol: consts.HTTPS,
+			wantProtocol: HTTPS,
 			wantURL:      "https://example.com:8443/live",
 		},
 		{
@@ -269,7 +267,7 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"https://example.com:8443", "9443"},
 			wantHostname: "example.com",
 			wantPort:     "9443",
-			wantProtocol: consts.HTTPS,
+			wantProtocol: HTTPS,
 			wantURL:      "https://example.com:9443",
 		},
 		{
@@ -277,7 +275,7 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"https://example.com", "443"},
 			wantHostname: "example.com",
 			wantPort:     "443",
-			wantProtocol: consts.HTTPS,
+			wantProtocol: HTTPS,
 			wantURL:      "https://example.com",
 		},
 		{
@@ -285,7 +283,7 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"https://[2606:4700::1]:8443/"},
 			wantHostname: "2606:4700::1",
 			wantPort:     "8443",
-			wantProtocol: consts.HTTPS,
+			wantProtocol: HTTPS,
 			wantURL:      "https://[2606:4700::1]:8443/",
 		},
 		{
@@ -293,21 +291,21 @@ func TestParseTarget(t *testing.T) {
 			args:         []string{"udp://example.com:53"},
 			wantHostname: "example.com",
 			wantPort:     "53",
-			wantProtocol: consts.UDP,
+			wantProtocol: UDP,
 		},
 		{
 			name:         "udp URL with a trailing port argument",
 			args:         []string{"udp://example.com", "9999"},
 			wantHostname: "example.com",
 			wantPort:     "9999",
-			wantProtocol: consts.UDP,
+			wantProtocol: UDP,
 		},
 		{
 			name:         "udp has no default port",
 			args:         []string{"udp://example.com"},
 			wantHostname: "example.com",
 			wantPort:     "",
-			wantProtocol: consts.UDP,
+			wantProtocol: UDP,
 		},
 		{
 			name:    "a URL without a host is rejected",

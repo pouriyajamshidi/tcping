@@ -9,9 +9,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/dns"
 	"github.com/pouriyajamshidi/tcping/v3/internal/nic"
+)
+
+// Protocol is the protocol a probe speaks, picked from the target the user
+// gave us.
+type Protocol string
+
+const (
+	TCP   Protocol = "TCP"
+	UDP   Protocol = "UDP"
+	HTTP  Protocol = "HTTP"
+	HTTPS Protocol = "HTTPS"
+	ICMP  Protocol = "ICMP"
 )
 
 // flagsRequiringValue inspects every flag registered on flag.CommandLine and
@@ -143,7 +154,7 @@ type Config struct {
 	Hostname                   string
 	IP                         netip.Addr
 	Port                       uint16
-	Protocol                   consts.Protocol
+	Protocol                   Protocol
 	RetryResolveAfterNFailures uint
 	ProbesBeforeQuit           uint
 	Timeout                    time.Duration
@@ -559,7 +570,7 @@ func ProcessUserInput() Config {
 
 	protocol := target.protocol
 	if f.udpServer {
-		protocol = consts.UDP
+		protocol = UDP
 	}
 
 	return Config{

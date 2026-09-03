@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -19,7 +18,7 @@ func plainTestStats() *stats.Statistics {
 		Hostname:                  "example.com",
 		IP:                        netip.MustParseAddr("93.184.216.34"),
 		Port:                      443,
-		Protocol:                  consts.TCP,
+		Protocol:                  config.TCP,
 		LatestRTT:                 3.5,
 		OngoingSuccessfulProbes:   2,
 		OngoingUnsuccessfulProbes: 5,
@@ -220,7 +219,7 @@ func TestPlainProbeUDPFailureReason(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := plainTestStats()
-			s.Protocol = consts.UDP
+			s.Protocol = config.UDP
 			s.UDP = stats.UDPInfo{ProbeNumber: 7, Rejected: tt.rejected}
 
 			out := captureStdout(t, func() {
@@ -236,7 +235,7 @@ func TestPlainProbeUDPFailureReason(t *testing.T) {
 // reply belongs to.
 func TestPlainProbeVerboseUDPDetails(t *testing.T) {
 	s := plainTestStats()
-	s.Protocol = consts.UDP
+	s.Protocol = config.UDP
 	s.UDP = stats.UDPInfo{ProbeNumber: 7, Echoed: true, ReplySize: 12}
 
 	out := captureStdout(t, func() {
@@ -248,7 +247,7 @@ func TestPlainProbeVerboseUDPDetails(t *testing.T) {
 
 func TestPlainProbeHTTPStatus(t *testing.T) {
 	s := plainTestStats()
-	s.Protocol = consts.HTTPS
+	s.Protocol = config.HTTPS
 	s.HTTP = stats.HTTPInfo{
 		StatusCode:      200,
 		Status:          "200 OK",

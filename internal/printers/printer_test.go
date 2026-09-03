@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/consts"
 	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
 )
 
@@ -122,17 +121,17 @@ func TestHTTPProbeSummary(t *testing.T) {
 	}{
 		{
 			name: "tcp probe says nothing",
-			s:    &stats.Statistics{Protocol: consts.TCP, HTTP: stats.HTTPInfo{StatusCode: 200}},
+			s:    &stats.Statistics{Protocol: config.TCP, HTTP: stats.HTTPInfo{StatusCode: 200}},
 			want: "",
 		},
 		{
 			name: "http probe shows the status",
-			s:    &stats.Statistics{Protocol: consts.HTTP, HTTP: stats.HTTPInfo{StatusCode: 200}},
+			s:    &stats.Statistics{Protocol: config.HTTP, HTTP: stats.HTTPInfo{StatusCode: 200}},
 			want: " status=200",
 		},
 		{
 			name: "a probe that never got a response says nothing",
-			s:    &stats.Statistics{Protocol: consts.HTTPS},
+			s:    &stats.Statistics{Protocol: config.HTTPS},
 			want: "",
 		},
 	}
@@ -149,7 +148,7 @@ func TestHTTPProbeSummary(t *testing.T) {
 func TestHTTPProbeDetails(t *testing.T) {
 	https := func() *stats.Statistics {
 		return &stats.Statistics{
-			Protocol: consts.HTTPS,
+			Protocol: config.HTTPS,
 			HTTP: stats.HTTPInfo{
 				StatusCode:      200,
 				Status:          "200 OK",
@@ -174,7 +173,7 @@ func TestHTTPProbeDetails(t *testing.T) {
 
 	t.Run("off for TCP", func(t *testing.T) {
 		s := https()
-		s.Protocol = consts.TCP
+		s.Protocol = config.TCP
 
 		if got := httpProbeDetails(s, true); got != "" {
 			t.Errorf("httpProbeDetails() for a TCP probe = %q, want an empty string", got)
@@ -209,7 +208,7 @@ func TestHTTPProbeDetails(t *testing.T) {
 
 	t.Run("plain http leaves the TLS parts out", func(t *testing.T) {
 		s := https()
-		s.Protocol = consts.HTTP
+		s.Protocol = config.HTTP
 		s.HTTP.Proto = "HTTP/1.1"
 		s.HTTP.TLSVersion = ""
 		s.HTTP.TLSCipherSuite = ""
