@@ -141,6 +141,7 @@ func (p *InfluxDBPrinter) send(lines []string) {
 
 	req.Header.Set("Authorization", "Token "+p.token)
 	req.Header.Set("Content-Type", "text/plain; charset=utf-8")
+	req.Header.Set("User-Agent", config.UserAgent)
 
 	resp, err := p.client.Do(req)
 	if err != nil {

@@ -227,7 +227,16 @@ func (p *AlloyPrinter) send(metrics []otlpMetric) {
 		return
 	}
 
-	resp, err := p.client.Post(p.endpoint, "application/json", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, p.endpoint, bytes.NewReader(body))
+	if err != nil {
+		p.warnOnce("could not build the request: %v", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", config.UserAgent)
+
+	resp, err := p.client.Do(req)
 	if err != nil {
 		p.warnOnce("could not reach Alloy at %s: %v", p.endpoint, err)
 		return
