@@ -223,5 +223,7 @@ func (p *PlainPrinter) PrintError(format string, args ...any) {
 // finalizeStatistics by the time this runs. It does not exit the program -
 // that decision belongs to the caller, not the printer.
 func (p *PlainPrinter) Shutdown(s *stats.Statistics) {
-	p.PrintStatistics(s)
+	if !p.cfg.OmitStatistics {
+		p.PrintStatistics(s)
+	}
 }

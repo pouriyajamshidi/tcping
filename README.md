@@ -481,6 +481,7 @@ The following flags are available to control the behavior of **tcping**:
 | `-u`                     | Check for updates                                                                                                         |
 | `--show-failures-only`   | Only show probe failures and omit printing probe success messages                                                         |
 | `--show-source-address`  | Show the source IP address and port used for probes                                                                       |
+| `--omit-stats`           | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes to a file or a database |
 
 > [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.

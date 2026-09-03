@@ -39,6 +39,7 @@
 - improvement: probing now starts immediately instead of waiting for the first interval to elapse
 - fix: hostname retry-resolve (`-r`) now actually changes the address being probed instead of only updating what's displayed
 - fix: the summary's `duration (HH:MM:SS)` now always matches the `started at`/`ended at` timestamps instead of silently drifting from them
+- feat: add `--omit-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
 - refactor: simplify RTT min/avg/max tracking into a running calculation instead of storing every sample
 - refactor: consolidate uptime/downtime tracking and remove duplicated/unused `Statistics` fields
 

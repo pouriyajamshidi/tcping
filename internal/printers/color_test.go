@@ -98,3 +98,27 @@ func TestColorProbeWithoutASourceAddress(t *testing.T) {
 		})
 	}
 }
+
+// Shutdown is what prints the summary on exit, so it has to print the same
+// thing PrintStatistics does, unless --omit-stats says otherwise.
+func TestColorShutdownPrintsStatistics(t *testing.T) {
+	s := plainTestStats()
+
+	out := captureStdout(t, func() {
+		NewColorPrinter(config.PrinterConfig{}).Shutdown(s)
+	})
+
+	wantLines(t, out, "TCPing statistics ---\n")
+}
+
+func TestColorShutdownOmitsStatistics(t *testing.T) {
+	s := plainTestStats()
+
+	out := captureStdout(t, func() {
+		NewColorPrinter(config.PrinterConfig{OmitStatistics: true}).Shutdown(s)
+	})
+
+	if out != "" {
+		t.Errorf("output = %q, want it to be empty", out)
+	}
+}

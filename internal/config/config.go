@@ -118,6 +118,7 @@ type PrinterConfig struct {
 	NoColor            bool
 	WithTimestamp      bool
 	WithSourceAddress  bool
+	OmitStatistics     bool // Do not show the statistics. Only available for terminal printers
 	Verbose            bool // Show everything an HTTP(S) probe learned, not just the status.
 	OutputDBPath       string
 	OutputCSVPath      string
@@ -228,6 +229,12 @@ func ProcessUserInput() Config {
 		"show-failures-only",
 		false,
 		"Show only the failed probes.")
+
+	omitStatistics := flag.Bool(
+		"omit-stats",
+		false,
+		`Do not show the statistics at program exit. Only applicable to terminal output.
+		Pressing enter still shows the statistics.`)
 
 	verbose := flag.Bool(
 		"v",
@@ -346,6 +353,13 @@ func ProcessUserInput() Config {
 		usage()
 	}
 
+	// The file and metric printers always write their final record, so
+	// there are no statistics to omit.
+	if *omitStatistics && (*DBPath != "" || *CSVPath != "" || *alloyURL != "" || *influxDBURL != "") {
+		fmt.Fprintln(os.Stderr, "--omit-stats has no effect when the output goes to a file, a database or a metrics endpoint")
+		usage()
+	}
+
 	args := flag.Args()
 
 	// The target says which protocol to speak: an http(s):// URL selects an
@@ -440,6 +454,7 @@ func ProcessUserInput() Config {
 		NoColor:            *noColor,
 		WithTimestamp:      *showTimestamp,
 		WithSourceAddress:  *showSourceAddress,
+		OmitStatistics:     *omitStatistics,
 		Verbose:            *verbose,
 		OutputDBPath:       *DBPath,
 		OutputCSVPath:      *CSVPath,
