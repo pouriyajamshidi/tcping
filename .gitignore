@@ -1,4 +1,5 @@
 *.sh
+!tools/*.sh
 .idea/
 tcping
 tcping.exe
