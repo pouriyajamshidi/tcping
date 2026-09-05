@@ -406,18 +406,71 @@ func (p *AlloyPrinter) PrintStatistics(s *stats.Statistics) {
 }
 
 // statisticsMetrics is the summary of the run so far: the numbers you would
-// otherwise only see when tcping exits.
+// otherwise only see when tcping exits. Every line of the statistics block
+// the terminal prints has a metric here.
+//
+// Times are sent as milliseconds since the epoch rather than as text,
+// because a metric can only carry a number. Milliseconds rather than seconds
+// because that is what Grafana's date units read, and what the rest of
+// tcping's timings are already in.
 func (p *AlloyPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 	labels := p.labels(s)
 
 	metrics := []otlpMetric{
 		p.gauge("tcping_packet_loss_percent", "%", float64(s.PacketLoss()), labels),
+		p.gauge("tcping_start_time_milliseconds", "ms", float64(s.StartTime.UnixMilli()), labels),
+		p.gauge("tcping_run_duration_seconds", "s", s.RuntimeSeconds(), labels),
 		p.counter("tcping_uptime_seconds_total", "s",
 			otlpPoint{Value: s.TotalUptime.Seconds(), Attributes: p.labels(s)},
 		),
 		p.counter("tcping_downtime_seconds_total", "s",
 			otlpPoint{Value: s.TotalDowntime.Seconds(), Attributes: p.labels(s)},
 		),
+		p.counter("tcping_hostname_resolution_retries_total", "",
+			otlpPoint{Value: float64(s.RetriedHostnameLookups), Attributes: p.labels(s)},
+		),
+		p.counter("tcping_hostname_changes_total", "",
+			otlpPoint{Value: float64(s.HostnameChangeCount()), Attributes: p.labels(s)},
+		),
+	}
+
+	// A probe that has never happened has no timestamp, and sending a zero
+	// one would put it in the year 1.
+	if !s.LastSuccessfulProbe.IsZero() {
+		metrics = append(metrics,
+			p.gauge("tcping_last_successful_probe_milliseconds", "ms", float64(s.LastSuccessfulProbe.UnixMilli()), labels),
+		)
+	}
+
+	if !s.LastUnsuccessfulProbe.IsZero() {
+		metrics = append(metrics,
+			p.gauge("tcping_last_unsuccessful_probe_milliseconds", "ms", float64(s.LastUnsuccessfulProbe.UnixMilli()), labels),
+		)
+	}
+
+	// A streak is only known once it has ended, so a target that has not
+	// changed state yet has neither of these.
+	if s.LongestUptime.Duration != 0 {
+		metrics = append(metrics,
+			p.gauge("tcping_longest_uptime_seconds", "s", s.LongestUptime.Duration.Seconds(), labels),
+			p.gauge("tcping_longest_uptime_start_milliseconds", "ms", float64(s.LongestUptime.Start.UnixMilli()), labels),
+			p.gauge("tcping_longest_uptime_end_milliseconds", "ms", float64(s.LongestUptime.End.UnixMilli()), labels),
+		)
+	}
+
+	if s.LongestDowntime.Duration != 0 {
+		metrics = append(metrics,
+			p.gauge("tcping_longest_downtime_seconds", "s", s.LongestDowntime.Duration.Seconds(), labels),
+			p.gauge("tcping_longest_downtime_start_milliseconds", "ms", float64(s.LongestDowntime.Start.UnixMilli()), labels),
+			p.gauge("tcping_longest_downtime_end_milliseconds", "ms", float64(s.LongestDowntime.End.UnixMilli()), labels),
+		)
+	}
+
+	// Only the last summary of a run has an end time.
+	if !s.EndTime.IsZero() {
+		metrics = append(metrics,
+			p.gauge("tcping_end_time_milliseconds", "ms", float64(s.EndTime.UnixMilli()), labels),
+		)
 	}
 
 	// Without a single successful probe there is no latency to summarize,

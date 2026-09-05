@@ -334,3 +334,79 @@ func TestAlloyResolvedIPHasItsOwnMetric(t *testing.T) {
 		t.Errorf("tcping_target_address = %v, want 1", address.Gauge.DataPoints[0].Value)
 	}
 }
+
+// Everything the statistics block prints in the terminal has to be in the
+// summary too, otherwise a graph cannot show it.
+func TestAlloyStatisticsCarryTheWholeSummary(t *testing.T) {
+	var got otlpPayload
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer := NewAlloyPrinter(Config{AlloyURL: server.URL, SourceLabel: "probe-1"})
+	printer.PrintStatistics(statisticsTestStats())
+
+	values := map[string]float64{}
+
+	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+		if m.Gauge != nil {
+			values[m.Name] = m.Gauge.DataPoints[0].Value
+		}
+		if m.Sum != nil {
+			values[m.Name] = m.Sum.DataPoints[0].Value
+		}
+	}
+
+	want := map[string]float64{
+		"tcping_packet_loss_percent":                  2.5,
+		"tcping_start_time_milliseconds":              statisticsTestEpoch,
+		"tcping_run_duration_seconds":                 60,
+		"tcping_hostname_resolution_retries_total":    3,
+		"tcping_hostname_changes_total":               1,
+		"tcping_last_successful_probe_milliseconds":   statisticsTestEpoch + 40_000,
+		"tcping_last_unsuccessful_probe_milliseconds": statisticsTestEpoch + 20_000,
+		"tcping_longest_uptime_seconds":               20,
+		"tcping_longest_uptime_start_milliseconds":    statisticsTestEpoch,
+		"tcping_longest_uptime_end_milliseconds":      statisticsTestEpoch + 20_000,
+		"tcping_longest_downtime_seconds":             5,
+		"tcping_longest_downtime_start_milliseconds":  statisticsTestEpoch + 20_000,
+		"tcping_longest_downtime_end_milliseconds":    statisticsTestEpoch + 25_000,
+		"tcping_end_time_milliseconds":                statisticsTestEpoch + 60_000,
+	}
+
+	for name, w := range want {
+		if values[name] != w {
+			t.Errorf("%s = %v, want %v", name, values[name], w)
+		}
+	}
+}
+
+// A run that has not gone down yet has no streaks and no failed probe, and
+// sending zeros for those would claim things that never happened.
+func TestAlloyStatisticsOmitWhatHasNotHappened(t *testing.T) {
+	var got otlpPayload
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer := NewAlloyPrinter(Config{AlloyURL: server.URL, SourceLabel: "probe-1"})
+	printer.PrintStatistics(alloyTestStats())
+
+	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+		switch m.Name {
+		case "tcping_last_unsuccessful_probe_milliseconds",
+			"tcping_longest_uptime_seconds",
+			"tcping_longest_downtime_seconds",
+			"tcping_end_time_milliseconds":
+			t.Errorf("the summary should not carry %s yet", m.Name)
+		}
+	}
+}

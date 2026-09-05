@@ -132,6 +132,25 @@ func (s *Statistics) RuntimeDuration() string {
 	return time.Time{}.Add(d).Format(time.TimeOnly)
 }
 
+// RuntimeSeconds is how long the run has been going, in seconds. It counts
+// up to now while the run is still going and freezes at EndTime once it has
+// finished, so a summary sent halfway through and the one sent at the end
+// both say the right thing.
+func (s *Statistics) RuntimeSeconds() float64 {
+	if s.EndTime.IsZero() {
+		return time.Since(s.StartTime).Seconds()
+	}
+
+	return s.EndTime.Sub(s.StartTime).Seconds()
+}
+
+// HostnameChangeCount is how many times the hostname started resolving to a
+// different address. HostnameChanges opens with the address the run started
+// on, which is not a change, so it does not count.
+func (s *Statistics) HostnameChangeCount() int {
+	return max(len(s.HostnameChanges)-1, 0)
+}
+
 func (s *Statistics) ProtocolStr() string {
 	return string(s.Protocol)
 }

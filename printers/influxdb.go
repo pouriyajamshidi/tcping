@@ -252,13 +252,61 @@ func (p *InfluxDBPrinter) probeLine(s *stats.Statistics, succeeded bool) string 
 }
 
 // statisticsLines are the summary of the run so far: the numbers you would
-// otherwise only see when tcping exits.
+// otherwise only see when tcping exits. Every line of the statistics block
+// the terminal prints has a field here.
+//
+// Times are written as milliseconds since the epoch rather than as text,
+// because a string field cannot be graphed. Milliseconds rather than seconds
+// because that is what Grafana's date units read, and what the rest of
+// tcping's timings are already in.
 func (p *InfluxDBPrinter) statisticsLines(s *stats.Statistics) []string {
 	fields := fmt.Sprintf("packet_loss_percent=%g,uptime_seconds=%g,downtime_seconds=%g",
 		s.PacketLoss(),
 		s.TotalUptime.Seconds(),
 		s.TotalDowntime.Seconds(),
 	)
+
+	// When the run started, how long it has been going, and how much
+	// trouble the hostname gave us along the way.
+	fields += fmt.Sprintf(",start_time_ms=%di,run_duration_seconds=%g,hostname_resolution_retries=%di,hostname_changes=%di",
+		s.StartTime.UnixMilli(),
+		s.RuntimeSeconds(),
+		s.RetriedHostnameLookups,
+		s.HostnameChangeCount(),
+	)
+
+	// A probe that has never happened has no timestamp, and writing a zero
+	// one would put it in the year 1.
+	if !s.LastSuccessfulProbe.IsZero() {
+		fields += fmt.Sprintf(",last_successful_probe_ms=%di", s.LastSuccessfulProbe.UnixMilli())
+	}
+
+	if !s.LastUnsuccessfulProbe.IsZero() {
+		fields += fmt.Sprintf(",last_unsuccessful_probe_ms=%di", s.LastUnsuccessfulProbe.UnixMilli())
+	}
+
+	// A streak is only known once it has ended, so a target that has not
+	// changed state yet has neither of these.
+	if s.LongestUptime.Duration != 0 {
+		fields += fmt.Sprintf(",longest_uptime_seconds=%g,longest_uptime_start_ms=%di,longest_uptime_end_ms=%di",
+			s.LongestUptime.Duration.Seconds(),
+			s.LongestUptime.Start.UnixMilli(),
+			s.LongestUptime.End.UnixMilli(),
+		)
+	}
+
+	if s.LongestDowntime.Duration != 0 {
+		fields += fmt.Sprintf(",longest_downtime_seconds=%g,longest_downtime_start_ms=%di,longest_downtime_end_ms=%di",
+			s.LongestDowntime.Duration.Seconds(),
+			s.LongestDowntime.Start.UnixMilli(),
+			s.LongestDowntime.End.UnixMilli(),
+		)
+	}
+
+	// Only the last summary of a run has an end time.
+	if !s.EndTime.IsZero() {
+		fields += fmt.Sprintf(",end_time_ms=%di", s.EndTime.UnixMilli())
+	}
 
 	// Without a single successful probe there is no latency to summarize,
 	// and writing zeros would look like a very fast target.

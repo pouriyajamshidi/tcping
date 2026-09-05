@@ -1,6 +1,7 @@
 package printers
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -383,5 +384,116 @@ func TestInfluxDBResolvedIPDoesNotSplitTheSeries(t *testing.T) {
 
 	if !strings.Contains(writes[1][0], `ip="93.184.216.35"`) {
 		t.Errorf("the new address was not written: %q", writes[1][0])
+	}
+}
+
+// statisticsTestEpoch is 2026-09-05 12:38:00 UTC in milliseconds, which is
+// when statisticsTestStats says its run started. Spelling it out means the
+// tests check the arithmetic rather than repeat it.
+const statisticsTestEpoch = 1788611880_000
+
+// statisticsTestStats is a run that has been up, gone down and come back, so
+// every conditional field of the summary has something to say.
+func statisticsTestStats() *stats.Statistics {
+	start := time.UnixMilli(statisticsTestEpoch)
+
+	return &stats.Statistics{
+		Hostname:                "example.com",
+		IP:                      netip.MustParseAddr("93.184.216.34"),
+		Port:                    443,
+		Protocol:                config.TCP,
+		StartTime:               start,
+		EndTime:                 start.Add(time.Minute),
+		TotalSuccessfulProbes:   39,
+		TotalUnsuccessfulProbes: 1,
+		LastSuccessfulProbe:     start.Add(40 * time.Second),
+		LastUnsuccessfulProbe:   start.Add(20 * time.Second),
+		LongestUptime: stats.LongestTime{
+			Start:    start,
+			End:      start.Add(20 * time.Second),
+			Duration: 20 * time.Second,
+		},
+		LongestDowntime: stats.LongestTime{
+			Start:    start.Add(20 * time.Second),
+			End:      start.Add(25 * time.Second),
+			Duration: 5 * time.Second,
+		},
+		RetriedHostnameLookups: 3,
+		HostnameChanges: []stats.HostnameChange{
+			{Addr: netip.MustParseAddr("93.184.216.34")},
+			{Addr: netip.MustParseAddr("93.184.216.35")},
+		},
+	}
+}
+
+// Everything the statistics block prints in the terminal has to be in the
+// summary too, otherwise a graph cannot show it.
+func TestInfluxDBStatisticsCarryTheWholeSummary(t *testing.T) {
+	var writes [][]string
+
+	server := influxDBServer(t, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	printer.PrintStatistics(statisticsTestStats())
+
+	line := writes[0][0]
+
+	want := []string{
+		"packet_loss_percent=2.5",
+		"uptime_seconds=0",
+		"downtime_seconds=0",
+		fmt.Sprintf("start_time_ms=%di", statisticsTestEpoch),
+		"run_duration_seconds=60",
+		"hostname_resolution_retries=3i",
+		"hostname_changes=1i",
+		fmt.Sprintf("last_successful_probe_ms=%di", statisticsTestEpoch+40_000),
+		fmt.Sprintf("last_unsuccessful_probe_ms=%di", statisticsTestEpoch+20_000),
+		"longest_uptime_seconds=20",
+		fmt.Sprintf("longest_uptime_start_ms=%di", statisticsTestEpoch),
+		fmt.Sprintf("longest_uptime_end_ms=%di", statisticsTestEpoch+20_000),
+		"longest_downtime_seconds=5",
+		fmt.Sprintf("longest_downtime_start_ms=%di", statisticsTestEpoch+20_000),
+		fmt.Sprintf("longest_downtime_end_ms=%di", statisticsTestEpoch+25_000),
+		fmt.Sprintf("end_time_ms=%di", statisticsTestEpoch+60_000),
+	}
+
+	for _, field := range want {
+		if !strings.Contains(line, field) {
+			t.Errorf("the summary is missing %s\ngot: %s", field, line)
+		}
+	}
+}
+
+// A run that has not gone down yet has no streaks and no failed probe, and
+// writing zeros for those would claim things that never happened.
+func TestInfluxDBStatisticsOmitWhatHasNotHappened(t *testing.T) {
+	var writes [][]string
+
+	server := influxDBServer(t, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	printer.PrintStatistics(influxDBTestStats())
+
+	line := writes[0][0]
+
+	for _, field := range []string{
+		"last_unsuccessful_probe_ms",
+		"longest_uptime_",
+		"longest_downtime_",
+		"end_time_ms",
+	} {
+		if strings.Contains(line, field) {
+			t.Errorf("the summary should not carry %s yet\ngot: %s", field, line)
+		}
 	}
 }
