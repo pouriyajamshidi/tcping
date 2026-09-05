@@ -394,10 +394,15 @@ them yourself:
 tcping www.example.com 443 --alloy http://localhost:4318 --source-label paris
 ```
 
-The statistics you would normally see on exit, such as the packet loss and the
-minimum, average, maximum and mean deviation of the latency, are sent every 10
-seconds so a run that nobody is watching still reports them. Use `--alloy-stats-interval` to change
-that.
+The whole statistics block you would normally see on exit is sent every 10
+seconds, so a run that nobody is watching still reports it: the packet loss,
+the minimum, average, maximum and mean deviation of the latency, the total
+uptime and downtime, the longest streak of each and when it ran from and to,
+when the last successful and unsuccessful probes landed, how many times the
+hostname had to be looked up again and how often it answered from a different
+address, and when the run started, how long it has been going and when it
+ended. Times are sent as milliseconds since the epoch, since a metric can only
+carry a number. Use `--alloy-stats-interval` to change the interval.
 
 On the Alloy side you need an OTLP receiver pointed at Prometheus. A working
 one, along with a Prometheus, an InfluxDB and a Grafana dashboard you can
@@ -423,10 +428,16 @@ the connect, TLS handshake and first-byte timings and the days left on the
 certificate, and a `tcping_udp` point carries the probe number, the size of
 the reply and whether it was echoed back or refused.
 
-The statistics you would normally see on exit, such as the packet loss and the
-minimum, average, maximum and mean deviation of the latency, are written to
-`tcping_statistics` every 10 seconds so a run that nobody is watching still reports them. Use
-`--influxdb-stats-interval` to change that.
+The whole statistics block you would normally see on exit is written to
+`tcping_statistics` every 10 seconds, so a run that nobody is watching still
+reports it: the packet loss, the minimum, average, maximum and mean deviation
+of the latency, the total uptime and downtime, the longest streak of each and
+when it ran from and to, when the last successful and unsuccessful probes
+landed, how many times the hostname had to be looked up again and how often it
+answered from a different address, and when the run started, how long it has
+been going and when it ended. Times are written as milliseconds since the
+epoch, since a string field cannot be graphed. Use
+`--influxdb-stats-interval` to change the interval.
 
 The `source` tag says which machine the probe was sent from. It defaults to
 that machine's hostname, so several machines writing to the same bucket land
