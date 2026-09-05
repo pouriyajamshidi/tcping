@@ -24,15 +24,17 @@ A cross-platform ping program using `TCP` instead of `ICMP`, inspired by Linux's
 Here are some of the features of **TCPING**:
 
 - An alternative to `ping` in environments that `ICMP` is blocked.
-- Outputs information in **colored**, **plain**, **JSON**, **CSV** and **sqlite3** formats.
+- Probes over `TCP`, `HTTP(S)` and `UDP`, picked from the target you give it.
+- Outputs information in **colored**, **plain**, **JSON**, **CSV** and **sqlite3** formats, or sends it to **Grafana Alloy** and **InfluxDB** as metrics.
 - Monitor and audit your or your peers network latency, packet loss, and connection quality.
 - Lets you specify the **source interface**, **timeout**, and **interval** between probes.
 - Supports both `IPv4` or `IPv6` and lets you enforce using either.
 - Prints total connection statistics by pressing the `Enter` key, without stopping the program.
 - Reports the longest encountered `downtime` and `uptime` duration and time.
+- Reports the minimum, average, maximum and mean deviation of the latency, the same way `ping` does.
 - Retries hostname resolution after a predetermined number of probe failures using the `-r` flag, or before every single probe using `--resolve-every-probe`. Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
 - Reports how long hostname resolution itself took, at startup and on every retry.
-- uses different `TCP sequence numbering` for _successful_ and _unsuccessful_ probes to infer the total failed or successful probes at a glance.
+- Uses different `sequence numbering` for _successful_ and _unsuccessful_ probes to infer the total failed or successful probes at a glance.
 
 Check out the [demos](#demos) to get a look and feel of **tcping**.
 
@@ -48,6 +50,9 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
     - [Hostname resolution timing (`--resolve-every-probe`) flag](#hostname-resolution-timing---resolve-every-probe-flag)
     - [Source interface (`-I`) flag](#source-interface--i-flag)
+    - [HTTP(S) probes](#https-probes)
+    - [HTTP(S) probe details (`-v`) flag](#https-probe-details--v-flag)
+    - [Skipping certificate verification (`--skip-tls`) flag](#skipping-certificate-verification---skip-tls-flag)
   - [Download and Installation](#download-and-installation)
     - [Windows](#windows)
     - [macOS](#macos)
@@ -55,14 +60,24 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
     - [Alternative Ways](#alternative-ways)
   - [Usage](#usage)
+    - [Probing over HTTP(S)](#probing-over-https)
+    - [Probing over UDP](#probing-over-udp)
+    - [Sending the results to Grafana Alloy](#sending-the-results-to-grafana-alloy)
+    - [Sending the results to InfluxDB](#sending-the-results-to-influxdb)
   - [Flags](#flags)
+    - [General](#general)
+    - [Probing](#probing)
+    - [Name resolution](#name-resolution)
+    - [Terminal output](#terminal-output)
+    - [File and machine-readable output](#file-and-machine-readable-output)
+    - [Metrics](#metrics)
+    - [HTTP(S) and UDP](#https-and-udp)
   - [Contributing](#contributing)
   - [Feature Requests and Issues](#feature-requests-and-issues)
   - [Help The Project](#help-the-project)
   - [License](#license)
 
 ---
-
 
 ## Demos
 
@@ -318,7 +333,55 @@ tcping www.example.com 443 -j --pretty
 tcping www.example.com 443 --no-color
 ```
 
-9. Probe a UDP port:
+> [!NOTE]
+> Check the **available flags** [here](#flags) for a more advanced usage.
+
+The Docker image can be used with the same set of flags, like:
+
+```bash
+# If downloaded from Docker Hub
+docker run -it pouriyajamshidi/tcping:latest example.com 443
+# Or using host:port format
+docker run -it pouriyajamshidi/tcping:latest example.com:443
+
+# If downloaded from GitHub container registry:
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
+# Or using host:port format
+docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
+```
+
+> [!TIP]
+> Press the `Enter` key while the program is running to see the summary of all probes without stopping the program, as shown in the [demos](#demos) section.
+
+### Probing over HTTP(S)
+
+Give a URL instead of a host and a port and tcping probes it over HTTP(S),
+reporting the status code and how long the whole request took:
+
+```bash
+tcping https://www.example.com/health
+```
+
+The port comes from the scheme, `80` or `443`, unless the URL carries its own
+or you pass one after it:
+
+```bash
+tcping http://www.example.com:8080/health
+# Same thing
+tcping http://www.example.com/health 8080
+```
+
+`-v` shows everything a probe collected: the HTTP version, the TLS version and
+cipher, how many days are left on the certificate and the connect, TLS
+handshake and first-byte timings. `--skip-tls` skips the certificate check,
+which is what you want against a self-signed or an expired one:
+
+```bash
+tcping https://www.example.com/health -v
+tcping https://self-signed.example.com --skip-tls
+```
+
+### Probing over UDP
 
 ```bash
 tcping udp://127.0.0.1 53
@@ -349,7 +412,7 @@ Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
     reply echoed back probe 4
 ```
 
-10. Send the results to Grafana Alloy as metrics:
+### Sending the results to Grafana Alloy
 
 ```bash
 tcping www.example.com 443 --alloy http://localhost:4318
@@ -409,7 +472,7 @@ one, along with a Prometheus, an InfluxDB and a Grafana dashboard you can
 start in one command, is in
 [docs/observability](docs/observability/README.md).
 
-11. Send the results to InfluxDB:
+### Sending the results to InfluxDB
 
 ```bash
 export INFLUXDB_TOKEN=your-api-token
@@ -456,68 +519,81 @@ if both are set.
 To try this without setting a server up first, there is a ready made stack in
 [docs/observability](docs/observability/README.md).
 
-> [!NOTE]
-> Check the **available flags** [here](#flags) for a more advanced usage.
-
-The Docker image can be used with the same set of flags, like:
-
-```bash
-# If downloaded from Docker Hub
-docker run -it pouriyajamshidi/tcping:latest example.com 443
-# Or using host:port format
-docker run -it pouriyajamshidi/tcping:latest example.com:443
-
-# If downloaded from GitHub container registry:
-docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
-# Or using host:port format
-docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
-```
-
-> [!TIP]
-> Press the `Enter` key while the program is running to see the summary of all probes without stopping the program, as shown in the [demos](#demos) section.
-
 ---
 
 ## Flags
 
-The following flags are available to control the behavior of **tcping**:
+Flags can be given before or after the target, and with either one or two
+dashes, so `-c 5` and `--c 5` are the same flag.
 
-| Flag                     | Description                                                                                                                |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `-h`                     | Show help                                                                                                                  |
-| `-4`                     | Only use IPv4 addresses                                                                                                    |
-| `-6`                     | Only use IPv6 addresses                                                                                                    |
-| `-r`                     | Retry resolving target's hostname after `<n>` number of failed probes. e.g. -r 10 to retry after 10 failed probes         |
-| `--resolve-every-probe`  | Resolve the target's hostname before every single probe instead of only at startup (or on retry via `-r`). Takes precedence over `-r` |
-| `-c`                     | Stop after `<n>` probes, regardless of the result. By default, no limit will be applied                                   |
-| `-t`                     | Time to wait for a response, in seconds. Real number allowed. 0 means infinite timeout                                    |
-| `-D`                     | Display date and time in probe output. Similar to Linux's ping utility but human-readable                                 |
-| `-i`                     | Interval between sending probes                                                                                           |
-| `-I`                     | Interface name or IP address to use for sending probes and DNS lookups                                                    |
-| `--dns-server`           | Custom DNS server IP to use, instead of the system-wide server. e.g. `--dns-server 1.1.1.1:53`                            |
-| `--dns-timeout`          | Time to wait for a DNS response, in seconds. Real number allowed. 0 means infinite timeout                                |
-| `--no-color`             | Do not colorize output                                                                                                    |
-| `--csv`                  | Path and file name to store tcping output in `CSV` format                                                                 |
-| `--csv-no-timestamp`     | Do not append a date/time suffix to the CSV filename given via `--csv`, so repeated runs overwrite the same file          |
-| `-j`                     | Output in `JSON` format                                                                                                   |
-| `--pretty`               | Prettify the `JSON` output                                                                                                |
-| `--db`                   | Path and file name to store tcping output to sqlite database. e.g. `--db /tmp/tcping.db`. Not available on Windows        |
-| `--alloy`                | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them. e.g. `--alloy http://localhost:4318` |
-| `--alloy-stats-interval` | How often to send the statistics to Alloy, in seconds. Defaults to 10. No effect without `--alloy`                        |
-| `--influxdb`             | Send the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as metrics instead of printing them. e.g. `--influxdb http://localhost:8086` |
-| `--influxdb-org`         | InfluxDB organization to write to. Required with `--influxdb`                                                             |
-| `--influxdb-bucket`      | InfluxDB bucket to write to. Required with `--influxdb`                                                                   |
-| `--influxdb-token`       | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable            |
-| `--influxdb-stats-interval` | How often to write the statistics to InfluxDB, in seconds. Defaults to 10. No effect without `--influxdb`               |
-| `--source-label`         | Name this machine in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart. Defaults to the machine's hostname |
-| `--skip-tls`             | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
-| `-v`                     | Show all the details an HTTP(S) probe collects: the HTTP version, the TLS version and cipher, the certificate expiry and the connect/TLS/first-byte timings. For a UDP target, shows whether the reply carried our own payload back. No effect on TCP targets |
-| `--udp-server`           | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
-| `--version`              | Print version                                                                                                             |
-| `-u`                     | Check for updates                                                                                                         |
-| `--show-failures-only`   | Only show probe failures and omit printing probe success messages                                                         |
-| `--show-source-address`  | Show the source IP address and port used for probes                                                                       |
-| `--omit-stats`           | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes to a file or a database |
+### General
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-h` | | Show the available flags and exit |
+| `--version` | | Show the version and exit |
+| `-u` | | Check for updates and exit |
+
+### Probing
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-c <n>` | no limit | Stop after `<n>` probes, regardless of the result |
+| `-i <seconds>` | `1` | Interval between probes. Real number allowed, e.g. `-i 0.5` |
+| `-t <seconds>` | `1` | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout |
+| `-4` | | Only use IPv4 addresses |
+| `-6` | | Only use IPv6 addresses |
+| `-I <name\|IP>` | | Interface name or IP address to send the probes and the DNS lookups from |
+
+### Name resolution
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-r <n>` | never | Retry resolving the target's hostname after `<n>` failed probes, e.g. `-r 10` |
+| `--resolve-every-probe` | | Resolve the target's hostname before every single probe instead of only at startup. Takes precedence over `-r` and has no effect when the target is an IP address |
+| `--dns-server <IP>` | system-wide | Custom DNS server to use. An IP and port combination is allowed, e.g. `--dns-server 1.1.1.1:53` |
+| `--dns-timeout <seconds>` | `2` | Time to wait for a DNS response, in seconds. Real number allowed. `0` means infinite timeout |
+
+### Terminal output
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-D` | | Show a timestamp for each probe |
+| `--no-color` | | Do not colorize the output |
+| `--show-source-address` | | Show the source IP address and port used for the probes |
+| `--show-failures-only` | | Only show the failed probes. The successful ones are still counted |
+| `--omit-stats` | | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes elsewhere than the terminal |
+| `-v` | | Show everything an HTTP(S) probe collected: the HTTP version, the TLS version and cipher, the certificate expiry and the connect, TLS and first-byte timings. For a UDP target, shows the probe's number and whether the reply carried it back, so a lost probe can be told apart from the rest. No effect on TCP targets |
+
+### File and machine-readable output
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-j` | | Output in `JSON` format |
+| `--pretty` | | Prettify the `JSON` output. No effect without `-j` |
+| `--csv <file>` | | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix |
+| `--csv-no-timestamp` | | Do not append a date/time suffix to the `--csv` filename, so repeated runs overwrite the same file |
+| `--db <file>` | | Store the output in a sqlite3 database, e.g. `--db /tmp/tcping.db`. Not available on Windows |
+
+### Metrics
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--alloy <URL>` | | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, e.g. `--alloy http://localhost:4318` |
+| `--alloy-stats-interval <seconds>` | `10` | How often to send the statistics to Alloy. No effect without `--alloy` |
+| `--influxdb <URL>` | | Write the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as line protocol instead of printing them, e.g. `--influxdb http://localhost:8086` |
+| `--influxdb-org <org>` | | InfluxDB organization to write to. Required with `--influxdb` |
+| `--influxdb-bucket <bucket>` | | InfluxDB bucket to write to. Required with `--influxdb` |
+| `--influxdb-token <token>` | | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable, which keeps it out of your shell history |
+| `--influxdb-stats-interval <seconds>` | `10` | How often to write the statistics to InfluxDB. No effect without `--influxdb` |
+| `--source-label <name>` | hostname | Name this machine in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart |
+
+### HTTP(S) and UDP
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--skip-tls` | | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
+| `--udp-server` | | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 
 > [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
@@ -539,6 +615,16 @@ Pull requests are welcome to solve bugs, add new features and to help with the o
 Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
 
 Please make sure that your pull request **only covers one specific issue/feature** and doesn't handle two or more issues. This makes it simpler for us to review your pull request and helps keeping a clean git history.
+
+To try your changes against a bad network, `tools/netcond.sh` can add latency,
+drop a share of the packets or block one destination outright, and undo
+everything it added afterwards:
+
+```bash
+sudo ./tools/netcond.sh delay 1.1.1.1 800ms 200ms 30
+sudo ./tools/netcond.sh loss 1.1.1.1 40
+sudo ./tools/netcond.sh clear
+```
 
 ## Feature Requests and Issues
 
