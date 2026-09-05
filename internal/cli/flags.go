@@ -33,37 +33,11 @@ func flagsRequiringValue() map[string]bool {
 	return flagsWithValues
 }
 
-// permuteArgs rearranges user provided args for flag parsing.
-// Go's standard flag package stops parsing flags as soon as it encounters the first non-flag argument,
-// causing us to lose our flags, so we need to override that behavior.
-// Given [tcping.go example.com 443 -4 -r 1 -c 2] or [tcping.go -4 -r 1 -c 2 example.com 443]
-// returns [tcping.go -4 -r 1 -c 2 example.com 443]
-// nonFlagArgs are ["example.com", "443"]
-// flagArgs are ["-4", "-c 2"]
-//
-// Without permutation, `tcping example.com 443 -4 -c 5` becomes:
-// flags:
-//
-//	none
-//
-// args:
-//
-//	example.com
-//	443
-//	-4
-//	-c
-//	5
-//
-// With permutation:
-// flags:
-//
-//	-4
-//	-c 5
-//
-// args:
-//
-//	example.com
-//	443
+// permuteArgs moves the flags in args ahead of everything else, so that
+// `tcping example.com 443 -4 -c 5` works as well as `tcping -4 -c 5
+// example.com 443`. Go's flag package stops looking for flags at the first
+// argument that is not one, so without this the -4 and the -c would be
+// ignored.
 //
 // In memory of Takaya, you will be missed my friend.
 func permuteArgs(args []string) {
@@ -106,8 +80,8 @@ func permuteArgs(args []string) {
 	copy(args, append(flagArgs, nonFlagArgs...))
 }
 
-// PrinterConfig holds all configuration options for Printer creation
-
+// flags holds the raw values flag.Parse fills in, before they are turned
+// into a config.Config and a printers.Config.
 type flags struct {
 	useIPv4 bool
 	useIPv6 bool
@@ -428,8 +402,6 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 		SourceLabel: sourceLabel,
 	}
 }
-
-// ProcessUserInput gets and validate user input
 
 // secondsToDuration returns the corresponding duration from seconds expressed with a float.
 func secondsToDuration(seconds float64) time.Duration {

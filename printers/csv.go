@@ -132,9 +132,13 @@ func NewCSVPrinter(cfg Config) (*CSVPrinter, error) {
 	}, nil
 }
 
+// addDateAndCSVExtension builds the name of a CSV file from what the user
+// gave to -c, adding the date and time unless noTimestamp is set, and the
+// "_stats" suffix for the statistics file.
 func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) string {
+	// Only a real ".csv" ending is replaced. Anything else is part of the
+	// name, so "example.com" does not turn into "example.csv".
 	ext := filepath.Ext(filename)
-	// don't mistake example.com with example.csv
 	if ext != ".csv" {
 		ext = ""
 	}
@@ -156,7 +160,7 @@ func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) str
 	return strings.ReplaceAll(base+"_"+timestamp+".csv", " ", "_")
 }
 
-// Done flushes the buffer of writers and closes the probe and stats files.
+// done flushes the buffer of writers and closes the probe and stats files.
 func (p *CSVPrinter) done() {
 	if p.probeWriter != nil {
 		p.probeWriter.Flush()
@@ -454,7 +458,7 @@ func (p *CSVPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
-// Shutdown prints statistics and calls Done() to flush and close the CSV
+// Shutdown prints statistics and calls done() to flush and close the CSV
 // files. Statistics are already finalized by finalizeStatistics by the time
 // this runs. It does not exit the program - that decision belongs to the
 // caller, not the printer.

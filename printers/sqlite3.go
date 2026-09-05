@@ -473,7 +473,7 @@ func (p *DatabasePrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Database Error: "+format+"\n", args...)
 }
 
-// Shutdown prints statistics and calls Done() to close the database.
+// Shutdown prints statistics and calls done() to close the database.
 // Statistics are already finalized by finalizeStatistics by the time this
 // runs. It does not exit the program - that decision belongs to the
 // caller, not the printer.

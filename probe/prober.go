@@ -103,7 +103,6 @@ func (p *Prober) Probe(ctx context.Context) error {
 	// runProbe performs a single probe, prints its result, retries hostname
 	// resolution if configured to, and reports whether that was the last
 	// probe to run (ProbesBeforeQuit reached).
-	// we need this to avoid waiting n seconds for the first probe to run.
 	runProbe := func() (done bool) {
 		p.statistics.ResolvedThisProbe = false
 

@@ -14,7 +14,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/version"
 )
 
-// Used when checking for updates
+// The GitHub repository the update check asks for the latest release of.
 const (
 	owner = "pouriyajamshidi"
 	repo  = "tcping"

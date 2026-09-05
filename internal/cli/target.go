@@ -124,5 +124,3 @@ func defaultPort(protocol config.Protocol) string {
 	}
 	return "80"
 }
-
-// usage prints how tcping should be run
