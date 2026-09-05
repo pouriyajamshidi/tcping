@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pouriyajamshidi/tcping/v3/version"
+	"github.com/pouriyajamshidi/tcping/v3/internal/version"
 )
 
 // usage prints how tcping should be run

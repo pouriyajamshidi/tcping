@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/version"
+	"github.com/pouriyajamshidi/tcping/v3/internal/version"
 
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )

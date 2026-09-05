@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pouriyajamshidi/tcping/v3/version"
+	"github.com/pouriyajamshidi/tcping/v3/internal/version"
 )
 
 // The GitHub repository the update check asks for the latest release of.
