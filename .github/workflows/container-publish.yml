@@ -18,13 +18,16 @@ jobs:
       id-token: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # full history so the tag can be checked against master below
+          fetch-depth: 0
+
       - name: Ensure tag is on master
         run: |
           git fetch origin master
           git branch --remote --contains $GITHUB_SHA | grep origin/master
-
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -58,7 +61,8 @@ jobs:
 
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=latest
+            # pre-release tags like v3.0.0-rc1 should not move latest
+            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
 
           labels: |
             org.opencontainers.image.title=tcping
