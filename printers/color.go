@@ -4,21 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gookit/color"
-
 	"github.com/pouriyajamshidi/tcping/v3/stats"
-)
-
-// Color function aliases to use when printing information
-var (
-	printCyan        = color.Cyan.Printf
-	printLightCyan   = color.LightCyan.Printf
-	printGreen       = color.Green.Printf
-	printLightGreen  = color.LightGreen.Printf
-	printYellow      = color.Yellow.Printf
-	printLightYellow = color.LightYellow.Printf
-	printRed         = color.Red.Printf
-	printLightBlue   = color.FgLightBlue.Printf
 )
 
 // ColorPrinter provides functionality for printing colored messages.

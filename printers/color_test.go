@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gookit/color"
-
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
@@ -22,12 +20,13 @@ func captureStdout(t *testing.T, f func()) string {
 
 	original := os.Stdout
 	os.Stdout = w
-	// gookit/color caches the original stdout, so point it at the pipe too.
-	color.SetOutput(w)
+	// Escape codes would only get in the way of comparing the output.
+	originalColorEnabled := colorEnabled
+	colorEnabled = false
 
 	defer func() {
 		os.Stdout = original
-		color.SetOutput(original)
+		colorEnabled = originalColorEnabled
 	}()
 
 	f()
