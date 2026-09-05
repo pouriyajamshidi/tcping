@@ -545,6 +545,9 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `-6` | | Only use IPv6 addresses |
 | `-I <name\|IP>` | | Interface name or IP address to send the probes and the DNS lookups from |
 
+> [!TIP]
+> Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
+
 ### Name resolution
 
 | Flag | Default | Description |
@@ -594,9 +597,6 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | --- | --- | --- |
 | `--skip-tls` | | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
 | `--udp-server` | | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
-
-> [!TIP]
-> Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 
 ---
 
