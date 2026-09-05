@@ -11,19 +11,14 @@ DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Wr
 # remembering to also hand-edit this file (this is exactly the failure
 # mode behind the "fix: version typo" entry in the changelog). A commit
 # exactly on a tag gets the clean tag version; anything else gets
-# <branch>-<short-sha>, with a -dirty suffix for uncommitted changes.
-GIT_EXACT_TAG := $(shell git describe --tags --exact-match 2>/dev/null)
-ifneq ($(GIT_EXACT_TAG),)
-VERSION := $(patsubst v%,%,$(GIT_EXACT_TAG))
+# <last-tag>-<commits-since>-g<short-sha>, with a -dirty suffix for
+# uncommitted changes. It always starts with the tag number because the
+# .deb version field must start with a digit.
+GIT_DESCRIBE := $(shell git describe --tags --dirty 2>/dev/null)
+ifeq ($(GIT_DESCRIBE),)
+VERSION := 0.0.0-unknown
 else
-GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
-GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null)
-GIT_DIRTY := $(shell git diff --quiet HEAD 2>/dev/null || echo -dirty)
-ifeq ($(GIT_BRANCH),)
-VERSION := unknown
-else
-VERSION := $(GIT_BRANCH)-$(GIT_SHA)$(GIT_DIRTY)
-endif
+VERSION := $(patsubst v%,%,$(GIT_DESCRIBE))
 endif
 
 VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/internal/version
@@ -50,10 +45,8 @@ RELEASE_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-darwin-amd64-dynamic.tar.gz \
 	$(OUTPUT_DIR)/tcping-darwin-arm64-static.tar.gz \
 	$(OUTPUT_DIR)/tcping-darwin-arm64-dynamic.tar.gz \
-	$(OUTPUT_DIR)/tcping-windows-amd64-static.zip \
-	$(OUTPUT_DIR)/tcping-windows-amd64-dynamic.zip \
-	$(OUTPUT_DIR)/tcping-windows-arm64-static.zip \
-	$(OUTPUT_DIR)/tcping-windows-arm64-dynamic.zip \
+	$(OUTPUT_DIR)/tcping-windows-amd64.zip \
+	$(OUTPUT_DIR)/tcping-windows-arm64.zip \
 	$(OUTPUT_DIR)/tcping-amd64.deb \
 	$(OUTPUT_DIR)/tcping-arm64.deb
 GIF_ARTIFACTS := \
@@ -86,6 +79,9 @@ build: $(TARGET_DIR)/$(BIN_NAME)
 
 # Build all release artifacts
 release: $(RELEASE_ARTIFACTS)
+	@echo "[+] Checksums for the release page"
+	@echo
+	@sha256sum $(RELEASE_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
 
 check: format vet test
 
@@ -147,12 +143,16 @@ $(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
 	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # Per-target tcping.exe binary (Windows)
+#
+# There is no static/dynamic split here like there is for the other
+# platforms: tcping does not use cgo on Windows, so both flavors came out
+# byte-identical. We just always build static.
 .PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
 $(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
 	@echo "[+] Building binary: $@"
 	@export GOOS=windows; \
-	export GOARCH=$(word 1, $(subst -, ,$*)); \
-	[ $(word 2, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
+	export GOARCH=$*; \
+	export CGO_ENABLED=0; \
 	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # ==================================================
@@ -167,13 +167,15 @@ $(OUTPUT_DIR)/:
 $(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
 	@tar -C $$(dirname $<) -czvf $@ tcping >/dev/null
-	@sha256sum $@ | awk '{print $$2 ": " $$1}'
+	@sha256sum $@ | awk '{print "    sha256: " $$1}'
+	@echo
 
 # .zip archive (Windows)
 $(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
 	@zip -j $@ $< >/dev/null
-	@sha256sum $@ | awk '{print $$2 ": " $$1}'
+	@sha256sum $@ | awk '{print "    sha256: " $$1}'
+	@echo
 
 # .deb package (Linux)
 $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
@@ -193,7 +195,9 @@ $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
 	echo "Description: $(DESCRIPTION)" >>control; \
 	popd >/dev/null; \
 	\
-	dpkg-deb --build $$PKG_DIR $@
+	dpkg-deb --build $$PKG_DIR $@ >/dev/null
+	@sha256sum $@ | awk '{print "    sha256: " $$1}'
+	@echo
 
 # ==================================================
 # Miscellaneous outputs
