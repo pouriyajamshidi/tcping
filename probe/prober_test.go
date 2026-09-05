@@ -890,7 +890,7 @@ func TestProbe_RealFailureStillCounts(t *testing.T) {
 	}
 }
 
-// -show-failures-only hides successful probes from the printer, but the
+// -failures-only hides successful probes from the printer, but the
 // probe itself must still be counted, otherwise the summary would be wrong.
 func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 	pinger := alwaysSucceeds()
@@ -913,7 +913,7 @@ func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 	}
 }
 
-// Failures are the whole point of -show-failures-only, so they keep printing.
+// Failures are the whole point of -failures-only, so they keep printing.
 func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{

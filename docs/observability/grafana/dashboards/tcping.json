@@ -228,7 +228,7 @@
     "overrides": []
    },
    "options": {},
-   "description": "The running summary tcping writes every --influxdb-stats-interval."
+   "description": "The running summary tcping writes every --stats-interval."
   },
   {
    "id": 34,
@@ -1178,7 +1178,7 @@
       "overrides": []
      },
      "options": {},
-     "description": "The running summary tcping sends every --alloy-stats-interval."
+     "description": "The running summary tcping sends every --stats-interval."
     },
     {
      "id": 22,

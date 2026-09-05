@@ -501,7 +501,7 @@ func TestJSONShutdownPrintsStatistics(t *testing.T) {
 	}
 }
 
-// With --omit-stats, exiting emits no event at all.
+// With --no-stats, exiting emits no event at all.
 func TestJSONShutdownOmitsStatistics(t *testing.T) {
 	events := jsonEvents(t, Config{OmitStatistics: true}, func(p *JSONPrinter) {
 		p.Shutdown(jsonTestStats())

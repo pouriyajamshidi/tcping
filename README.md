@@ -52,7 +52,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [Source interface (`-I`) flag](#source-interface--i-flag)
     - [HTTP(S) probes](#https-probes)
     - [HTTP(S) probe details (`-v`) flag](#https-probe-details--v-flag)
-    - [Skipping certificate verification (`--skip-tls`) flag](#skipping-certificate-verification---skip-tls-flag)
+    - [Skipping certificate verification (`--insecure`) flag](#skipping-certificate-verification---insecure-flag)
   - [Download and Installation](#download-and-installation)
     - [Windows](#windows)
     - [macOS](#macos)
@@ -126,7 +126,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
-### Skipping certificate verification (`--skip-tls`) flag
+### Skipping certificate verification (`--insecure`) flag
 
 ![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
 
@@ -373,12 +373,12 @@ tcping http://www.example.com/health 8080
 
 `-v` shows everything a probe collected: the HTTP version, the TLS version and
 cipher, how many days are left on the certificate and the connect, TLS
-handshake and first-byte timings. `--skip-tls` skips the certificate check,
+handshake and first-byte timings. `--insecure` skips the certificate check,
 which is what you want against a self-signed or an expired one:
 
 ```bash
 tcping https://www.example.com/health -v
-tcping https://self-signed.example.com --skip-tls
+tcping https://self-signed.example.com --insecure
 ```
 
 ### Probing over UDP
@@ -465,7 +465,7 @@ when the last successful and unsuccessful probes landed, how many times the
 hostname had to be looked up again and how often it answered from a different
 address, and when the run started, how long it has been going and when it
 ended. Times are sent as milliseconds since the epoch, since a metric can only
-carry a number. Use `--alloy-stats-interval` to change the interval.
+carry a number. Use `--stats-interval` to change the interval.
 
 On the Alloy side you need an OTLP receiver pointed at Prometheus. A working
 one, along with a Prometheus, an InfluxDB and a Grafana dashboard you can
@@ -500,7 +500,7 @@ landed, how many times the hostname had to be looked up again and how often it
 answered from a different address, and when the run started, how long it has
 been going and when it ended. Times are written as milliseconds since the
 epoch, since a string field cannot be graphed. Use
-`--influxdb-stats-interval` to change the interval.
+`--stats-interval` to change the interval.
 
 The `source` tag says which machine the probe was sent from. It defaults to
 that machine's hostname, so several machines writing to the same bucket land
@@ -564,8 +564,8 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `-D` | | Show a timestamp for each probe |
 | `--no-color` | | Do not colorize the output |
 | `--show-source-address` | | Show the source IP address and port used for the probes |
-| `--show-failures-only` | | Only show the failed probes. The successful ones are still counted |
-| `--omit-stats` | | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes elsewhere than the terminal |
+| `--failures-only` | | Only show the failed probes. The successful ones are still counted |
+| `--no-stats` | | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes elsewhere than the terminal |
 | `-v` | | Show everything an HTTP(S) probe collected: the HTTP version, the TLS version and cipher, the certificate expiry and the connect, TLS and first-byte timings. For a UDP target, shows the probe's number and whether the reply carried it back, so a lost probe can be told apart from the rest. No effect on TCP targets |
 
 ### File and machine-readable output
@@ -575,7 +575,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `-j` | | Output in `JSON` format |
 | `--pretty` | | Prettify the `JSON` output. No effect without `-j` |
 | `--csv <file>` | | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix |
-| `--csv-no-timestamp` | | Do not append a date/time suffix to the `--csv` filename, so repeated runs overwrite the same file |
+| `--csv-fixed-name` | | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file |
 | `--db <file>` | | Store the output in a sqlite3 database, e.g. `--db /tmp/tcping.db`. Not available on Windows |
 
 ### Metrics
@@ -583,19 +583,18 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--alloy <URL>` | | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, e.g. `--alloy http://localhost:4318` |
-| `--alloy-stats-interval <seconds>` | `10` | How often to send the statistics to Alloy. No effect without `--alloy` |
 | `--influxdb <URL>` | | Write the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as line protocol instead of printing them, e.g. `--influxdb http://localhost:8086` |
 | `--influxdb-org <org>` | | InfluxDB organization to write to. Required with `--influxdb` |
 | `--influxdb-bucket <bucket>` | | InfluxDB bucket to write to. Required with `--influxdb` |
 | `--influxdb-token <token>` | | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable, which keeps it out of your shell history |
-| `--influxdb-stats-interval <seconds>` | `10` | How often to write the statistics to InfluxDB. No effect without `--influxdb` |
+| `--stats-interval <seconds>` | `10` | How often to send the statistics to Alloy or InfluxDB. No effect without `--alloy` or `--influxdb` |
 | `--source-label <name>` | hostname | Name this machine in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart |
 
 ### HTTP(S) and UDP
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--skip-tls` | | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
+| `--insecure` | | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
 | `--udp-server` | | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 
 ---

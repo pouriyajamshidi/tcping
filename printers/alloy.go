@@ -129,7 +129,7 @@ func NewAlloyPrinter(cfg Config) *AlloyPrinter {
 		endpoint = strings.TrimSuffix(endpoint, "/") + otlpMetricsPath
 	}
 
-	statsInterval := cfg.AlloyStatsInterval
+	statsInterval := cfg.StatsInterval
 	if statsInterval <= 0 {
 		statsInterval = defaultAlloyStatsInterval
 	}

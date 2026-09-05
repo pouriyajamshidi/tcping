@@ -31,25 +31,26 @@
 - refactor (breaking): rewrite the sqlite3 schema - drop the generic `type` column and rename `success` to `reachable` and `time` to `latency`
 - refactor (breaking): rename the CSV `Status` column to `Reachable` (values are now lowercase `true`/`false` instead of `Reply`/`No Reply`) and the stats file's `Metric` column to `Statistic`
 - refactor (breaking): `-v` now turns on verbose output for HTTP(S) probes; the version is printed with `--version` instead
+- refactor (breaking): rename `--show-failures-only` to `--failures-only`
 - refactor (breaking): remove the `--non-interactive` flag. tcping now works out on its own whether it is attached to a terminal and in the foreground, so running it under `nohup` or `disown` needs no flag
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
 - fix: fix incorrect timestamp handling in the JSON printer
-- fix: `--show-failures-only` was ignored and successful probes were printed anyway
+- fix: `--failures-only` was ignored and successful probes were printed anyway
 - fix: an IPv6 address carrying a zone, e.g. `fe80::1%eth0`, no longer comes out mangled in the colored output
 - fix: `--db` no longer panics on Windows. It now says that sqlite3 output is not available there
 - fix: fix a data race between the probe loop and the **Enter** key handler
 - fix: `-I` no longer binds name resolution to the interface's address when the DNS server is a loopback address, e.g. systemd-resolved's `127.0.0.53`. The kernel cannot route such a packet, so every lookup used to time out
-- feat: add HTTP(S) probing by giving a URL as the target, e.g. `tcping https://example.com/health`, with `-v` to show the HTTP and TLS details of every probe and `--skip-tls` to skip certificate verification
+- feat: add HTTP(S) probing by giving a URL as the target, e.g. `tcping https://example.com/health`, with `-v` to show the HTTP and TLS details of every probe and `--insecure` to skip certificate verification
 - feat: add UDP probing by giving a `udp://` target, e.g. `tcping udp://example.com 53`. UDP has no handshake, so a probe only counts as successful when the other end answers it. Every probe carries its own number as the payload and `-v` shows whether the reply carried it back, which tells a lost probe apart from a silent port
 - feat: add `--udp-server` flag to listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at that machine has something to answer it
-- feat: CSV output filenames now get a date/time suffix by default; add `--csv-no-timestamp` to reuse the same file across runs instead
+- feat: CSV output filenames now get a date/time suffix by default; add `--csv-fixed-name` to reuse the same file across runs instead
 - feat: add `--resolve-every-probe` flag to resolve the target's hostname before every probe instead of only at startup or on retry (`-r`)
 - feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
 - feat: show how long hostname resolution took - at startup, on every retry-resolve, and per-entry in the "IP address changes" summary
 - feat: report the mean deviation of the latency (`mdev`) alongside the minimum, average and maximum, the same way `ping` does. It is carried by every printer: the summary line, the JSON `latencyMdev` field, the CSV `Latency Mdev` row, the sqlite3 `latency_mdev` column, Alloy's `tcping_rtt_milliseconds{stat="mdev"}` and InfluxDB's `rtt_mdev_ms`
-- feat: add `--alloy` flag to send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, along with `--alloy-stats-interval` to control how often the statistics are sent
-- feat: add `--influxdb` flag to write the results to an InfluxDB v2 or v3 server as line protocol, along with `--influxdb-org`, `--influxdb-bucket`, `--influxdb-token` and `--influxdb-stats-interval`. The API token can also be given in the `INFLUXDB_TOKEN` environment variable
+- feat: add `--alloy` flag to send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, along with `--stats-interval` to control how often the statistics are sent
+- feat: add `--influxdb` flag to write the results to an InfluxDB v2 or v3 server as line protocol, along with `--influxdb-org`, `--influxdb-bucket` and `--influxdb-token`. The API token can also be given in the `INFLUXDB_TOKEN` environment variable
 - feat: add `--source-label` flag to name the machine in the metrics sent to Alloy and InfluxDB, so that several machines probing the same target do not all write to the same series. It defaults to the machine's hostname and shows up as the `source` label or tag
 - fix: the resolved IP no longer identifies the series in the Alloy and InfluxDB output. A hostname that resolved to a different address mid-run (`-r` or `--resolve-every-probe`) used to leave the old series behind and start a new one, which broke graphs into pieces and made the counters add up wrong. Alloy now sends the address as its own `tcping_target_address` metric and InfluxDB writes it as an `ip` field instead of a tag
 - feat: the Alloy and InfluxDB statistics now carry the whole summary the terminal prints, not just the packet loss and the latency: the total uptime and downtime, the longest streak of each with the times it ran from and to, when the last successful and unsuccessful probes landed, the hostname retry and address change counts, and when the run started, how long it has been going and when it ended. Times are sent as milliseconds since the epoch
@@ -63,7 +64,7 @@
 - improvement: `-i`, `-t` and `--dns-timeout` are no longer floored to whole milliseconds, so sub-millisecond values work as given
 - fix: hostname retry-resolve (`-r`) now actually changes the address being probed instead of only updating what's displayed
 - fix: the summary's `duration (HH:MM:SS)` now always matches the `started at`/`ended at` timestamps instead of silently drifting from them
-- feat: add `--omit-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
+- feat: add `--no-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
 - refactor: simplify RTT min/avg/max tracking into a running calculation instead of storing every sample
 - refactor: consolidate uptime/downtime tracking and remove duplicated/unused `Statistics` fields
 

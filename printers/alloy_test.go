@@ -181,8 +181,8 @@ func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
 	defer server.Close()
 
 	printer := NewAlloyPrinter(Config{
-		AlloyURL:           server.URL,
-		AlloyStatsInterval: 10 * time.Second,
+		AlloyURL:      server.URL,
+		StatsInterval: 10 * time.Second,
 	})
 
 	hasSummary := func(p otlpPayload) bool {

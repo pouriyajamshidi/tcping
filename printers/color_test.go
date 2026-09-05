@@ -99,7 +99,7 @@ func TestColorProbeWithoutASourceAddress(t *testing.T) {
 }
 
 // Shutdown is what prints the summary on exit, so it has to print the same
-// thing PrintStatistics does, unless --omit-stats says otherwise.
+// thing PrintStatistics does, unless --no-stats says otherwise.
 func TestColorShutdownPrintsStatistics(t *testing.T) {
 	s := plainTestStats()
 

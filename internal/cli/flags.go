@@ -113,14 +113,14 @@ type flags struct {
 	csvNoTimestamp bool
 	DBPath         string
 
-	alloyURL           string
-	alloyStatsInterval float64
+	alloyURL string
 
-	influxDBURL           string
-	influxDBOrg           string
-	influxDBBucket        string
-	influxDBToken         string
-	influxDBStatsInterval float64
+	influxDBURL    string
+	influxDBOrg    string
+	influxDBBucket string
+	influxDBToken  string
+
+	statsInterval float64
 
 	sourceLabel string
 
@@ -199,12 +199,12 @@ func registerFlags() *flags {
 		"Show source address and port used for probes.")
 
 	flag.BoolVar(&f.showFailuresOnly,
-		"show-failures-only",
+		"failures-only",
 		false,
 		"Show only the failed probes.")
 
 	flag.BoolVar(&f.omitStatistics,
-		"omit-stats",
+		"no-stats",
 		false,
 		`Do not show the statistics at program exit. Only applicable to terminal output.
 		Pressing enter still shows the statistics.`)
@@ -219,7 +219,7 @@ func registerFlags() *flags {
 		be told apart from the rest. No effect on other targets.`)
 
 	flag.BoolVar(&f.skipTLSVerify,
-		"skip-tls",
+		"insecure",
 		false,
 		`Do not check the server certificate when probing an https:// target.
 		Useful for self-signed or expired certificates.`)
@@ -251,23 +251,17 @@ func registerFlags() *flags {
 		The stats will be automatically saved with the same name and '_stats' suffix.`)
 
 	flag.BoolVar(&f.csvNoTimestamp,
-		"csv-no-timestamp",
+		"csv-fixed-name",
 		false,
-		`Do not append a date/time suffix to the CSV filename given via -csv.
-		Repeated runs will then overwrite the same file instead of creating a new one.`)
+		`Use the CSV filename given via -csv as it is, without a date/time
+		suffix. Repeated runs will then overwrite the same file instead of
+		creating a new one.`)
 
 	flag.StringVar(&f.alloyURL,
 		"alloy",
 		"",
 		`Send the results to a Grafana Alloy OTLP HTTP endpoint as metrics
 		instead of printing them, e.g. http://localhost:4318`)
-
-	flag.Float64Var(&f.alloyStatsInterval,
-		"alloy-stats-interval",
-		10,
-		`How often to send the statistics to Alloy, in seconds.
-		They are sent along with the next probe, so a longer probe interval
-		delays them. No effect without the -alloy flag.`)
 
 	flag.StringVar(&f.influxDBURL,
 		"influxdb",
@@ -292,12 +286,12 @@ func registerFlags() *flags {
 		Can also be given in the INFLUXDB_TOKEN environment variable, which
 		keeps it out of the shell history.`)
 
-	flag.Float64Var(&f.influxDBStatsInterval,
-		"influxdb-stats-interval",
+	flag.Float64Var(&f.statsInterval,
+		"stats-interval",
 		10,
-		`How often to write the statistics to InfluxDB, in seconds.
-		They are written along with the next probe, so a longer probe
-		interval delays them. No effect without the -influxdb flag.`)
+		`How often to send the statistics to Alloy or InfluxDB, in seconds.
+		They are sent along with the next probe, so a longer probe interval
+		delays them. No effect without the -alloy or -influxdb flag.`)
 
 	flag.StringVar(&f.sourceLabel,
 		"source-label",
@@ -335,7 +329,7 @@ func (f *flags) validate() {
 	// The file and metric printers always write their final record, so
 	// there are no statistics to omit.
 	if f.omitStatistics && (f.DBPath != "" || f.CSVPath != "" || f.alloyURL != "" || f.influxDBURL != "") {
-		fmt.Fprintln(os.Stderr, "--omit-stats has no effect when the output goes to a file, a database or a metrics endpoint")
+		fmt.Fprintln(os.Stderr, "--no-stats has no effect when the output goes to a file, a database or a metrics endpoint")
 		usage()
 	}
 
@@ -346,13 +340,8 @@ func (f *flags) validate() {
 		os.Exit(1)
 	}
 
-	if f.alloyURL != "" && secondsToDuration(f.alloyStatsInterval) <= 0 {
-		fmt.Fprintln(os.Stderr, "Alloy statistics interval should be more than 0 seconds")
-		os.Exit(1)
-	}
-
-	if f.influxDBURL != "" && secondsToDuration(f.influxDBStatsInterval) <= 0 {
-		fmt.Fprintln(os.Stderr, "InfluxDB statistics interval should be more than 0 seconds")
+	if (f.alloyURL != "" || f.influxDBURL != "") && secondsToDuration(f.statsInterval) <= 0 {
+		fmt.Fprintln(os.Stderr, "Statistics interval should be more than 0 seconds")
 		os.Exit(1)
 	}
 }
@@ -378,28 +367,27 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 	}
 
 	return printers.Config{
-		Target:             target,
-		Port:               port,
-		OutputJSON:         f.outputJSON,
-		PrettyJSON:         f.prettyJSON,
-		NoColor:            f.noColor,
-		WithTimestamp:      f.showTimestamp,
-		WithSourceAddress:  f.showSourceAddress,
-		OmitStatistics:     f.omitStatistics,
-		Verbose:            f.verbose,
-		OutputDBPath:       f.DBPath,
-		OutputCSVPath:      f.CSVPath,
-		CSVNoTimestamp:     f.csvNoTimestamp,
-		AlloyURL:           f.alloyURL,
-		AlloyStatsInterval: secondsToDuration(f.alloyStatsInterval),
+		Target:            target,
+		Port:              port,
+		OutputJSON:        f.outputJSON,
+		PrettyJSON:        f.prettyJSON,
+		NoColor:           f.noColor,
+		WithTimestamp:     f.showTimestamp,
+		WithSourceAddress: f.showSourceAddress,
+		OmitStatistics:    f.omitStatistics,
+		Verbose:           f.verbose,
+		OutputDBPath:      f.DBPath,
+		OutputCSVPath:     f.CSVPath,
+		CSVNoTimestamp:    f.csvNoTimestamp,
+		AlloyURL:          f.alloyURL,
 
-		InfluxDBURL:           f.influxDBURL,
-		InfluxDBOrg:           f.influxDBOrg,
-		InfluxDBBucket:        f.influxDBBucket,
-		InfluxDBToken:         influxDBToken,
-		InfluxDBStatsInterval: secondsToDuration(f.influxDBStatsInterval),
+		InfluxDBURL:    f.influxDBURL,
+		InfluxDBOrg:    f.influxDBOrg,
+		InfluxDBBucket: f.influxDBBucket,
+		InfluxDBToken:  influxDBToken,
 
-		SourceLabel: sourceLabel,
+		StatsInterval: secondsToDuration(f.statsInterval),
+		SourceLabel:   sourceLabel,
 	}
 }
 

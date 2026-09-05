@@ -433,7 +433,7 @@ func TestPlainShutdownPrintsStatistics(t *testing.T) {
 	wantLines(t, out, "TCPing statistics ---\n")
 }
 
-// With --omit-stats, exiting prints nothing at all.
+// With --no-stats, exiting prints nothing at all.
 func TestPlainShutdownOmitsStatistics(t *testing.T) {
 	s := plainTestStats()
 

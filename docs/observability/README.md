@@ -170,8 +170,7 @@ The metrics, the fields and how to query them are described in the
   and says the metrics are being dropped, then keeps probing, so watch stderr
   rather than the probe output. A wrong InfluxDB token shows up this way.
 - The statistics panels only fill in after the first statistics push, which is
-  every 10 seconds by default. `--alloy-stats-interval` and
-  `--influxdb-stats-interval` change that.
+  every 10 seconds by default. `--stats-interval` changes that.
 - **Name resolution time** stays empty unless the hostname is looked up more
   than once, so it needs `--resolve-every-probe` or a target that goes away.
 - **Length of each uptime and downtime streak** only gets a point when a

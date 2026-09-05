@@ -285,7 +285,7 @@ func TestInfluxDBStatisticsRideAlongWithProbes(t *testing.T) {
 	defer server.Close()
 
 	cfg := influxDBTestConfig(server.URL)
-	cfg.InfluxDBStatsInterval = 10 * time.Second
+	cfg.StatsInterval = 10 * time.Second
 
 	printer, err := NewInfluxDBPrinter(cfg)
 	if err != nil {

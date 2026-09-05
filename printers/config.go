@@ -18,14 +18,13 @@ type Config struct {
 	Target string
 	Port   uint16
 
-	AlloyURL           string        // Address of a Grafana Alloy OTLP HTTP endpoint. Empty unless -alloy was given.
-	AlloyStatsInterval time.Duration // How often the run summary is sent to Alloy.
+	AlloyURL string // Address of a Grafana Alloy OTLP HTTP endpoint. Empty unless -alloy was given.
 
-	InfluxDBURL           string        // Address of an InfluxDB server. Empty unless -influxdb was given.
-	InfluxDBOrg           string        // InfluxDB organization to write to.
-	InfluxDBBucket        string        // InfluxDB bucket to write to.
-	InfluxDBToken         string        // InfluxDB API token, from the -influxdb-token flag or the INFLUXDB_TOKEN environment variable.
-	InfluxDBStatsInterval time.Duration // How often the run summary is written to InfluxDB.
+	InfluxDBURL    string // Address of an InfluxDB server. Empty unless -influxdb was given.
+	InfluxDBOrg    string // InfluxDB organization to write to.
+	InfluxDBBucket string // InfluxDB bucket to write to.
+	InfluxDBToken  string // InfluxDB API token, from the -influxdb-token flag or the INFLUXDB_TOKEN environment variable.
 
-	SourceLabel string // Names the machine tcping runs on in the metrics sent to Alloy and InfluxDB. Defaults to the hostname.
+	StatsInterval time.Duration // How often the run summary is sent to Alloy or InfluxDB.
+	SourceLabel   string        // Names the machine tcping runs on in the metrics sent to Alloy and InfluxDB. Defaults to the hostname.
 }

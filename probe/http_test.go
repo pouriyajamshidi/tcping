@@ -195,7 +195,7 @@ func TestHTTPing_TLS(t *testing.T) {
 	}
 }
 
-// TestHTTPing_SkipTLSVerify covers the -skip-tls flag: the test server's
+// TestHTTPing_SkipTLSVerify covers the -insecure flag: the test server's
 // certificate is self-signed, so the probe only gets through with it on.
 func TestHTTPing_SkipTLSVerify(t *testing.T) {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
@@ -211,7 +211,7 @@ func TestHTTPing_SkipTLSVerify(t *testing.T) {
 	h.skipTLSVerify = true
 
 	if _, err := h.Ping(context.Background(), ip); err != nil {
-		t.Errorf("Ping() with -skip-tls error = %v, want no error", err)
+		t.Errorf("Ping() with -insecure error = %v, want no error", err)
 	}
 }
 

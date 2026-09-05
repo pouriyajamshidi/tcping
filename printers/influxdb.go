@@ -87,7 +87,7 @@ func NewInfluxDBPrinter(cfg Config) (*InfluxDBPrinter, error) {
 	query.Set("bucket", cfg.InfluxDBBucket)
 	query.Set("precision", "ns")
 
-	statsInterval := cfg.InfluxDBStatsInterval
+	statsInterval := cfg.StatsInterval
 	if statsInterval <= 0 {
 		statsInterval = defaultInfluxDBStatsInterval
 	}

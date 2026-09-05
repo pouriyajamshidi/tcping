@@ -308,22 +308,22 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 		{
 			name:  "omitting statistics that go to a database",
 			flags: flags{omitStatistics: true, DBPath: "out.db", intervalBetweenProbes: 1},
-			want:  "--omit-stats has no effect",
+			want:  "--no-stats has no effect",
 		},
 		{
 			name:  "omitting statistics that go to a CSV file",
 			flags: flags{omitStatistics: true, CSVPath: "out.csv", intervalBetweenProbes: 1},
-			want:  "--omit-stats has no effect",
+			want:  "--no-stats has no effect",
 		},
 		{
 			name:  "omitting statistics that go to Alloy",
-			flags: flags{omitStatistics: true, alloyURL: "http://localhost:4318", alloyStatsInterval: 10, intervalBetweenProbes: 1},
-			want:  "--omit-stats has no effect",
+			flags: flags{omitStatistics: true, alloyURL: "http://localhost:4318", statsInterval: 10, intervalBetweenProbes: 1},
+			want:  "--no-stats has no effect",
 		},
 		{
 			name:  "omitting statistics that go to InfluxDB",
-			flags: flags{omitStatistics: true, influxDBURL: "http://localhost:8086", influxDBStatsInterval: 10, intervalBetweenProbes: 1},
-			want:  "--omit-stats has no effect",
+			flags: flags{omitStatistics: true, influxDBURL: "http://localhost:8086", statsInterval: 10, intervalBetweenProbes: 1},
+			want:  "--no-stats has no effect",
 		},
 		{
 			name:  "a zero probe interval, which would panic the ticker",
@@ -336,14 +336,14 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			want:  "Interval between probes should be more than 0 seconds",
 		},
 		{
-			name:  "a zero Alloy statistics interval",
-			flags: flags{alloyURL: "http://localhost:4318", alloyStatsInterval: 0, intervalBetweenProbes: 1},
-			want:  "Alloy statistics interval should be more than 0 seconds",
+			name:  "a zero statistics interval with an Alloy URL",
+			flags: flags{alloyURL: "http://localhost:4318", statsInterval: 0, intervalBetweenProbes: 1},
+			want:  "Statistics interval should be more than 0 seconds",
 		},
 		{
-			name:  "a zero InfluxDB statistics interval",
-			flags: flags{influxDBURL: "http://localhost:8086", influxDBStatsInterval: 0, intervalBetweenProbes: 1},
-			want:  "InfluxDB statistics interval should be more than 0 seconds",
+			name:  "a zero statistics interval with an InfluxDB URL",
+			flags: flags{influxDBURL: "http://localhost:8086", statsInterval: 0, intervalBetweenProbes: 1},
+			want:  "Statistics interval should be more than 0 seconds",
 		},
 	}
 
@@ -400,12 +400,8 @@ func TestValidateAcceptsFlagsThatGoTogether(t *testing.T) {
 			flags: flags{omitStatistics: true, intervalBetweenProbes: 1},
 		},
 		{
-			name:  "an Alloy statistics interval of zero without an Alloy URL",
-			flags: flags{alloyStatsInterval: 0, intervalBetweenProbes: 1},
-		},
-		{
-			name:  "an InfluxDB statistics interval of zero without an InfluxDB URL",
-			flags: flags{influxDBStatsInterval: 0, intervalBetweenProbes: 1},
+			name:  "a statistics interval of zero without an Alloy or InfluxDB URL",
+			flags: flags{statsInterval: 0, intervalBetweenProbes: 1},
 		},
 	}
 
