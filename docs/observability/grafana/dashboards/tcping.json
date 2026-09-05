@@ -14,18 +14,27 @@
  },
  "panels": [
   {
-   "id": 1,
-   "type": "timeseries",
-   "title": "Round trip time",
-   "datasource": {
-    "type": "influxdb",
-    "uid": "influxdb"
-   },
+   "id": 33,
+   "type": "row",
+   "title": "Probes",
+   "collapsed": false,
    "gridPos": {
     "x": 0,
     "y": 0,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
+  },
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "Round trip time",
+   "gridPos": {
     "w": 12,
-    "h": 8
+    "h": 8,
+    "x": 0,
+    "y": 1
    },
    "targets": [
     {
@@ -34,7 +43,7 @@
       "type": "influxdb",
       "uid": "influxdb"
      },
-     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"source\", \"target\", \"_measurement\"])"
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
     }
    ],
    "fieldConfig": {
@@ -45,26 +54,23 @@
       "fillOpacity": 10,
       "showPoints": "never"
      },
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
      "unit": "ms"
     },
     "overrides": []
    },
    "options": {},
-   "description": "How long each probe took, per target."
+   "description": "How long each probe took."
   },
   {
    "id": 2,
    "type": "timeseries",
    "title": "Probe result",
-   "datasource": {
-    "type": "influxdb",
-    "uid": "influxdb"
-   },
    "gridPos": {
-    "x": 12,
-    "y": 0,
     "w": 12,
-    "h": 8
+    "h": 8,
+    "x": 12,
+    "y": 1
    },
    "targets": [
     {
@@ -73,18 +79,19 @@
       "type": "influxdb",
       "uid": "influxdb"
      },
-     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"source\", \"target\", \"_measurement\"])"
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
     }
    ],
    "fieldConfig": {
     "defaults": {
      "custom": {
       "drawStyle": "line",
-      "lineInterpolation": "stepAfter",
       "lineWidth": 2,
       "fillOpacity": 20,
-      "showPoints": "never"
+      "showPoints": "never",
+      "lineInterpolation": "stepAfter"
      },
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
      "min": 0,
      "max": 1
     },
@@ -97,15 +104,11 @@
    "id": 3,
    "type": "stat",
    "title": "Packet loss",
-   "datasource": {
-    "type": "influxdb",
-    "uid": "influxdb"
-   },
    "gridPos": {
-    "x": 0,
-    "y": 8,
     "w": 6,
-    "h": 6
+    "h": 6,
+    "x": 0,
+    "y": 9
    },
    "targets": [
     {
@@ -121,6 +124,7 @@
     "defaults": {
      "custom": {},
      "unit": "percent",
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
      "thresholds": {
       "mode": "absolute",
       "steps": [
@@ -152,21 +156,18 @@
     "colorMode": "value",
     "graphMode": "area",
     "textMode": "auto"
-   }
+   },
+   "description": "One tile per target, from the running summary."
   },
   {
    "id": 4,
    "type": "timeseries",
-   "title": "Latency min / average / max / mdev",
-   "datasource": {
-    "type": "influxdb",
-    "uid": "influxdb"
-   },
+   "title": "Successful and unsuccessful probes",
    "gridPos": {
+    "w": 9,
+    "h": 6,
     "x": 6,
-    "y": 8,
-    "w": 18,
-    "h": 6
+    "y": 9
    },
    "targets": [
     {
@@ -175,7 +176,7 @@
       "type": "influxdb",
       "uid": "influxdb"
      },
-     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\", \"source\", \"target\"])"
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
     }
    ],
    "fieldConfig": {
@@ -186,26 +187,22 @@
       "fillOpacity": 0,
       "showPoints": "never"
      },
-     "unit": "ms"
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}"
     },
     "overrides": []
    },
    "options": {},
-   "description": "The running summary tcping writes every --influxdb-stats-interval."
+   "description": "The two counts the statistics block opens with, as they grow."
   },
   {
    "id": 5,
    "type": "timeseries",
-   "title": "HTTP timings",
-   "datasource": {
-    "type": "influxdb",
-    "uid": "influxdb"
-   },
+   "title": "Latency min / average / max / mdev",
    "gridPos": {
-    "x": 0,
-    "y": 14,
-    "w": 12,
-    "h": 7
+    "w": 9,
+    "h": 6,
+    "x": 15,
+    "y": 9
    },
    "targets": [
     {
@@ -214,7 +211,7 @@
       "type": "influxdb",
       "uid": "influxdb"
      },
-     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\", \"source\", \"target\"])"
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
     }
    ],
    "fieldConfig": {
@@ -222,39 +219,48 @@
      "custom": {
       "drawStyle": "line",
       "lineWidth": 2,
-      "fillOpacity": 10,
+      "fillOpacity": 0,
       "showPoints": "never"
      },
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
      "unit": "ms"
     },
     "overrides": []
    },
    "options": {},
-   "description": "Only fills in for an http:// or https:// target."
+   "description": "The running summary tcping writes every --influxdb-stats-interval."
+  },
+  {
+   "id": 34,
+   "type": "row",
+   "title": "Uptime and downtime",
+   "collapsed": false,
+   "gridPos": {
+    "x": 0,
+    "y": 15,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
   },
   {
    "id": 6,
    "type": "timeseries",
-   "title": "Round trip time, through Alloy",
-   "datasource": {
-    "type": "prometheus",
-    "uid": "prometheus"
-   },
+   "title": "Total uptime and downtime",
    "gridPos": {
-    "x": 12,
-    "y": 14,
     "w": 12,
-    "h": 7
+    "h": 7,
+    "x": 0,
+    "y": 16
    },
    "targets": [
     {
      "refId": "A",
      "datasource": {
-      "type": "prometheus",
-      "uid": "prometheus"
+      "type": "influxdb",
+      "uid": "influxdb"
      },
-     "expr": "tcping_probe_rtt_milliseconds{source=~\"$source\"}",
-     "legendFormat": "{{source}} {{target}}"
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
     }
    ],
    "fieldConfig": {
@@ -262,84 +268,1660 @@
      "custom": {
       "drawStyle": "line",
       "lineWidth": 2,
-      "fillOpacity": 10,
+      "fillOpacity": 0,
       "showPoints": "never"
      },
-     "unit": "ms"
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+     "unit": "s"
     },
     "overrides": []
    },
    "options": {},
-   "description": "The same probes taking the --alloy route into Prometheus."
+   "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0."
   },
   {
    "id": 7,
-   "type": "table",
-   "title": "Resolved address, through Alloy",
-   "datasource": {
-    "type": "prometheus",
-    "uid": "prometheus"
-   },
+   "type": "timeseries",
+   "title": "Length of each uptime and downtime streak",
    "gridPos": {
-    "x": 0,
-    "y": 21,
-    "w": 24,
-    "h": 7
+    "w": 12,
+    "h": 7,
+    "x": 12,
+    "y": 16
    },
    "targets": [
     {
      "refId": "A",
      "datasource": {
-      "type": "prometheus",
-      "uid": "prometheus"
+      "type": "influxdb",
+      "uid": "influxdb"
      },
-     "expr": "tcping_target_address{source=~\"$source\"}",
-     "instant": true,
-     "format": "table"
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_uptime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_downtime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "showPoints": "never"
+     },
+     "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "description": "One point per streak, written when it ends: how long the target had been up when it went down, and how long the outage lasted."
+  },
+  {
+   "id": 8,
+   "type": "table",
+   "title": "Longest uptime and downtime",
+   "gridPos": {
+    "w": 24,
+    "h": 6,
+    "x": 0,
+    "y": 23
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influxdb"
+     },
+     "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^longest_(up|down)time(_start|_end)?_(seconds|ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"longest_uptime_seconds\", \"longest_uptime_start_ms\", \"longest_uptime_end_ms\", \"longest_downtime_seconds\", \"longest_downtime_start_ms\", \"longest_downtime_end_ms\"])\n  |> group()"
     }
    ],
    "transformations": [
     {
      "id": "organize",
      "options": {
-      "excludeByName": {
-       "Time": true,
-       "Value": true,
-       "__name__": true,
-       "job": true
-      },
+      "excludeByName": {},
       "indexByName": {
        "source": 0,
-       "target": 1,
-       "ip": 2,
+       "protocol": 1,
+       "target": 2,
        "port": 3,
-       "protocol": 4
+       "longest_uptime_seconds": 4,
+       "longest_uptime_start_ms": 5,
+       "longest_uptime_end_ms": 6,
+       "longest_downtime_seconds": 7,
+       "longest_downtime_start_ms": 8,
+       "longest_downtime_end_ms": 9
       }
-     }
-    },
-    {
-     "id": "sortBy",
-     "options": {
-      "sort": [
-       {
-        "field": "source"
-       },
-       {
-        "field": "target"
-       },
-       {
-        "field": "ip"
-       }
-      ]
      }
     }
    ],
    "fieldConfig": {
     "defaults": {},
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "longest_uptime_seconds"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "longest uptime"
+       },
+       {
+        "id": "unit",
+        "value": "s"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "longest_uptime_start_ms"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "uptime from"
+       },
+       {
+        "id": "unit",
+        "value": "dateTimeAsIso"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "longest_uptime_end_ms"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "uptime to"
+       },
+       {
+        "id": "unit",
+        "value": "dateTimeAsIso"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "longest_downtime_seconds"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "longest downtime"
+       },
+       {
+        "id": "unit",
+        "value": "s"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "longest_downtime_start_ms"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "downtime from"
+       },
+       {
+        "id": "unit",
+        "value": "dateTimeAsIso"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "longest_downtime_end_ms"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "downtime to"
+       },
+       {
+        "id": "unit",
+        "value": "dateTimeAsIso"
+       }
+      ]
+     }
+    ]
    },
    "options": {},
-   "description": "The address each target resolved to. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+   "description": "The longest the target stayed up and the longest it stayed down, and when each of those ran from and to. A streak is only known once it has ended, so a target that has not changed state yet has neither."
+  },
+  {
+   "id": 35,
+   "type": "row",
+   "title": "The run",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 29,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 9,
+     "type": "table",
+     "title": "The run so far",
+     "gridPos": {
+      "w": 24,
+      "h": 6,
+      "x": 0,
+      "y": 30
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(start_time_ms|end_time_ms|run_duration_seconds|last_(un)?successful_probe_ms|hostname_(resolution_retries|changes))$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"start_time_ms\", \"run_duration_seconds\", \"end_time_ms\", \"last_successful_probe_ms\", \"last_unsuccessful_probe_ms\", \"hostname_resolution_retries\", \"hostname_changes\"])\n  |> group()"
+      }
+     ],
+     "transformations": [
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {},
+        "indexByName": {
+         "source": 0,
+         "protocol": 1,
+         "target": 2,
+         "port": 3,
+         "start_time_ms": 4,
+         "run_duration_seconds": 5,
+         "end_time_ms": 6,
+         "last_successful_probe_ms": 7,
+         "last_unsuccessful_probe_ms": 8,
+         "hostname_resolution_retries": 9,
+         "hostname_changes": 10
+        }
+       }
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {},
+      "overrides": [
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "start_time_ms"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "started"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "run_duration_seconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "running for"
+         },
+         {
+          "id": "unit",
+          "value": "s"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "end_time_ms"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "ended"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "last_successful_probe_ms"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "last successful probe"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "last_unsuccessful_probe_ms"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "last unsuccessful probe"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "hostname_resolution_retries"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "hostname retries"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "hostname_changes"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "address changes"
+         }
+        ]
+       }
+      ]
+     },
+     "options": {},
+     "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us. The end time only fills in once the run has finished."
+    }
+   ]
+  },
+  {
+   "id": 36,
+   "type": "row",
+   "title": "Name resolution",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 36,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 10,
+     "type": "timeseries",
+     "title": "Name resolution time",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 0,
+      "y": 37
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "ms"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "One point per hostname lookup, so a run that resolves every probe fills in and one that resolved once does not."
+    },
+    {
+     "id": 11,
+     "type": "table",
+     "title": "Resolved address",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 12,
+      "y": 37
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
+      }
+     ],
+     "transformations": [
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {},
+        "indexByName": {
+         "source": 0,
+         "protocol": 1,
+         "target": 2,
+         "port": 3,
+         "ip": 4
+        }
+       }
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {},
+      "overrides": []
+     },
+     "options": {},
+     "description": "The address each target resolved to. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+    }
+   ]
+  },
+  {
+   "id": 37,
+   "type": "row",
+   "title": "HTTP",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 44,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 12,
+     "type": "timeseries",
+     "title": "HTTP timings",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 0,
+      "y": 45
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+       "unit": "ms"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "Connect, TLS handshake and time to first byte. Only fills in for an http:// or https:// target, and the handshake only over HTTPS."
+    },
+    {
+     "id": 13,
+     "type": "timeseries",
+     "title": "HTTP status code",
+     "gridPos": {
+      "w": 6,
+      "h": 7,
+      "x": 12,
+      "y": 45
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "showPoints": "never",
+        "lineInterpolation": "stepAfter"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "What the server answered with on each probe."
+    },
+    {
+     "id": 14,
+     "type": "stat",
+     "title": "Certificate days remaining",
+     "gridPos": {
+      "w": 6,
+      "h": 7,
+      "x": 18,
+      "y": 45
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"certificate_days_remaining\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {},
+       "unit": "d",
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "red",
+          "value": null
+         },
+         {
+          "color": "orange",
+          "value": 14
+         },
+         {
+          "color": "green",
+          "value": 30
+         }
+        ]
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "reduceOptions": {
+       "calcs": [
+        "lastNotNull"
+       ],
+       "fields": "",
+       "values": false
+      },
+      "colorMode": "value",
+      "graphMode": "area",
+      "textMode": "auto"
+     },
+     "description": "How long the certificate of each HTTPS target is still good for."
+    }
+   ]
+  },
+  {
+   "id": 38,
+   "type": "row",
+   "title": "UDP",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 52,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 15,
+     "type": "timeseries",
+     "title": "UDP reply size",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 0,
+      "y": 53
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "bytes"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "How much came back. Zero means nothing answered."
+    },
+    {
+     "id": 16,
+     "type": "timeseries",
+     "title": "UDP reply echoed and port unreachable",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 12,
+      "y": 53
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb"
+       },
+       "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field =~ /^(echoed|rejected)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 20,
+        "showPoints": "never",
+        "lineInterpolation": "stepAfter"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+       "min": 0,
+       "max": 1
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "A reply carrying our own payload back is the only proof something is listening, and an ICMP refusal the only proof nothing is."
+    }
+   ]
+  },
+  {
+   "id": 39,
+   "type": "row",
+   "title": "Through Alloy",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 60,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 17,
+     "type": "timeseries",
+     "title": "Round trip time",
+     "gridPos": {
+      "w": 12,
+      "h": 8,
+      "x": 0,
+      "y": 61
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_probe_rtt_milliseconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "ms"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "The same probes taking the --alloy route into Prometheus."
+    },
+    {
+     "id": 18,
+     "type": "timeseries",
+     "title": "Probe result",
+     "gridPos": {
+      "w": 12,
+      "h": 8,
+      "x": 12,
+      "y": 61
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_probe_success{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 20,
+        "showPoints": "never",
+        "lineInterpolation": "stepAfter"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "min": 0,
+       "max": 1
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "1 while the target answers, 0 for every probe that failed."
+    },
+    {
+     "id": 19,
+     "type": "stat",
+     "title": "Packet loss",
+     "gridPos": {
+      "w": 6,
+      "h": 6,
+      "x": 0,
+      "y": 69
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_packet_loss_percent{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {},
+       "unit": "percent",
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "green",
+          "value": null
+         },
+         {
+          "color": "orange",
+          "value": 1
+         },
+         {
+          "color": "red",
+          "value": 10
+         }
+        ]
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "reduceOptions": {
+       "calcs": [
+        "lastNotNull"
+       ],
+       "fields": "",
+       "values": false
+      },
+      "colorMode": "value",
+      "graphMode": "area",
+      "textMode": "auto"
+     },
+     "description": "One tile per target, from the running summary."
+    },
+    {
+     "id": 20,
+     "type": "timeseries",
+     "title": "Successful and unsuccessful probes",
+     "gridPos": {
+      "w": 9,
+      "h": 6,
+      "x": 6,
+      "y": 69
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_probes_total{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{result}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "The two counts the statistics block opens with, as they grow."
+    },
+    {
+     "id": 21,
+     "type": "timeseries",
+     "title": "Latency min / average / max / mdev",
+     "gridPos": {
+      "w": 9,
+      "h": 6,
+      "x": 15,
+      "y": 69
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_rtt_milliseconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "ms"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "The running summary tcping sends every --alloy-stats-interval."
+    },
+    {
+     "id": 22,
+     "type": "timeseries",
+     "title": "Total uptime and downtime",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 0,
+      "y": 75
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_uptime_seconds_total{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
+      },
+      {
+       "refId": "B",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_downtime_seconds_total{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "s"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0."
+    },
+    {
+     "id": 23,
+     "type": "timeseries",
+     "title": "Length of each uptime and downtime streak",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 12,
+      "y": 75
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_last_uptime_seconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
+      },
+      {
+       "refId": "B",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_last_downtime_seconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "s"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "Sent when a streak ends: how long the target had been up when it went down, and how long the outage lasted."
+    },
+    {
+     "id": 24,
+     "type": "table",
+     "title": "Longest uptime and downtime",
+     "gridPos": {
+      "w": 24,
+      "h": 6,
+      "x": 0,
+      "y": 82
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "{__name__=~\"tcping_longest_(up|down)time_seconds|tcping_longest_(up|down)time_(start|end)_milliseconds\", source=~\"$source\"}",
+       "legendFormat": "",
+       "instant": true
+      }
+     ],
+     "transformations": [
+      {
+       "id": "joinByLabels",
+       "options": {
+        "value": "__name__",
+        "join": [
+         "source",
+         "protocol",
+         "target",
+         "port"
+        ]
+       }
+      },
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {},
+        "indexByName": {
+         "source": 0,
+         "protocol": 1,
+         "target": 2,
+         "port": 3,
+         "tcping_longest_uptime_seconds": 4,
+         "tcping_longest_uptime_start_milliseconds": 5,
+         "tcping_longest_uptime_end_milliseconds": 6,
+         "tcping_longest_downtime_seconds": 7,
+         "tcping_longest_downtime_start_milliseconds": 8,
+         "tcping_longest_downtime_end_milliseconds": 9
+        }
+       }
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {},
+      "overrides": [
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_longest_uptime_seconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "longest uptime"
+         },
+         {
+          "id": "unit",
+          "value": "s"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_longest_uptime_start_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "uptime from"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_longest_uptime_end_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "uptime to"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_longest_downtime_seconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "longest downtime"
+         },
+         {
+          "id": "unit",
+          "value": "s"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_longest_downtime_start_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "downtime from"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_longest_downtime_end_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "downtime to"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       }
+      ]
+     },
+     "options": {},
+     "description": "The longest the target stayed up and the longest it stayed down, and when each of those ran from and to. A streak is only known once it has ended, so a target that has not changed state yet has neither."
+    },
+    {
+     "id": 25,
+     "type": "table",
+     "title": "The run so far",
+     "gridPos": {
+      "w": 24,
+      "h": 6,
+      "x": 0,
+      "y": 88
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "{__name__=~\"tcping_(start_time|end_time|last_successful_probe|last_unsuccessful_probe)_milliseconds|tcping_run_duration_seconds|tcping_hostname_(resolution_retries|changes)_total\", source=~\"$source\"}",
+       "legendFormat": "",
+       "instant": true
+      }
+     ],
+     "transformations": [
+      {
+       "id": "joinByLabels",
+       "options": {
+        "value": "__name__",
+        "join": [
+         "source",
+         "protocol",
+         "target",
+         "port"
+        ]
+       }
+      },
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {},
+        "indexByName": {
+         "source": 0,
+         "protocol": 1,
+         "target": 2,
+         "port": 3,
+         "tcping_start_time_milliseconds": 4,
+         "tcping_run_duration_seconds": 5,
+         "tcping_end_time_milliseconds": 6,
+         "tcping_last_successful_probe_milliseconds": 7,
+         "tcping_last_unsuccessful_probe_milliseconds": 8,
+         "tcping_hostname_resolution_retries_total": 9,
+         "tcping_hostname_changes_total": 10
+        }
+       }
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {},
+      "overrides": [
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_start_time_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "started"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_run_duration_seconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "running for"
+         },
+         {
+          "id": "unit",
+          "value": "s"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_end_time_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "ended"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_last_successful_probe_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "last successful probe"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_last_unsuccessful_probe_milliseconds"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "last unsuccessful probe"
+         },
+         {
+          "id": "unit",
+          "value": "dateTimeAsIso"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_hostname_resolution_retries_total"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "hostname retries"
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "tcping_hostname_changes_total"
+        },
+        "properties": [
+         {
+          "id": "displayName",
+          "value": "address changes"
+         }
+        ]
+       }
+      ]
+     },
+     "options": {},
+     "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us. The end time only fills in once the run has finished."
+    },
+    {
+     "id": 26,
+     "type": "timeseries",
+     "title": "Name resolution time",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 0,
+      "y": 94
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_name_resolution_milliseconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "ms"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "One point per hostname lookup."
+    },
+    {
+     "id": 27,
+     "type": "timeseries",
+     "title": "HTTP timings",
+     "gridPos": {
+      "w": 12,
+      "h": 7,
+      "x": 12,
+      "y": 94
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_http_connect_milliseconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} connect"
+      },
+      {
+       "refId": "B",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_http_tls_handshake_milliseconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} tls handshake"
+      },
+      {
+       "refId": "C",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} first byte"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "ms"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "Connect, TLS handshake and time to first byte."
+    },
+    {
+     "id": 28,
+     "type": "timeseries",
+     "title": "HTTP status code",
+     "gridPos": {
+      "w": 6,
+      "h": 6,
+      "x": 0,
+      "y": 101
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_http_status_code{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "showPoints": "never",
+        "lineInterpolation": "stepAfter"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "What the server answered with on each probe."
+    },
+    {
+     "id": 29,
+     "type": "stat",
+     "title": "Certificate days remaining",
+     "gridPos": {
+      "w": 6,
+      "h": 6,
+      "x": 6,
+      "y": 101
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_certificate_days_remaining{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {},
+       "unit": "d",
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "red",
+          "value": null
+         },
+         {
+          "color": "orange",
+          "value": 14
+         },
+         {
+          "color": "green",
+          "value": 30
+         }
+        ]
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "reduceOptions": {
+       "calcs": [
+        "lastNotNull"
+       ],
+       "fields": "",
+       "values": false
+      },
+      "colorMode": "value",
+      "graphMode": "area",
+      "textMode": "auto"
+     },
+     "description": "How long the certificate of each HTTPS target is still good for."
+    },
+    {
+     "id": 30,
+     "type": "timeseries",
+     "title": "UDP reply size",
+     "gridPos": {
+      "w": 6,
+      "h": 6,
+      "x": 12,
+      "y": 101
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_udp_reply_bytes{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "never"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "unit": "bytes"
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "How much came back. Zero means nothing answered."
+    },
+    {
+     "id": 31,
+     "type": "timeseries",
+     "title": "UDP reply echoed and port unreachable",
+     "gridPos": {
+      "w": 6,
+      "h": 6,
+      "x": 18,
+      "y": 101
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_udp_reply_echoed{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} echoed"
+      },
+      {
+       "refId": "B",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_udp_port_unreachable{source=~\"$source\"}",
+       "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} unreachable"
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "drawStyle": "line",
+        "lineWidth": 2,
+        "fillOpacity": 20,
+        "showPoints": "never",
+        "lineInterpolation": "stepAfter"
+       },
+       "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+       "min": 0,
+       "max": 1
+      },
+      "overrides": []
+     },
+     "options": {},
+     "description": "A reply carrying our own payload back is the only proof something is listening, and an ICMP refusal the only proof nothing is."
+    },
+    {
+     "id": 32,
+     "type": "table",
+     "title": "Resolved address",
+     "gridPos": {
+      "w": 24,
+      "h": 7,
+      "x": 0,
+      "y": 107
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "expr": "tcping_target_address{source=~\"$source\"}",
+       "legendFormat": "",
+       "instant": true,
+       "format": "table"
+      }
+     ],
+     "transformations": [
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {
+         "Time": true,
+         "Value": true,
+         "__name__": true,
+         "job": true
+        },
+        "indexByName": {
+         "source": 0,
+         "protocol": 1,
+         "target": 2,
+         "port": 3,
+         "ip": 4
+        }
+       }
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {},
+      "overrides": []
+     },
+     "options": {},
+     "description": "The address each target resolved to. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+    }
+   ]
   }
  ],
  "templating": {
