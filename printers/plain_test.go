@@ -394,12 +394,26 @@ func TestPlainSimpleMessages(t *testing.T) {
 		{
 			name:  "downtime",
 			print: func(p *PlainPrinter) { p.PrintDownTimeDuration(s) },
-			want:  "No response received for 2 seconds\n",
+			want:  "No response received for 2 seconds after 5 seconds of uptime\n",
 		},
 		{
 			name:  "uptime",
 			print: func(p *PlainPrinter) { p.PrintUpTimeDuration(s) },
-			want:  "No response received after 5 seconds of uptime\n",
+			want:  "Responses received for 5 seconds after 2 seconds of downtime\n",
+		},
+		{
+			name: "downtime without a preceding uptime",
+			print: func(p *PlainPrinter) {
+				p.PrintDownTimeDuration(&stats.Statistics{CurrentDowntime: 2 * time.Second})
+			},
+			want: "No response received for 2 seconds\n",
+		},
+		{
+			name: "uptime without a preceding downtime",
+			print: func(p *PlainPrinter) {
+				p.PrintUpTimeDuration(&stats.Statistics{CurrentUptime: 5 * time.Second})
+			},
+			want: "Responses received for 5 seconds\n",
 		},
 		{
 			name:  "error",

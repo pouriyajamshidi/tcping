@@ -425,13 +425,13 @@ func TestJSONSimpleEvents(t *testing.T) {
 			name:      "downtime",
 			print:     func(p *JSONPrinter) { p.PrintDownTimeDuration(s) },
 			eventType: "downtimeDuration",
-			want:      map[string]any{"duration": "2 seconds"},
+			want:      map[string]any{"duration": "2 seconds", "precededByUptime": "5 seconds"},
 		},
 		{
 			name:      "uptime",
 			print:     func(p *JSONPrinter) { p.PrintUpTimeDuration(s) },
 			eventType: "uptimeDuration",
-			want:      map[string]any{"duration": "5 seconds"},
+			want:      map[string]any{"duration": "5 seconds", "precededByDowntime": "2 seconds"},
 		},
 		{
 			name:      "error",

@@ -202,14 +202,27 @@ func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintDownTimeDuration prints the total duration of downtime when no response was received.
+// PrintDownTimeDuration prints how long the target was down for, right as it
+// starts responding again. The uptime that came before it is part of the same
+// report, so the whole outage reads as one line.
 func (p *PlainPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	fmt.Printf("No response received for %s\n", s.DowntimeDuration())
+	if s.CurrentUptime == 0 {
+		fmt.Printf("No response received for %s\n", s.DowntimeDuration())
+		return
+	}
+
+	fmt.Printf("No response received for %s after %s of uptime\n", s.DowntimeDuration(), s.UptimeDuration())
 }
 
-// PrintUpTimeDuration prints how long the target was up for, right as it stops responding.
+// PrintUpTimeDuration prints how long the target was up for, right as it stops
+// responding. The downtime that came before it is part of the same report.
 func (p *PlainPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	fmt.Printf("No response received after %s of uptime\n", s.UptimeDuration())
+	if s.CurrentDowntime == 0 {
+		fmt.Printf("Responses received for %s\n", s.UptimeDuration())
+		return
+	}
+
+	fmt.Printf("Responses received for %s after %s of downtime\n", s.UptimeDuration(), s.DowntimeDuration())
 }
 
 // PrintError prints an error message. It takes a print verb and then the arguments.

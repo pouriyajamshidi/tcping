@@ -202,13 +202,13 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 }
 
 func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
-	p, printer := newTestProber(nil, config.Config{})
+	p, _ := newTestProber(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 	p.statistics.OngoingSuccessfulProbes = 5
 
 	failAt := start.Add(100 * time.Millisecond)
-	p.handleProbeFailure(failAt, ProbeResult{})
+	wentDown := p.handleProbeFailure(failAt, ProbeResult{})
 
 	s := p.statistics
 	if s.OngoingSuccessfulProbes != 0 {
@@ -220,8 +220,8 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	if s.LongestUptime.Duration != 100*time.Millisecond || !s.LongestUptime.Start.Equal(start) {
 		t.Errorf("LongestUptime = %+v, want Duration=100ms Start=%v", s.LongestUptime, start)
 	}
-	if got := printer.snapshot().uptimeCalls; got != 1 {
-		t.Errorf("PrintUpTimeDuration called %d times, want 1", got)
+	if !wentDown {
+		t.Error("handleProbeFailure reported no up -> down transition, want one")
 	}
 }
 
@@ -229,12 +229,10 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 // target's status before this point was simply unknown), so failing on it
 // must not print a bogus "up for 0s" (or worse, garbage) message.
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
-	p, printer := newTestProber(nil, config.Config{})
+	p, _ := newTestProber(nil, config.Config{})
 
-	p.handleProbeFailure(time.Now(), ProbeResult{})
-
-	if got := printer.snapshot().uptimeCalls; got != 0 {
-		t.Errorf("PrintUpTimeDuration called %d times, want 0 (no uptime streak ever started)", got)
+	if p.handleProbeFailure(time.Now(), ProbeResult{}) {
+		t.Error("handleProbeFailure reported an up -> down transition, want none (no uptime streak ever started)")
 	}
 }
 
@@ -242,15 +240,15 @@ func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 // for X" message should only ever fire once, at the moment uptime ends,
 // not be repeated on every subsequent failed probe.
 func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) {
-	p, printer := newTestProber(nil, config.Config{})
+	p, _ := newTestProber(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{})
-	p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{})
-
-	if got := printer.snapshot().uptimeCalls; got != 1 {
-		t.Errorf("PrintUpTimeDuration called %d times, want 1", got)
+	if !p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{}) {
+		t.Error("first failure reported no up -> down transition, want one")
+	}
+	if p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{}) {
+		t.Error("second failure reported an up -> down transition, want none")
 	}
 }
 
@@ -324,14 +322,14 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 }
 
 func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
-	p, printer := newTestProber(nil, config.Config{})
+	p, _ := newTestProber(nil, config.Config{})
 	start := time.Now()
 	p.statistics.LastProbeHadFailed = true
 	p.statistics.StartOfDowntime = start
 	p.statistics.OngoingUnsuccessfulProbes = 3
 
 	upAt := start.Add(50 * time.Millisecond)
-	p.handleProbeSuccess(upAt, time.Millisecond, ProbeResult{})
+	cameUp := p.handleProbeSuccess(upAt, time.Millisecond, ProbeResult{})
 
 	s := p.statistics
 	if s.LastProbeHadFailed {
@@ -346,22 +344,23 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	if !s.StartOfUptime.Equal(upAt) {
 		t.Errorf("StartOfUptime = %v, want %v", s.StartOfUptime, upAt)
 	}
-	if got := printer.snapshot().downtimeCalls; got != 1 {
-		t.Errorf("PrintDownTimeDuration called %d times, want 1", got)
+	if !cameUp {
+		t.Error("handleProbeSuccess reported no down -> up transition, want one")
 	}
 }
 
 func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
-	p, printer := newTestProber(nil, config.Config{})
+	p, _ := newTestProber(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, ProbeResult{})
-	p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, ProbeResult{})
-
-	if got := printer.snapshot().downtimeCalls; got != 0 {
-		t.Errorf("PrintDownTimeDuration called %d times, want 0 (never went down)", got)
+	if p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, ProbeResult{}) {
+		t.Error("handleProbeSuccess reported a down -> up transition, want none (never went down)")
 	}
+	if p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, ProbeResult{}) {
+		t.Error("handleProbeSuccess reported a down -> up transition, want none (never went down)")
+	}
+
 	if p.statistics.OngoingSuccessfulProbes != 2 {
 		t.Errorf("OngoingSuccessfulProbes = %d, want 2", p.statistics.OngoingSuccessfulProbes)
 	}
