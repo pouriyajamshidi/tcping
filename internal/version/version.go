@@ -3,7 +3,7 @@
 package version
 
 // Current is set at compile time via the Makefile
-var Current = "v3.0.0-rc1"
+var Current = "3.0.0-rc1"
 
 // UserAgent is the User-Agent header tcping sends on every HTTP request it
 // makes, so the receiving side can tell which tcping it is talking to.
