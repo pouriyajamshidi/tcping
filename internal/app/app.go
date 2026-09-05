@@ -11,11 +11,13 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pouriyajamshidi/tcping/v3/internal/config"
-	"github.com/pouriyajamshidi/tcping/v3/internal/printers"
-	"github.com/pouriyajamshidi/tcping/v3/internal/probers"
+	"github.com/pouriyajamshidi/tcping/v3/config"
+
+	"github.com/pouriyajamshidi/tcping/v3/internal/cli"
 	"github.com/pouriyajamshidi/tcping/v3/internal/server"
-	"github.com/pouriyajamshidi/tcping/v3/internal/stats"
+	"github.com/pouriyajamshidi/tcping/v3/printers"
+	"github.com/pouriyajamshidi/tcping/v3/probe"
+	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
 // setupSignalHandler catches SIGINT and SIGTERM
@@ -70,7 +72,7 @@ func summaryRequests() <-chan struct{} {
 }
 
 func Run() {
-	cfg := config.ProcessUserInput()
+	cfg, printerCfg := cli.ProcessUserInput()
 
 	if cfg.UDPServer {
 		ctx := setupSignalHandler(context.Background())
@@ -86,7 +88,7 @@ func Run() {
 
 	stats := stats.NewStatistics(cfg)
 
-	printer, err := printers.NewPrinter(cfg.PrinterConfig)
+	printer, err := printers.NewPrinter(printerCfg)
 	if err != nil {
 		fmt.Printf("Failed to create printer: %s\n", err.Error())
 		os.Exit(1)
@@ -94,15 +96,15 @@ func Run() {
 
 	probeCtx := setupSignalHandler(context.Background())
 
-	var pinger probers.Pinger
+	var pinger probe.Pinger
 
 	switch cfg.Protocol {
 	case config.HTTP, config.HTTPS:
-		pinger = probers.NewHTTPing(cfg)
+		pinger = probe.NewHTTPing(cfg)
 	case config.UDP:
-		pinger = probers.NewUDPing(cfg)
+		pinger = probe.NewUDPing(cfg)
 	default:
-		pinger = probers.NewTcping(cfg)
+		pinger = probe.NewTcping(cfg)
 	}
 
 	// Only worth watching stdin when there is a user at a keyboard to
@@ -112,7 +114,7 @@ func Run() {
 		summaryReqs = summaryRequests()
 	}
 
-	prober := probers.NewProber(pinger, printer, cfg, stats, summaryReqs)
+	prober := probe.NewProber(pinger, printer, cfg, stats, summaryReqs)
 	if err := prober.Probe(probeCtx); err != nil {
 		printer.PrintError("%v", err)
 	}

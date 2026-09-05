@@ -26,9 +26,9 @@ VERSION := $(GIT_BRANCH)-$(GIT_SHA)$(GIT_DIRTY)
 endif
 endif
 
-VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/internal/config
-GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).Version=$(VERSION)"
-GO_MAIN_PATH := ./cmd/tcping.go
+VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/version
+GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).Current=$(VERSION)"
+GO_MAIN_PATH := ./cmd/tcping
 
 # IO directories
 TARGET_DIR := target
