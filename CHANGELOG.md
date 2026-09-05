@@ -3,11 +3,15 @@
 ## v3.0.0 - Unreleased (Work in progress)
 
 - build (breaking): remove sqlite3 support from Windows binaries
+- build (breaking): Go `1.26.7` is now the minimum version required to build tcping
 - build: bump stale days before close from 7 to 14
 - build: ensure to fail on any linting issues
 - build: simplify container publish workflow
 - build: general cleanups
 - build: support more container architectures
+- build: give the tests their own workflow instead of running them alongside the build
+- build: pin the GitHub Actions we use to commit hashes instead of tags
+- build: derive the version from the git tag instead of keeping it in two places
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
 - improvement: when the `-I` flag is used, show the interface name on probe **failures** too
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
@@ -16,16 +20,29 @@
 - docs: we have a new logo thanks to Gemini!
 - refactor: modernize with `go fix`
 - dependencies: replace `github.com/google/go-github` with Go's built-in HTTP library
+- dependencies: drop `github.com/gookit/color` in favor of a small ANSI helper of our own
+- dependencies: drop `github.com/stretchr/testify`. The tests now use the standard library only
+- dependencies: bump `modernc.org/libc` and `modernc.org/sqlite`
 - docs: grammar fix in the README.md thanks to @taiman724
 - project structure: move Artwork and Images folders to the docs folder
+- project structure: split the single-file program into packages - `config`, `dns`, `nic`, `probe`, `printers`, `stats`, `version` and, for what is not meant to be imported, `internal/app`, `internal/cli` and `internal/server`
+- refactor (breaking): the module path is now `github.com/pouriyajamshidi/tcping/v3`, so `go install` needs the new path: `go install github.com/pouriyajamshidi/tcping/v3@latest`
 - refactor (breaking): rewrite the JSON output events - each event now carries a minimal, consistent payload (`start`, `probe`, `retry`, `downtimeDuration`, `uptimeDuration`, `nameResolution`, `statistics`, `error`) instead of one large struct with inconsistent field names; the `info` event type is removed
 - refactor (breaking): rewrite the sqlite3 schema - drop the generic `type` column and rename `success` to `reachable` and `time` to `latency`
 - refactor (breaking): rename the CSV `Status` column to `Reachable` (values are now lowercase `true`/`false` instead of `Reply`/`No Reply`) and the stats file's `Metric` column to `Statistic`
 - refactor (breaking): `-v` now turns on verbose output for HTTP(S) probes; the version is printed with `--version` instead
+- refactor (breaking): remove the `--non-interactive` flag. tcping now works out on its own whether it is attached to a terminal and in the foreground, so running it under `nohup` or `disown` needs no flag
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
 - fix: fix incorrect timestamp handling in the JSON printer
+- fix: `--show-failures-only` was ignored and successful probes were printed anyway
+- fix: an IPv6 address carrying a zone, e.g. `fe80::1%eth0`, no longer comes out mangled in the colored output
+- fix: `--db` no longer panics on Windows. It now says that sqlite3 output is not available there
+- fix: fix a data race between the probe loop and the **Enter** key handler
+- fix: `-I` no longer binds name resolution to the interface's address when the DNS server is a loopback address, e.g. systemd-resolved's `127.0.0.53`. The kernel cannot route such a packet, so every lookup used to time out
 - feat: add HTTP(S) probing by giving a URL as the target, e.g. `tcping https://example.com/health`, with `-v` to show the HTTP and TLS details of every probe and `--skip-tls` to skip certificate verification
+- feat: add UDP probing by giving a `udp://` target, e.g. `tcping udp://example.com 53`. UDP has no handshake, so a probe only counts as successful when the other end answers it. Every probe carries its own number as the payload and `-v` shows whether the reply carried it back, which tells a lost probe apart from a silent port
+- feat: add `--udp-server` flag to listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at that machine has something to answer it
 - feat: CSV output filenames now get a date/time suffix by default; add `--csv-no-timestamp` to reuse the same file across runs instead
 - feat: add `--resolve-every-probe` flag to resolve the target's hostname before every probe instead of only at startup or on retry (`-r`)
 - feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
@@ -37,10 +54,13 @@
 - fix: the resolved IP no longer identifies the series in the Alloy and InfluxDB output. A hostname that resolved to a different address mid-run (`-r` or `--resolve-every-probe`) used to leave the old series behind and start a new one, which broke graphs into pieces and made the counters add up wrong. Alloy now sends the address as its own `tcping_target_address` metric and InfluxDB writes it as an `ip` field instead of a tag
 - feat: the Alloy and InfluxDB statistics now carry the whole summary the terminal prints, not just the packet loss and the latency: the total uptime and downtime, the longest streak of each with the times it ran from and to, when the last successful and unsuccessful probes landed, the hostname retry and address change counts, and when the run started, how long it has been going and when it ended. Times are sent as milliseconds since the epoch
 - docs: the Grafana dashboard in `docs/observability` now has a panel for everything tcping sends, on both the InfluxDB and the Prometheus side, and keys every series on the source, protocol, target **and port**, so the same host probed on two ports no longer collapses onto one line
+- docs: add `docs/observability`, a Docker Compose stack with Alloy, Prometheus, InfluxDB and Grafana that can be started in one command to try the `--alloy` and `--influxdb` output without setting a server up first
+- tools: add `tools/netcond.sh` to apply latency, packet loss or a full block toward a single destination, so tcping can be tested against a bad network without waiting for one
 - improvement: `-I` now keeps working correctly when the interface has both an IPv4 and an IPv6 address and the target's resolved address family changes mid-run
 - improvement: DNS resolution is now sourced from `-I`'s interface too, matching what probes already did
 - improvement: show how long the target was up right when it starts failing, mirroring the existing downtime message
 - improvement: probing now starts immediately instead of waiting for the first interval to elapse
+- improvement: `-i`, `-t` and `--dns-timeout` are no longer floored to whole milliseconds, so sub-millisecond values work as given
 - fix: hostname retry-resolve (`-r`) now actually changes the address being probed instead of only updating what's displayed
 - fix: the summary's `duration (HH:MM:SS)` now always matches the `started at`/`ended at` timestamps instead of silently drifting from them
 - feat: add `--omit-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
