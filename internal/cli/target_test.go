@@ -236,3 +236,84 @@ func TestParseTarget(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertAndValidatePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		port    string
+		want    uint16
+		wantErr bool
+	}{
+		{
+			name: "lowest valid port",
+			port: "1",
+			want: 1,
+		},
+		{
+			name: "highest valid port",
+			port: "65535",
+			want: 65535,
+		},
+		{
+			name: "a common port",
+			port: "443",
+			want: 443,
+		},
+		{
+			name:    "zero is not a usable port",
+			port:    "0",
+			wantErr: true,
+		},
+		{
+			name:    "one past the highest port",
+			port:    "65536",
+			wantErr: true,
+		},
+		{
+			name:    "negative",
+			port:    "-1",
+			wantErr: true,
+		},
+		{
+			name:    "not a number",
+			port:    "http",
+			wantErr: true,
+		},
+		{
+			name:    "empty",
+			port:    "",
+			wantErr: true,
+		},
+		{
+			name:    "decimal",
+			port:    "443.0",
+			wantErr: true,
+		},
+		{
+			name:    "surrounding whitespace is not trimmed for us",
+			port:    " 443",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertAndValidatePort(tt.port)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("convertAndValidatePort(%q) = %d, want an error", tt.port, got)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("convertAndValidatePort(%q) returned an unexpected error: %v", tt.port, err)
+			}
+
+			if got != tt.want {
+				t.Errorf("convertAndValidatePort(%q) = %d, want %d", tt.port, got, tt.want)
+			}
+		})
+	}
+}

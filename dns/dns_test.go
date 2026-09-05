@@ -2,8 +2,10 @@ package dns
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/netip"
+	"slices"
 	"testing"
 	"time"
 
@@ -334,6 +336,183 @@ func TestSelectResolvedIPv6(t *testing.T) {
 		}
 		if actual != ip1 && actual != ip2 {
 			t.Errorf("Expected an IP but got invalid address")
+		}
+	})
+}
+
+// addrs turns a list of textual addresses into the slice the filters take,
+// so the test cases below stay readable.
+func addrs(t *testing.T, in ...string) []netip.Addr {
+	t.Helper()
+
+	out := make([]netip.Addr, len(in))
+	for i, s := range in {
+		addr, err := netip.ParseAddr(s)
+		if err != nil {
+			t.Fatalf("parsing %q: %v", s, err)
+		}
+		out[i] = addr
+	}
+	return out
+}
+
+func TestFilterIPv4(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{
+			name: "keeps only the IPv4 addresses",
+			in:   []string{"1.2.3.4", "2001:db8::1", "5.6.7.8"},
+			want: []string{"1.2.3.4", "5.6.7.8"},
+		},
+		{
+			name: "an IPv4-mapped address counts as IPv4 and is unmapped",
+			in:   []string{"::ffff:1.2.3.4"},
+			want: []string{"1.2.3.4"},
+		},
+		{
+			name: "nothing to keep",
+			in:   []string{"2001:db8::1", "fe80::1"},
+			want: nil,
+		},
+		{
+			name: "empty input",
+			in:   nil,
+			want: nil,
+		},
+		{
+			name: "the order of what is kept does not change",
+			in:   []string{"5.6.7.8", "2001:db8::1", "1.2.3.4"},
+			want: []string{"5.6.7.8", "1.2.3.4"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterIPv4(addrs(t, tt.in...))
+			want := addrs(t, tt.want...)
+
+			if !slices.Equal(got, want) {
+				t.Errorf("filterIPv4(%v) = %v, want %v", tt.in, got, want)
+			}
+		})
+	}
+}
+
+func TestFilterIPv6(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{
+			name: "keeps only the IPv6 addresses",
+			in:   []string{"1.2.3.4", "2001:db8::1", "fe80::1"},
+			want: []string{"2001:db8::1", "fe80::1"},
+		},
+		{
+			name: "an IPv4-mapped address is IPv4, so it is left out",
+			in:   []string{"::ffff:1.2.3.4", "2001:db8::1"},
+			want: []string{"2001:db8::1"},
+		},
+		{
+			name: "nothing to keep",
+			in:   []string{"1.2.3.4", "5.6.7.8"},
+			want: nil,
+		},
+		{
+			name: "empty input",
+			in:   nil,
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterIPv6(addrs(t, tt.in...))
+			want := addrs(t, tt.want...)
+
+			if !slices.Equal(got, want) {
+				t.Errorf("filterIPv6(%v) = %v, want %v", tt.in, got, want)
+			}
+		})
+	}
+}
+
+func TestUnmapAddresses(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{
+			name: "an IPv4-mapped address becomes a plain IPv4 one",
+			in:   []string{"::ffff:1.2.3.4"},
+			want: []string{"1.2.3.4"},
+		},
+		{
+			name: "a real IPv6 address is left alone",
+			in:   []string{"2001:db8::1"},
+			want: []string{"2001:db8::1"},
+		},
+		{
+			name: "a plain IPv4 address is left alone",
+			in:   []string{"1.2.3.4"},
+			want: []string{"1.2.3.4"},
+		},
+		{
+			name: "a mixed list keeps its order",
+			in:   []string{"2001:db8::1", "::ffff:5.6.7.8", "1.2.3.4"},
+			want: []string{"2001:db8::1", "5.6.7.8", "1.2.3.4"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := unmapAddresses(addrs(t, tt.in...))
+			want := addrs(t, tt.want...)
+
+			if !slices.Equal(got, want) {
+				t.Errorf("unmapAddresses(%v) = %v, want %v", tt.in, got, want)
+			}
+		})
+	}
+}
+
+func TestSelectRandomIP(t *testing.T) {
+	t.Run("a single address is the one that comes back", func(t *testing.T) {
+		want := addrs(t, "1.2.3.4")
+
+		got, err := selectRandomIP(want)
+		if err != nil {
+			t.Fatalf("selectRandomIP returned an unexpected error: %v", err)
+		}
+
+		if got != want[0] {
+			t.Errorf("selectRandomIP = %v, want %v", got, want[0])
+		}
+	})
+
+	t.Run("the choice is always one of the addresses given", func(t *testing.T) {
+		in := addrs(t, "1.2.3.4", "5.6.7.8", "2001:db8::1")
+
+		for range 50 {
+			got, err := selectRandomIP(in)
+			if err != nil {
+				t.Fatalf("selectRandomIP returned an unexpected error: %v", err)
+			}
+
+			if !slices.Contains(in, got) {
+				t.Fatalf("selectRandomIP = %v, which is not one of %v", got, in)
+			}
+		}
+	})
+
+	t.Run("an empty list is an error, not a zero address", func(t *testing.T) {
+		if _, err := selectRandomIP(nil); !errors.Is(err, ErrNoIPAddresses) {
+			t.Errorf("selectRandomIP(nil) error = %v, want %v", err, ErrNoIPAddresses)
 		}
 	})
 }
