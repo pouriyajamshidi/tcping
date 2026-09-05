@@ -1,3 +1,6 @@
+// Package cli turns the command line into the settings a run uses. It owns
+// everything that only makes sense when tcping is driven from a terminal:
+// the flags, the usage text, the target parsing and the update check.
 package cli
 
 import (

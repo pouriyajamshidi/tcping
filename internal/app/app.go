@@ -1,3 +1,5 @@
+// Package app wires a tcping run together. It reads the command line, picks
+// the printer the results go to, and keeps probing until the user stops it.
 package app
 
 import (

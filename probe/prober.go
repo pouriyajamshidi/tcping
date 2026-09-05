@@ -1,4 +1,6 @@
-// Package probe handles the general probing logic
+// Package probe runs the probe loop. It holds the TCP, HTTP and UDP probes
+// and the Prober that repeats one of them, records what came back in the
+// statistics and hands each result to a Printer.
 package probe
 
 import (

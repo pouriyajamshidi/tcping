@@ -1,3 +1,5 @@
+// Package nic finds the source address probes and DNS lookups go out from
+// when the user picks a network interface or a source IP.
 package nic
 
 import (

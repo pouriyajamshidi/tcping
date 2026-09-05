@@ -1,3 +1,6 @@
+// Package stats holds what a run has learned about its target so far, and
+// formats those numbers for the printers. It is the one place the probers
+// write to and the printers read from.
 package stats
 
 import (

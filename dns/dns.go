@@ -1,4 +1,6 @@
-// Package dns handles all the name resolution logic for the program to function
+// Package dns turns a target hostname into the IP address to probe. The
+// resolver it builds honors the DNS server, the address family and the
+// network interface the user asked for.
 package dns
 
 import (
