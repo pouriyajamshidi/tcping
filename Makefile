@@ -7,22 +7,13 @@ SHELL := /bin/bash
 MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
-# Derived from git so a release only needs a tag pushed - no more
-# remembering to also hand-edit this file (this is exactly the failure
-# mode behind the "fix: version typo" entry in the changelog). A commit
-# exactly on a tag gets the clean tag version; anything else gets
-# <last-tag>-<commits-since>-g<short-sha>, with a -dirty suffix for
-# uncommitted changes. It always starts with the tag number because the
-# .deb version field must start with a digit.
-GIT_DESCRIBE := $(shell git describe --tags --dirty 2>/dev/null)
-ifeq ($(GIT_DESCRIBE),)
-VERSION := 0.0.0-unknown
-else
-VERSION := $(patsubst v%,%,$(GIT_DESCRIBE))
-endif
+# Read from the version package, which is the one place the version is
+# written down. Only the .deb package and the build messages need it here,
+# the binary picks it up from the package itself.
+VERSION_FILE := internal/version/version.go
+VERSION := $(shell sed -n 's/^var Current = "\(.*\)"/\1/p' $(VERSION_FILE))
 
-VERSION_PACKAGE := github.com/pouriyajamshidi/tcping/v3/internal/version
-GO_LDFLAGS := -ldflags "-s -w -X $(VERSION_PACKAGE).Current=$(VERSION)"
+GO_LDFLAGS := -ldflags "-s -w"
 GO_MAIN_PATH := ./cmd/tcping
 
 # IO directories
