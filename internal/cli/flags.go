@@ -375,6 +375,7 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 		WithTimestamp:     f.showTimestamp,
 		WithSourceAddress: f.showSourceAddress,
 		OmitStatistics:    f.omitStatistics,
+		ShowFailuresOnly:  f.showFailuresOnly,
 		Verbose:           f.verbose,
 		OutputDBPath:      f.DBPath,
 		OutputCSVPath:     f.CSVPath,
