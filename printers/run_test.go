@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -222,11 +223,12 @@ func TestRunTranscript_MidRunSummary(t *testing.T) {
 	}
 }
 
-// With --failures-only the success line is held back, so the downtime it
-// would have carried is reported on a line of its own instead of being lost.
+// --failures-only means failures only: the successful probes are not printed,
+// and neither is the outage they ended, since it is the success line that
+// carries it.
 func TestRunTranscript_ShowFailuresOnly(t *testing.T) {
 	out := scriptedRun{
-		printer:          NewPlainPrinter(Config{ShowFailuresOnly: true}),
+		printer:          NewPlainPrinter(Config{}),
 		outcomes:         []bool{true, false, true, true},
 		showFailuresOnly: true,
 	}.run(t)
@@ -234,7 +236,6 @@ func TestRunTranscript_ShowFailuresOnly(t *testing.T) {
 	want := strings.Join([]string{
 		"Probing example.com on port 443 over TCP (resolved in <duration>)",
 		"No reply from example.com (93.184.216.34) on port 443 TCP_conn=1 (up for <duration>)",
-		"No response received for <duration>",
 	}, "\n") + "\n"
 
 	if got := probeLines(out); got != want {
@@ -265,17 +266,21 @@ func TestRunTranscript_JSONEvents(t *testing.T) {
 	want := []string{
 		"start",
 		"probe", "probe", // up
-		"probe", "uptimeDuration", // the first failure ends the uptime
-		"probe",
-		"statistics",                // "Enter" pressed after the fourth probe
-		"probe", "downtimeDuration", // the recovery ends the downtime
-		"probe",
+		"probe", "probe", // down
+		"statistics",     // "Enter" pressed after the fourth probe
+		"probe", "probe", // up again
 		"statistics", // on the way out
 	}
 
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("events = %v, want %v", got, want)
 	}
+
+	// The probe that ended each period is the one that reports its length.
+	wantLines(t, out,
+		`"success":false,"connections":1,"endedUptime":`,
+		`"connections":1,"endedDowntime":`,
+	)
 
 	// The mid-run summary has the same gap to fall into as the terminal one.
 	if strings.Contains(out, `"totalUptime":"0 seconds"`) {
@@ -309,6 +314,25 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 		}
 	}
 
+	// The ended uptime sits on the first failure, the ended downtime on the
+	// recovery, and both columns are empty everywhere else.
+	endedUptime := columnOf(t, rows, "Ended Uptime")
+	endedDowntime := columnOf(t, rows, "Ended Downtime")
+
+	if endedUptime[3] == "" {
+		t.Errorf("the failure that ended the uptime has no Ended Uptime: %v", rows[3])
+	}
+
+	if endedDowntime[5] == "" {
+		t.Errorf("the probe that ended the outage has no Ended Downtime: %v", rows[5])
+	}
+
+	for _, row := range []int{1, 2, 4, 6} {
+		if endedUptime[row] != "" || endedDowntime[row] != "" {
+			t.Errorf("row %d ended no period but reports one: %v", row, rows[row])
+		}
+	}
+
 	statistics := map[string]string{}
 	for _, row := range readCSV(t, printer, strings.TrimSuffix(path, ".csv")+"_stats.csv") {
 		if len(row) == 2 {
@@ -323,4 +347,22 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 	if statistics["Total Downtime"] == "0 seconds" {
 		t.Errorf("stats file reports no downtime on a run that went down: %v", statistics)
 	}
+}
+
+// columnOf is one named column of a CSV, header row included, so a test can
+// name a column instead of counting to it.
+func columnOf(t *testing.T, rows [][]string, name string) []string {
+	t.Helper()
+
+	index := slices.Index(rows[0], name)
+	if index < 0 {
+		t.Fatalf("no %q column in %v", name, rows[0])
+	}
+
+	values := make([]string, len(rows))
+	for i, row := range rows {
+		values[i] = row[index]
+	}
+
+	return values
 }

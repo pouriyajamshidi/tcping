@@ -242,22 +242,6 @@ func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
 	printLightYellow("Retrying to resolve %s\n", hostname)
 }
 
-// PrintDownTimeDuration prints how long the target was down for. The success
-// line that ended the outage already says it, so this only speaks up when
-// that line was held back by --failures-only.
-func (p *ColorPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	if !p.cfg.ShowFailuresOnly {
-		return
-	}
-
-	printYellow("No response received for %s\n", s.EndedDowntimeDuration())
-}
-
-// PrintUpTimeDuration prints nothing. The failure line that ended the uptime
-// already says how long the target had been up, and failure lines are always
-// printed.
-func (p *ColorPrinter) PrintUpTimeDuration(_ *stats.Statistics) {}
-
 // PrintError prints an error message in red. It takes a print verb and then the arguments.
 func (p *ColorPrinter) PrintError(format string, args ...any) {
 	printRed(format+"\n", args...)

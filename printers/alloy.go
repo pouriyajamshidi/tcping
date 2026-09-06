@@ -337,6 +337,16 @@ func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpM
 		metrics = append(metrics, p.gauge("tcping_probe_rtt_milliseconds", "ms", rttOf(s.LatestRTT), p.labels(s)))
 	}
 
+	// The probe that ends an uptime or a downtime is where its length is
+	// known, so that is where it is sent.
+	if s.EndedUptime != 0 {
+		metrics = append(metrics, p.gauge("tcping_last_uptime_seconds", "s", s.EndedUptime.Seconds(), p.labels(s)))
+	}
+
+	if s.EndedDowntime != 0 {
+		metrics = append(metrics, p.gauge("tcping_last_downtime_seconds", "s", s.EndedDowntime.Seconds(), p.labels(s)))
+	}
+
 	metrics = append(metrics, p.httpMetrics(s)...)
 
 	return append(metrics, p.udpMetrics(s)...)
@@ -493,21 +503,6 @@ func (p *AlloyPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 // PrintRetryingToResolve has no number behind it, so it goes to the terminal.
 func (p *AlloyPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
-}
-
-// PrintDownTimeDuration sends how long the outage that just ended lasted.
-func (p *AlloyPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	p.send([]otlpMetric{
-		p.gauge("tcping_last_downtime_seconds", "s", s.EndedDowntime.Seconds(), p.labels(s)),
-	})
-}
-
-// PrintUpTimeDuration sends how long the target was up for, right as it
-// stops responding.
-func (p *AlloyPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	p.send([]otlpMetric{
-		p.gauge("tcping_last_uptime_seconds", "s", s.EndedUptime.Seconds(), p.labels(s)),
-	})
 }
 
 func (p *AlloyPrinter) PrintError(format string, args ...any) {

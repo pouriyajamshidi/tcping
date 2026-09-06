@@ -36,16 +36,20 @@ type jsonStart struct {
 }
 
 type jsonProbe struct {
-	Hostname    string    `json:"hostname,omitempty"`
-	IP          string    `json:"ipAddress"`
-	Port        uint16    `json:"port"`
-	Success     bool      `json:"success"`
-	Latency     float32   `json:"latency,omitempty"`
-	Source      string    `json:"sourceAddress,omitempty"`
-	Connections uint      `json:"connections"`
-	Timestamp   string    `json:"timestamp,omitempty"`
-	HTTP        *jsonHTTP `json:"http,omitempty"`
-	UDP         *jsonUDP  `json:"udp,omitempty"`
+	Hostname    string  `json:"hostname,omitempty"`
+	IP          string  `json:"ipAddress"`
+	Port        uint16  `json:"port"`
+	Success     bool    `json:"success"`
+	Latency     float32 `json:"latency,omitempty"`
+	Source      string  `json:"sourceAddress,omitempty"`
+	Connections uint    `json:"connections"`
+	// How long the target had been up, or down, when this probe ended it.
+	// Left out of every probe that ended neither, which is most of them.
+	EndedUptime   string    `json:"endedUptime,omitempty"`
+	EndedDowntime string    `json:"endedDowntime,omitempty"`
+	Timestamp     string    `json:"timestamp,omitempty"`
+	HTTP          *jsonHTTP `json:"http,omitempty"`
+	UDP           *jsonUDP  `json:"udp,omitempty"`
 }
 
 // jsonUDP is attached to a probe only when the target is UDP, so the output
@@ -114,14 +118,6 @@ type jsonRetry struct {
 
 type jsonNameResolution struct {
 	DurationMs string `json:"durationMs"`
-}
-
-type jsonDowntime struct {
-	Duration string `json:"duration"`
-}
-
-type jsonUptime struct {
-	Duration string `json:"duration"`
 }
 
 type jsonError struct {
@@ -205,6 +201,10 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		UDP:         newJSONUDP(s),
 	}
 
+	if s.EndedDowntime != 0 {
+		data.EndedDowntime = s.EndedDowntimeDuration()
+	}
+
 	if p.cfg.WithTimestamp {
 		data.Timestamp = s.CurrentTimestamp()
 	}
@@ -230,6 +230,10 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		Connections: s.OngoingUnsuccessfulProbes,
 		HTTP:        newJSONHTTP(s),
 		UDP:         newJSONUDP(s),
+	}
+
+	if s.EndedUptime != 0 {
+		data.EndedUptime = s.EndedUptimeDuration()
 	}
 
 	if p.cfg.WithTimestamp {
@@ -312,18 +316,6 @@ func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
 	p.encode("retry", jsonRetry{
 		Hostname: hostname,
 	})
-}
-
-// PrintDownTimeDuration prints how long the target was down for, right as it
-// starts responding again.
-func (p *JSONPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	p.encode("downtimeDuration", jsonDowntime{Duration: s.EndedDowntimeDuration()})
-}
-
-// PrintUpTimeDuration prints how long the target was up for, right as it stops
-// responding.
-func (p *JSONPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	p.encode("uptimeDuration", jsonUptime{Duration: s.EndedUptimeDuration()})
 }
 
 func (p *JSONPrinter) PrintError(format string, args ...any) {

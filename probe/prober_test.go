@@ -78,11 +78,14 @@ type fakePrinter struct {
 	failureCalls        int
 	statsCalls          int
 	retryCalls          int
-	downtimeCalls       int
-	uptimeCalls         int
 	errorCalls          int
 	shutdownCalls       int
 	lastRetryTarget     string
+
+	// The ended uptime and downtime seen on the probe calls, which is where
+	// a printer now learns of them.
+	endedUptimes   []time.Duration
+	endedDowntimes []time.Duration
 }
 
 func (f *fakePrinter) PrintStart(s *stats.Statistics) {
@@ -101,12 +104,20 @@ func (f *fakePrinter) PrintProbeSuccess(s *stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.successCalls++
+
+	if s.EndedDowntime != 0 {
+		f.endedDowntimes = append(f.endedDowntimes, s.EndedDowntime)
+	}
 }
 
 func (f *fakePrinter) PrintProbeFailure(s *stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.failureCalls++
+
+	if s.EndedUptime != 0 {
+		f.endedUptimes = append(f.endedUptimes, s.EndedUptime)
+	}
 }
 
 func (f *fakePrinter) PrintStatistics(s *stats.Statistics) {
@@ -120,18 +131,6 @@ func (f *fakePrinter) PrintRetryingToResolve(hostname string) {
 	defer f.mu.Unlock()
 	f.retryCalls++
 	f.lastRetryTarget = hostname
-}
-
-func (f *fakePrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.downtimeCalls++
-}
-
-func (f *fakePrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.uptimeCalls++
 }
 
 func (f *fakePrinter) PrintError(format string, args ...any) {
@@ -156,10 +155,10 @@ func (f *fakePrinter) snapshot() fakePrinter {
 		failureCalls:        f.failureCalls,
 		statsCalls:          f.statsCalls,
 		retryCalls:          f.retryCalls,
-		downtimeCalls:       f.downtimeCalls,
-		uptimeCalls:         f.uptimeCalls,
 		errorCalls:          f.errorCalls,
 		shutdownCalls:       f.shutdownCalls,
+		endedUptimes:        f.endedUptimes,
+		endedDowntimes:      f.endedDowntimes,
 	}
 }
 
@@ -208,7 +207,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	p.statistics.OngoingSuccessfulProbes = 5
 
 	failAt := start.Add(100 * time.Millisecond)
-	wentDown := p.handleProbeFailure(failAt, ProbeResult{})
+	p.handleProbeFailure(failAt, ProbeResult{})
 
 	s := p.statistics
 	if s.OngoingSuccessfulProbes != 0 {
@@ -220,35 +219,41 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	if s.LongestUptime.Duration != 100*time.Millisecond || !s.LongestUptime.Start.Equal(start) {
 		t.Errorf("LongestUptime = %+v, want Duration=100ms Start=%v", s.LongestUptime, start)
 	}
-	if !wentDown {
-		t.Error("handleProbeFailure reported no up -> down transition, want one")
-	}
 }
 
 // The very first probe ever has no prior uptime streak to report (the
 // target's status before this point was simply unknown), so failing on it
-// must not print a bogus "up for 0s" (or worse, garbage) message.
+// must not report a bogus "up for 0s" (or worse, garbage) period.
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 
-	if p.handleProbeFailure(time.Now(), ProbeResult{}) {
-		t.Error("handleProbeFailure reported an up -> down transition, want none (no uptime streak ever started)")
+	p.handleProbeFailure(time.Now(), ProbeResult{})
+
+	if p.statistics.EndedUptime != 0 {
+		t.Errorf("EndedUptime = %v, want 0 (no uptime streak ever started)", p.statistics.EndedUptime)
 	}
 }
 
-// Consecutive failures are the same, single downtime streak - the "was up
-// for X" message should only ever fire once, at the moment uptime ends,
-// not be repeated on every subsequent failed probe.
+// Consecutive failures are the same, single downtime streak - the "up for X"
+// period should only ever be reported once, at the moment uptime ends, not
+// repeated on every subsequent failed probe.
 func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	if !p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{}) {
-		t.Error("first failure reported no up -> down transition, want one")
+	p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{})
+	if p.statistics.EndedUptime == 0 {
+		t.Error("EndedUptime = 0 on the failure that ended the uptime, want it filled in")
 	}
-	if p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{}) {
-		t.Error("second failure reported an up -> down transition, want none")
+
+	// Probe returns these to zero before every probe, so the second failure
+	// starts from a clean slate the way a real one does.
+	p.statistics.EndedUptime = 0
+
+	p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{})
+	if p.statistics.EndedUptime != 0 {
+		t.Errorf("EndedUptime = %v on a second consecutive failure, want 0", p.statistics.EndedUptime)
 	}
 }
 
@@ -329,7 +334,7 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	p.statistics.OngoingUnsuccessfulProbes = 3
 
 	upAt := start.Add(50 * time.Millisecond)
-	cameUp := p.handleProbeSuccess(upAt, time.Millisecond, ProbeResult{})
+	p.handleProbeSuccess(upAt, time.Millisecond, ProbeResult{})
 
 	s := p.statistics
 	if s.LastProbeHadFailed {
@@ -344,9 +349,6 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	if !s.StartOfUptime.Equal(upAt) {
 		t.Errorf("StartOfUptime = %v, want %v", s.StartOfUptime, upAt)
 	}
-	if !cameUp {
-		t.Error("handleProbeSuccess reported no down -> up transition, want one")
-	}
 }
 
 func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
@@ -354,11 +356,11 @@ func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	if p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, ProbeResult{}) {
-		t.Error("handleProbeSuccess reported a down -> up transition, want none (never went down)")
-	}
-	if p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, ProbeResult{}) {
-		t.Error("handleProbeSuccess reported a down -> up transition, want none (never went down)")
+	p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, ProbeResult{})
+	p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, ProbeResult{})
+
+	if p.statistics.EndedDowntime != 0 {
+		t.Errorf("EndedDowntime = %v, want 0 (never went down)", p.statistics.EndedDowntime)
 	}
 
 	if p.statistics.OngoingSuccessfulProbes != 2 {
@@ -592,8 +594,9 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 	if snap.failureCalls != 2 {
 		t.Errorf("PrintProbeFailure called %d times, want 2", snap.failureCalls)
 	}
-	if snap.downtimeCalls != 1 {
-		t.Errorf("PrintDownTimeDuration called %d times, want 1", snap.downtimeCalls)
+	// The probe that recovered is the one that carries the outage's length.
+	if len(snap.endedDowntimes) != 1 {
+		t.Errorf("%d probes carried an ended downtime, want 1", len(snap.endedDowntimes))
 	}
 }
 

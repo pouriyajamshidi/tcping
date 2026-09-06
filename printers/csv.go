@@ -21,7 +21,26 @@ const (
 	colSourceAddress string = "Source Address"
 	colConnection    string = "Connection"
 	colLatency       string = "Latency(ms)"
+	colEndedUptime   string = "Ended Uptime"
+	colEndedDowntime string = "Ended Downtime"
 )
+
+// endedPeriods are the two values saying how long the target had been up, or
+// down, when this probe ended it. Both are empty on a probe that ended
+// neither, which is most of them.
+func endedPeriods(s *stats.Statistics) []string {
+	uptime := ""
+	if s.EndedUptime != 0 {
+		uptime = s.EndedUptimeDuration()
+	}
+
+	downtime := ""
+	if s.EndedDowntime != 0 {
+		downtime = s.EndedDowntimeDuration()
+	}
+
+	return []string{uptime, downtime}
+}
 
 // Extra columns written for HTTP(S) targets only, so a TCP run keeps the
 // same CSV shape it has always had.
@@ -190,7 +209,7 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 		headers = append(headers, colSourceAddress)
 	}
 
-	headers = append(headers, colConnection, colLatency)
+	headers = append(headers, colConnection, colLatency, colEndedUptime, colEndedDowntime)
 
 	if s.IsHTTP() {
 		headers = append(headers, httpColumns...)
@@ -258,6 +277,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	record = append(record, strconv.Itoa(int(s.OngoingSuccessfulProbes)), s.RTTStr())
+	record = append(record, endedPeriods(s)...)
 
 	if s.IsHTTP() {
 		record = append(record, httpRecord(s)...)
@@ -297,6 +317,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 
 	record = append(record, strconv.Itoa(int(s.OngoingUnsuccessfulProbes)), "")
+	record = append(record, endedPeriods(s)...)
 
 	if s.IsHTTP() {
 		record = append(record, httpRecord(s)...)
@@ -441,19 +462,6 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 // PrintRetryingToResolve logs an attempt to resolve a hostname.
 func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
-}
-
-// PrintDownTimeDuration prints how long the target was down for, right as it
-// starts responding again. The uptime that came before it is part of the same
-// report, so the whole outage reads as one line.
-func (p *CSVPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	fmt.Printf("No response received for %s\n", s.EndedDowntimeDuration())
-}
-
-// PrintUpTimeDuration prints how long the target was up for, right as it stops
-// responding. The downtime that came before it is part of the same report.
-func (p *CSVPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	fmt.Printf("Responses received for %s\n", s.EndedUptimeDuration())
 }
 
 // PrintError logs an error message to stderr.

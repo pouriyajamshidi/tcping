@@ -251,6 +251,24 @@ func (p *InfluxDBPrinter) probeLine(s *stats.Statistics, succeeded bool) string 
 	return p.line(s, probeMeasurement(s), fields)
 }
 
+// endedPeriodLines report how long the target had been up, or down, when this
+// probe ended it. They keep their own measurement names, which is what the
+// dashboards read, and are written along with the probe that ended the period
+// because that is where its length is known.
+func (p *InfluxDBPrinter) endedPeriodLines(s *stats.Statistics) []string {
+	var lines []string
+
+	if s.EndedUptime != 0 {
+		lines = append(lines, p.line(s, "tcping_uptime", fmt.Sprintf("seconds=%g", s.EndedUptime.Seconds())))
+	}
+
+	if s.EndedDowntime != 0 {
+		lines = append(lines, p.line(s, "tcping_downtime", fmt.Sprintf("seconds=%g", s.EndedDowntime.Seconds())))
+	}
+
+	return lines
+}
+
 // statisticsLines are the summary of the run so far: the numbers you would
 // otherwise only see when tcping exits. Every line of the statistics block
 // the terminal prints has a field here.
@@ -363,12 +381,14 @@ func (p *InfluxDBPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 
 // PrintProbeSuccess writes the metrics of a successful probe.
 func (p *InfluxDBPrinter) PrintProbeSuccess(s *stats.Statistics) {
-	p.send(append([]string{p.probeLine(s, true)}, p.dueStatistics(s)...))
+	lines := append([]string{p.probeLine(s, true)}, p.endedPeriodLines(s)...)
+	p.send(append(lines, p.dueStatistics(s)...))
 }
 
 // PrintProbeFailure writes the metrics of a failed probe.
 func (p *InfluxDBPrinter) PrintProbeFailure(s *stats.Statistics) {
-	p.send(append([]string{p.probeLine(s, false)}, p.dueStatistics(s)...))
+	lines := append([]string{p.probeLine(s, false)}, p.endedPeriodLines(s)...)
+	p.send(append(lines, p.dueStatistics(s)...))
 }
 
 // PrintStatistics writes the summary of the run so far.
@@ -380,21 +400,6 @@ func (p *InfluxDBPrinter) PrintStatistics(s *stats.Statistics) {
 // PrintRetryingToResolve has no number behind it, so it goes to the terminal.
 func (p *InfluxDBPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
-}
-
-// PrintDownTimeDuration writes how long the outage that just ended lasted.
-func (p *InfluxDBPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	p.send([]string{
-		p.line(s, "tcping_downtime", fmt.Sprintf("seconds=%g", s.EndedDowntime.Seconds())),
-	})
-}
-
-// PrintUpTimeDuration writes how long the target was up for, right as it
-// stops responding.
-func (p *InfluxDBPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	p.send([]string{
-		p.line(s, "tcping_uptime", fmt.Sprintf("seconds=%g", s.EndedUptime.Seconds())),
-	})
 }
 
 func (p *InfluxDBPrinter) PrintError(format string, args ...any) {

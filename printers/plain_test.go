@@ -391,18 +391,6 @@ func TestPlainSimpleMessages(t *testing.T) {
 			print: func(p *PlainPrinter) { p.PrintRetryingToResolve("example.com") },
 			want:  "Retrying to resolve example.com\n",
 		},
-		// The probe lines carry the ended uptime and downtime themselves,
-		// so these two only speak up when --failures-only held the success line back.
-		{
-			name:  "downtime stays quiet when the success line says it",
-			print: func(p *PlainPrinter) { p.PrintDownTimeDuration(s) },
-			want:  "",
-		},
-		{
-			name:  "uptime is always on the failure line",
-			print: func(p *PlainPrinter) { p.PrintUpTimeDuration(s) },
-			want:  "",
-		},
 		{
 			name:  "error",
 			print: func(p *PlainPrinter) { p.PrintError("could not resolve %s", "example.com") },
@@ -410,14 +398,16 @@ func TestPlainSimpleMessages(t *testing.T) {
 		},
 	}
 
-	t.Run("downtime is reported on its own when --failures-only hides the success line", func(t *testing.T) {
-		out := captureStdout(t, func() {
-			NewPlainPrinter(Config{ShowFailuresOnly: true}).PrintDownTimeDuration(s)
+	t.Run("the probe lines carry the period they ended", func(t *testing.T) {
+		failure := captureStdout(t, func() {
+			NewPlainPrinter(Config{}).PrintProbeFailure(s)
 		})
+		wantLines(t, failure, "(up for 5 seconds)\n")
 
-		if want := "No response received for 2 seconds\n"; out != want {
-			t.Errorf("output = %q, want %q", out, want)
-		}
+		success := captureStdout(t, func() {
+			NewPlainPrinter(Config{}).PrintProbeSuccess(s)
+		})
+		wantLines(t, success, "(down for 2 seconds)\n")
 	})
 
 	for _, tt := range tests {

@@ -16,9 +16,14 @@ type Printer interface {
 	PrintNameResolutionDuration(s *stats.Statistics)
 
 	// PrintProbeSuccess should print a message after each successful probe.
+	// When the probe ended an outage, Statistics.EndedDowntime says how
+	// long it lasted, and reporting that is part of reporting the probe.
 	PrintProbeSuccess(s *stats.Statistics)
 
 	// PrintProbeFailure should print a message after each failed probe.
+	// When the probe ended a run of successes, Statistics.EndedUptime says
+	// how long they lasted, and reporting that is part of reporting the
+	// probe.
 	PrintProbeFailure(s *stats.Statistics)
 
 	// PrintStatistics should print all the statistics.
@@ -29,16 +34,6 @@ type Printer interface {
 	// it is trying to resolve an IP for.
 	// This is only called when the -r flag is provided.
 	PrintRetryingToResolve(hostname string)
-
-	// PrintDownTimeDuration should print a downtime duration.
-	// This is called when target was unavailable for some time
-	// but it has become available now.
-	PrintDownTimeDuration(s *stats.Statistics)
-
-	// PrintUpTimeDuration should print an uptime duration.
-	// This is called when target was available for some time
-	// but it has just become unavailable.
-	PrintUpTimeDuration(s *stats.Statistics)
 
 	// PrintError prints an error message in red. It takes a print verb and then the arguments.
 	PrintError(format string, args ...any)

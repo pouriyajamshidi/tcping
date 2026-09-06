@@ -18,7 +18,6 @@ type Config struct {
 	WithTimestamp     bool
 	WithSourceAddress bool
 	OmitStatistics    bool // Do not show the statistics. Only available for terminal printers
-	ShowFailuresOnly  bool // Only failed probes are printed. The terminal printers need it to know a successful probe never made it to the screen.
 	Verbose           bool // Show everything an HTTP(S) probe learned, not just the status.
 	OutputDBPath      string
 	OutputCSVPath     string

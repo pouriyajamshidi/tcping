@@ -129,7 +129,7 @@ func TestCSVPrinter_PrintStart_WritesHeaders(t *testing.T) {
 		t.Fatalf("Failed to read probe headers: %v", err)
 	}
 
-	expectedProbeHeaders := []string{colTimestamp, colStatus, colHostname, colIP, colPort, colSourceAddress, colConnection, colLatency}
+	expectedProbeHeaders := []string{colTimestamp, colStatus, colHostname, colIP, colPort, colSourceAddress, colConnection, colLatency, colEndedUptime, colEndedDowntime}
 	if len(probeHeaders) != len(expectedProbeHeaders) {
 		t.Errorf("Expected %d probe headers, got %d", len(expectedProbeHeaders), len(probeHeaders))
 	}

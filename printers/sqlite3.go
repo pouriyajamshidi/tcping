@@ -31,6 +31,8 @@ const (
 		ongoing_successful_probes INTEGER NOT NULL DEFAULT 0,
 		ongoing_unsuccessful_probes INTEGER NOT NULL DEFAULT 0,
 		protocol TEXT,
+		ended_uptime TEXT,
+		ended_downtime TEXT,
 		status_code INTEGER,
 		http_version TEXT,
 		tls_version TEXT,
@@ -87,6 +89,8 @@ const (
 		ongoing_successful_probes,
 		ongoing_unsuccessful_probes,
 		protocol,
+		ended_uptime,
+		ended_downtime,
 		status_code,
 		http_version,
 		tls_version,
@@ -97,7 +101,7 @@ const (
 		ttfb_ms,
 		udp_probe_number,
 		udp_result
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	statsInsert = `INSERT INTO %s (
 		hostname,
@@ -320,6 +324,7 @@ func (p *DatabasePrinter) insertProbe(
 		unsuccessfulProbes,
 		s.ProtocolStr(),
 	}
+	args = append(args, endedPeriodArgs(s)...)
 	args = append(args, httpArgs(s)...)
 	args = append(args, udpArgs(s)...)
 
@@ -330,6 +335,23 @@ func (p *DatabasePrinter) insertProbe(
 	); err != nil {
 		p.PrintError("Failed writing probe data to database: %v", err)
 	}
+}
+
+// endedPeriodArgs are how long the target had been up, or down, when this
+// probe ended it. Both are nil on a probe that ended neither, which is most
+// of them.
+func endedPeriodArgs(s *stats.Statistics) []any {
+	uptime := any(nil)
+	if s.EndedUptime != 0 {
+		uptime = s.EndedUptimeDuration()
+	}
+
+	downtime := any(nil)
+	if s.EndedDowntime != 0 {
+		downtime = s.EndedDowntimeDuration()
+	}
+
+	return []any{uptime, downtime}
 }
 
 // PrintStart prints a message indicating that TCPing has started.
@@ -457,19 +479,6 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
 func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
-}
-
-// PrintDownTimeDuration prints how long the target was down for, right as it
-// starts responding again. The uptime that came before it is part of the same
-// report, so the whole outage reads as one line.
-func (p *DatabasePrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	fmt.Printf("No response received for %s\n", s.EndedDowntimeDuration())
-}
-
-// PrintUpTimeDuration prints how long the target was up for, right as it stops
-// responding. The downtime that came before it is part of the same report.
-func (p *DatabasePrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	fmt.Printf("Responses received for %s\n", s.EndedUptimeDuration())
 }
 
 func (p *DatabasePrinter) PrintError(format string, args ...any) {

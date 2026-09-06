@@ -138,22 +138,14 @@ func (p *Prober) Probe(ctx context.Context) error {
 		}
 
 		if err != nil {
-			wentDown := p.handleProbeFailure(pingTime, probeResult)
+			p.handleProbeFailure(pingTime, probeResult)
 			p.printer.PrintProbeFailure(p.statistics)
-
-			if wentDown {
-				p.printer.PrintUpTimeDuration(p.statistics)
-			}
 		} else {
-			cameUp := p.handleProbeSuccess(pingTime, rtt, probeResult)
+			p.handleProbeSuccess(pingTime, rtt, probeResult)
 
 			// The probe is still counted, we just do not report it.
 			if !p.config.ShowFailuresOnly {
 				p.printer.PrintProbeSuccess(p.statistics)
-			}
-
-			if cameUp {
-				p.printer.PrintDownTimeDuration(p.statistics)
 			}
 		}
 
@@ -249,10 +241,10 @@ func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
 	return true
 }
 
-// handleProbeFailure records a failed probe. It reports whether this probe is
-// the one that took the target from up to down, so the caller can print the
-// uptime that just ended after the probe line itself.
-func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult) bool {
+// handleProbeFailure records a failed probe. When it is the one that took the
+// target from up to down, it fills in Statistics.EndedUptime so the printers
+// can report the uptime that just ended along with the probe.
+func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult) {
 	s := p.statistics
 
 	// A 4xx or 5xx is a failed probe that still came with a response, so
@@ -278,7 +270,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult)
 	}
 
 	if s.LastProbeHadFailed {
-		return false
+		return
 	}
 
 	// UP -> DOWN
@@ -287,7 +279,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult)
 
 	// Nothing to report on the very first probe: the target was never up.
 	if s.StartOfUptime.IsZero() {
-		return false
+		return
 	}
 
 	uptimeDuration := pingTime.Sub(s.StartOfUptime)
@@ -299,14 +291,12 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult)
 		uptimeDuration,
 		&s.LongestUptime,
 	)
-
-	return true
 }
 
-// handleProbeSuccess records a successful probe. It reports whether this probe
-// is the one that brought the target back up, so the caller can print the
-// downtime that just ended after the probe line itself.
-func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult ProbeResult) bool {
+// handleProbeSuccess records a successful probe. When it is the one that
+// brought the target back up, it fills in Statistics.EndedDowntime so the
+// printers can report the outage that just ended along with the probe.
+func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult ProbeResult) {
 	s := p.statistics
 
 	rttMs := stats.DurationToMilliseconds(rtt)
@@ -323,9 +313,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 
 	s.RTTResults.Update(rttMs, s.TotalSuccessfulProbes)
 
-	cameUp := s.LastProbeHadFailed
-
-	if cameUp {
+	if s.LastProbeHadFailed {
 		// DOWN -> UP
 		s.LastProbeHadFailed = false
 
@@ -346,8 +334,6 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 	if s.StartOfUptime.IsZero() {
 		s.StartOfUptime = pingTime
 	}
-
-	return cameUp
 }
 
 func (p *Prober) finalizeStatistics() {
