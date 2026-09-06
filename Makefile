@@ -23,23 +23,34 @@ TAPES_DIR := docs/Images/tapes
 GIFS_DIR := docs/Images/gifs
 
 # File lists
-RELEASE_ARTIFACTS := \
+# One list per platform so a single platform can be built on its own,
+# for example "make windows" instead of the full "make release".
+FREEBSD_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-freebsd-amd64-static.tar.gz \
 	$(OUTPUT_DIR)/tcping-freebsd-amd64-dynamic.tar.gz \
 	$(OUTPUT_DIR)/tcping-freebsd-arm64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-freebsd-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-freebsd-arm64-dynamic.tar.gz
+LINUX_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-linux-amd64-static.tar.gz \
 	$(OUTPUT_DIR)/tcping-linux-amd64-dynamic.tar.gz \
 	$(OUTPUT_DIR)/tcping-linux-arm64-static.tar.gz \
 	$(OUTPUT_DIR)/tcping-linux-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-amd64.deb \
+	$(OUTPUT_DIR)/tcping-arm64.deb
+DARWIN_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-darwin-amd64-static.tar.gz \
 	$(OUTPUT_DIR)/tcping-darwin-amd64-dynamic.tar.gz \
 	$(OUTPUT_DIR)/tcping-darwin-arm64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-darwin-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-darwin-arm64-dynamic.tar.gz
+WINDOWS_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-windows-amd64.zip \
-	$(OUTPUT_DIR)/tcping-windows-arm64.zip \
-	$(OUTPUT_DIR)/tcping-amd64.deb \
-	$(OUTPUT_DIR)/tcping-arm64.deb
+	$(OUTPUT_DIR)/tcping-windows-arm64.zip
+
+RELEASE_ARTIFACTS := \
+	$(FREEBSD_ARTIFACTS) \
+	$(LINUX_ARTIFACTS) \
+	$(DARWIN_ARTIFACTS) \
+	$(WINDOWS_ARTIFACTS)
 GIF_ARTIFACTS := \
 	$(GIFS_DIR)/tcping.gif \
 	$(GIFS_DIR)/tcping_resolve.gif \
@@ -61,7 +72,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release check clean update format vet test container gifs
+.PHONY: all build release freebsd linux darwin windows check clean update format vet test container gifs
 
 all: build
 
@@ -73,6 +84,27 @@ release: $(RELEASE_ARTIFACTS)
 	@echo "[+] Checksums for the release page"
 	@echo
 	@sha256sum $(RELEASE_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
+
+# Build the release artifacts of a single platform
+freebsd: $(FREEBSD_ARTIFACTS)
+	@echo "[+] Checksums for the release page"
+	@echo
+	@sha256sum $(FREEBSD_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
+
+linux: $(LINUX_ARTIFACTS)
+	@echo "[+] Checksums for the release page"
+	@echo
+	@sha256sum $(LINUX_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
+
+darwin: $(DARWIN_ARTIFACTS)
+	@echo "[+] Checksums for the release page"
+	@echo
+	@sha256sum $(DARWIN_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
+
+windows: $(WINDOWS_ARTIFACTS)
+	@echo "[+] Checksums for the release page"
+	@echo
+	@sha256sum $(WINDOWS_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
 
 check: format vet test
 
