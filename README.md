@@ -136,7 +136,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Download and Installation
 
-We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---debian-and-derivatives), [macOS](#macos), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
+We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---debian-and-derivatives), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
 There are static and dynamic versions available. In simple terms, static binaries include all needed code inside one file, while dynamic binaries load some code from shared operating system libraries when they run.
 
