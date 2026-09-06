@@ -150,9 +150,6 @@ The best way to install **tcping** on Windows is through _Windows Package Manage
 winget install pj.tcping
 ```
 
-> [!TIP]
-> We recommend using [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) for the best experience and proper colorization.
-
 If you wish to manually install **tcping**, extract the downloaded zip file and copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32`
 
 > [!CAUTION]
