@@ -5,6 +5,8 @@ package printers
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/pouriyajamshidi/tcping/v3/probe"
 	"github.com/pouriyajamshidi/tcping/v3/stats"
@@ -34,6 +36,16 @@ func NewPrinter(cfg Config) (probe.Printer, error) {
 	default:
 		return NewColorPrinter(cfg), nil
 	}
+}
+
+// writerOrStdout is where a printer's output goes: what the config asks for,
+// or the terminal when it asks for nothing.
+func writerOrStdout(cfg Config) io.Writer {
+	if cfg.Writer == nil {
+		return os.Stdout
+	}
+
+	return cfg.Writer
 }
 
 // httpProbeSummary is the short HTTP part of a probe line, e.g. " status=200".

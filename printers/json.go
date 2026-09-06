@@ -15,7 +15,7 @@ type JSONPrinter struct {
 }
 
 func NewJSONPrinter(cfg Config) *JSONPrinter {
-	encoder := json.NewEncoder(os.Stdout)
+	encoder := json.NewEncoder(writerOrStdout(cfg))
 
 	if cfg.PrettyJSON {
 		encoder.SetIndent("", "\t")
