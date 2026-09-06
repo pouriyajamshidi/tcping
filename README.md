@@ -60,6 +60,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [Linux - Debian and Derivatives](#linux---debian-and-derivatives)
     - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
     - [Alternative Ways](#alternative-ways)
+    - [Shell Completions](#shell-completions)
   - [Usage](#usage)
     - [Probing over HTTP(S)](#probing-over-https)
     - [Probing over UDP](#probing-over-udp)
@@ -179,8 +180,14 @@ ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/') &&
 curl -LO "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH-static.tar.gz" &&
 tar -xf "tcping-linux-$ARCH-static.tar.gz" &&
 sudo install tcping /usr/local/bin/ &&
+sudo install -Dm 644 completions/tcping.bash /usr/share/bash-completion/completions/tcping &&
+sudo install -Dm 644 completions/_tcping /usr/share/zsh/site-functions/_tcping &&
+sudo install -Dm 644 completions/tcping.fish /usr/share/fish/vendor_completions.d/tcping.fish &&
 tcping --version
 ```
+
+The last three lines install the [shell completions](#shell-completions). Drop
+the ones for the shells you do not use, and start a new shell to pick them up.
 
 If you don't have `curl`, swap its line for `wget`:
 
@@ -234,6 +241,8 @@ Copy the executable to your system `PATH` like `/usr/local/bin/`:
 sudo cp tcping /usr/local/bin/
 ```
 
+The archive also carries a `completions` folder. See [Shell Completions](#shell-completions) to install them.
+
 > [!TIP]
 > In case you have `brew` installed, you can install tcping using `brew install pouriyajamshidi/tap/tcping`
 
@@ -279,6 +288,42 @@ These are some additional ways in which **tcping** can be installed:
   ```
 
   This will place the executables in the `output` folder.
+
+### Shell Completions
+
+Completion scripts for `bash`, `zsh`, `fish` and `PowerShell` live in the
+[completions](completions) folder. They complete the flags, the interface names
+for `-I` and the file names for `--csv` and `--db`.
+
+The Debian package and the [Linux quick install](#linux---quick-install) put them
+in place for you. The release archives ship them next to the binary, so they can
+also be installed from there with the commands below.
+
+- `bash`:
+
+  ```bash
+  sudo install -Dm 644 completions/tcping.bash /usr/share/bash-completion/completions/tcping
+  ```
+
+- `zsh`:
+
+  ```bash
+  sudo install -Dm 644 completions/_tcping /usr/share/zsh/site-functions/_tcping
+  ```
+
+- `fish`:
+
+  ```bash
+  install -Dm 644 completions/tcping.fish ~/.config/fish/completions/tcping.fish
+  ```
+
+- `PowerShell`, by dot-sourcing the script from your profile:
+
+  ```powershell
+  Add-Content $PROFILE ". C:\path\to\tcping.ps1"
+  ```
+
+Start a new shell afterwards to pick them up.
 
 ---
 
