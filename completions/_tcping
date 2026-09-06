@@ -1,0 +1,43 @@
+#compdef tcping
+#
+# zsh completion for tcping
+#
+# Install by dropping this file in a directory that is in your $fpath, e.g.:
+#   sudo install -Dm 644 _tcping /usr/share/zsh/site-functions/_tcping
+
+_arguments -s \
+	'-h[Show the available flags and exit]' \
+	'--version[Show the version and exit]' \
+	'-u[Check for updates and exit]' \
+	'-c[Stop after <n> probes, regardless of the result]:count:' \
+	'-i[Interval between probes, in seconds]:seconds:' \
+	'-t[Time to wait for a response, in seconds. 0 means infinite]:seconds:' \
+	'(-6)-4[Only use IPv4 to initiate probes]' \
+	'(-4)-6[Only use IPv6 to initiate probes]' \
+	'-I[Interface name or IP address to initiate the probes from]:interface:_net_interfaces' \
+	'-r[Retry resolving the hostname after <n> failed probes]:count:' \
+	'--resolve-every-probe[Resolve the hostname before every probe instead of only at startup]' \
+	'--dns-server=[Custom DNS server IP to use, e.g. 1.1.1.1:53]:IP:' \
+	'--dns-timeout=[Time to wait for a DNS response, in seconds. 0 means infinite]:seconds:' \
+	'-D[Show a timestamp for each probe]' \
+	'--no-color[Do not colorize the output]' \
+	'--show-source-address[Show the source address and port used for the probes]' \
+	'--failures-only[Only show the failed probes]' \
+	'--no-stats[Do not show the statistics when the program exits]' \
+	'-v[Show all the details an HTTP(S) or UDP probe collects]' \
+	'-j[Output in JSON format]' \
+	'--pretty[Prettify the JSON output. No effect without -j]' \
+	'--csv=[Store the output in a CSV file]:file:_files' \
+	'--csv-fixed-name[Use the --csv filename as it is, without a date/time suffix]' \
+	'--db=[Store the output in a sqlite3 database]:file:_files' \
+	'--alloy=[Send the results to a Grafana Alloy OTLP HTTP endpoint]:URL:_urls' \
+	'--influxdb=[Write the results to an InfluxDB v2 or v3 server]:URL:_urls' \
+	'--influxdb-org=[InfluxDB organization to write to]:organization:' \
+	'--influxdb-bucket=[InfluxDB bucket to write to]:bucket:' \
+	'--influxdb-token=[InfluxDB API token]:token:' \
+	'--stats-interval=[How often to send the statistics to Alloy or InfluxDB, in seconds]:seconds:' \
+	'--source-label=[Name this machine in the metrics sent to Alloy or InfluxDB]:name:' \
+	'--insecure[Do not verify the server certificate of an https:// target]' \
+	'--udp-server[Do not probe. Echo every received UDP datagram back to its sender]' \
+	'1:target:_hosts' \
+	'2:port:'

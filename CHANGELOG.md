@@ -71,6 +71,7 @@
 - fix: the summary printed mid-run with the **Enter** key now counts the uptime or downtime the run is in the middle of, and works its duration out from the current time. It used to report `total uptime: 0 seconds` on a run that had never failed, and always printed `00:12:43` as the duration because it had no end time to subtract from yet. The statistics sent to Alloy and InfluxDB on `--stats-interval` were missing the same period
 - test: add run-level tests that replay a whole run through the real prober and printer and check the terminal transcript it produced, so a line that is correct on its own but wrong for the run it appeared in is caught
 - fix: `--no-color` now says the same as the colored output in the summary. It printed `total uptime:` unaligned with `total downtime:` below it, and left the colon off `retried to resolve hostname`
+- feat: add shell completions for `bash`, `zsh`, `fish` and `PowerShell` in the `completions` folder. They complete the flags, the interface names for `-I` and the file names for `--csv` and `--db`. The release archives ship them next to the binary and the Debian package installs them
 
 ## v2.8.0 - 2026-05-11
 
