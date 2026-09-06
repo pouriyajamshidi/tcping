@@ -21,11 +21,11 @@ func TestRuntimeDuration_MatchesStartAndEndTime(t *testing.T) {
 	}
 }
 
-func TestUptimeDuration(t *testing.T) {
-	s := &Statistics{CurrentUptime: 90 * time.Second}
+func TestEndedUptimeDuration(t *testing.T) {
+	s := &Statistics{EndedUptime: 90 * time.Second}
 
-	if got, want := s.UptimeDuration(), "1 minute 30 seconds"; got != want {
-		t.Errorf("UptimeDuration() = %q, want %q", got, want)
+	if got, want := s.EndedUptimeDuration(), "1 minute 30 seconds"; got != want {
+		t.Errorf("EndedUptimeDuration() = %q, want %q", got, want)
 	}
 }
 

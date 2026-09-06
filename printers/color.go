@@ -61,6 +61,10 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
 	}
+
+	if s.EndedDowntime != 0 {
+		msg += fmt.Sprintf(" (down for %s)", s.EndedDowntimeDuration())
+	}
 	msg += "\n"
 
 	printLightGreen("%s", msg)
@@ -93,6 +97,10 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
+	}
+
+	if s.EndedUptime != 0 {
+		msg += fmt.Sprintf(" (up for %s)", s.EndedUptimeDuration())
 	}
 	msg += "\n"
 
@@ -234,28 +242,21 @@ func (p *ColorPrinter) PrintRetryingToResolve(hostname string) {
 	printLightYellow("Retrying to resolve %s\n", hostname)
 }
 
-// PrintDownTimeDuration prints how long the target was down for, right as it
-// starts responding again. The uptime that came before it is part of the same
-// report, so the whole outage reads as one line.
+// PrintDownTimeDuration prints how long the target was down for. The success
+// line that ended the outage already says it, so this only speaks up when
+// that line was held back by --failures-only.
 func (p *ColorPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	if s.CurrentUptime == 0 {
-		printYellow("No response received for %s\n", s.DowntimeDuration())
+	if !p.cfg.ShowFailuresOnly {
 		return
 	}
 
-	printYellow("No response received for %s after %s of uptime\n", s.DowntimeDuration(), s.UptimeDuration())
+	printYellow("No response received for %s\n", s.EndedDowntimeDuration())
 }
 
-// PrintUpTimeDuration prints how long the target was up for, right as it stops
-// responding. The downtime that came before it is part of the same report.
-func (p *ColorPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	if s.CurrentDowntime == 0 {
-		printYellow("Responses received for %s\n", s.UptimeDuration())
-		return
-	}
-
-	printYellow("Responses received for %s after %s of downtime\n", s.UptimeDuration(), s.DowntimeDuration())
-}
+// PrintUpTimeDuration prints nothing. The failure line that ended the uptime
+// already says how long the target had been up, and failure lines are always
+// printed.
+func (p *ColorPrinter) PrintUpTimeDuration(_ *stats.Statistics) {}
 
 // PrintError prints an error message in red. It takes a print verb and then the arguments.
 func (p *ColorPrinter) PrintError(format string, args ...any) {

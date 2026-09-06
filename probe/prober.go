@@ -106,6 +106,11 @@ func (p *Prober) Probe(ctx context.Context) error {
 	runProbe := func() (done bool) {
 		p.statistics.ResolvedThisProbe = false
 
+		// Only the probe that ends an uptime or a downtime reports it, so
+		// clear them here and let this probe set its own.
+		p.statistics.EndedUptime = 0
+		p.statistics.EndedDowntime = 0
+
 		// Resolve the hostname fresh before this probe when requested,
 		// so it always dials whatever the hostname currently points to
 		// (e.g. DNS round-robin or a frequently-changing record) rather
@@ -136,8 +141,6 @@ func (p *Prober) Probe(ctx context.Context) error {
 			wentDown := p.handleProbeFailure(pingTime, probeResult)
 			p.printer.PrintProbeFailure(p.statistics)
 
-			// Printed after the probe line, so the uptime that just ended
-			// reads as a follow-up to the failure that ended it.
 			if wentDown {
 				p.printer.PrintUpTimeDuration(p.statistics)
 			}
@@ -195,7 +198,9 @@ func (p *Prober) Probe(ctx context.Context) error {
 				continue
 			}
 
-			p.printer.PrintStatistics(p.statistics)
+			// The run is still going, so the uptime or downtime it is in
+			// the middle of has not been added to the totals yet.
+			p.printer.PrintStatistics(p.statistics.SummaryNow())
 
 		case <-ticker.C:
 			if runProbe() {
@@ -286,7 +291,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult ProbeResult)
 	}
 
 	uptimeDuration := pingTime.Sub(s.StartOfUptime)
-	s.CurrentUptime = uptimeDuration
+	s.EndedUptime = uptimeDuration
 	s.TotalUptime += uptimeDuration
 
 	stats.SetLongestDuration(
@@ -327,7 +332,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 		downtimeDuration := pingTime.Sub(s.StartOfDowntime)
 
 		s.TotalDowntime += downtimeDuration
-		s.CurrentDowntime = downtimeDuration
+		s.EndedDowntime = downtimeDuration
 
 		stats.SetLongestDuration(
 			s.StartOfDowntime,
@@ -347,17 +352,5 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 
 func (p *Prober) finalizeStatistics() {
 	p.statistics.EndTime = time.Now()
-
-	if p.statistics.LastProbeHadFailed {
-		downDuration := p.statistics.EndTime.Sub(p.statistics.StartOfDowntime)
-		p.statistics.TotalDowntime += downDuration
-		stats.SetLongestDuration(p.statistics.StartOfDowntime, downDuration, &p.statistics.LongestDowntime)
-		return
-	}
-
-	if !p.statistics.StartOfUptime.IsZero() {
-		upDuration := p.statistics.EndTime.Sub(p.statistics.StartOfUptime)
-		p.statistics.TotalUptime += upDuration
-		stats.SetLongestDuration(p.statistics.StartOfUptime, upDuration, &p.statistics.LongestUptime)
-	}
+	p.statistics.CloseOpenPeriod(p.statistics.EndTime)
 }

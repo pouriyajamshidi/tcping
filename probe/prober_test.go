@@ -214,8 +214,8 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	if s.OngoingSuccessfulProbes != 0 {
 		t.Errorf("OngoingSuccessfulProbes = %d, want 0", s.OngoingSuccessfulProbes)
 	}
-	if s.TotalUptime != 100*time.Millisecond || s.CurrentUptime != 100*time.Millisecond {
-		t.Errorf("TotalUptime=%v CurrentUptime=%v, want both 100ms", s.TotalUptime, s.CurrentUptime)
+	if s.TotalUptime != 100*time.Millisecond || s.EndedUptime != 100*time.Millisecond {
+		t.Errorf("TotalUptime=%v EndedUptime=%v, want both 100ms", s.TotalUptime, s.EndedUptime)
 	}
 	if s.LongestUptime.Duration != 100*time.Millisecond || !s.LongestUptime.Start.Equal(start) {
 		t.Errorf("LongestUptime = %+v, want Duration=100ms Start=%v", s.LongestUptime, start)
@@ -335,8 +335,8 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	if s.LastProbeHadFailed {
 		t.Error("LastProbeHadFailed = true, want false")
 	}
-	if s.TotalDowntime != 50*time.Millisecond || s.CurrentDowntime != 50*time.Millisecond {
-		t.Errorf("TotalDowntime=%v DownTime=%v, want both 50ms", s.TotalDowntime, s.CurrentDowntime)
+	if s.TotalDowntime != 50*time.Millisecond || s.EndedDowntime != 50*time.Millisecond {
+		t.Errorf("TotalDowntime=%v EndedDowntime=%v, want both 50ms", s.TotalDowntime, s.EndedDowntime)
 	}
 	if s.LongestDowntime.Duration != 50*time.Millisecond {
 		t.Errorf("LongestDowntime.Duration = %v, want 50ms", s.LongestDowntime.Duration)

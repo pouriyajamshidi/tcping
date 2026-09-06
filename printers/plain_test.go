@@ -308,11 +308,11 @@ func TestPlainPrintStatistics(t *testing.T) {
 		"4 TCP probes transmitted on port 443 | 3 received, 25.00% packet loss\n",
 		"successful probes:   3\n",
 		"unsuccessful probes: 1\n",
-		"total uptime: 3 seconds\n",
+		"total uptime:   3 seconds\n",
 		"total downtime: 1 second\n",
 		"longest consecutive uptime:   3 seconds from ",
 		"longest consecutive downtime: 1 second from ",
-		"retried to resolve hostname 2 times\n",
+		"retried to resolve hostname: 2 times\n",
 		"rtt min/avg/max/mdev: 1.000/2.000/3.000/0.500 ms\n",
 		"TCPing started at: ",
 		"TCPing ended at:   ",
@@ -355,7 +355,7 @@ func TestPlainStatisticsSingleResolveRetry(t *testing.T) {
 		NewPlainPrinter(Config{}).PrintStatistics(s)
 	})
 
-	wantLines(t, out, "retried to resolve hostname 1 time\n")
+	wantLines(t, out, "retried to resolve hostname: 1 time\n")
 }
 
 func TestPlainStatisticsHostnameChanges(t *testing.T) {
@@ -378,8 +378,8 @@ func TestPlainStatisticsHostnameChanges(t *testing.T) {
 
 func TestPlainSimpleMessages(t *testing.T) {
 	s := plainTestStats()
-	s.CurrentDowntime = 2 * time.Second
-	s.CurrentUptime = 5 * time.Second
+	s.EndedDowntime = 2 * time.Second
+	s.EndedUptime = 5 * time.Second
 
 	tests := []struct {
 		name  string
@@ -391,29 +391,17 @@ func TestPlainSimpleMessages(t *testing.T) {
 			print: func(p *PlainPrinter) { p.PrintRetryingToResolve("example.com") },
 			want:  "Retrying to resolve example.com\n",
 		},
+		// The probe lines carry the ended uptime and downtime themselves,
+		// so these two only speak up when --failures-only held the success line back.
 		{
-			name:  "downtime",
+			name:  "downtime stays quiet when the success line says it",
 			print: func(p *PlainPrinter) { p.PrintDownTimeDuration(s) },
-			want:  "No response received for 2 seconds after 5 seconds of uptime\n",
+			want:  "",
 		},
 		{
-			name:  "uptime",
+			name:  "uptime is always on the failure line",
 			print: func(p *PlainPrinter) { p.PrintUpTimeDuration(s) },
-			want:  "Responses received for 5 seconds after 2 seconds of downtime\n",
-		},
-		{
-			name: "downtime without a preceding uptime",
-			print: func(p *PlainPrinter) {
-				p.PrintDownTimeDuration(&stats.Statistics{CurrentDowntime: 2 * time.Second})
-			},
-			want: "No response received for 2 seconds\n",
-		},
-		{
-			name: "uptime without a preceding downtime",
-			print: func(p *PlainPrinter) {
-				p.PrintUpTimeDuration(&stats.Statistics{CurrentUptime: 5 * time.Second})
-			},
-			want: "Responses received for 5 seconds\n",
+			want:  "",
 		},
 		{
 			name:  "error",
@@ -421,6 +409,16 @@ func TestPlainSimpleMessages(t *testing.T) {
 			want:  "could not resolve example.com\n",
 		},
 	}
+
+	t.Run("downtime is reported on its own when --failures-only hides the success line", func(t *testing.T) {
+		out := captureStdout(t, func() {
+			NewPlainPrinter(Config{ShowFailuresOnly: true}).PrintDownTimeDuration(s)
+		})
+
+		if want := "No response received for 2 seconds\n"; out != want {
+			t.Errorf("output = %q, want %q", out, want)
+		}
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

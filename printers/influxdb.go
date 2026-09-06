@@ -333,7 +333,10 @@ func (p *InfluxDBPrinter) dueStatistics(s *stats.Statistics) []string {
 
 	p.lastStats = time.Now()
 
-	return p.statisticsLines(s)
+	// The run has not stopped, so the uptime or downtime it is in the
+	// middle of is not in the totals yet. Without this the metric would sit
+	// still between outages instead of climbing.
+	return p.statisticsLines(s.SummaryNow())
 }
 
 // PrintStart says where the metrics are going, then leaves the terminal
@@ -382,7 +385,7 @@ func (p *InfluxDBPrinter) PrintRetryingToResolve(hostname string) {
 // PrintDownTimeDuration writes how long the outage that just ended lasted.
 func (p *InfluxDBPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	p.send([]string{
-		p.line(s, "tcping_downtime", fmt.Sprintf("seconds=%g", s.CurrentDowntime.Seconds())),
+		p.line(s, "tcping_downtime", fmt.Sprintf("seconds=%g", s.EndedDowntime.Seconds())),
 	})
 }
 
@@ -390,7 +393,7 @@ func (p *InfluxDBPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 // stops responding.
 func (p *InfluxDBPrinter) PrintUpTimeDuration(s *stats.Statistics) {
 	p.send([]string{
-		p.line(s, "tcping_uptime", fmt.Sprintf("seconds=%g", s.CurrentUptime.Seconds())),
+		p.line(s, "tcping_uptime", fmt.Sprintf("seconds=%g", s.EndedUptime.Seconds())),
 	})
 }
 

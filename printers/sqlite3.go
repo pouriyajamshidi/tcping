@@ -463,23 +463,13 @@ func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
 // starts responding again. The uptime that came before it is part of the same
 // report, so the whole outage reads as one line.
 func (p *DatabasePrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	if s.CurrentUptime == 0 {
-		fmt.Printf("No response received for %s\n", s.DowntimeDuration())
-		return
-	}
-
-	fmt.Printf("No response received for %s after %s of uptime\n", s.DowntimeDuration(), s.UptimeDuration())
+	fmt.Printf("No response received for %s\n", s.EndedDowntimeDuration())
 }
 
 // PrintUpTimeDuration prints how long the target was up for, right as it stops
 // responding. The downtime that came before it is part of the same report.
 func (p *DatabasePrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	if s.CurrentDowntime == 0 {
-		fmt.Printf("Responses received for %s\n", s.UptimeDuration())
-		return
-	}
-
-	fmt.Printf("Responses received for %s after %s of downtime\n", s.UptimeDuration(), s.DowntimeDuration())
+	fmt.Printf("Responses received for %s\n", s.EndedUptimeDuration())
 }
 
 func (p *DatabasePrinter) PrintError(format string, args ...any) {

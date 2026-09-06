@@ -3,7 +3,6 @@ package printers
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/pouriyajamshidi/tcping/v3/stats"
@@ -119,14 +118,10 @@ type jsonNameResolution struct {
 
 type jsonDowntime struct {
 	Duration string `json:"duration"`
-	// The uptime that came right before this outage, when there was one.
-	PrecededByUptime string `json:"precededByUptime,omitempty"`
 }
 
 type jsonUptime struct {
 	Duration string `json:"duration"`
-	// The downtime that came right before this uptime, when there was one.
-	PrecededByDowntime string `json:"precededByDowntime,omitempty"`
 }
 
 type jsonError struct {
@@ -320,27 +315,15 @@ func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
 }
 
 // PrintDownTimeDuration prints how long the target was down for, right as it
-// starts responding again, together with the uptime that came before it.
+// starts responding again.
 func (p *JSONPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	d := jsonDowntime{Duration: s.DowntimeDuration()}
-
-	if s.CurrentUptime != 0 {
-		d.PrecededByUptime = s.UptimeDuration()
-	}
-
-	p.encode("downtimeDuration", d)
+	p.encode("downtimeDuration", jsonDowntime{Duration: s.EndedDowntimeDuration()})
 }
 
 // PrintUpTimeDuration prints how long the target was up for, right as it stops
-// responding, together with the downtime that came before it.
+// responding.
 func (p *JSONPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	u := jsonUptime{Duration: s.UptimeDuration()}
-
-	if s.CurrentDowntime != 0 {
-		u.PrecededByDowntime = s.DowntimeDuration()
-	}
-
-	p.encode("uptimeDuration", u)
+	p.encode("uptimeDuration", jsonUptime{Duration: s.EndedUptimeDuration()})
 }
 
 func (p *JSONPrinter) PrintError(format string, args ...any) {

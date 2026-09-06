@@ -1,15 +1,24 @@
 package printers
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 // Config holds all configuration options for Printer creation
 type Config struct {
+	// Where the output goes. Nil means os.Stdout, which is what a real run
+	// uses. Setting it lets a test read what a printer wrote, and leaves
+	// room for a destination that is not the terminal, e.g. a socket.
+	Writer io.Writer
+
 	OutputJSON        bool
 	PrettyJSON        bool
 	NoColor           bool
 	WithTimestamp     bool
 	WithSourceAddress bool
 	OmitStatistics    bool // Do not show the statistics. Only available for terminal printers
+	ShowFailuresOnly  bool // Only failed probes are printed. The terminal printers need it to know a successful probe never made it to the screen.
 	Verbose           bool // Show everything an HTTP(S) probe learned, not just the status.
 	OutputDBPath      string
 	OutputCSVPath     string

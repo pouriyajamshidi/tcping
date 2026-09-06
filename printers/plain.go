@@ -61,6 +61,10 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
 	}
+
+	if s.EndedDowntime != 0 {
+		msg += fmt.Sprintf(" (down for %s)", s.EndedDowntimeDuration())
+	}
 	msg += "\n"
 	msg += httpProbeDetails(s, p.cfg.Verbose)
 	msg += udpProbeDetails(s, p.cfg.Verbose)
@@ -93,6 +97,10 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())
+	}
+
+	if s.EndedUptime != 0 {
+		msg += fmt.Sprintf(" (up for %s)", s.EndedUptimeDuration())
 	}
 	msg += "\n"
 	msg += httpProbeDetails(s, p.cfg.Verbose)
@@ -136,7 +144,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		msg += fmt.Sprintf("%s\n", s.LastUnsuccessfulProbeFormatted())
 	}
 
-	msg += fmt.Sprintf("total uptime: %s\n", s.TotalUptimeDuration())
+	msg += fmt.Sprintf("total uptime:   %s\n", s.TotalUptimeDuration())
 	msg += fmt.Sprintf("total downtime: %s\n", s.TotalDowntimeDuration())
 
 	if s.LongestUptime.Duration != 0 {
@@ -158,7 +166,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 			timeNoun = "times"
 		}
 
-		msg += fmt.Sprintf("retried to resolve hostname %d %s\n",
+		msg += fmt.Sprintf("retried to resolve hostname: %d %s\n",
 			s.RetriedHostnameLookups,
 			timeNoun,
 		)
@@ -202,28 +210,21 @@ func (p *PlainPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintDownTimeDuration prints how long the target was down for, right as it
-// starts responding again. The uptime that came before it is part of the same
-// report, so the whole outage reads as one line.
+// PrintDownTimeDuration prints how long the target was down for. The success
+// line that ended the outage already says it, so this only speaks up when
+// that line was held back by --failures-only.
 func (p *PlainPrinter) PrintDownTimeDuration(s *stats.Statistics) {
-	if s.CurrentUptime == 0 {
-		fmt.Printf("No response received for %s\n", s.DowntimeDuration())
+	if !p.cfg.ShowFailuresOnly {
 		return
 	}
 
-	fmt.Printf("No response received for %s after %s of uptime\n", s.DowntimeDuration(), s.UptimeDuration())
+	fmt.Printf("No response received for %s\n", s.EndedDowntimeDuration())
 }
 
-// PrintUpTimeDuration prints how long the target was up for, right as it stops
-// responding. The downtime that came before it is part of the same report.
-func (p *PlainPrinter) PrintUpTimeDuration(s *stats.Statistics) {
-	if s.CurrentDowntime == 0 {
-		fmt.Printf("Responses received for %s\n", s.UptimeDuration())
-		return
-	}
-
-	fmt.Printf("Responses received for %s after %s of downtime\n", s.UptimeDuration(), s.DowntimeDuration())
-}
+// PrintUpTimeDuration prints nothing. The failure line that ended the uptime
+// already says how long the target had been up, and failure lines are always
+// printed.
+func (p *PlainPrinter) PrintUpTimeDuration(_ *stats.Statistics) {}
 
 // PrintError prints an error message. It takes a print verb and then the arguments.
 func (p *PlainPrinter) PrintError(format string, args ...any) {

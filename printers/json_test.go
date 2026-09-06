@@ -1,6 +1,7 @@
 package printers
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net"
@@ -31,18 +32,19 @@ func jsonTestStats() *stats.Statistics {
 }
 
 // jsonEvents runs f and returns everything the printer wrote, decoded. The
-// encoder is bound to stdout when the printer is made, so the printer has
-// to be made inside the capture too.
+// printer writes to a buffer of our own rather than to stdout, which is what
+// Config.Writer is for.
 func jsonEvents(t *testing.T, cfg Config, f func(p *JSONPrinter)) []map[string]any {
 	t.Helper()
 
-	out := captureStdout(t, func() {
-		f(NewJSONPrinter(cfg))
-	})
+	var out bytes.Buffer
+	cfg.Writer = &out
+
+	f(NewJSONPrinter(cfg))
 
 	var events []map[string]any
 
-	decoder := json.NewDecoder(strings.NewReader(out))
+	decoder := json.NewDecoder(&out)
 	for {
 		var event map[string]any
 
@@ -51,7 +53,7 @@ func jsonEvents(t *testing.T, cfg Config, f func(p *JSONPrinter)) []map[string]a
 			break
 		}
 		if err != nil {
-			t.Fatalf("output is not valid JSON: %v, got %q", err, out)
+			t.Fatalf("output is not valid JSON: %v", err)
 		}
 
 		events = append(events, event)
@@ -400,8 +402,8 @@ func TestJSONStatisticsHostnameChanges(t *testing.T) {
 
 func TestJSONSimpleEvents(t *testing.T) {
 	s := jsonTestStats()
-	s.CurrentDowntime = 2 * time.Second
-	s.CurrentUptime = 5 * time.Second
+	s.EndedDowntime = 2 * time.Second
+	s.EndedUptime = 5 * time.Second
 
 	tests := []struct {
 		name      string
@@ -425,13 +427,13 @@ func TestJSONSimpleEvents(t *testing.T) {
 			name:      "downtime",
 			print:     func(p *JSONPrinter) { p.PrintDownTimeDuration(s) },
 			eventType: "downtimeDuration",
-			want:      map[string]any{"duration": "2 seconds", "precededByUptime": "5 seconds"},
+			want:      map[string]any{"duration": "2 seconds"},
 		},
 		{
 			name:      "uptime",
 			print:     func(p *JSONPrinter) { p.PrintUpTimeDuration(s) },
 			eventType: "uptimeDuration",
-			want:      map[string]any{"duration": "5 seconds", "precededByDowntime": "2 seconds"},
+			want:      map[string]any{"duration": "5 seconds"},
 		},
 		{
 			name:      "error",
@@ -455,7 +457,9 @@ func TestJSONSimpleEvents(t *testing.T) {
 }
 
 // Every event has to be on a line of its own so the output can be piped
-// into something that reads it a line at a time.
+// into something that reads it a line at a time. It is also the one test that
+// leaves Config.Writer unset, so it is what proves the output still lands on
+// the terminal when nobody asks for somewhere else.
 func TestJSONPrintsOneEventPerLine(t *testing.T) {
 	s := jsonTestStats()
 
@@ -480,12 +484,12 @@ func TestJSONPrintsOneEventPerLine(t *testing.T) {
 }
 
 func TestJSONPrettyPrint(t *testing.T) {
-	out := captureStdout(t, func() {
-		NewJSONPrinter(Config{PrettyJSON: true}).PrintStart(jsonTestStats())
-	})
+	var out bytes.Buffer
 
-	if !strings.Contains(out, "\n\t\"type\"") {
-		t.Errorf("output is not indented: %q", out)
+	NewJSONPrinter(Config{PrettyJSON: true, Writer: &out}).PrintStart(jsonTestStats())
+
+	if !strings.Contains(out.String(), "\n\t\"type\"") {
+		t.Errorf("output is not indented: %q", out.String())
 	}
 }
 

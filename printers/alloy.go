@@ -396,7 +396,10 @@ func (p *AlloyPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
 
 	p.lastStats = time.Now()
 
-	return p.statisticsMetrics(s)
+	// The run has not stopped, so the uptime or downtime it is in the
+	// middle of is not in the totals yet. Without this the metric would sit
+	// still between outages instead of climbing.
+	return p.statisticsMetrics(s.SummaryNow())
 }
 
 // PrintStatistics sends the summary of the run so far.
@@ -495,7 +498,7 @@ func (p *AlloyPrinter) PrintRetryingToResolve(hostname string) {
 // PrintDownTimeDuration sends how long the outage that just ended lasted.
 func (p *AlloyPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 	p.send([]otlpMetric{
-		p.gauge("tcping_last_downtime_seconds", "s", s.CurrentDowntime.Seconds(), p.labels(s)),
+		p.gauge("tcping_last_downtime_seconds", "s", s.EndedDowntime.Seconds(), p.labels(s)),
 	})
 }
 
@@ -503,7 +506,7 @@ func (p *AlloyPrinter) PrintDownTimeDuration(s *stats.Statistics) {
 // stops responding.
 func (p *AlloyPrinter) PrintUpTimeDuration(s *stats.Statistics) {
 	p.send([]otlpMetric{
-		p.gauge("tcping_last_uptime_seconds", "s", s.CurrentUptime.Seconds(), p.labels(s)),
+		p.gauge("tcping_last_uptime_seconds", "s", s.EndedUptime.Seconds(), p.labels(s)),
 	})
 }
 

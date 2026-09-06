@@ -46,8 +46,8 @@ type Statistics struct {
 	LocalAddr                 net.Addr
 	StartTime                 time.Time
 	EndTime                   time.Time
-	CurrentUptime             time.Duration
-	CurrentDowntime           time.Duration
+	EndedUptime               time.Duration // How long the target had been up, when this probe is the one that ended it. Zero on every other probe, so a printer cannot report a period that ended long ago.
+	EndedDowntime             time.Duration // How long the target had been down, when this probe is the one that ended it. Zero on every other probe.
 	TotalSuccessfulProbes     uint
 	TotalUnsuccessfulProbes   uint
 	OngoingSuccessfulProbes   uint          // Count of ongoing successful probes.
@@ -128,8 +128,56 @@ func (s *Statistics) RuntimeDuration() string {
 	// Round instead of truncating so this agrees with the uptime and
 	// downtime totals, which durationToString also rounds. Truncating here
 	// is what made a 6.6 second run report "00:00:06" next to "7 seconds".
-	d := s.EndTime.Sub(s.StartTime).Round(time.Second)
+	d := s.endOrNow().Sub(s.StartTime).Round(time.Second)
 	return time.Time{}.Add(d).Format(time.TimeOnly)
+}
+
+// endOrNow is when the run stopped, or now while it is still going. A summary
+// asked for mid-run has no end time yet, and subtracting the zero time from
+// the start time gives a duration so large it wraps around.
+func (s *Statistics) endOrNow() time.Time {
+	if s.EndTime.IsZero() {
+		return time.Now()
+	}
+
+	return s.EndTime
+}
+
+// CloseOpenPeriod adds the uptime or downtime that is still running to the
+// totals, as if it had ended at end. Uptime and downtime are only counted
+// when they finish, so without this the period the run is currently in is
+// missing from every total.
+func (s *Statistics) CloseOpenPeriod(end time.Time) {
+	if s.LastProbeHadFailed {
+		if s.StartOfDowntime.IsZero() {
+			return
+		}
+
+		downtime := end.Sub(s.StartOfDowntime)
+		s.TotalDowntime += downtime
+		SetLongestDuration(s.StartOfDowntime, downtime, &s.LongestDowntime)
+
+		return
+	}
+
+	if s.StartOfUptime.IsZero() {
+		return
+	}
+
+	uptime := end.Sub(s.StartOfUptime)
+	s.TotalUptime += uptime
+	SetLongestDuration(s.StartOfUptime, uptime, &s.LongestUptime)
+}
+
+// SummaryNow is a copy of the statistics with the period the run is currently
+// in counted in, for printing a summary while the run carries on. The live
+// statistics are left alone, so the running totals do not gain that period
+// twice once it really ends.
+func (s *Statistics) SummaryNow() *Statistics {
+	summary := *s
+	summary.CloseOpenPeriod(time.Now())
+
+	return &summary
 }
 
 // RuntimeSeconds is how long the run has been going, in seconds. It counts
@@ -137,11 +185,7 @@ func (s *Statistics) RuntimeDuration() string {
 // finished, so a summary sent halfway through and the one sent at the end
 // both say the right thing.
 func (s *Statistics) RuntimeSeconds() float64 {
-	if s.EndTime.IsZero() {
-		return time.Since(s.StartTime).Seconds()
-	}
-
-	return s.EndTime.Sub(s.StartTime).Seconds()
+	return s.endOrNow().Sub(s.StartTime).Seconds()
 }
 
 // HostnameChangeCount is how many times the hostname started resolving to a
@@ -248,12 +292,12 @@ func (s *Statistics) PacketLoss() float32 {
 	return packetLoss
 }
 
-func (s *Statistics) DowntimeDuration() string {
-	return durationToString(s.CurrentDowntime)
+func (s *Statistics) EndedDowntimeDuration() string {
+	return durationToString(s.EndedDowntime)
 }
 
-func (s *Statistics) UptimeDuration() string {
-	return durationToString(s.CurrentUptime)
+func (s *Statistics) EndedUptimeDuration() string {
+	return durationToString(s.EndedUptime)
 }
 
 func (s *Statistics) LastSuccessfulProbeFormatted() string {
