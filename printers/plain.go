@@ -63,7 +63,7 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	if s.EndedDowntime != 0 {
-		msg += fmt.Sprintf(" (down for %s)", s.EndedDowntimeDuration())
+		msg += fmt.Sprintf(" (after %s of downtime)", s.EndedDowntimeDuration())
 	}
 	msg += "\n"
 	msg += httpProbeDetails(s, p.cfg.Verbose)
@@ -100,7 +100,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 
 	if s.EndedUptime != 0 {
-		msg += fmt.Sprintf(" (up for %s)", s.EndedUptimeDuration())
+		msg += fmt.Sprintf(" (after %s of uptime)", s.EndedUptimeDuration())
 	}
 	msg += "\n"
 	msg += httpProbeDetails(s, p.cfg.Verbose)

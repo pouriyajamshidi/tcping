@@ -136,9 +136,9 @@ func TestRunTranscript_UpDownUp(t *testing.T) {
 		"Probing example.com on port 443 over TCP (resolved in <duration>)",
 		"Reply from example.com (93.184.216.34) on port 443 TCP_conn=1 time=<duration>",
 		"Reply from example.com (93.184.216.34) on port 443 TCP_conn=2 time=<duration>",
-		"No reply from example.com (93.184.216.34) on port 443 TCP_conn=1 (up for <duration>)",
+		"No reply from example.com (93.184.216.34) on port 443 TCP_conn=1 (after <duration> of uptime)",
 		"No reply from example.com (93.184.216.34) on port 443 TCP_conn=2",
-		"Reply from example.com (93.184.216.34) on port 443 TCP_conn=1 time=<duration> (down for <duration>)",
+		"Reply from example.com (93.184.216.34) on port 443 TCP_conn=1 time=<duration> (after <duration> of downtime)",
 		"Reply from example.com (93.184.216.34) on port 443 TCP_conn=2 time=<duration>",
 	}, "\n") + "\n"
 
@@ -235,7 +235,7 @@ func TestRunTranscript_ShowFailuresOnly(t *testing.T) {
 
 	want := strings.Join([]string{
 		"Probing example.com on port 443 over TCP (resolved in <duration>)",
-		"No reply from example.com (93.184.216.34) on port 443 TCP_conn=1 (up for <duration>)",
+		"No reply from example.com (93.184.216.34) on port 443 TCP_conn=1 (after <duration> of uptime)",
 	}, "\n") + "\n"
 
 	if got := probeLines(out); got != want {

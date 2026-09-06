@@ -402,12 +402,12 @@ func TestPlainSimpleMessages(t *testing.T) {
 		failure := captureStdout(t, func() {
 			NewPlainPrinter(Config{}).PrintProbeFailure(s)
 		})
-		wantLines(t, failure, "(up for 5 seconds)\n")
+		wantLines(t, failure, "(after 5 seconds of uptime)\n")
 
 		success := captureStdout(t, func() {
 			NewPlainPrinter(Config{}).PrintProbeSuccess(s)
 		})
-		wantLines(t, success, "(down for 2 seconds)\n")
+		wantLines(t, success, "(after 2 seconds of downtime)\n")
 	})
 
 	for _, tt := range tests {

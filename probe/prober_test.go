@@ -223,7 +223,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 
 // The very first probe ever has no prior uptime streak to report (the
 // target's status before this point was simply unknown), so failing on it
-// must not report a bogus "up for 0s" (or worse, garbage) period.
+// must not report a bogus "after 0s of uptime" (or worse, garbage) period.
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 
@@ -234,9 +234,9 @@ func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 	}
 }
 
-// Consecutive failures are the same, single downtime streak - the "up for X"
-// period should only ever be reported once, at the moment uptime ends, not
-// repeated on every subsequent failed probe.
+// Consecutive failures are the same, single downtime streak - the
+// "after X of uptime" period should only ever be reported once, at the moment
+// uptime ends, not repeated on every subsequent failed probe.
 func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 	start := time.Now()
