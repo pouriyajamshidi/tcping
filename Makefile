@@ -21,6 +21,15 @@ TARGET_DIR := target
 OUTPUT_DIR := output
 TAPES_DIR := docs/Images/tapes
 GIFS_DIR := docs/Images/gifs
+COMPLETIONS_DIR := completions
+
+# Shipped inside the release archives so they can be installed without
+# cloning the repository. PowerShell only goes in the Windows zip.
+UNIX_COMPLETIONS := \
+	$(COMPLETIONS_DIR)/tcping.bash \
+	$(COMPLETIONS_DIR)/_tcping \
+	$(COMPLETIONS_DIR)/tcping.fish
+WINDOWS_COMPLETIONS := $(COMPLETIONS_DIR)/tcping.ps1
 
 # File lists
 # One list per platform so a single platform can be built on its own,
@@ -187,25 +196,31 @@ $(OUTPUT_DIR)/:
 	@mkdir -p $@
 
 # .tar.gz archive
-$(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(UNIX_COMPLETIONS) $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
-	@tar -C $$(dirname $<) -czvf $@ tcping >/dev/null
+	@tar -C $$(dirname $<) -czvf $@ tcping -C "$(CURDIR)" $(UNIX_COMPLETIONS) >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
 # .zip archive (Windows)
-$(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(WINDOWS_COMPLETIONS) $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
-	@zip -j $@ $< >/dev/null
+	@zip -j $@ $< $(WINDOWS_COMPLETIONS) >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
 # .deb package (Linux)
-$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(UNIX_COMPLETIONS) $(OUTPUT_DIR)/
 	@echo "[+] Creating debian package: $@"
 	@PKG_DIR=$$(mktemp -dt make-tcping.XXXXX); \
 	\
+	chmod 755 $$PKG_DIR; \
+	\
 	install -Dm 755 -t $$PKG_DIR/usr/bin/ $<; \
+	\
+	install -Dm 644 $(COMPLETIONS_DIR)/tcping.bash $$PKG_DIR/usr/share/bash-completion/completions/tcping; \
+	install -Dm 644 $(COMPLETIONS_DIR)/_tcping $$PKG_DIR/usr/share/zsh/vendor-completions/_tcping; \
+	install -Dm 644 $(COMPLETIONS_DIR)/tcping.fish $$PKG_DIR/usr/share/fish/vendor_completions.d/tcping.fish; \
 	\
 	mkdir $$PKG_DIR/DEBIAN; pushd $$PKG_DIR/DEBIAN >/dev/null; \
 	echo "Package: tcping" >>control; \
