@@ -59,7 +59,7 @@
 - tools: add `tools/netcond.sh` to apply latency, packet loss or a full block toward a single destination, so tcping can be tested against a bad network without waiting for one
 - improvement: `-I` now keeps working correctly when the interface has both an IPv4 and an IPv6 address and the target's resolved address family changes mid-run
 - improvement: DNS resolution is now sourced from `-I`'s interface too, matching what probes already did
-- improvement: show how long the target was up right when it starts failing, mirroring the existing downtime message
+- improvement: how long the target had been up, or down, is now part of the probe line that ended it - `(up for 4 seconds)` on the failure that ends an uptime and `(down for 3 seconds)` on the reply that ends an outage - instead of a line of its own. That line repeated a period from an earlier cycle, so a recovery could claim an uptime that had ended minutes ago
 - improvement: probing now starts immediately instead of waiting for the first interval to elapse
 - improvement: `-i`, `-t` and `--dns-timeout` are no longer floored to whole milliseconds, so sub-millisecond values work as given
 - fix: hostname retry-resolve (`-r`) now actually changes the address being probed instead of only updating what's displayed
@@ -67,6 +67,9 @@
 - feat: add `--no-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
 - refactor: simplify RTT min/avg/max tracking into a running calculation instead of storing every sample
 - refactor: consolidate uptime/downtime tracking and remove duplicated/unused `Statistics` fields
+- fix: the summary printed mid-run with the **Enter** key now counts the uptime or downtime the run is in the middle of, and works its duration out from the current time. It used to report `total uptime: 0 seconds` on a run that had never failed, and always printed `00:12:43` as the duration because it had no end time to subtract from yet. The statistics sent to Alloy and InfluxDB on `--stats-interval` were missing the same period
+- test: add run-level tests that replay a whole run through the real prober and printer and check the terminal transcript it produced, so a line that is correct on its own but wrong for the run it appeared in is caught
+- fix: `--no-color` now says the same as the colored output in the summary. It printed `total uptime:` unaligned with `total downtime:` below it, and left the colon off `retried to resolve hostname`
 
 ## v2.8.0 - 2026-05-11
 
