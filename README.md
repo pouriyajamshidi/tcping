@@ -156,7 +156,7 @@ If you wish to manually install **tcping**, extract the downloaded zip file and 
 > TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official statement from the Go team [here](https://go.dev/doc/faq#virus).
 
 > [!WARNING]
-> The `--db` (sqlite3) output format is not available on Windows binaries. All other flags, including `--csv`, work as expected.
+> The `--db` (sqlite3) output format is not available on Windows binaries anymore. All the other flags work as expected.
 
 ### macOS
 
