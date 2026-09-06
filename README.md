@@ -56,6 +56,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
   - [Download and Installation](#download-and-installation)
     - [Windows](#windows)
     - [macOS](#macos)
+    - [Linux - Quick Install](#linux---quick-install)
     - [Linux - Debian and Derivatives](#linux---debian-and-derivatives)
     - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
     - [Alternative Ways](#alternative-ways)
@@ -136,7 +137,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Download and Installation
 
-We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---debian-and-derivatives), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
+We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---quick-install), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
 There are static and dynamic versions available. In simple terms, static binaries include all needed code inside one file, while dynamic binaries load some code from shared operating system libraries when they run.
 
@@ -167,6 +168,25 @@ brew install pouriyajamshidi/tap/tcping
 ```
 
 You can also manually download and install **tcping** following the steps described in [this section](#bsd-and-linux---manual-way).
+
+### Linux - Quick Install
+
+Paste the following in your terminal to grab the latest static binary for your architecture and install it:
+
+```bash
+cd /tmp &&
+ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/') &&
+curl -LO "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH-static.tar.gz" &&
+tar -xf "tcping-linux-$ARCH-static.tar.gz" &&
+sudo install tcping /usr/local/bin/ &&
+tcping --version
+```
+
+If you don't have `curl`, swap its line for `wget`:
+
+```bash
+wget "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH-static.tar.gz" &&
+```
 
 ### Linux - Debian and Derivatives
 
