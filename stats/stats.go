@@ -36,17 +36,22 @@ type UDPInfo struct {
 	ReplySize   int    // Size of the reply in bytes. Zero when nothing answered.
 }
 
+// Statistics is everything a run has learned so far about one target. The
+// probers update it as they go and the printers read it.
 type Statistics struct {
-	Hostname                  string
-	IP                        netip.Addr
-	Port                      uint16
-	Protocol                  config.Protocol
-	LastProbeHadFailed        bool
-	DestIsIP                  bool
-	LocalAddr                 net.Addr
-	StartTime                 time.Time
-	EndTime                   time.Time
-	EndedUptime               time.Duration // How long the target had been up, when this probe is the one that ended it. Zero on every other probe, so a printer cannot report a period that ended long ago.
+	Hostname           string
+	IP                 netip.Addr
+	Port               uint16
+	Protocol           config.Protocol
+	LastProbeHadFailed bool
+	DestIsIP           bool
+	LocalAddr          net.Addr
+	StartTime          time.Time
+	EndTime            time.Time
+	// How long the target had been up, when this probe is the one that
+	// ended it. Zero on every other probe, so a printer cannot report a
+	// period that ended long ago.
+	EndedUptime               time.Duration
 	EndedDowntime             time.Duration // How long the target had been down, when this probe is the one that ended it. Zero on every other probe.
 	TotalSuccessfulProbes     uint
 	TotalUnsuccessfulProbes   uint
@@ -65,11 +70,15 @@ type Statistics struct {
 	LatestRTT                 float32       // RTT of the most recent successful probe.
 	RTTResults                RTTResult     // Running min/average/max/mdev RTT across the entire run.
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
-	ResolvedThisProbe         bool          // True when ResolveEveryProbe just resolved successfully for this probe. Lets PrintProbeSuccess/PrintProbeFailure fold NameResolutionDuration into their own line instead of a separate one.
-	HTTP                      HTTPInfo      // Details of the most recent HTTP(S) probe. Zero for TCP probes.
-	UDP                       UDPInfo       // Details of the most recent UDP probe. Zero for the other probe types.
+	// True when ResolveEveryProbe just resolved successfully for this
+	// probe. Lets PrintProbeSuccess/PrintProbeFailure fold
+	// NameResolutionDuration into their own line instead of a separate one.
+	ResolvedThisProbe bool
+	HTTP              HTTPInfo // Details of the most recent HTTP(S) probe. Zero for TCP probes.
+	UDP               UDPInfo  // Details of the most recent UDP probe. Zero for the other probe types.
 }
 
+// NewStatistics starts the statistics for a run against the target in cfg.
 func NewStatistics(cfg config.Config) *Statistics {
 	var localAddr net.Addr
 	if cfg.NetworkInterface.Use {
@@ -94,14 +103,18 @@ func NewStatistics(cfg config.Config) *Statistics {
 	}
 }
 
+// IPStr is the target address as a string.
 func (s *Statistics) IPStr() string {
 	return s.IP.String()
 }
 
+// PortStr is the target port as a string.
 func (s *Statistics) PortStr() string {
 	return fmt.Sprint(s.Port)
 }
 
+// SourceAddr is the local address the probes go out from, or an empty
+// string when there is none to report.
 func (s *Statistics) SourceAddr() string {
 	// in case probe failed and -I flag
 	// was not used
@@ -112,18 +125,22 @@ func (s *Statistics) SourceAddr() string {
 	return s.LocalAddr.String()
 }
 
+// CurrentTimestamp is the time right now, for printers that stamp each line.
 func (s *Statistics) CurrentTimestamp() string {
 	return time.Now().Format(time.DateTime)
 }
 
+// StartTimeFormatted is when the run started.
 func (s *Statistics) StartTimeFormatted() string {
 	return s.StartTime.Format(time.DateTime)
 }
 
+// EndTimeFormatted is when the run ended.
 func (s *Statistics) EndTimeFormatted() string {
 	return s.EndTime.Format(time.DateTime)
 }
 
+// RuntimeDuration is how long the run has been going, as HH:MM:SS.
 func (s *Statistics) RuntimeDuration() string {
 	// Round instead of truncating so this agrees with the uptime and
 	// downtime totals, which durationToString also rounds. Truncating here
@@ -195,10 +212,12 @@ func (s *Statistics) HostnameChangeCount() int {
 	return max(len(s.HostnameChanges)-1, 0)
 }
 
+// ProtocolStr is the protocol being probed, as a string.
 func (s *Statistics) ProtocolStr() string {
 	return string(s.Protocol)
 }
 
+// RTTStr is the most recent round trip time, in milliseconds.
 func (s *Statistics) RTTStr() string {
 	return fmt.Sprintf("%.3f", s.LatestRTT)
 }
@@ -247,22 +266,31 @@ func (s *Statistics) ProbeNumberStr() string {
 	return fmt.Sprint(s.UDP.ProbeNumber)
 }
 
+// StatusCodeStr is the HTTP status code of the last probe, as a string.
 func (s *Statistics) StatusCodeStr() string {
 	return fmt.Sprint(s.HTTP.StatusCode)
 }
 
+// ConnectDurationStr is how long the last HTTP probe took to connect, in
+// milliseconds.
 func (s *Statistics) ConnectDurationStr() string {
 	return millisecondsStr(s.HTTP.ConnectDuration)
 }
 
+// TLSDurationStr is how long the last HTTPS probe's TLS handshake took, in
+// milliseconds.
 func (s *Statistics) TLSDurationStr() string {
 	return millisecondsStr(s.HTTP.TLSDuration)
 }
 
+// TimeToFirstByteStr is how long the last HTTP probe waited for the first
+// byte of the response, in milliseconds.
 func (s *Statistics) TimeToFirstByteStr() string {
 	return millisecondsStr(s.HTTP.TimeToFirstByte)
 }
 
+// CertExpiryStr is the day the server certificate expires, or an empty
+// string when there is no certificate to report on.
 func (s *Statistics) CertExpiryStr() string {
 	if s.HTTP.CertExpiry.IsZero() {
 		return ""
@@ -279,10 +307,12 @@ func (s *Statistics) CertDaysRemaining() int {
 	return int(time.Until(s.HTTP.CertExpiry).Hours() / 24)
 }
 
+// TotalProbes is how many probes the run has sent, successful or not.
 func (s *Statistics) TotalProbes() uint {
 	return s.TotalSuccessfulProbes + s.TotalUnsuccessfulProbes
 }
 
+// PacketLoss is the percentage of probes that failed.
 func (s *Statistics) PacketLoss() float32 {
 	var packetLoss float32
 	if s.TotalProbes() > 0 {
@@ -292,50 +322,62 @@ func (s *Statistics) PacketLoss() float32 {
 	return packetLoss
 }
 
+// EndedDowntimeDuration is the downtime this probe ended, if it ended one.
 func (s *Statistics) EndedDowntimeDuration() string {
 	return durationToString(s.EndedDowntime)
 }
 
+// EndedUptimeDuration is the uptime this probe ended, if it ended one.
 func (s *Statistics) EndedUptimeDuration() string {
 	return durationToString(s.EndedUptime)
 }
 
+// LastSuccessfulProbeFormatted is when the last successful probe happened.
 func (s *Statistics) LastSuccessfulProbeFormatted() string {
 	return s.LastSuccessfulProbe.Format(time.DateTime)
 }
 
+// LastUnsuccessfulProbeFormatted is when the last failed probe happened.
 func (s *Statistics) LastUnsuccessfulProbeFormatted() string {
 	return s.LastUnsuccessfulProbe.Format(time.DateTime)
 }
 
+// TotalUptimeDuration is all the uptime of the run added up.
 func (s *Statistics) TotalUptimeDuration() string {
 	return durationToString(s.TotalUptime)
 }
 
+// TotalDowntimeDuration is all the downtime of the run added up.
 func (s *Statistics) TotalDowntimeDuration() string {
 	return durationToString(s.TotalDowntime)
 }
 
+// LongestUptimeDuration is how long the longest uptime streak lasted.
 func (s *Statistics) LongestUptimeDuration() string {
 	return durationToString(s.LongestUptime.Duration)
 }
 
+// LongestUptimeStartTime is when the longest uptime streak started.
 func (s *Statistics) LongestUptimeStartTime() string {
 	return s.LongestUptime.Start.Format(time.DateTime)
 }
 
+// LongestUptimeEndTime is when the longest uptime streak ended.
 func (s *Statistics) LongestUptimeEndTime() string {
 	return s.LongestUptime.End.Format(time.DateTime)
 }
 
+// LongestDowntimeDuration is how long the longest downtime streak lasted.
 func (s *Statistics) LongestDowntimeDuration() string {
 	return durationToString(s.LongestDowntime.Duration)
 }
 
+// LongestDowntimeStartTime is when the longest downtime streak started.
 func (s *Statistics) LongestDowntimeStartTime() string {
 	return s.LongestDowntime.Start.Format(time.DateTime)
 }
 
+// LongestDowntimeEndTime is when the longest downtime streak ended.
 func (s *Statistics) LongestDowntimeEndTime() string {
 	return s.LongestDowntime.End.Format(time.DateTime)
 }
@@ -462,10 +504,13 @@ type HostnameChange struct {
 	Duration time.Duration // How long the resolution that produced Addr took.
 }
 
+// WhenFormatted is when the hostname started resolving to this address.
 func (h *HostnameChange) WhenFormatted() string {
 	return h.When.Format(time.DateTime)
 }
 
+// DurationStr is how long the resolution that found this address took, in
+// milliseconds.
 func (h *HostnameChange) DurationStr() string {
 	return millisecondsStr(h.Duration)
 }

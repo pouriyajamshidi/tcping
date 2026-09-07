@@ -17,7 +17,7 @@ func freeUDPAddress(t *testing.T) string {
 		t.Fatalf("failed to reserve a UDP port: %v", err)
 	}
 	address := conn.LocalAddr().String()
-	conn.Close()
+	_ = conn.Close()
 
 	return address
 }
@@ -36,7 +36,9 @@ func TestListenUDP_EchoesBackWhatItReceives(t *testing.T) {
 	}
 	defer conn.Close()
 
-	conn.SetDeadline(time.Now().Add(2 * time.Second))
+	if err := conn.SetDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("failed to set the deadline: %v", err)
+	}
 
 	// The server may not have bound the port yet, and a datagram sent
 	// before it does is simply lost, so keep sending until one comes back.
@@ -48,7 +50,9 @@ func TestListenUDP_EchoesBackWhatItReceives(t *testing.T) {
 			t.Fatalf("failed to send to the server: %v", err)
 		}
 
-		conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		if err := conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+			t.Fatalf("failed to set the read deadline: %v", err)
+		}
 
 		n, err := conn.Read(reply)
 		if err != nil {

@@ -1,0 +1,60 @@
+name: Publish to winget
+
+# Runs once the release page exists and its Windows zips are uploaded, then
+# opens a pull request against microsoft/winget-pkgs so "winget install
+# pj.tcping" picks up the new version on its own.
+#
+# This replaces running wingetcreate by hand, which is what was done up to
+# v2.8.0.
+#
+# Needs a WINGET_TOKEN secret: a classic personal access token with the
+# "public_repo" scope. wingetcreate uses it to fork microsoft/winget-pkgs
+# under your account and push the manifest branch there. The default
+# GITHUB_TOKEN cannot do that.
+on:
+  release:
+    types: [published]
+  # for re-running by hand
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish to winget, for example v3.0.0"
+        required: true
+
+jobs:
+  manifest:
+    # wingetcreate is a Windows only tool
+    runs-on: windows-latest
+    # release candidates should not become what winget installs by default
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    permissions:
+      contents: read
+
+    steps:
+      - name: Work out the tag and version
+        id: release
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Submit the manifest
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/$TAG"
+          curl -fsSL -o wingetcreate.exe https://aka.ms/wingetcreate/latest
+          # The "|x64" and "|arm64" suffixes tell wingetcreate which installer
+          # entry each URL belongs to, so it does not have to guess from the
+          # file name.
+          ./wingetcreate.exe update pj.tcping \
+            --version "$VERSION" \
+            --urls "$base/tcping-windows-amd64.zip|x64" \
+                   "$base/tcping-windows-arm64.zip|arm64" \
+            --submit \
+            --token "$WINGET_TOKEN"

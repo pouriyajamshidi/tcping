@@ -16,6 +16,17 @@ VERSION := $(shell sed -n 's/^var Current = "\(.*\)"/\1/p' $(VERSION_FILE))
 GO_LDFLAGS := -ldflags "-s -w"
 GO_MAIN_PATH := ./cmd/tcping
 
+# tcping has no cgo code, and it resolves names with Go's own resolver
+# rather than the one in libc, so a cgo build buys nothing and only ties the
+# binary to the glibc it was built against. Every build is static, including
+# the local one, so what you test is what gets released.
+export CGO_ENABLED := 0
+
+# Linters. Pinned so "make lint" and the Lint workflow report the same thing.
+# Bumping revive is what pulls in newly added revive rules, see revive.toml.
+REVIVE_VERSION := v1.15.0
+STATICCHECK_VERSION := 2026.2.1
+
 # IO directories
 TARGET_DIR := target
 OUTPUT_DIR := output
@@ -35,22 +46,16 @@ WINDOWS_COMPLETIONS := $(COMPLETIONS_DIR)/tcping.ps1
 # One list per platform so a single platform can be built on its own,
 # for example "make windows" instead of the full "make release".
 FREEBSD_ARTIFACTS := \
-	$(OUTPUT_DIR)/tcping-freebsd-amd64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-freebsd-amd64-dynamic.tar.gz \
-	$(OUTPUT_DIR)/tcping-freebsd-arm64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-freebsd-arm64-dynamic.tar.gz
+	$(OUTPUT_DIR)/tcping-freebsd-amd64.tar.gz \
+	$(OUTPUT_DIR)/tcping-freebsd-arm64.tar.gz
 LINUX_ARTIFACTS := \
-	$(OUTPUT_DIR)/tcping-linux-amd64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-linux-amd64-dynamic.tar.gz \
-	$(OUTPUT_DIR)/tcping-linux-arm64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-linux-arm64-dynamic.tar.gz \
+	$(OUTPUT_DIR)/tcping-linux-amd64.tar.gz \
+	$(OUTPUT_DIR)/tcping-linux-arm64.tar.gz \
 	$(OUTPUT_DIR)/tcping-amd64.deb \
 	$(OUTPUT_DIR)/tcping-arm64.deb
 DARWIN_ARTIFACTS := \
-	$(OUTPUT_DIR)/tcping-darwin-amd64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-darwin-amd64-dynamic.tar.gz \
-	$(OUTPUT_DIR)/tcping-darwin-arm64-static.tar.gz \
-	$(OUTPUT_DIR)/tcping-darwin-arm64-dynamic.tar.gz
+	$(OUTPUT_DIR)/tcping-darwin-amd64.tar.gz \
+	$(OUTPUT_DIR)/tcping-darwin-arm64.tar.gz
 WINDOWS_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-windows-amd64.zip \
 	$(OUTPUT_DIR)/tcping-windows-arm64.zip
@@ -81,7 +86,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release freebsd linux darwin windows check clean update format vet test container gifs
+.PHONY: all build release freebsd linux darwin windows check clean update format fix vet lint staticcheck test container gifs
 
 all: build
 
@@ -115,7 +120,9 @@ windows: $(WINDOWS_ARTIFACTS)
 	@echo
 	@sha256sum $(WINDOWS_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
 
-check: format vet test
+# The one gate to run before pushing. The CI workflows run the same steps,
+# so a clean "make check" means a green pull request.
+check: format fix vet lint staticcheck test
 
 # Remove all build artifacts
 clean:
@@ -131,9 +138,22 @@ format:
 	@echo "[+] Formatting files"
 	@gofmt -l -w .
 
+fix:
+	@echo "[+] Applying Go fixes"
+	@go fix ./...
+
 vet:
 	@echo "[+] Running Go vet"
 	@go vet ./...
+
+lint:
+	@echo "[+] Running Revive"
+	@go run github.com/mgechev/revive@$(REVIVE_VERSION) -config revive.toml -set_exit_status ./...
+
+# "all" turns on the stylecheck and quickfix checks that are off by default.
+staticcheck:
+	@echo "[+] Running Staticcheck"
+	@go run honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION) -checks=all ./...
 
 test:
 	@echo "[+] Running tests"
@@ -171,20 +191,14 @@ $(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
 	@echo "[+] Building binary: $@"
 	@export GOOS=$(word 1, $(subst -, ,$*)); \
 	export GOARCH=$(word 2, $(subst -, ,$*)); \
-	[ $(word 3, $(subst -, ,$*)) = static ] && export CGO_ENABLED=0; \
 	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # Per-target tcping.exe binary (Windows)
-#
-# There is no static/dynamic split here like there is for the other
-# platforms: tcping does not use cgo on Windows, so both flavors came out
-# byte-identical. We just always build static.
 .PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
 $(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
 	@echo "[+] Building binary: $@"
 	@export GOOS=windows; \
 	export GOARCH=$*; \
-	export CGO_ENABLED=0; \
 	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
 # ==================================================
@@ -210,7 +224,7 @@ $(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(WINDOWS
 	@echo
 
 # .deb package (Linux)
-$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(UNIX_COMPLETIONS) $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) $(OUTPUT_DIR)/
 	@echo "[+] Creating debian package: $@"
 	@PKG_DIR=$$(mktemp -dt make-tcping.XXXXX); \
 	\

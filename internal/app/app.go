@@ -73,6 +73,8 @@ func summaryRequests() <-chan struct{} {
 	return requests
 }
 
+// Run is the whole program: it reads the command line, sets up the target
+// and the printer, and probes until it is asked to stop.
 func Run() {
 	cfg, printerCfg := cli.ProcessUserInput()
 
@@ -88,7 +90,7 @@ func Run() {
 		return
 	}
 
-	stats := stats.NewStatistics(cfg)
+	statistics := stats.NewStatistics(cfg)
 
 	printer, err := printers.NewPrinter(printerCfg)
 	if err != nil {
@@ -116,10 +118,10 @@ func Run() {
 		summaryReqs = summaryRequests()
 	}
 
-	prober := probe.NewProber(pinger, printer, cfg, stats, summaryReqs)
+	prober := probe.NewProber(pinger, printer, cfg, statistics, summaryReqs)
 	if err := prober.Probe(probeCtx); err != nil {
 		printer.PrintError("%v", err)
 	}
 
-	printer.Shutdown(stats)
+	printer.Shutdown(statistics)
 }

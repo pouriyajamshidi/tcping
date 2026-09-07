@@ -1,6 +1,7 @@
 package printers
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,15 +60,15 @@ type InfluxDBPrinter struct {
 // "http://localhost:8086/api/v2/write" work.
 func NewInfluxDBPrinter(cfg Config) (*InfluxDBPrinter, error) {
 	if cfg.InfluxDBOrg == "" {
-		return nil, fmt.Errorf("InfluxDB needs an organization, give it with -influxdb-org")
+		return nil, errors.New("InfluxDB needs an organization, give it with -influxdb-org")
 	}
 
 	if cfg.InfluxDBBucket == "" {
-		return nil, fmt.Errorf("InfluxDB needs a bucket, give it with -influxdb-bucket")
+		return nil, errors.New("InfluxDB needs a bucket, give it with -influxdb-bucket")
 	}
 
 	if cfg.InfluxDBToken == "" {
-		return nil, fmt.Errorf("InfluxDB needs an API token, give it with -influxdb-token or the INFLUXDB_TOKEN environment variable")
+		return nil, errors.New("InfluxDB needs an API token, give it with -influxdb-token or the INFLUXDB_TOKEN environment variable")
 	}
 
 	endpoint := cfg.InfluxDBURL
@@ -402,6 +403,8 @@ func (p *InfluxDBPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
 }
 
+// PrintError goes to the terminal rather than to InfluxDB, since an error
+// here usually means InfluxDB is the thing that is not working.
 func (p *InfluxDBPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "InfluxDB Error: "+format+"\n", args...)
 }

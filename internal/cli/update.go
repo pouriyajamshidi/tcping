@@ -101,7 +101,7 @@ func checkForUpdates() {
 
 	if comparison < 0 {
 		fmt.Printf("Found newer version: %s\n", latestVer)
-		fmt.Printf("Please update TCPING from the URL below:\n")
+		fmt.Println("Please update TCPING from the URL below:")
 		fmt.Printf("https://github.com/%s/%s/releases/tag/%s\n",
 			owner, repo, latestTagName)
 	} else if comparison > 0 {

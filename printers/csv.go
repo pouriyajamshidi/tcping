@@ -138,7 +138,7 @@ func NewCSVPrinter(cfg Config) (*CSVPrinter, error) {
 
 	statsFile, err := os.OpenFile(statsFilename, fileFlag, filePermission)
 	if err != nil {
-		probeFile.Close()
+		_ = probeFile.Close()
 		return nil, fmt.Errorf("error creating the stats CSV file %s: %w", statsFilename, err)
 	}
 
@@ -185,14 +185,18 @@ func (p *CSVPrinter) done() {
 		p.probeWriter.Flush()
 	}
 	if p.probeFile != nil {
-		p.probeFile.Close()
+		if err := p.probeFile.Close(); err != nil {
+			p.PrintError("failed to close %s: %v", p.probeFile.Name(), err)
+		}
 	}
 
 	if p.statsWriter != nil {
 		p.statsWriter.Flush()
 	}
 	if p.statsFile != nil {
-		p.statsFile.Close()
+		if err := p.statsFile.Close(); err != nil {
+			p.PrintError("failed to close %s: %v", p.statsFile.Name(), err)
+		}
 	}
 }
 
@@ -240,8 +244,12 @@ func (p *CSVPrinter) writeStatsHeader() error {
 
 // PrintStart logs the beginning of a TCPing session.
 func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
-	p.writeProbeHeader(s)
-	p.writeStatsHeader()
+	if err := p.writeProbeHeader(s); err != nil {
+		p.PrintError("%v", err)
+	}
+	if err := p.writeStatsHeader(); err != nil {
+		p.PrintError("%v", err)
+	}
 
 	if s.DestIsIP {
 		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.probeFile.Name())

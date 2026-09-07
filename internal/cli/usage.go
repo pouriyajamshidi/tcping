@@ -19,7 +19,7 @@ func usage() {
 	fmt.Println("tcping https://www.example.com/health")
 	fmt.Println("Or probe over UDP:")
 	fmt.Println("tcping udp://www.example.com 53")
-	fmt.Printf("\n[optional flags]\n")
+	fmt.Print("\n[optional flags]\n")
 
 	flag.VisitAll(func(f *flag.Flag) {
 		flagName := f.Name

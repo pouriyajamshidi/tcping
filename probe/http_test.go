@@ -58,8 +58,8 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 }
 
 func TestHTTPing_Success(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello"))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("hello"))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -171,7 +171,7 @@ func TestHTTPing_DoesNotFollowRedirects(t *testing.T) {
 // TestHTTPing_TLS checks that an HTTPS probe reports the TLS details, and
 // that the handshake is timed separately from the TCP connect.
 func TestHTTPing_TLS(t *testing.T) {
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	t.Cleanup(srv.Close)
 
 	h, ip := httpingFor(t, srv, "/")
@@ -198,7 +198,7 @@ func TestHTTPing_TLS(t *testing.T) {
 // TestHTTPing_SkipTLSVerify covers the -insecure flag: the test server's
 // certificate is self-signed, so the probe only gets through with it on.
 func TestHTTPing_SkipTLSVerify(t *testing.T) {
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	t.Cleanup(srv.Close)
 
 	h, ip := httpingFor(t, srv, "/")
@@ -222,7 +222,7 @@ func TestHTTPing_SkipTLSVerify(t *testing.T) {
 func TestHTTPing_DialsTheGivenIP(t *testing.T) {
 	var gotHost string
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		gotHost = r.Host
 	}))
 	t.Cleanup(srv.Close)
@@ -274,7 +274,7 @@ func TestHTTPing_ConnectionRefused(t *testing.T) {
 }
 
 func TestHTTPing_CancelledContext(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	t.Cleanup(srv.Close)
 
 	h, ip := httpingFor(t, srv, "/")
@@ -291,7 +291,7 @@ func TestHTTPing_CancelledContext(t *testing.T) {
 // -I names an interface that has no address of the target's family, the
 // probe fails instead of going out of some other interface.
 func TestHTTPing_InterfaceWithoutMatchingFamily(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	t.Cleanup(srv.Close)
 
 	h, ip := httpingFor(t, srv, "/")

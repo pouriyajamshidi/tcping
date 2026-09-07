@@ -72,7 +72,10 @@ func printOneJSONEvent(t *testing.T, cfg Config, f func(p *JSONPrinter)) (string
 		t.Fatalf("printed %d events, want 1", len(events))
 	}
 
-	eventType, _ := events[0]["type"].(string)
+	eventType, ok := events[0]["type"].(string)
+	if !ok {
+		t.Fatalf("event type is %T, want string", events[0]["type"])
+	}
 
 	data, ok := events[0]["data"].(map[string]any)
 	if !ok {
@@ -396,7 +399,10 @@ func TestJSONStatisticsHostnameChanges(t *testing.T) {
 		t.Fatalf("reported %d hostname changes, want 2", len(changes))
 	}
 
-	first, _ := changes[0].(map[string]any)
+	first, ok := changes[0].(map[string]any)
+	if !ok {
+		t.Fatalf("hostname change is %T, want an object", changes[0])
+	}
 	wantFields(t, first, map[string]any{"addr": "93.184.216.34", "durationMs": "12.000"})
 }
 

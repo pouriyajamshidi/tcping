@@ -92,7 +92,7 @@ func TestNewPrinter(t *testing.T) {
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("NewPrinter() expected an error, got nil")
+					t.Error("NewPrinter() expected an error, got nil")
 				} else if err.Error() != tt.expectedErr {
 					t.Errorf("NewPrinter() expected error %q, got %q", tt.expectedErr, err.Error())
 				}
@@ -104,7 +104,7 @@ func TestNewPrinter(t *testing.T) {
 			}
 
 			if printer == nil {
-				t.Errorf("NewPrinter() returned nil printer for valid config")
+				t.Error("NewPrinter() returned nil printer for valid config")
 			}
 
 			if csvPrinter, ok := printer.(*CSVPrinter); ok {

@@ -23,7 +23,7 @@ func ListenUDP(ctx context.Context, address string) error {
 	defer conn.Close()
 
 	// Closing the socket is what unblocks the read below.
-	stop := context.AfterFunc(ctx, func() { conn.Close() })
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer stop()
 
 	fmt.Printf("Listening for UDP probes on %s\n", conn.LocalAddr())

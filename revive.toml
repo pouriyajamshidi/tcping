@@ -1,45 +1,78 @@
-# This configuration for the revive linter used for linting the revive's codebase itself.
-# See .github/workflows/lint.yaml.
+# Revive configuration for tcping.
+#
+# Used by "make lint" and by the Lint GitHub workflow, so a local run and a
+# CI run report exactly the same thing.
+#
+# Every rule revive ships with is on by default. Anything we do not want is
+# turned off below, with the reason. New rules that arrive with a revive
+# upgrade are therefore enforced as soon as we bump the pinned version in
+# the Makefile.
 
+enableAllRules = true
 ignoreGeneratedHeader = false
-severity = "warning"
+severity = "error"
 confidence = 0.8
 errorCode = 1
 warningCode = 1
 
-[rule.bare-return]
-[rule.blank-imports]
-[rule.context-as-argument]
-[rule.context-keys-type]
-[rule.dot-imports]
-[rule.empty-block]
-[rule.empty-lines]
-[rule.enforce-map-style]
-arguments = ["literal"]
-[rule.enforce-slice-style]
-arguments = ["literal"]
-[rule.error-naming]
-[rule.error-return]
-[rule.error-strings]
-[rule.errorf]
-[rule.exported]
-# [rule.filename-format]
-#     # Override the default pattern to forbid .go files with uppercase letters and dashes.
-#     arguments=["^[_a-z][_a-z0-9]*\\.go$"]
-[rule.increment-decrement]
-[rule.indent-error-flow]
+# ==================================================
+# Configured rules
+# ==================================================
+
+# gofmt keeps lines reasonable already. This is only here to catch the
+# occasional runaway line that hurts readability.
 [rule.line-length-limit]
 arguments = [200]
-[rule.package-comments]
-[rule.range]
-[rule.receiver-naming]
-[rule.redefines-builtin-id]
-[rule.superfluous-else]
-[rule.time-naming]
-[rule.unexported-naming]
-[rule.unexported-return]
-[rule.unreachable-code]
-[rule.unused-parameter]
-[rule.useless-break]
-[rule.var-declaration]
-[rule.var-naming]
+
+# map[string]int{} rather than make(map[string]int).
+[rule.enforce-map-style]
+arguments = ["literal"]
+
+# []string{} rather than make([]string, 0).
+[rule.enforce-slice-style]
+arguments = ["literal"]
+
+# Lowercase file names only, no dashes.
+[rule.filename-format]
+arguments = ["^[_a-z][_a-z0-9]*\\.go$"]
+
+# Every ignored error has to be written as "_ =" so it is a decision someone
+# made rather than something that got missed. Listed below are the calls
+# where that would be noise: printing to stdout or stderr, and the
+# strings.Builder writes, which the standard library documents as always
+# returning a nil error.
+[rule.unhandled-error]
+arguments = ["fmt\\.(Print|Fprint).*", "strings\\.Builder\\..*"]
+
+# ==================================================
+# Disabled rules
+# ==================================================
+
+# Arbitrary size caps. A long function is not a bug, and we would rather
+# split code when it stops reading well than when it crosses a number.
+[rule.add-constant]
+disabled = true
+[rule.cognitive-complexity]
+disabled = true
+[rule.cyclomatic]
+disabled = true
+[rule.function-length]
+disabled = true
+[rule.max-public-structs]
+disabled = true
+
+# tcping is a CLI. Printing usage or a fatal error and exiting from a helper
+# is the normal thing to do here, not something to route back to main.
+[rule.deep-exit]
+disabled = true
+
+# Boolean parameters such as "verbose" or "succeeded" are fine and read
+# clearly at the call sites we have.
+[rule.flag-parameter]
+disabled = true
+
+# The printers all satisfy the same interface, so several of their methods
+# legitimately ignore the receiver.
+[rule.unused-receiver]
+disabled = true
+

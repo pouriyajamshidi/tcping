@@ -33,6 +33,7 @@ type UDPing struct {
 	probeNumber      uint64 // Sent as the payload, so a reply can be matched to its probe.
 }
 
+// NewUDPing creates a UDP prober for the target in cfg.
 func NewUDPing(cfg config.Config) *UDPing {
 	return &UDPing{
 		networkInterface: cfg.NetworkInterface,
@@ -48,27 +49,29 @@ func NewUDPing(cfg config.Config) *UDPing {
 // answer: a reply means the port is open, an ICMP port unreachable means
 // something refused us, and silence means we cannot tell whether the port
 // is open or the packet was dropped on the way.
-func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
+func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	d, err := dialer(udp, u.networkInterface, u.timeout, ip)
 	if err != nil {
-		return ProbeResult{}, err
+		return Result{}, err
 	}
 
 	// Dialing UDP sends nothing, it only binds the socket and remembers the
 	// destination, so nothing is on the wire until the write below.
 	conn, err := d.DialContext(ctx, udp, address(ip, u.port))
 	if err != nil {
-		return ProbeResult{}, err
+		return Result{}, err
 	}
 	defer conn.Close()
 
 	// A read deadline is the only thing that unblocks the read, so when the
 	// user hits Ctrl+C we set one in the past to give up right away.
-	stop := context.AfterFunc(ctx, func() { conn.SetReadDeadline(time.Now()) })
+	stop := context.AfterFunc(ctx, func() { _ = conn.SetReadDeadline(time.Now()) })
 	defer stop()
 
 	if u.timeout > 0 {
-		conn.SetDeadline(time.Now().Add(u.timeout))
+		if err := conn.SetDeadline(time.Now().Add(u.timeout)); err != nil {
+			return Result{}, err
+		}
 	}
 
 	u.probeNumber++
@@ -76,7 +79,7 @@ func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
 
 	// Carried on every result, including the failed ones, so the output can
 	// say which probe was lost.
-	result := ProbeResult{LocalAddr: conn.LocalAddr()}
+	result := Result{LocalAddr: conn.LocalAddr()}
 	result.ProbeNumber = u.probeNumber
 
 	if _, err := conn.Write(payload); err != nil {

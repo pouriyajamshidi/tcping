@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -18,7 +19,7 @@ func convertAndValidatePort(port string) (uint16, error) {
 	}
 
 	if parsedPort == 0 {
-		return 0, fmt.Errorf("port should be in 1..65535 range")
+		return 0, errors.New("port should be in 1..65535 range")
 	}
 
 	return uint16(parsedPort), nil

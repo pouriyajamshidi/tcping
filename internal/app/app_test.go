@@ -22,9 +22,9 @@ func withStdin(t *testing.T) *os.File {
 	// Close the writing end first so the watcher goroutine sees EOF and
 	// finishes before the next test swaps os.Stdin again.
 	t.Cleanup(func() {
-		w.Close()
+		_ = w.Close()
 		os.Stdin = original
-		r.Close()
+		_ = r.Close()
 	})
 
 	return w
@@ -70,7 +70,7 @@ func TestSummaryRequests_ClosesWhenStdinEnds(t *testing.T) {
 	stdin := withStdin(t)
 	requests := summaryRequests()
 
-	stdin.Close()
+	_ = stdin.Close()
 
 	select {
 	case _, ok := <-requests:

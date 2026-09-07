@@ -1,12 +1,18 @@
 name: Test
 
 on:
+  # Only master here. A pull request branch is already covered by the
+  # pull_request trigger below, so pushing to it would run the tests twice.
   push:
+    branches: [master]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    name: Build, vet and test
+    name: Build, lint and test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

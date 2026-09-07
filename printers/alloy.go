@@ -505,6 +505,8 @@ func (p *AlloyPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
 }
 
+// PrintError goes to the terminal rather than to Alloy, since an error
+// here usually means Alloy is the thing that is not working.
 func (p *AlloyPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Alloy Error: "+format+"\n", args...)
 }

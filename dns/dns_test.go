@@ -60,7 +60,7 @@ func TestCreateDNSResolver_OverridesAddress(t *testing.T) {
 	go func() {
 		if conn, err := ln.Accept(); err == nil {
 			accepted <- struct{}{}
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 
@@ -73,7 +73,7 @@ func TestCreateDNSResolver_OverridesAddress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial failed: %v", err)
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	select {
 	case <-accepted:
@@ -95,7 +95,7 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 	go func() {
 		if conn, err := ln.Accept(); err == nil {
 			accepted <- struct{}{}
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 
@@ -108,7 +108,7 @@ func TestCreateDNSResolver_NoOverride(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial failed: %v", err)
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	select {
 	case <-accepted:
@@ -248,7 +248,7 @@ func blackholeListener(t *testing.T) net.Addr {
 	if err != nil {
 		t.Fatalf("failed to start UDP listener: %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	go func() {
 		buf := make([]byte, 512)
@@ -292,7 +292,7 @@ func TestNewResolver_ZeroTimeoutMeansNoDeadline(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		r.ResolveHostname("example.com")
+		_, _ = r.ResolveHostname("example.com")
 		close(done)
 	}()
 
@@ -315,10 +315,10 @@ func TestSelectResolvedIPv4(t *testing.T) {
 		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2})
 
 		if !actual.IsValid() {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 		if actual != ip1 && actual != ip2 {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 	})
 }
@@ -332,10 +332,10 @@ func TestSelectResolvedIPv6(t *testing.T) {
 	t.Run("IPv6 Selection", func(t *testing.T) {
 		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2})
 		if !actual.IsValid() {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 		if actual != ip1 && actual != ip2 {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 	})
 }

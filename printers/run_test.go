@@ -32,7 +32,7 @@ type scriptedPinger struct {
 	after    func(probeIndex int)
 }
 
-func (p *scriptedPinger) Ping(context.Context, netip.Addr) (probe.ProbeResult, error) {
+func (p *scriptedPinger) Ping(context.Context, netip.Addr) (probe.Result, error) {
 	index := p.next
 	p.next++
 
@@ -41,10 +41,10 @@ func (p *scriptedPinger) Ping(context.Context, netip.Addr) (probe.ProbeResult, e
 	}
 
 	if index < len(p.outcomes) && p.outcomes[index] {
-		return probe.ProbeResult{}, nil
+		return probe.Result{}, nil
 	}
 
-	return probe.ProbeResult{}, errors.New("connection refused")
+	return probe.Result{}, errors.New("connection refused")
 }
 
 // scriptedRun is one replayed run: which probes succeed, where their results

@@ -8,11 +8,14 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
+// JSONPrinter writes one JSON event per line, for piping a run into
+// another program.
 type JSONPrinter struct {
 	encoder *json.Encoder
 	cfg     Config
 }
 
+// NewJSONPrinter creates a JSON printer writing to the destination in cfg.
 func NewJSONPrinter(cfg Config) *JSONPrinter {
 	encoder := json.NewEncoder(writerOrStdout(cfg))
 
@@ -163,6 +166,7 @@ func (p *JSONPrinter) encode(event string, data any) {
 	})
 }
 
+// PrintStart emits the event that opens a run.
 func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 	start := jsonStart{
 		Hostname: s.Hostname,
@@ -182,6 +186,7 @@ func (p *JSONPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 	})
 }
 
+// PrintProbeSuccess emits a successful probe.
 func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	hostname := s.Hostname
 	if s.DestIsIP {
@@ -216,6 +221,7 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	p.encode("probe", data)
 }
 
+// PrintProbeFailure emits a failed probe.
 func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 	hostname := s.Hostname
 	if s.DestIsIP {
@@ -247,6 +253,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 	p.encode("probe", data)
 }
 
+// PrintStatistics emits the summary of the run so far.
 func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 	hostname := s.Hostname
 	if s.DestIsIP {
@@ -312,12 +319,14 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 	p.encode("statistics", data)
 }
 
+// PrintRetryingToResolve emits the hostname being looked up again.
 func (p *JSONPrinter) PrintRetryingToResolve(hostname string) {
 	p.encode("retry", jsonRetry{
 		Hostname: hostname,
 	})
 }
 
+// PrintError emits an error as an event, so it stays in the same stream.
 func (p *JSONPrinter) PrintError(format string, args ...any) {
 	p.encode("error", jsonError{
 		Message: fmt.Sprintf(format, args...),
