@@ -148,7 +148,7 @@ func NewDatabasePrinter(cfg Config) (*DatabasePrinter, error) {
 	portStr := strconv.FormatUint(uint64(cfg.Port), 10)
 	probeTableName := sanitizeTableName(cfg.Target, portStr)
 	statsTableName := probeTableName + "_stats"
-	filePath := addDbExtension(cfg.OutputDBPath)
+	filePath := addDBExtension(cfg.OutputDBPath)
 
 	flags := sqlite.OpenCreate | sqlite.OpenReadWrite
 	if filePath != ":memory:" {
@@ -188,7 +188,7 @@ func NewDatabasePrinter(cfg Config) (*DatabasePrinter, error) {
 	}, nil
 }
 
-func addDbExtension(filename string) string {
+func addDBExtension(filename string) string {
 	if filename == ":memory:" || strings.HasSuffix(filename, ".db") {
 		return filename
 	}

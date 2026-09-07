@@ -28,9 +28,9 @@ func TestAddDBExtension(t *testing.T) {
 	}
 
 	for input, want := range tests {
-		got := addDbExtension(input)
+		got := addDBExtension(input)
 		if got != want {
-			t.Fatalf("addDbExtension(%q) = %q, want %q", input, got, want)
+			t.Fatalf("addDBExtension(%q) = %q, want %q", input, got, want)
 		}
 	}
 }
