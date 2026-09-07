@@ -193,7 +193,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	}
 
-	msg.WriteString(strings.Repeat("-", 40) + "\n")
+	fmt.Fprintf(&msg, "%s", strings.Repeat("-", 40)+"\n")
 	fmt.Fprintf(&msg, "TCPing started at: %s\n", s.StartTimeFormatted())
 
 	// If the program was not terminated, no need to show the end time
