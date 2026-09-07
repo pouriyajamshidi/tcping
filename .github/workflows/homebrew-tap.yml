@@ -10,7 +10,7 @@ name: Update Homebrew tap
 on:
   release:
     types: [published]
-  # for re-running by hand if the archives were uploaded after publishing
+  # for re-running by hand
   workflow_dispatch:
     inputs:
       tag:
@@ -48,19 +48,8 @@ jobs:
         run: |
           base="https://github.com/${{ github.repository }}/releases/download/$TAG"
           for target in darwin-arm64 darwin-amd64 linux-arm64 linux-amd64; do
-            file="tcping-$target-static.tar.gz"
-            # The archives are built and uploaded by hand, so they are often
-            # still missing when the release is published. Wait up to ten
-            # minutes for each one instead of failing right away.
-            for attempt in $(seq 1 30); do
-              curl -fsSL -o "$file" "$base/$file" && break
-              echo "[+] $file is not on the release page yet, retrying in 20s"
-              sleep 20
-            done
-            if [ ! -s "$file" ]; then
-              echo "[-] $file never showed up on the release page"
-              exit 1
-            fi
+            file="tcping-$target.tar.gz"
+            curl -fsSL -o "$file" "$base/$file"
             echo "${target//-/_}=$(sha256sum "$file" | cut -d' ' -f1)" >>"$GITHUB_OUTPUT"
           done
 
@@ -80,20 +69,20 @@ jobs:
 
             on_macos do
               if Hardware::CPU.arm?
-                url "$base/tcping-darwin-arm64-static.tar.gz"
+                url "$base/tcping-darwin-arm64.tar.gz"
                 sha256 "${{ steps.sha.outputs.darwin_arm64 }}"
               else
-                url "$base/tcping-darwin-amd64-static.tar.gz"
+                url "$base/tcping-darwin-amd64.tar.gz"
                 sha256 "${{ steps.sha.outputs.darwin_amd64 }}"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "$base/tcping-linux-arm64-static.tar.gz"
+                url "$base/tcping-linux-arm64.tar.gz"
                 sha256 "${{ steps.sha.outputs.linux_arm64 }}"
               else
-                url "$base/tcping-linux-amd64-static.tar.gz"
+                url "$base/tcping-linux-amd64.tar.gz"
                 sha256 "${{ steps.sha.outputs.linux_amd64 }}"
               end
             end

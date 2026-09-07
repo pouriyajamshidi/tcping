@@ -14,7 +14,7 @@ name: Publish to winget
 on:
   release:
     types: [published]
-  # for re-running by hand if the zips were uploaded after publishing
+  # for re-running by hand
   workflow_dispatch:
     inputs:
       tag:
@@ -39,28 +39,6 @@ jobs:
         run: |
           echo "tag=$TAG" >>"$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
-
-      - name: Wait for the Windows zips to show up
-        shell: bash
-        env:
-          TAG: ${{ steps.release.outputs.tag }}
-        run: |
-          base="https://github.com/${{ github.repository }}/releases/download/$TAG"
-          for arch in amd64 arm64; do
-            file="tcping-windows-$arch.zip"
-            # The archives are built and uploaded by hand, so they are often
-            # still missing when the release is published. Wait up to ten
-            # minutes for each one instead of failing right away.
-            for attempt in $(seq 1 30); do
-              curl -fsSL -o "$file" "$base/$file" && break
-              echo "[+] $file is not on the release page yet, retrying in 20s"
-              sleep 20
-            done
-            if [ ! -s "$file" ]; then
-              echo "[-] $file never showed up on the release page"
-              exit 1
-            fi
-          done
 
       - name: Submit the manifest
         shell: bash
