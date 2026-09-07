@@ -85,7 +85,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release freebsd linux darwin windows check clean update format vet lint test container gifs
+.PHONY: all build release freebsd linux darwin windows check clean update format fix vet lint test container gifs
 
 all: build
 
@@ -119,7 +119,9 @@ windows: $(WINDOWS_ARTIFACTS)
 	@echo
 	@sha256sum $(WINDOWS_ARTIFACTS) | awk '{sub(".*/", "", $$2); print $$2 ": " $$1}'
 
-check: format vet test
+# The one gate to run before pushing. The CI workflows run the same steps,
+# so a clean "make check" means a green pull request.
+check: format fix vet lint test
 
 # Remove all build artifacts
 clean:
@@ -134,6 +136,10 @@ update:
 format:
 	@echo "[+] Formatting files"
 	@gofmt -l -w .
+
+fix:
+	@echo "[+] Applying Go fixes"
+	@go fix ./...
 
 vet:
 	@echo "[+] Running Go vet"
