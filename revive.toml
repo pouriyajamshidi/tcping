@@ -36,6 +36,14 @@ arguments = ["literal"]
 [rule.filename-format]
 arguments = ["^[_a-z][_a-z0-9]*\\.go$"]
 
+# Every ignored error has to be written as "_ =" so it is a decision someone
+# made rather than something that got missed. Listed below are the calls
+# where that would be noise: printing to stdout or stderr, and the
+# strings.Builder writes, which the standard library documents as always
+# returning a nil error.
+[rule.unhandled-error]
+arguments = ["fmt\\.(Print|Fprint).*", "strings\\.Builder\\..*"]
+
 # ==================================================
 # Disabled rules
 # ==================================================
@@ -68,7 +76,3 @@ disabled = true
 [rule.unused-receiver]
 disabled = true
 
-# Would need an allow list for fmt.Print*, Close and friends before it is
-# useful. Left off until someone does that work.
-[rule.unhandled-error]
-disabled = true
