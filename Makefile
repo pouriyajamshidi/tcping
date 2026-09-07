@@ -16,6 +16,10 @@ VERSION := $(shell sed -n 's/^var Current = "\(.*\)"/\1/p' $(VERSION_FILE))
 GO_LDFLAGS := -ldflags "-s -w"
 GO_MAIN_PATH := ./cmd/tcping
 
+# Linter. Pinned so "make lint" and the Lint workflow report the same thing.
+# Bumping this is what pulls in newly added revive rules, see revive.toml.
+REVIVE_VERSION := v1.15.0
+
 # IO directories
 TARGET_DIR := target
 OUTPUT_DIR := output
@@ -81,7 +85,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release freebsd linux darwin windows check clean update format vet test container gifs
+.PHONY: all build release freebsd linux darwin windows check clean update format vet lint test container gifs
 
 all: build
 
@@ -134,6 +138,10 @@ format:
 vet:
 	@echo "[+] Running Go vet"
 	@go vet ./...
+
+lint:
+	@echo "[+] Running Revive"
+	@go run github.com/mgechev/revive@$(REVIVE_VERSION) -config revive.toml -set_exit_status ./...
 
 test:
 	@echo "[+] Running tests"
