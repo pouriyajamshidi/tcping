@@ -1,7 +1,10 @@
 name: Test
 
 on:
+  # Only master here. A pull request branch is already covered by the
+  # pull_request trigger below, so pushing to it would run the tests twice.
   push:
+    branches: [master]
   pull_request:
 
 jobs:
