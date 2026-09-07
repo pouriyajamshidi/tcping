@@ -112,53 +112,53 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 // PrintStatistics prints the summary of all probe statistics.
 func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("\n--- %s ", s.Hostname))
+	fmt.Fprintf(&msg, "\n--- %s ", s.Hostname)
 	if !s.DestIsIP {
-		msg.WriteString(fmt.Sprintf("(%s) ", s.IP))
+		fmt.Fprintf(&msg, "(%s) ", s.IP)
 	}
 	msg.WriteString("TCPing statistics ---\n")
 
-	msg.WriteString(fmt.Sprintf(
+	fmt.Fprintf(&msg,
 		"%d %s probes transmitted on port %d | %d received, ",
 		s.TotalProbes(),
 		s.ProtocolStr(),
 		s.Port,
 		s.TotalSuccessfulProbes,
-	))
+	)
 
-	msg.WriteString(fmt.Sprintf("%.2f%% packet loss\n", s.PacketLoss()))
+	fmt.Fprintf(&msg, "%.2f%% packet loss\n", s.PacketLoss())
 
-	msg.WriteString(fmt.Sprintf("successful probes:   %d\n", s.TotalSuccessfulProbes))
-	msg.WriteString(fmt.Sprintf("unsuccessful probes: %d\n", s.TotalUnsuccessfulProbes))
+	fmt.Fprintf(&msg, "successful probes:   %d\n", s.TotalSuccessfulProbes)
+	fmt.Fprintf(&msg, "unsuccessful probes: %d\n", s.TotalUnsuccessfulProbes)
 
 	msg.WriteString("last successful probe:   ")
 	if s.LastSuccessfulProbe.IsZero() {
 		msg.WriteString("Never succeeded\n")
 	} else {
-		msg.WriteString(fmt.Sprintf("%s\n", s.LastSuccessfulProbeFormatted()))
+		fmt.Fprintf(&msg, "%s\n", s.LastSuccessfulProbeFormatted())
 	}
 
 	msg.WriteString("last unsuccessful probe: ")
 	if s.LastUnsuccessfulProbe.IsZero() {
 		msg.WriteString("Never failed\n")
 	} else {
-		msg.WriteString(fmt.Sprintf("%s\n", s.LastUnsuccessfulProbeFormatted()))
+		fmt.Fprintf(&msg, "%s\n", s.LastUnsuccessfulProbeFormatted())
 	}
 
-	msg.WriteString(fmt.Sprintf("total uptime:   %s\n", s.TotalUptimeDuration()))
-	msg.WriteString(fmt.Sprintf("total downtime: %s\n", s.TotalDowntimeDuration()))
+	fmt.Fprintf(&msg, "total uptime:   %s\n", s.TotalUptimeDuration())
+	fmt.Fprintf(&msg, "total downtime: %s\n", s.TotalDowntimeDuration())
 
 	if s.LongestUptime.Duration != 0 {
 		msg.WriteString("longest consecutive uptime:   ")
-		msg.WriteString(fmt.Sprintf("%s ", s.LongestUptimeDuration()))
-		msg.WriteString(fmt.Sprintf("from %s ", s.LongestUptimeStartTime()))
-		msg.WriteString(fmt.Sprintf("to %s\n", s.LongestUptimeEndTime()))
+		fmt.Fprintf(&msg, "%s ", s.LongestUptimeDuration())
+		fmt.Fprintf(&msg, "from %s ", s.LongestUptimeStartTime())
+		fmt.Fprintf(&msg, "to %s\n", s.LongestUptimeEndTime())
 	}
 
 	if s.LongestDowntime.Duration != 0 {
-		msg.WriteString(fmt.Sprintf("longest consecutive downtime: %s ", s.LongestDowntimeDuration()))
-		msg.WriteString(fmt.Sprintf("from %s ", s.LongestDowntimeStartTime()))
-		msg.WriteString(fmt.Sprintf("to %s\n", s.LongestDowntimeEndTime()))
+		fmt.Fprintf(&msg, "longest consecutive downtime: %s ", s.LongestDowntimeDuration())
+		fmt.Fprintf(&msg, "from %s ", s.LongestDowntimeStartTime())
+		fmt.Fprintf(&msg, "to %s\n", s.LongestDowntimeEndTime())
 	}
 
 	if !s.DestIsIP {
@@ -167,41 +167,41 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 			timeNoun = "times"
 		}
 
-		msg.WriteString(fmt.Sprintf("retried to resolve hostname: %d %s\n",
+		fmt.Fprintf(&msg, "retried to resolve hostname: %d %s\n",
 			s.RetriedHostnameLookups,
 			timeNoun,
-		))
+		)
 
 		if len(s.HostnameChanges) > 1 {
 			msg.WriteString("IP address changes:\n")
 			for i := 0; i < len(s.HostnameChanges)-1; i++ {
-				msg.WriteString(fmt.Sprintf("  from %s ", s.HostnameChanges[i].Addr.String()))
-				msg.WriteString(fmt.Sprintf("to %s ", s.HostnameChanges[i+1].Addr.String()))
-				msg.WriteString(fmt.Sprintf("at %s ", s.HostnameChanges[i+1].WhenFormatted()))
-				msg.WriteString(fmt.Sprintf("took %s ms\n", s.HostnameChanges[i+1].DurationStr()))
+				fmt.Fprintf(&msg, "  from %s ", s.HostnameChanges[i].Addr.String())
+				fmt.Fprintf(&msg, "to %s ", s.HostnameChanges[i+1].Addr.String())
+				fmt.Fprintf(&msg, "at %s ", s.HostnameChanges[i+1].WhenFormatted())
+				fmt.Fprintf(&msg, "took %s ms\n", s.HostnameChanges[i+1].DurationStr())
 			}
 		}
 	}
 
 	if s.TotalSuccessfulProbes > 0 {
 		msg.WriteString("rtt min/avg/max/mdev: ")
-		msg.WriteString(fmt.Sprintf("%.3f/%.3f/%.3f/%.3f ms\n",
+		fmt.Fprintf(&msg, "%.3f/%.3f/%.3f/%.3f ms\n",
 			s.RTTResults.Min,
 			s.RTTResults.Average,
 			s.RTTResults.Max,
 			s.RTTResults.Mdev,
-		))
+		)
 	}
 
-	msg.WriteString(fmt.Sprint(strings.Repeat("-", 40) + "\n"))
-	msg.WriteString(fmt.Sprintf("TCPing started at: %s\n", s.StartTimeFormatted()))
+	msg.WriteString(strings.Repeat("-", 40) + "\n")
+	fmt.Fprintf(&msg, "TCPing started at: %s\n", s.StartTimeFormatted())
 
 	// If the program was not terminated, no need to show the end time
 	if !s.EndTime.IsZero() {
-		msg.WriteString(fmt.Sprintf("TCPing ended at:   %s\n", s.EndTimeFormatted()))
+		fmt.Fprintf(&msg, "TCPing ended at:   %s\n", s.EndTimeFormatted())
 	}
 
-	msg.WriteString(fmt.Sprintf("duration (HH:MM:SS): %s\n\n", s.RuntimeDuration()))
+	fmt.Fprintf(&msg, "duration (HH:MM:SS): %s\n\n", s.RuntimeDuration())
 
 	fmt.Print(msg.String())
 }
