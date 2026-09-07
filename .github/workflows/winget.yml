@@ -1,8 +1,11 @@
 name: Publish to winget
 
-# Runs once the release page exists and its Windows zips are uploaded, then
-# opens a pull request against microsoft/winget-pkgs so "winget install
+# Opens a pull request against microsoft/winget-pkgs so "winget install
 # pj.tcping" picks up the new version on its own.
+#
+# Called by the release workflow once the release page exists and its
+# Windows zips are uploaded. It cannot listen for "release: published": a
+# release created with the GITHUB_TOKEN does not trigger other workflows.
 #
 # This replaces running wingetcreate by hand, which is what was done up to
 # v2.8.0.
@@ -12,21 +15,24 @@ name: Publish to winget
 # under your account and push the manifest branch there. The default
 # GITHUB_TOKEN cannot do that.
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to publish to winget, for example v3.0.0"
+        required: true
+        type: string
   # for re-running by hand
   workflow_dispatch:
     inputs:
       tag:
         description: "Release tag to publish to winget, for example v3.0.0"
         required: true
+        type: string
 
 jobs:
   manifest:
     # wingetcreate is a Windows only tool
     runs-on: windows-latest
-    # release candidates should not become what winget installs by default
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     permissions:
       contents: read
 
@@ -35,7 +41,7 @@ jobs:
         id: release
         shell: bash
         env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAG: ${{ inputs.tag }}
         run: |
           echo "tag=$TAG" >>"$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"

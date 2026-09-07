@@ -17,7 +17,7 @@ Closes #
 - [ ] I have read this guide
 - [ ] I have performed a self-review of my code
 - [ ] If it is a core feature or changes the output, I have added tests.
-- [ ] I have run `make check` or run `go fmt && go test` and there are no failures.
+- [ ] I have run `make check` and there are no failures.
 
 ## Type of change
 

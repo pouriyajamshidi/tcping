@@ -22,7 +22,7 @@ GO_MAIN_PATH := ./cmd/tcping
 # the local one, so what you test is what gets released.
 export CGO_ENABLED := 0
 
-# Linters. Pinned so "make lint" and the Lint workflow report the same thing.
+# Linters. Pinned so a local run and a CI run report the same thing.
 # Bumping revive is what pulls in newly added revive rules, see revive.toml.
 REVIVE_VERSION := v1.15.0
 STATICCHECK_VERSION := 2026.2.1
@@ -86,7 +86,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release freebsd linux darwin windows check clean update format fix vet lint staticcheck test container gifs
+.PHONY: all build release freebsd linux darwin windows check check-format check-fix clean update format fix vet lint staticcheck test container gifs
 
 all: build
 
@@ -122,7 +122,10 @@ windows: $(WINDOWS_ARTIFACTS)
 
 # The one gate to run before pushing. The CI workflows run the same steps,
 # so a clean "make check" means a green pull request.
-check: format fix vet lint staticcheck test
+#
+# Nothing here rewrites your files. When check-format or check-fix complains,
+# "make format" and "make fix" are what apply the changes it asked for.
+check: check-format check-fix vet lint staticcheck test
 
 # Remove all build artifacts
 clean:
@@ -141,6 +144,22 @@ format:
 fix:
 	@echo "[+] Applying Go fixes"
 	@go fix ./...
+
+# The two report-only halves of the above, which is what the gate runs so a
+# check never edits your files behind your back.
+check-format:
+	@echo "[+] Checking formatting"
+	@files=$$(gofmt -l .); \
+	if [ -n "$$files" ]; then \
+		echo "[-] These files need formatting, run 'make format':"; \
+		echo "$$files"; \
+		exit 1; \
+	fi
+
+check-fix:
+	@echo "[+] Checking for outdated constructs"
+	@go fix -diff ./... || \
+		(echo "[-] Outdated constructs found, run 'make fix'"; exit 1)
 
 vet:
 	@echo "[+] Running Go vet"

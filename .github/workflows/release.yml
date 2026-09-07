@@ -3,9 +3,9 @@ name: Release
 # Builds every release artifact and publishes the GitHub release when a v*
 # tag is pushed, using the tag's CHANGELOG.md section as the release notes.
 #
-# The Homebrew tap and winget workflows run off the "release published"
-# event, so pushing the tag is the whole release. Merge into master first:
-# a tag that is not on master is rejected below.
+# The Homebrew tap and winget workflows are called from here once the
+# release exists, so pushing the tag is the whole release. Merge into master
+# first: a tag that is not on master is rejected below.
 on:
   push:
     tags:
@@ -23,6 +23,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
 
     steps:
       - name: Work out the tag
@@ -71,16 +73,20 @@ jobs:
         env:
           TAG: ${{ steps.release.outputs.tag }}
         run: |
+          # A pre-release like v3.0.0-rc1 has no section of its own, so it
+          # takes the notes of the version it leads up to.
+          section="${TAG%%-*}"
+
           # Everything under the tag's "## v3.0.0 - 2026-09-07" heading, up
           # to the next heading, which is what used to be pasted by hand.
-          awk -v tag="$TAG" '
+          awk -v tag="$section" '
             $0 ~ "^## " tag " " { found = 1; next }
             found && /^## /     { exit }
             found               { print }
           ' CHANGELOG.md >notes.md
 
           if [ ! -s notes.md ]; then
-            echo "[-] CHANGELOG.md has no section for $TAG"
+            echo "[-] CHANGELOG.md has no section for $section"
             exit 1
           fi
 
@@ -109,3 +115,21 @@ jobs:
           else
             gh release create "$TAG" output/* --notes-file notes.md $prerelease
           fi
+
+  # A tag carrying a suffix, like v3.0.0-rc1, is a pre-release, so brew and
+  # winget are left pointing at the last real release.
+  homebrew:
+    needs: release
+    if: ${{ !contains(needs.release.outputs.tag, '-') }}
+    uses: ./.github/workflows/homebrew-tap.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+
+  winget:
+    needs: release
+    if: ${{ !contains(needs.release.outputs.tag, '-') }}
+    uses: ./.github/workflows/winget.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.release.outputs.tag }}

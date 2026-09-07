@@ -16,7 +16,7 @@
 - build: add a release workflow. Pushing a `v3.x.y` tag builds every artifact and publishes the GitHub release on its own, using that version's changelog section as the release notes and appending the checksums of every file
 - build: add a Homebrew tap workflow, so `brew install pouriyajamshidi/tap/tcping` picks up a new release without being updated by hand
 - build: add a winget workflow, so `winget install pj.tcping` picks up a new release without running `wingetcreate` by hand
-- build: add `staticcheck`, and a single `make check` target that runs the formatter, `go fix`, `go vet`, revive, staticcheck and the tests, which is what the workflows run too
+- build: add `staticcheck`, and a single `make check` target that runs the formatting and `go fix` checks, `go vet`, revive, staticcheck and the tests, which is what the workflows run too. It only reports: `make format` and `make fix` are what rewrite your files, so a pull request that skipped them cannot go green
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
 - improvement: when the `-I` flag is used, show the interface name on probe **failures** too
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`

@@ -1,8 +1,9 @@
 name: Test
 
 on:
+  workflow_dispatch:
   # Only master here. A pull request branch is already covered by the
-  # pull_request trigger below, so pushing to it would run the tests twice.
+  # pull_request trigger below, so pushing to it would run the gate twice.
   push:
     branches: [master]
   pull_request:

@@ -1,27 +1,33 @@
 name: Update Homebrew tap
 
-# Runs once the release page exists and its archives are uploaded, then
-# rewrites pouriyajamshidi/homebrew-tap/tcping.rb so "brew install
+# Rewrites pouriyajamshidi/homebrew-tap/tcping.rb so "brew install
 # pouriyajamshidi/tap/tcping" picks up the new version on its own.
+#
+# Called by the release workflow once the release page exists and its
+# archives are uploaded. It cannot listen for "release: published": a
+# release created with the GITHUB_TOKEN does not trigger other workflows.
 #
 # Needs a TAP_TOKEN secret: a fine grained personal access token scoped to
 # the homebrew-tap repository with "Contents: read and write". The default
 # GITHUB_TOKEN cannot write to another repository.
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to push to the tap, for example v3.0.0"
+        required: true
+        type: string
   # for re-running by hand
   workflow_dispatch:
     inputs:
       tag:
         description: "Release tag to push to the tap, for example v3.0.0"
         required: true
+        type: string
 
 jobs:
   formula:
     runs-on: ubuntu-latest
-    # release candidates should not become what brew installs by default
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     permissions:
       contents: read
 
@@ -29,7 +35,7 @@ jobs:
       - name: Work out the tag and version
         id: release
         env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAG: ${{ inputs.tag }}
         run: |
           echo "tag=$TAG" >>"$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
