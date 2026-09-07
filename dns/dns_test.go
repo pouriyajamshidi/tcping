@@ -315,10 +315,10 @@ func TestSelectResolvedIPv4(t *testing.T) {
 		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2})
 
 		if !actual.IsValid() {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 		if actual != ip1 && actual != ip2 {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 	})
 }
@@ -332,10 +332,10 @@ func TestSelectResolvedIPv6(t *testing.T) {
 	t.Run("IPv6 Selection", func(t *testing.T) {
 		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2})
 		if !actual.IsValid() {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 		if actual != ip1 && actual != ip2 {
-			t.Errorf("Expected an IP but got invalid address")
+			t.Error("Expected an IP but got invalid address")
 		}
 	})
 }

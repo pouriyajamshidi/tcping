@@ -407,6 +407,9 @@ func TestAlloyStatisticsOmitWhatHasNotHappened(t *testing.T) {
 			"tcping_longest_downtime_seconds",
 			"tcping_end_time_milliseconds":
 			t.Errorf("the summary should not carry %s yet", m.Name)
+
+		default:
+			// every other metric is expected in the summary
 		}
 	}
 }

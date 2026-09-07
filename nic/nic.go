@@ -3,6 +3,7 @@
 package nic
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -45,7 +46,7 @@ func NewNetworkInterface(
 	if interfaceAddress != nil { // we are given an IP address
 		ifaceAddrs, err := net.InterfaceAddrs()
 		if err != nil {
-			return NetworkInterface{}, fmt.Errorf("unable to get interface IP addresses")
+			return NetworkInterface{}, errors.New("unable to get interface IP addresses")
 		}
 
 		found := false
@@ -105,6 +106,10 @@ func NewNetworkInterface(
 				continue
 			}
 			ni.SourceIPv6 = ip.IP
+
+		default:
+			// an address of a family we were not asked for, or one we
+			// already picked an address for
 		}
 	}
 
