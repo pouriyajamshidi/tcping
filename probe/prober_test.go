@@ -869,8 +869,7 @@ func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
 // TestProbe_RealFailureStillCounts makes sure the cancellation check above
 // only skips probes we cancelled, not genuine failures.
 func TestProbe_RealFailureStillCounts(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	p, printer := newTestProber(alwaysFails(), config.Config{
 		IntervalBetweenProbes: time.Millisecond,
