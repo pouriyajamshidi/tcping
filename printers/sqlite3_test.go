@@ -102,7 +102,7 @@ func TestNewDatabasePrinterSchema(t *testing.T) {
 	assertColumns := func(table string, expected map[string]string) {
 		t.Helper()
 
-		got := make(map[string]string)
+		got := map[string]string{}
 		err := sqlitex.Execute(printer.conn,
 			"SELECT name, type FROM pragma_table_info(?)",
 			&sqlitex.ExecOptions{

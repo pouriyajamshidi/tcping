@@ -406,7 +406,7 @@ func TestValidateAcceptsFlagsThatGoTogether(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(*testing.T) {
 			// validate exits on anything it does not like, so simply
 			// returning is the whole assertion.
 			tt.flags.validate()

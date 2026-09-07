@@ -402,6 +402,8 @@ func (p *InfluxDBPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
 }
 
+// PrintError goes to the terminal rather than to InfluxDB, since an error
+// here usually means InfluxDB is the thing that is not working.
 func (p *InfluxDBPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "InfluxDB Error: "+format+"\n", args...)
 }

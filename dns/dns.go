@@ -16,6 +16,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/nic"
 )
 
+// Defaults used when the user does not say otherwise.
 const (
 	DefaultTimeout = 2 * time.Second
 	DefaultPort    = "53"
@@ -24,12 +25,17 @@ const (
 // IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
 const IPv4OrIPv6 = "ip"
 
+// Lookup errors, returned when the hostname resolved but not to an address
+// of the family that was asked for.
 var (
 	ErrNoIPv4Address = errors.New("no ipv4 address found")
 	ErrNoIPv6Address = errors.New("no ipv6 address found")
 	ErrNoIPAddresses = errors.New("no ip addresses")
 )
 
+// Resolver looks up a hostname the way the user asked for it: through a
+// given DNS server, limited to an address family, and out of a given network
+// interface.
 type Resolver struct {
 	resolver *net.Resolver
 	timeout  time.Duration
@@ -37,14 +43,14 @@ type Resolver struct {
 	useIPv6  bool
 }
 
-// NewResolver creates a Resolver that queries DNSServer (or the system
+// NewResolver creates a Resolver that queries dnsServer (or the system
 // default, if empty), giving up after timeout (0 means no timeout). When
 // networkInterface.Use is set, lookups are performed from its source
 // address, matching the -I flag's interface for probes - using whichever
 // of its addresses matches the DNS server's own address family.
-func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) *Resolver {
+func NewResolver(dnsServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) *Resolver {
 	return &Resolver{
-		resolver: createDNSResolver(DNSServer, timeout, networkInterface),
+		resolver: createDNSResolver(dnsServer, timeout, networkInterface),
 		timeout:  timeout,
 		useIPv4:  useIPv4,
 		useIPv6:  useIPv6,
@@ -53,13 +59,13 @@ func NewResolver(DNSServer string, timeout time.Duration, useIPv4, useIPv6 bool,
 
 // getDialAddress computes the override address for the resolver's Dial func.
 // Returns "" if no override should happen.
-func getDialAddress(DNSServer string) string {
-	if DNSServer == "" {
+func getDialAddress(dnsServer string) string {
+	if dnsServer == "" {
 		return ""
 	}
 
-	host, port := DNSServer, DefaultPort
-	if h, p, err := net.SplitHostPort(DNSServer); err == nil {
+	host, port := dnsServer, DefaultPort
+	if h, p, err := net.SplitHostPort(dnsServer); err == nil {
 		host, port = h, p
 	}
 
@@ -70,16 +76,16 @@ func getDialAddress(DNSServer string) string {
 	return ""
 }
 
-// createDNSResolver creates a new net.Resolver and uses DNSServer as the DNS server IP
-// or falls back to what is configured on the device if DNSServer is empty.
+// createDNSResolver creates a new net.Resolver and uses dnsServer as the DNS server IP
+// or falls back to what is configured on the device if dnsServer is empty.
 // It helps bypass incorrect OS DNS cache entries.
-// DNSServer can be in 1.2.3.4 or 1.2.3.4:53 format.
+// dnsServer can be in 1.2.3.4 or 1.2.3.4:53 format.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
 // When networkInterface.Use is set, lookups are dialed from whichever of
 // its addresses matches the DNS server's address family. dialTimeout of 0
 // means no timeout, matching net.Dialer's own zero-value semantics.
-func createDNSResolver(DNSServer string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
-	dialAddress := getDialAddress(DNSServer)
+func createDNSResolver(dnsServer string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
+	dialAddress := getDialAddress(dnsServer)
 
 	return &net.Resolver{
 		PreferGo: true,

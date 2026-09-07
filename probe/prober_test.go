@@ -21,10 +21,10 @@ type fakePinger struct {
 	mu        sync.Mutex
 	callCount int
 	ipsCalled []netip.Addr
-	outcomeFn func(call int) (ProbeResult, error)
+	outcomeFn func(call int) (Result, error)
 }
 
-func (f *fakePinger) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
+func (f *fakePinger) Ping(_ context.Context, ip netip.Addr) (Result, error) {
 	f.mu.Lock()
 	call := f.callCount
 	f.callCount++
@@ -48,15 +48,15 @@ func (f *fakePinger) ips() []netip.Addr {
 
 // alwaysSucceeds is a convenience fakePinger that succeeds on every call.
 func alwaysSucceeds() *fakePinger {
-	return &fakePinger{outcomeFn: func(int) (ProbeResult, error) {
-		return ProbeResult{LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 12345}}, nil
+	return &fakePinger{outcomeFn: func(int) (Result, error) {
+		return Result{LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 12345}}, nil
 	}}
 }
 
 // alwaysFails is a convenience fakePinger that fails on every call.
 func alwaysFails() *fakePinger {
-	return &fakePinger{outcomeFn: func(int) (ProbeResult, error) {
-		return ProbeResult{}, errConnRefused
+	return &fakePinger{outcomeFn: func(int) (Result, error) {
+		return Result{}, errConnRefused
 	}}
 }
 
@@ -88,13 +88,13 @@ type fakePrinter struct {
 	endedDowntimes []time.Duration
 }
 
-func (f *fakePrinter) PrintStart(s *stats.Statistics) {
+func (f *fakePrinter) PrintStart(*stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.startCalls++
 }
 
-func (f *fakePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+func (f *fakePrinter) PrintNameResolutionDuration(*stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.nameResolutionCalls++
@@ -120,7 +120,7 @@ func (f *fakePrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 }
 
-func (f *fakePrinter) PrintStatistics(s *stats.Statistics) {
+func (f *fakePrinter) PrintStatistics(*stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.statsCalls++
@@ -133,13 +133,13 @@ func (f *fakePrinter) PrintRetryingToResolve(hostname string) {
 	f.lastRetryTarget = hostname
 }
 
-func (f *fakePrinter) PrintError(format string, args ...any) {
+func (f *fakePrinter) PrintError(string, ...any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.errorCalls++
 }
 
-func (f *fakePrinter) Shutdown(s *stats.Statistics) {
+func (f *fakePrinter) Shutdown(*stats.Statistics) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.shutdownCalls++
@@ -182,7 +182,7 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 	now := time.Now()
 
-	p.handleProbeFailure(now, ProbeResult{})
+	p.handleProbeFailure(now, Result{})
 
 	s := p.statistics
 	if s.TotalUnsuccessfulProbes != 1 || s.OngoingUnsuccessfulProbes != 1 {
@@ -207,7 +207,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	p.statistics.OngoingSuccessfulProbes = 5
 
 	failAt := start.Add(100 * time.Millisecond)
-	p.handleProbeFailure(failAt, ProbeResult{})
+	p.handleProbeFailure(failAt, Result{})
 
 	s := p.statistics
 	if s.OngoingSuccessfulProbes != 0 {
@@ -227,7 +227,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 
-	p.handleProbeFailure(time.Now(), ProbeResult{})
+	p.handleProbeFailure(time.Now(), Result{})
 
 	if p.statistics.EndedUptime != 0 {
 		t.Errorf("EndedUptime = %v, want 0 (no uptime streak ever started)", p.statistics.EndedUptime)
@@ -242,7 +242,7 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) 
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	p.handleProbeFailure(start.Add(50*time.Millisecond), ProbeResult{})
+	p.handleProbeFailure(start.Add(50*time.Millisecond), Result{})
 	if p.statistics.EndedUptime == 0 {
 		t.Error("EndedUptime = 0 on the failure that ended the uptime, want it filled in")
 	}
@@ -251,7 +251,7 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) 
 	// starts from a clean slate the way a real one does.
 	p.statistics.EndedUptime = 0
 
-	p.handleProbeFailure(start.Add(100*time.Millisecond), ProbeResult{})
+	p.handleProbeFailure(start.Add(100*time.Millisecond), Result{})
 	if p.statistics.EndedUptime != 0 {
 		t.Errorf("EndedUptime = %v on a second consecutive failure, want 0", p.statistics.EndedUptime)
 	}
@@ -262,8 +262,8 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotDoubleCountDowntime(t *testi
 	first := time.Now()
 	second := first.Add(50 * time.Millisecond)
 
-	p.handleProbeFailure(first, ProbeResult{})
-	p.handleProbeFailure(second, ProbeResult{})
+	p.handleProbeFailure(first, Result{})
+	p.handleProbeFailure(second, Result{})
 
 	s := p.statistics
 	if s.OngoingUnsuccessfulProbes != 2 {
@@ -286,7 +286,7 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 	p, _ := newTestProber(nil, cfg)
 	p.statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
 
-	p.handleProbeFailure(time.Now(), ProbeResult{})
+	p.handleProbeFailure(time.Now(), Result{})
 
 	wantAddr := &net.TCPAddr{IP: sourceIP}
 	gotAddr, ok := p.statistics.LocalAddr.(*net.TCPAddr)
@@ -302,7 +302,7 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 	now := time.Now()
 	localAddr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321}
 
-	p.handleProbeSuccess(now, 15*time.Millisecond, ProbeResult{LocalAddr: localAddr})
+	p.handleProbeSuccess(now, 15*time.Millisecond, Result{LocalAddr: localAddr})
 
 	s := p.statistics
 	if s.LatestRTT != 15 {
@@ -334,7 +334,7 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 	p.statistics.OngoingUnsuccessfulProbes = 3
 
 	upAt := start.Add(50 * time.Millisecond)
-	p.handleProbeSuccess(upAt, time.Millisecond, ProbeResult{})
+	p.handleProbeSuccess(upAt, time.Millisecond, Result{})
 
 	s := p.statistics
 	if s.LastProbeHadFailed {
@@ -356,8 +356,8 @@ func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, ProbeResult{})
-	p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, ProbeResult{})
+	p.handleProbeSuccess(start.Add(time.Millisecond), time.Millisecond, Result{})
+	p.handleProbeSuccess(start.Add(2*time.Millisecond), time.Millisecond, Result{})
 
 	if p.statistics.EndedDowntime != 0 {
 		t.Errorf("EndedDowntime = %v, want 0 (never went down)", p.statistics.EndedDowntime)
@@ -561,11 +561,11 @@ func TestProbe_StopsOnContextCancellation(t *testing.T) {
 }
 
 func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
-	pinger := &fakePinger{outcomeFn: func(call int) (ProbeResult, error) {
+	pinger := &fakePinger{outcomeFn: func(call int) (Result, error) {
 		if call < 2 {
-			return ProbeResult{}, errConnRefused
+			return Result{}, errConnRefused
 		}
-		return ProbeResult{}, nil
+		return Result{}, nil
 	}}
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
@@ -825,14 +825,14 @@ func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	pinger := &fakePinger{outcomeFn: func(call int) (ProbeResult, error) {
+	pinger := &fakePinger{outcomeFn: func(call int) (Result, error) {
 		if call == 0 {
-			return ProbeResult{LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)}}, nil
+			return Result{LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)}}, nil
 		}
 
 		// The second probe is the one the user interrupts.
 		cancel()
-		return ProbeResult{}, ctx.Err()
+		return Result{}, ctx.Err()
 	}}
 
 	p, printer := newTestProber(pinger, config.Config{

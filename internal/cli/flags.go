@@ -17,7 +17,7 @@ import (
 // definitions, so it can never drift out of sync when a flag is added,
 // renamed, or removed.
 func flagsRequiringValue() map[string]bool {
-	flagsWithValues := make(map[string]bool)
+	flagsWithValues := map[string]bool{}
 
 	flag.VisitAll(func(f *flag.Flag) {
 		// Flags created via flag.Bool implement this interface, it's the

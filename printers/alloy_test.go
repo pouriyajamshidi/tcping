@@ -71,7 +71,7 @@ func TestAlloyPrintProbeSuccess(t *testing.T) {
 
 	metrics := got.ResourceMetrics[0].ScopeMetrics[0].Metrics
 
-	found := make(map[string]float64)
+	found := map[string]float64{}
 	for _, m := range metrics {
 		if m.Gauge != nil {
 			found[m.Name] = m.Gauge.DataPoints[0].Value

@@ -29,6 +29,7 @@ type HTTPing struct {
 	skipTLSVerify    bool   // do not check the server certificate
 }
 
+// NewHTTPing creates an HTTP(S) prober for the target in cfg.
 func NewHTTPing(cfg config.Config) HTTPing {
 	return HTTPing{
 		networkInterface: cfg.NetworkInterface,
@@ -64,18 +65,18 @@ func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 
 // Ping sends one GET to the target URL, sourcing the connection from the
 // configured network interface when there is one.
-func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
+func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	d, err := dialer(tcp, h.networkInterface, h.timeout, ip)
 	if err != nil {
-		return ProbeResult{}, err
+		return Result{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.url, nil)
 	if err != nil {
-		return ProbeResult{}, err
+		return Result{}, err
 	}
 
-	var result ProbeResult
+	var result Result
 	var connectStart, tlsStart time.Time
 	start := time.Now()
 
@@ -112,7 +113,7 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (ProbeResult, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return ProbeResult{}, err
+		return Result{}, err
 	}
 	defer resp.Body.Close()
 

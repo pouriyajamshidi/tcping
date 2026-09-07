@@ -73,6 +73,8 @@ func summaryRequests() <-chan struct{} {
 	return requests
 }
 
+// Run is the whole program: it reads the command line, sets up the target
+// and the printer, and probes until it is asked to stop.
 func Run() {
 	cfg, printerCfg := cli.ProcessUserInput()
 
