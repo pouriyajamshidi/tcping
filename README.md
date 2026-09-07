@@ -140,7 +140,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---quick-install), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
 
-There are static and dynamic versions available. In simple terms, static binaries include all needed code inside one file, while dynamic binaries load some code from shared operating system libraries when they run.
+The binaries are static, meaning they carry everything they need inside one file and do not depend on any library being present on your machine.
 
 Once you are done with the download and installation, head to the [usage](#usage) section.
 
@@ -177,8 +177,8 @@ Paste the following in your terminal to grab the latest static binary for your a
 ```bash
 cd /tmp &&
 ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/') &&
-curl -LO "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH-static.tar.gz" &&
-tar -xf "tcping-linux-$ARCH-static.tar.gz" &&
+curl -LO "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH.tar.gz" &&
+tar -xf "tcping-linux-$ARCH.tar.gz" &&
 sudo install tcping /usr/local/bin/ &&
 sudo install -Dm 644 completions/tcping.bash /usr/share/bash-completion/completions/tcping &&
 sudo install -Dm 644 completions/_tcping /usr/share/zsh/site-functions/_tcping &&
@@ -192,7 +192,7 @@ the ones for the shells you do not use, and start a new shell to pick them up.
 If you don't have `curl`, swap its line for `wget`:
 
 ```bash
-wget "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH-static.tar.gz" &&
+wget "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH.tar.gz" &&
 ```
 
 ### Linux - Debian and Derivatives
@@ -218,15 +218,15 @@ If you are using different Linux distros, proceed to [this section](#bsd-and-lin
 Download the file for your respective OS and architecture:
 
 ```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-freebsd-amd64-static.tar.gz
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-freebsd-amd64.tar.gz
 # Or for Linux ARM64 machines and using cURL
-curl -LO https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-arm64-static.tar.gz
+curl -LO https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-arm64.tar.gz
 ```
 
 Extract the file:
 
 ```bash
-tar -xvf tcping-freebsd-amd64-static.tar.gz
+tar -xvf tcping-freebsd-amd64.tar.gz
 ```
 
 Make the file executable:

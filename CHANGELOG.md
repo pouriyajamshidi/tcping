@@ -11,13 +11,19 @@
 - build: support more container architectures
 - build: give the tests their own workflow instead of running them alongside the build
 - build: pin the GitHub Actions we use to commit hashes instead of tags
-- build: derive the version from the git tag instead of keeping it in two places
+- build (breaking): ship one binary per platform instead of a `static` and a `dynamic` one. Every build now sets `CGO_ENABLED=0`, so the archives lost their `-static` suffix: `tcping-linux-amd64-static.tar.gz` is now `tcping-linux-amd64.tar.gz`. tcping has no cgo code and resolves names with Go's own resolver, so the cgo build only tied the binary to the glibc it was built against
+- build: keep the version number in one place, `internal/version/version.go`. The Makefile reads it from there for the Debian package
+- build: add a release workflow. Pushing a `v3.x.y` tag builds every artifact and publishes the GitHub release on its own, using that version's changelog section as the release notes and appending the checksums of every file
+- build: add a Homebrew tap workflow, so `brew install pouriyajamshidi/tap/tcping` picks up a new release without being updated by hand
+- build: add a winget workflow, so `winget install pj.tcping` picks up a new release without running `wingetcreate` by hand
+- build: add `staticcheck`, and a single `make check` target that runs the formatter, `go fix`, `go vet`, revive, staticcheck and the tests, which is what the workflows run too
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
 - improvement: when the `-I` flag is used, show the interface name on probe **failures** too
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
 - docs: we have a new logo thanks to Gemini!
+- docs: add a one-line install command for Linux and a guide for the shell completions to the README
 - refactor: modernize with `go fix`
 - dependencies: replace `github.com/google/go-github` with Go's built-in HTTP library
 - dependencies: drop `github.com/gookit/color` in favor of a small ANSI helper of our own
