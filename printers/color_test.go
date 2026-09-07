@@ -121,3 +121,105 @@ func TestColorShutdownOmitsStatistics(t *testing.T) {
 		t.Errorf("output = %q, want it to be empty", out)
 	}
 }
+
+// captureColoredStdout runs f with color turned on and returns whatever it
+// wrote to stdout, escape codes and all.
+func captureColoredStdout(t *testing.T, f func()) string {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe failed: %v", err)
+	}
+
+	original := os.Stdout
+	os.Stdout = w
+	originalColorEnabled := colorEnabled
+	colorEnabled = true
+
+	defer func() {
+		os.Stdout = original
+		colorEnabled = originalColorEnabled
+	}()
+
+	f()
+
+	_ = w.Close()
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("reading captured output failed: %v", err)
+	}
+
+	return string(out)
+}
+
+// The color a line comes out in is what tells the user at a glance whether a
+// probe answered, so the ones that carry that meaning are checked here. The
+// labels in the summary are decoration and are left alone on purpose.
+func TestColorProbeLineColors(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		want  string
+		print func(p *ColorPrinter, s *stats.Statistics)
+	}{
+		{"reply is light green", lightGreenCode, (*ColorPrinter).PrintProbeSuccess},
+		{"no reply is red", redCode, (*ColorPrinter).PrintProbeFailure},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out := captureColoredStdout(t, func() {
+				tc.print(NewColorPrinter(Config{}), plainTestStats())
+			})
+
+			if !strings.HasPrefix(out, tc.want) {
+				t.Errorf("output = %q, want it to start with %q", out, tc.want)
+			}
+		})
+	}
+}
+
+func TestColorPacketLossColors(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		successful   uint
+		unsuccessful uint
+		want         string
+	}{
+		{"no loss is green", 10, 0, greenCode + "0.00%"},
+		{"some loss is light yellow", 9, 1, lightYellowCode + "10.00%"},
+		{"heavy loss is red", 5, 5, redCode + "50.00%"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := plainTestStats()
+			s.TotalSuccessfulProbes = tc.successful
+			s.TotalUnsuccessfulProbes = tc.unsuccessful
+
+			out := captureColoredStdout(t, func() {
+				NewColorPrinter(Config{}).PrintStatistics(s)
+			})
+
+			wantLines(t, out, tc.want+resetCode)
+		})
+	}
+}
+
+func TestColorProbesThatNeverHappenedKeepTheirMeaning(t *testing.T) {
+	out := captureColoredStdout(t, func() {
+		NewColorPrinter(Config{}).PrintStatistics(plainTestStats())
+	})
+
+	wantLines(t,
+		out,
+		redCode+"Never succeeded\n"+resetCode,
+		greenCode+"Never failed\n"+resetCode,
+	)
+}
+
+func TestColorErrorAndRetryColors(t *testing.T) {
+	p := NewColorPrinter(Config{})
+
+	out := captureColoredStdout(t, func() { p.PrintError("could not connect") })
+	wantLines(t, out, redCode+"could not connect\n"+resetCode)
+
+	out = captureColoredStdout(t, func() { p.PrintRetryingToResolve("example.com") })
+	wantLines(t, out, lightYellowCode+"Retrying to resolve example.com\n"+resetCode)
+}
