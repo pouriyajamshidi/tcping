@@ -22,7 +22,7 @@ func udpEchoServer(t *testing.T, reply []byte) uint16 {
 	if err != nil {
 		t.Fatalf("failed to start the UDP echo server: %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	go func() {
 		buf := make([]byte, 1500)
@@ -37,7 +37,7 @@ func udpEchoServer(t *testing.T, reply []byte) uint16 {
 				answer = buf[:n]
 			}
 
-			conn.WriteTo(answer, peer)
+			_, _ = conn.WriteTo(answer, peer)
 		}
 	}()
 
@@ -53,7 +53,7 @@ func udpBlackholePort(t *testing.T) uint16 {
 	if err != nil {
 		t.Fatalf("failed to start the UDP listener: %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	go func() {
 		buf := make([]byte, 1500)
@@ -77,7 +77,7 @@ func closedUDPPort(t *testing.T) uint16 {
 		t.Fatalf("failed to reserve a UDP port: %v", err)
 	}
 	port := conn.LocalAddr().(*net.UDPAddr).Port
-	conn.Close()
+	_ = conn.Close()
 
 	return uint16(port)
 }

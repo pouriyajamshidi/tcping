@@ -65,11 +65,13 @@ func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 
 	// A read deadline is the only thing that unblocks the read, so when the
 	// user hits Ctrl+C we set one in the past to give up right away.
-	stop := context.AfterFunc(ctx, func() { conn.SetReadDeadline(time.Now()) })
+	stop := context.AfterFunc(ctx, func() { _ = conn.SetReadDeadline(time.Now()) })
 	defer stop()
 
 	if u.timeout > 0 {
-		conn.SetDeadline(time.Now().Add(u.timeout))
+		if err := conn.SetDeadline(time.Now().Add(u.timeout)); err != nil {
+			return Result{}, err
+		}
 	}
 
 	u.probeNumber++

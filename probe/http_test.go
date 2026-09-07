@@ -59,7 +59,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 
 func TestHTTPing_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("hello"))
+		_, _ = w.Write([]byte("hello"))
 	}))
 	t.Cleanup(srv.Close)
 

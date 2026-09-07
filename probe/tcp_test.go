@@ -34,7 +34,7 @@ func testServerListen(t *testing.T) net.Listener {
 				return
 			}
 
-			c.Close()
+			_ = c.Close()
 		}
 	}()
 
@@ -52,7 +52,7 @@ func reservedButClosedPort(t *testing.T) uint16 {
 		t.Fatalf("failed to reserve a port: %v", err)
 	}
 	port := l.Addr().(*net.TCPAddr).Port
-	l.Close()
+	_ = l.Close()
 
 	return uint16(port)
 }
@@ -122,7 +122,7 @@ func TestAddress(t *testing.T) {
 
 func TestPing_SucceedsAgainstAnOpenPort(t *testing.T) {
 	srv := testServerListen(t)
-	t.Cleanup(func() { srv.Close() })
+	t.Cleanup(func() { _ = srv.Close() })
 
 	tp := Tcping{timeout: 2 * time.Second, port: 12345}
 
@@ -151,7 +151,7 @@ func TestPing_FailsAgainstAClosedPort(t *testing.T) {
 
 func TestPing_FailsWhenContextIsAlreadyCancelled(t *testing.T) {
 	srv := testServerListen(t)
-	t.Cleanup(func() { srv.Close() })
+	t.Cleanup(func() { _ = srv.Close() })
 
 	tp := Tcping{timeout: 2 * time.Second, port: 12345}
 
@@ -191,7 +191,7 @@ func TestPing_RespectsAShorterContextDeadlineThanTheDialerTimeout(t *testing.T) 
 // test reachability from a specific, known source.
 func TestPing_FailsCleanlyWhenInterfaceHasNoMatchingFamily(t *testing.T) {
 	srv := testServerListen(t)
-	t.Cleanup(func() { srv.Close() })
+	t.Cleanup(func() { _ = srv.Close() })
 
 	tp := Tcping{
 		timeout: 2 * time.Second,
@@ -212,7 +212,7 @@ func TestPing_FailsCleanlyWhenInterfaceHasNoMatchingFamily(t *testing.T) {
 // bind from it as expected.
 func TestPing_SucceedsWithMatchingInterfaceFamily(t *testing.T) {
 	srv := testServerListen(t)
-	t.Cleanup(func() { srv.Close() })
+	t.Cleanup(func() { _ = srv.Close() })
 
 	tp := Tcping{
 		timeout: 2 * time.Second,

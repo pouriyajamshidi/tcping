@@ -542,7 +542,7 @@ func TestProbe_StopsOnContextCancellation(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		p.Probe(ctx)
+		_ = p.Probe(ctx)
 		close(done)
 	}()
 

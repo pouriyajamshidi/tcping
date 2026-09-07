@@ -93,7 +93,9 @@ func TestAlloyPrintProbeFailureHasNoRTT(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -116,7 +118,9 @@ func TestAlloyUDPProbeSendsWhatItLearned(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -173,7 +177,9 @@ func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
 		var got otlpPayload
 
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 
 		payloads = append(payloads, got)
 		w.WriteHeader(http.StatusOK)
@@ -253,7 +259,9 @@ func TestAlloySourceLabelIsOnEveryDataPoint(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -294,7 +302,9 @@ func TestAlloyResolvedIPHasItsOwnMetric(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -342,7 +352,9 @@ func TestAlloyStatisticsCarryTheWholeSummary(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -392,7 +404,9 @@ func TestAlloyStatisticsOmitWhatHasNotHappened(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &got)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("Alloy received invalid JSON: %v", err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
