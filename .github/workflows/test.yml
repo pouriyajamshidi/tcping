@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    name: Build, vet and test
+    name: Build, lint and test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

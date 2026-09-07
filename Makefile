@@ -16,9 +16,10 @@ VERSION := $(shell sed -n 's/^var Current = "\(.*\)"/\1/p' $(VERSION_FILE))
 GO_LDFLAGS := -ldflags "-s -w"
 GO_MAIN_PATH := ./cmd/tcping
 
-# Linter. Pinned so "make lint" and the Lint workflow report the same thing.
-# Bumping this is what pulls in newly added revive rules, see revive.toml.
+# Linters. Pinned so "make lint" and the Lint workflow report the same thing.
+# Bumping revive is what pulls in newly added revive rules, see revive.toml.
 REVIVE_VERSION := v1.15.0
+STATICCHECK_VERSION := 2026.2.1
 
 # IO directories
 TARGET_DIR := target
@@ -85,7 +86,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release freebsd linux darwin windows check clean update format fix vet lint test container gifs
+.PHONY: all build release freebsd linux darwin windows check clean update format fix vet lint staticcheck test container gifs
 
 all: build
 
@@ -121,7 +122,7 @@ windows: $(WINDOWS_ARTIFACTS)
 
 # The one gate to run before pushing. The CI workflows run the same steps,
 # so a clean "make check" means a green pull request.
-check: format fix vet lint test
+check: format fix vet lint staticcheck test
 
 # Remove all build artifacts
 clean:
@@ -148,6 +149,11 @@ vet:
 lint:
 	@echo "[+] Running Revive"
 	@go run github.com/mgechev/revive@$(REVIVE_VERSION) -config revive.toml -set_exit_status ./...
+
+# "all" turns on the stylecheck and quickfix checks that are off by default.
+staticcheck:
+	@echo "[+] Running Staticcheck"
+	@go run honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION) -checks=all ./...
 
 test:
 	@echo "[+] Running tests"

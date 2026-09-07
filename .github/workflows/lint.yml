@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   lint:
-    name: Revive
+    name: Revive and Staticcheck
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,3 +27,6 @@ jobs:
 
       - name: Run make lint
         run: make lint
+
+      - name: Run make staticcheck
+        run: make staticcheck
