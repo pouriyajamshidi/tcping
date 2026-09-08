@@ -84,6 +84,11 @@ contents:
       mode: 0644
     packager: archlinux
 
+rpm:
+  # rpm records the machine that built the package, which would otherwise be
+  # whichever laptop or CI runner happened to run make.
+  buildhost: Pouriya Jamshidi
+
 archlinux:
   # Arch records who built the package separately from the maintainer, and
   # writes "Unknown Packager" when it is left out.
