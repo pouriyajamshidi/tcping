@@ -255,21 +255,21 @@ $(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(WINDOWS
 #
 # All four formats are built from nfpm.yaml, which is where the file list and
 # the package metadata live. The rules only differ in the format they ask for.
-$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(OUTPUT_DIR)/
 	@echo "[+] Creating Debian package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager deb --target $@ >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
-$(OUTPUT_DIR)/tcping-%.rpm: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.rpm: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(OUTPUT_DIR)/
 	@echo "[+] Creating RPM package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager rpm --target $@ >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
-$(OUTPUT_DIR)/tcping-%.apk: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.apk: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(OUTPUT_DIR)/
 	@echo "[+] Creating Alpine package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager apk --target $@ >/dev/null
@@ -279,7 +279,7 @@ $(OUTPUT_DIR)/tcping-%.apk: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfp
 # Arch reserves the hyphen for the package release number, so a version like
 # 3.0.0-rc1 has to be spelled 3.0.0_rc1 here. nfpm drops the "rc1" instead of
 # converting it, which would leave a release candidate claiming to be 3.0.0.
-$(OUTPUT_DIR)/tcping-%.pkg.tar.zst: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.pkg.tar.zst: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(OUTPUT_DIR)/
 	@echo "[+] Creating Arch Linux package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(subst -,_,$(VERSION)) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager archlinux --target $@ >/dev/null

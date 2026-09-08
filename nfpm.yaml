@@ -59,6 +59,31 @@ contents:
       mode: 0644
     packager: archlinux
 
+  # rpm, Alpine and Arch keep license texts under /usr/share/licenses. Debian
+  # puts it with the package's documentation and calls it copyright.
+  - src: LICENSE
+    dst: /usr/share/doc/tcping/copyright
+    file_info:
+      mode: 0644
+    packager: deb
+  - src: LICENSE
+    dst: /usr/share/licenses/tcping/LICENSE
+    # marks it as the license in the rpm, so "rpm -qL tcping" finds it
+    type: license
+    file_info:
+      mode: 0644
+    packager: rpm
+  - src: LICENSE
+    dst: /usr/share/licenses/tcping/LICENSE
+    file_info:
+      mode: 0644
+    packager: apk
+  - src: LICENSE
+    dst: /usr/share/licenses/tcping/LICENSE
+    file_info:
+      mode: 0644
+    packager: archlinux
+
 archlinux:
   # Arch records who built the package separately from the maintainer, and
   # writes "Unknown Packager" when it is left out.
