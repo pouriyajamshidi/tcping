@@ -58,6 +58,9 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [macOS](#macos)
     - [Linux - Quick Install](#linux---quick-install)
     - [Linux - Debian and Derivatives](#linux---debian-and-derivatives)
+    - [Linux - Fedora, RHEL and Derivatives](#linux---fedora-rhel-and-derivatives)
+    - [Linux - Arch and Derivatives](#linux---arch-and-derivatives)
+    - [Linux - Alpine](#linux---alpine)
     - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
     - [Alternative Ways](#alternative-ways)
     - [Shell Completions](#shell-completions)
@@ -138,7 +141,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Download and Installation
 
-We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---quick-install), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/).
+We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---quick-install), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/). Linux users also get native packages for [Debian](#linux---debian-and-derivatives), [Fedora](#linux---fedora-rhel-and-derivatives), [Arch](#linux---arch-and-derivatives) and [Alpine](#linux---alpine).
 
 The binaries are static, meaning they carry everything they need inside one file and do not depend on any library being present on your machine.
 
@@ -210,6 +213,59 @@ And install it:
 ```bash
 sudo apt install -y /tmp/tcping.deb
 ```
+
+### Linux - Fedora, RHEL and Derivatives
+
+On **Fedora**, **RHEL**, **CentOS** and their flavors, download the `.rpm` package:
+
+```bash
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.rpm -O /tmp/tcping.rpm
+# Or for ARM64 machines
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.rpm -O /tmp/tcping.rpm
+```
+
+And install it:
+
+```bash
+sudo dnf install -y /tmp/tcping.rpm
+```
+
+Older machines that do not have `dnf` can use `sudo yum install -y /tmp/tcping.rpm` instead.
+
+### Linux - Arch and Derivatives
+
+On **Arch**, **Manjaro**, **EndeavourOS** and their flavors, download the package:
+
+```bash
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.pkg.tar.zst -O /tmp/tcping.pkg.tar.zst
+# Or for ARM64 machines
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.pkg.tar.zst -O /tmp/tcping.pkg.tar.zst
+```
+
+And install it:
+
+```bash
+sudo pacman -U /tmp/tcping.pkg.tar.zst
+```
+
+### Linux - Alpine
+
+On **Alpine**, download the `.apk` package:
+
+```bash
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.apk -O /tmp/tcping.apk
+# Or for ARM64 machines
+wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.apk -O /tmp/tcping.apk
+```
+
+And install it:
+
+```bash
+sudo apk add --allow-untrusted /tmp/tcping.apk
+```
+
+The `--allow-untrusted` flag is needed because our packages are not signed with
+an Alpine key.
 
 If you are using different Linux distros, proceed to [this section](#bsd-and-linux---manual-way).
 
@@ -295,7 +351,7 @@ Completion scripts for `bash`, `zsh`, `fish` and `PowerShell` live in the
 [completions](completions) folder. They complete the flags, the interface names
 for `-I` and the file names for `--csv` and `--db`.
 
-The Debian package and the [Linux quick install](#linux---quick-install) put them
+The Linux packages and the [Linux quick install](#linux---quick-install) put them
 in place for you. The release archives ship them next to the binary, so they can
 also be installed from there with the commands below.
 

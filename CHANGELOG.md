@@ -12,8 +12,9 @@
 - build: give the tests their own workflow instead of running them alongside the build
 - build: pin the GitHub Actions we use to commit hashes instead of tags
 - build (breaking): ship one binary per platform instead of a `static` and a `dynamic` one. Every build now sets `CGO_ENABLED=0`, so the archives lost their `-static` suffix: `tcping-linux-amd64-static.tar.gz` is now `tcping-linux-amd64.tar.gz`. tcping has no cgo code and resolves names with Go's own resolver, so the cgo build only tied the binary to the glibc it was built against
-- build: keep the version number in one place, `internal/version/version.go`. The Makefile reads it from there for the Debian package
+- build: keep the version number in one place, `internal/version/version.go`. The Makefile reads it from there for the Linux packages
 - build: add a release workflow. Pushing a `v3.x.y` tag builds every artifact and publishes the GitHub release on its own, using that version's changelog section as the release notes and appending the checksums of every file
+- build: ship `.rpm`, `.apk` and Arch Linux packages next to the `.deb`, so Fedora, RHEL, Alpine and Arch users get the binary and the shell completions installed for them. All four are now built from one `nfpm.yaml` instead of the `.deb` being assembled by hand
 - build: add a Homebrew tap workflow, so `brew install pouriyajamshidi/tap/tcping` picks up a new release without being updated by hand
 - build: add a winget workflow, so `winget install pj.tcping` picks up a new release without running `wingetcreate` by hand
 - build: add `staticcheck`, and a single `make check` target that runs the formatting and `go fix` checks, `go vet`, revive, staticcheck and the tests, which is what the workflows run too. It only reports: `make format` and `make fix` are what rewrite your files, so a pull request that skipped them cannot go green

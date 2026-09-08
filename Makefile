@@ -8,7 +8,7 @@ MAINTAINER := https://github.com/pouriyajamshidi
 DESCRIPTION := Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
 
 # Read from the version package, which is the one place the version is
-# written down. Only the .deb package and the build messages need it here,
+# written down. Only the Linux packages and the build messages need it here,
 # the binary picks it up from the package itself.
 VERSION_FILE := internal/version/version.go
 VERSION := $(shell sed -n 's/^var Current = "\(.*\)"/\1/p' $(VERSION_FILE))
@@ -26,6 +26,9 @@ export CGO_ENABLED := 0
 # Bumping revive is what pulls in newly added revive rules, see revive.toml.
 REVIVE_VERSION := v1.15.0
 STATICCHECK_VERSION := 2026.2.1
+
+# Builds the Linux packages from nfpm.yaml. Pinned for the same reason.
+NFPM_VERSION := v2.47.0
 
 # IO directories
 TARGET_DIR := target
@@ -52,7 +55,13 @@ LINUX_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-linux-amd64.tar.gz \
 	$(OUTPUT_DIR)/tcping-linux-arm64.tar.gz \
 	$(OUTPUT_DIR)/tcping-amd64.deb \
-	$(OUTPUT_DIR)/tcping-arm64.deb
+	$(OUTPUT_DIR)/tcping-arm64.deb \
+	$(OUTPUT_DIR)/tcping-amd64.rpm \
+	$(OUTPUT_DIR)/tcping-arm64.rpm \
+	$(OUTPUT_DIR)/tcping-amd64.apk \
+	$(OUTPUT_DIR)/tcping-arm64.apk \
+	$(OUTPUT_DIR)/tcping-amd64.pkg.tar.zst \
+	$(OUTPUT_DIR)/tcping-arm64.pkg.tar.zst
 DARWIN_ARTIFACTS := \
 	$(OUTPUT_DIR)/tcping-darwin-amd64.tar.gz \
 	$(OUTPUT_DIR)/tcping-darwin-arm64.tar.gz
@@ -242,31 +251,38 @@ $(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(WINDOWS
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
-# .deb package (Linux)
-$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) $(OUTPUT_DIR)/
-	@echo "[+] Creating debian package: $@"
-	@PKG_DIR=$$(mktemp -dt make-tcping.XXXXX); \
-	\
-	chmod 755 $$PKG_DIR; \
-	\
-	install -Dm 755 -t $$PKG_DIR/usr/bin/ $<; \
-	\
-	install -Dm 644 $(COMPLETIONS_DIR)/tcping.bash $$PKG_DIR/usr/share/bash-completion/completions/tcping; \
-	install -Dm 644 $(COMPLETIONS_DIR)/_tcping $$PKG_DIR/usr/share/zsh/vendor-completions/_tcping; \
-	install -Dm 644 $(COMPLETIONS_DIR)/tcping.fish $$PKG_DIR/usr/share/fish/vendor_completions.d/tcping.fish; \
-	\
-	mkdir $$PKG_DIR/DEBIAN; pushd $$PKG_DIR/DEBIAN >/dev/null; \
-	echo "Package: tcping" >>control; \
-	echo "Version: $(VERSION)" >>control; \
-	echo "Section: custom" >>control; \
-	echo "Priority: optional" >>control; \
-	echo "Architecture: $*" >>control; \
-	echo "Essential: no" >>control; \
-	echo "Maintainer: $(MAINTAINER)" >>control; \
-	echo "Description: $(DESCRIPTION)" >>control; \
-	popd >/dev/null; \
-	\
-	dpkg-deb --build $$PKG_DIR $@ >/dev/null
+# Linux packages
+#
+# All four formats are built from nfpm.yaml, which is where the file list and
+# the package metadata live. The rules only differ in the format they ask for.
+$(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+	@echo "[+] Creating Debian package: $@"
+	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
+		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager deb --target $@ >/dev/null
+	@sha256sum $@ | awk '{print "    sha256: " $$1}'
+	@echo
+
+$(OUTPUT_DIR)/tcping-%.rpm: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+	@echo "[+] Creating RPM package: $@"
+	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
+		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager rpm --target $@ >/dev/null
+	@sha256sum $@ | awk '{print "    sha256: " $$1}'
+	@echo
+
+$(OUTPUT_DIR)/tcping-%.apk: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+	@echo "[+] Creating Alpine package: $@"
+	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
+		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager apk --target $@ >/dev/null
+	@sha256sum $@ | awk '{print "    sha256: " $$1}'
+	@echo
+
+# Arch reserves the hyphen for the package release number, so a version like
+# 3.0.0-rc1 has to be spelled 3.0.0_rc1 here. nfpm drops the "rc1" instead of
+# converting it, which would leave a release candidate claiming to be 3.0.0.
+$(OUTPUT_DIR)/tcping-%.pkg.tar.zst: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) nfpm.yaml $(OUTPUT_DIR)/
+	@echo "[+] Creating Arch Linux package: $@"
+	@TCPING_ARCH=$* TCPING_VERSION=$(subst -,_,$(VERSION)) TCPING_BIN=$< \
+		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager archlinux --target $@ >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 

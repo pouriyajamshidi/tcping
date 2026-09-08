@@ -1,0 +1,65 @@
+# Package definition for the .deb, .rpm, .apk and Arch packages.
+#
+# Built by the Makefile, which fills in the three variables below and picks
+# the output format. It is never run by hand, so if you want a package, run
+# "make linux" rather than nfpm.
+#
+# See https://nfpm.goreleaser.com/configuration/ for the field reference.
+
+name: tcping
+arch: ${TCPING_ARCH}
+version: ${TCPING_VERSION}
+maintainer: https://github.com/pouriyajamshidi
+description: Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go
+homepage: https://github.com/pouriyajamshidi/tcping
+license: MIT
+section: custom
+priority: optional
+
+contents:
+  # "expand" is what lets ${TCPING_BIN} be read from the environment. nfpm
+  # leaves file paths alone without it.
+  - src: ${TCPING_BIN}
+    dst: /usr/bin/tcping
+    expand: true
+    file_info:
+      mode: 0755
+
+  - src: completions/tcping.bash
+    dst: /usr/share/bash-completion/completions/tcping
+    file_info:
+      mode: 0644
+
+  - src: completions/tcping.fish
+    dst: /usr/share/fish/vendor_completions.d/tcping.fish
+    file_info:
+      mode: 0644
+
+  # Debian keeps completions shipped by a package in vendor-completions and
+  # leaves site-functions to the machine's admin. The other distros only have
+  # site-functions, so the same file lands in two different places.
+  - src: completions/_tcping
+    dst: /usr/share/zsh/vendor-completions/_tcping
+    file_info:
+      mode: 0644
+    packager: deb
+  - src: completions/_tcping
+    dst: /usr/share/zsh/site-functions/_tcping
+    file_info:
+      mode: 0644
+    packager: rpm
+  - src: completions/_tcping
+    dst: /usr/share/zsh/site-functions/_tcping
+    file_info:
+      mode: 0644
+    packager: apk
+  - src: completions/_tcping
+    dst: /usr/share/zsh/site-functions/_tcping
+    file_info:
+      mode: 0644
+    packager: archlinux
+
+archlinux:
+  # Arch records who built the package separately from the maintainer, and
+  # writes "Unknown Packager" when it is left out.
+  packager: https://github.com/pouriyajamshidi
