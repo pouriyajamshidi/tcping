@@ -8,8 +8,7 @@ name: Update Homebrew tap
 # release created with the GITHUB_TOKEN does not trigger other workflows.
 #
 # Needs a TAP_TOKEN secret: a fine grained personal access token scoped to
-# the homebrew-tap repository with "Contents: read and write". The default
-# GITHUB_TOKEN cannot write to another repository.
+# the homebrew-tap repository with "Contents: read and write".
 on:
   workflow_call:
     inputs:

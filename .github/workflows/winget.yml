@@ -4,11 +4,7 @@ name: Publish to winget
 # pj.tcping" picks up the new version on its own.
 #
 # Called by the release workflow once the release page exists and its
-# Windows zips are uploaded. It cannot listen for "release: published": a
-# release created with the GITHUB_TOKEN does not trigger other workflows.
-#
-# This replaces running wingetcreate by hand, which is what was done up to
-# v2.8.0.
+# Windows zips are uploaded.
 #
 # Needs a WINGET_TOKEN secret: a classic personal access token with the
 # "public_repo" scope. wingetcreate uses it to fork microsoft/winget-pkgs
