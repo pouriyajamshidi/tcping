@@ -116,8 +116,9 @@ jobs:
             gh release create "$TAG" output/* --notes-file notes.md $prerelease
           fi
 
-  # A tag carrying a suffix, like v3.0.0-rc1, is a pre-release, so brew and
-  # winget are left pointing at the last real release.
+  # A tag carrying a suffix, like v3.0.0-rc1, is a pre-release, so brew, winget,
+  # the AUR and the Linux package repository are left pointing at the last real
+  # release.
   homebrew:
     needs: release
     if: ${{ !contains(needs.release.outputs.tag, '-') }}
@@ -130,6 +131,22 @@ jobs:
     needs: release
     if: ${{ !contains(needs.release.outputs.tag, '-') }}
     uses: ./.github/workflows/winget.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+
+  aur:
+    needs: release
+    if: ${{ !contains(needs.release.outputs.tag, '-') }}
+    uses: ./.github/workflows/aur.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+
+  linux-repo:
+    needs: release
+    if: ${{ !contains(needs.release.outputs.tag, '-') }}
+    uses: ./.github/workflows/linux-repo.yml
     secrets: inherit
     with:
       tag: ${{ needs.release.outputs.tag }}

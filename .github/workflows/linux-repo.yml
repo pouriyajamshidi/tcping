@@ -1,0 +1,139 @@
+name: Publish the Linux package repository
+
+# Rebuilds the apt, dnf and apk repository at
+# https://pouriyajamshidi.github.io/packages so that "apt install tcping",
+# "dnf install tcping" and "apk add tcping" work on a machine that added it
+# once, the way brew and winget work on the other platforms.
+#
+# Called by the release workflow once the release page exists and its packages
+# are uploaded. It cannot listen for "release: published": a release created
+# with the GITHUB_TOKEN does not trigger other workflows.
+#
+# tools/build-linux-repo.sh does the work and can be run by hand the same way,
+# which is how it is tested.
+#
+# The packages repository is shared, so the tree it holds today is cloned first
+# and only tcping's packages in it are replaced. It is then force pushed back as
+# a single commit, so it never grows a history of binaries. Only the newest
+# release of each project is served from it, and older ones stay on the GitHub
+# release page.
+#
+# Needs three secrets:
+#   PACKAGES_TOKEN  a fine grained token with "Contents: read and write" on the
+#                   packages repository. The default GITHUB_TOKEN cannot write
+#                   to another repository
+#   GPG_PRIVATE_KEY the armored gpg private key that signs the apt and dnf
+#                   metadata and the rpm packages, with no passphrase
+#   APK_PRIVATE_KEY the RSA private key that signs the apk index
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to publish, for example v3.0.0"
+        required: true
+        type: string
+  # for re-running by hand
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish, for example v3.0.0"
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      PACKAGES_REPO: pouriyajamshidi/packages
+
+    steps:
+      - name: Check whether the keys are set
+        id: keys
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
+        run: |
+          if [ -z "$PACKAGES_TOKEN" ] || [ -z "$GPG_PRIVATE_KEY" ] || [ -z "$APK_PRIVATE_KEY" ]; then
+            echo "[!] The packages repository secrets are not set, skipping it"
+            echo "set=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "set=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout repository
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Work out the version
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        id: release
+        env:
+          TAG: ${{ inputs.tag }}
+        run: echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Download the packages of this release
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          mkdir packages
+          gh release download "$TAG" --dir packages \
+            --pattern "tcping-*.deb" --pattern "tcping-*.rpm" --pattern "tcping-*.apk"
+          ls -l packages
+
+      - name: Write the signing keys
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
+        run: |
+          mkdir -m 700 signing
+          printf '%s\n' "$GPG_PRIVATE_KEY" >signing/gpg.asc
+          printf '%s\n' "$APK_PRIVATE_KEY" >signing/apk.rsa
+          chmod 600 signing/gpg.asc signing/apk.rsa
+
+      - name: Clone the repository as it stands
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+        run: |
+          # An empty packages repository clones fine, which is what happens on
+          # the first release.
+          git clone --quiet --depth 1 \
+            "https://x-access-token:$PACKAGES_TOKEN@github.com/$PACKAGES_REPO.git" site
+
+      - name: Build the repository
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        env:
+          GPG_KEY: signing/gpg.asc
+          APK_KEY: signing/apk.rsa
+          REPO_URL: https://pouriyajamshidi.github.io/packages
+        run: ./tools/build-linux-repo.sh packages site
+
+      - name: Publish it
+        if: ${{ steps.keys.outputs.set == 'true' }}
+        working-directory: site
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          # Whatever the packages repository calls its default branch. An empty
+          # one still reports the name it is going to use.
+          branch=$(git branch --show-current)
+          branch=${branch:-master}
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # One commit with no history behind it, force pushed over the last
+          # one. The tree is a build output, so there is nothing in its history
+          # worth keeping and plenty of weight to lose.
+          git checkout --quiet --orphan publish
+          git add --all
+          git commit --quiet -m "tcping $VERSION"
+          git push --force --quiet origin "publish:$branch"
