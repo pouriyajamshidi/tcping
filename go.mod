@@ -1,10 +1,10 @@
 module github.com/pouriyajamshidi/tcping/v3
 
-go 1.26.7
+go 1.26.8
 
 require (
-	golang.org/x/sys v0.47.0
-	golang.org/x/term v0.45.0
+	golang.org/x/sys v0.48.0
+	golang.org/x/term v0.46.0
 	zombiezen.com/go/sqlite v1.4.2
 )
 

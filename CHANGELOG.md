@@ -3,7 +3,7 @@
 ## v3.0.0 - Unreleased (Work in progress)
 
 - build (breaking): remove sqlite3 support from Windows binaries
-- build (breaking): Go `1.26.7` is now the minimum version required to build tcping
+- build (breaking): Go `1.26.8` is now the minimum version required to build tcping
 - build: bump stale days before close from 7 to 14
 - build: ensure to fail on any linting issues
 - build: simplify container publish workflow

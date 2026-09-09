@@ -336,7 +336,7 @@ These are some additional ways in which **tcping** can be installed:
 
 - Using `go install`:
 
-  > This requires at least go version `1.26.7`
+  > This requires at least go version `1.26.8`
 
   ```bash
   go install github.com/pouriyajamshidi/tcping/v3@latest
