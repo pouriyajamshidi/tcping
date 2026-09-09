@@ -26,7 +26,7 @@ type Config struct {
 	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
 	ShouldRetryResolve         bool
 	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
-	ShowFailuresOnly           bool
+	ShowFailuresOnly           bool // Only print probe failures.
 	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
 	UDPServer                  bool // Listen on the given address and echo datagrams back instead of probing.
 	Resolver                   *dns.Resolver
