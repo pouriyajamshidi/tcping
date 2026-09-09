@@ -111,7 +111,7 @@ type flags struct {
 
 	CSVPath        string
 	csvNoTimestamp bool
-	DBPath         string
+	SQLitePath     string
 
 	alloyURL string
 
@@ -301,8 +301,8 @@ func registerFlags() *flags {
 		Defaults to the machine's hostname. No effect without the -alloy or
 		-influxdb flag.`)
 
-	flag.StringVar(&f.DBPath,
-		"db",
+	flag.StringVar(&f.SQLitePath,
+		"sqlite",
 		"",
 		"Path and file name to store the output in a sqlite3 database.")
 
@@ -328,7 +328,7 @@ func (f *flags) validate() {
 
 	// The file and metric printers always write their final record, so
 	// there are no statistics to omit.
-	if f.omitStatistics && (f.DBPath != "" || f.CSVPath != "" || f.alloyURL != "" || f.influxDBURL != "") {
+	if f.omitStatistics && (f.SQLitePath != "" || f.CSVPath != "" || f.alloyURL != "" || f.influxDBURL != "") {
 		fmt.Fprintln(os.Stderr, "--no-stats has no effect when the output goes to a file, a database or a metrics endpoint")
 		usage()
 	}
@@ -376,7 +376,7 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 		WithSourceAddress: f.showSourceAddress,
 		OmitStatistics:    f.omitStatistics,
 		Verbose:           f.verbose,
-		OutputDBPath:      f.DBPath,
+		OutputSQLitePath:  f.SQLitePath,
 		OutputCSVPath:     f.CSVPath,
 		CSVNoTimestamp:    f.csvNoTimestamp,
 		AlloyURL:          f.alloyURL,

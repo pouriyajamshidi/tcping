@@ -18,8 +18,8 @@ func NewPrinter(cfg Config) (probe.Printer, error) {
 	case cfg.OutputJSON:
 		return NewJSONPrinter(cfg), nil
 
-	case cfg.OutputDBPath != "":
-		return NewDatabasePrinter(cfg)
+	case cfg.OutputSQLitePath != "":
+		return NewSQLitePrinter(cfg)
 
 	case cfg.OutputCSVPath != "":
 		return NewCSVPrinter(cfg)

@@ -42,13 +42,15 @@
 - refactor (breaking): rename the CSV `Status` column to `Reachable` (values are now lowercase `true`/`false` instead of `Reply`/`No Reply`) and the stats file's `Metric` column to `Statistic`
 - refactor (breaking): `-v` now turns on verbose output for HTTP(S) probes; the version is printed with `--version` instead
 - refactor (breaking): rename `--show-failures-only` to `--failures-only`
+- refactor (breaking): rename `--db` to `--sqlite`, so the flag names its database like `--csv`, `--alloy` and `--influxdb` do
+- refactor (breaking): rename `printers.DatabasePrinter` to `printers.SQLitePrinter`, so the printer names its database like the CSV, Alloy and InfluxDB ones do. Its errors now start with `SQLite Error:` instead of `Database Error:`
 - refactor (breaking): remove the `--non-interactive` flag. tcping now works out on its own whether it is attached to a terminal and in the foreground, so running it under `nohup` or `disown` needs no flag
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
 - fix: fix incorrect timestamp handling in the JSON printer
 - fix: `--failures-only` was ignored and successful probes were printed anyway
 - fix: an IPv6 address carrying a zone, e.g. `fe80::1%eth0`, no longer comes out mangled in the colored output
-- fix: `--db` no longer panics on Windows. It now says that sqlite3 output is not available there
+- fix: `--sqlite` no longer panics on Windows. It now says that sqlite3 output is not available there
 - fix: fix a data race between the probe loop and the **Enter** key handler
 - fix: `-I` no longer binds name resolution to the interface's address when the DNS server is a loopback address, e.g. systemd-resolved's `127.0.0.53`. The kernel cannot route such a packet, so every lookup used to time out
 - feat: add HTTP(S) probing by giving a URL as the target, e.g. `tcping https://example.com/health`, with `-v` to show the HTTP and TLS details of every probe and `--insecure` to skip certificate verification
@@ -81,7 +83,7 @@
 - fix: the summary printed mid-run with the **Enter** key now counts the uptime or downtime the run is in the middle of, and works its duration out from the current time. It used to report `total uptime: 0 seconds` on a run that had never failed, and always printed `00:12:43` as the duration because it had no end time to subtract from yet. The statistics sent to Alloy and InfluxDB on `--stats-interval` were missing the same period
 - test: add run-level tests that replay a whole run through the real prober and printer and check the terminal transcript it produced, so a line that is correct on its own but wrong for the run it appeared in is caught
 - fix: `--no-color` now says the same as the colored output in the summary. It printed `total uptime:` unaligned with `total downtime:` below it, and left the colon off `retried to resolve hostname`
-- feat: add shell completions for `bash`, `zsh`, `fish` and `PowerShell` in the `completions` folder. They complete the flags, the interface names for `-I` and the file names for `--csv` and `--db`. The release archives ship them next to the binary and the Debian package installs them
+- feat: add shell completions for `bash`, `zsh`, `fish` and `PowerShell` in the `completions` folder. They complete the flags, the interface names for `-I` and the file names for `--csv` and `--sqlite`. The release archives ship them next to the binary and the Debian package installs them
 
 ## v2.8.0 - 2026-05-11
 

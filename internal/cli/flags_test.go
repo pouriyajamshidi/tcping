@@ -24,7 +24,7 @@ func TestFlagsRequiringValue(t *testing.T) {
 	flag.Int("I", 0, "")
 	flag.String("dns-server", "", "")
 	flag.String("csv", "", "")
-	flag.String("db", "", "")
+	flag.String("sqlite", "", "")
 
 	flag.Bool("4", false, "")
 	flag.Bool("6", false, "")
@@ -38,7 +38,7 @@ func TestFlagsRequiringValue(t *testing.T) {
 
 	fv := flagsRequiringValue()
 
-	wantValue := []string{"c", "t", "r", "i", "I", "dns-server", "csv", "db"}
+	wantValue := []string{"c", "t", "r", "i", "I", "dns-server", "csv", "sqlite"}
 	for _, name := range wantValue {
 		if !fv[name] {
 			t.Errorf("expected %q to require a value", name)
@@ -307,7 +307,7 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 		},
 		{
 			name:  "omitting statistics that go to a database",
-			flags: flags{omitStatistics: true, DBPath: "out.db", intervalBetweenProbes: 1},
+			flags: flags{omitStatistics: true, SQLitePath: "out.db", intervalBetweenProbes: 1},
 			want:  "--no-stats has no effect",
 		},
 		{

@@ -56,10 +56,10 @@ func TestSanitizeTableName(t *testing.T) {
 	}
 }
 
-func TestNewDatabasePrinterConfiguresSQLite(t *testing.T) {
+func TestNewSQLitePrinterConfiguresSQLite(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "results.db")
 
-	printer, err := NewDatabasePrinter(Config{Target: "example.com", Port: 443, OutputDBPath: dbPath})
+	printer, err := NewSQLitePrinter(Config{Target: "example.com", Port: 443, OutputSQLitePath: dbPath})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,8 +92,8 @@ func TestNewDatabasePrinterConfiguresSQLite(t *testing.T) {
 	}
 }
 
-func TestNewDatabasePrinterSchema(t *testing.T) {
-	printer, err := NewDatabasePrinter(Config{Target: "example.com", Port: 443, OutputDBPath: ":memory:"})
+func TestNewSQLitePrinterSchema(t *testing.T) {
+	printer, err := NewSQLitePrinter(Config{Target: "example.com", Port: 443, OutputSQLitePath: ":memory:"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestNewDatabasePrinterSchema(t *testing.T) {
 }
 
 func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
-	printer, err := NewDatabasePrinter(Config{Target: "example.com", Port: 443, OutputDBPath: ":memory:"})
+	printer, err := NewSQLitePrinter(Config{Target: "example.com", Port: 443, OutputSQLitePath: ":memory:"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,12 +195,12 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 	}
 }
 
-// dbTestPrinter is a printer writing to an in-memory database, along with a
+// sqliteTestPrinter is a printer writing to an in-memory database, along with a
 // query helper for reading back the single row a test just wrote.
-func dbTestPrinter(t *testing.T, cfg Config) *DatabasePrinter {
+func sqliteTestPrinter(t *testing.T, cfg Config) *SQLitePrinter {
 	t.Helper()
 
-	cfg.OutputDBPath = ":memory:"
+	cfg.OutputSQLitePath = ":memory:"
 	if cfg.Target == "" {
 		cfg.Target = "example.com"
 	}
@@ -208,9 +208,9 @@ func dbTestPrinter(t *testing.T, cfg Config) *DatabasePrinter {
 		cfg.Port = 443
 	}
 
-	printer, err := NewDatabasePrinter(cfg)
+	printer, err := NewSQLitePrinter(cfg)
 	if err != nil {
-		t.Fatalf("NewDatabasePrinter failed: %v", err)
+		t.Fatalf("NewSQLitePrinter failed: %v", err)
 	}
 	t.Cleanup(printer.done)
 
@@ -220,7 +220,7 @@ func dbTestPrinter(t *testing.T, cfg Config) *DatabasePrinter {
 // queryRow runs a one-row query and hands each column back as text, with
 // "null" for the columns SQLite stored as NULL. Reading everything as text
 // keeps the assertions in the tests readable.
-func queryRow(t *testing.T, printer *DatabasePrinter, query string) []string {
+func queryRow(t *testing.T, printer *SQLitePrinter, query string) []string {
 	t.Helper()
 
 	var row []string
@@ -264,8 +264,8 @@ func dbTestStats() *stats.Statistics {
 	}
 }
 
-func TestDatabaseProbeSuccessRow(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLiteProbeSuccessRow(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	printer.PrintProbeSuccess(dbTestStats())
 
@@ -282,8 +282,8 @@ func TestDatabaseProbeSuccessRow(t *testing.T) {
 	}
 }
 
-func TestDatabaseProbeFailureRow(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLiteProbeFailureRow(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	probeStats := dbTestStats()
 	probeStats.OngoingSuccessfulProbes = 0
@@ -305,8 +305,8 @@ func TestDatabaseProbeFailureRow(t *testing.T) {
 	}
 }
 
-func TestDatabaseTCPProbeLeavesHTTPAndUDPColumnsNull(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLiteTCPProbeLeavesHTTPAndUDPColumnsNull(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	printer.PrintProbeSuccess(dbTestStats())
 
@@ -323,8 +323,8 @@ func TestDatabaseTCPProbeLeavesHTTPAndUDPColumnsNull(t *testing.T) {
 	}
 }
 
-func TestDatabaseHTTPSProbeColumns(t *testing.T) {
-	printer := dbTestPrinter(t, Config{Target: "example.com"})
+func TestSQLiteHTTPSProbeColumns(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{Target: "example.com"})
 
 	probeStats := dbTestStats()
 	probeStats.Protocol = config.HTTPS
@@ -355,8 +355,8 @@ func TestDatabaseHTTPSProbeColumns(t *testing.T) {
 	}
 }
 
-func TestDatabasePlainHTTPProbeHasNoTLSColumns(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLitePlainHTTPProbeHasNoTLSColumns(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	probeStats := dbTestStats()
 	probeStats.Protocol = config.HTTP
@@ -383,8 +383,8 @@ func TestDatabasePlainHTTPProbeHasNoTLSColumns(t *testing.T) {
 	}
 }
 
-func TestDatabaseHTTPProbeWithoutAResponseIsAllNull(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLiteHTTPProbeWithoutAResponseIsAllNull(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	probeStats := dbTestStats()
 	probeStats.Protocol = config.HTTPS
@@ -404,7 +404,7 @@ func TestDatabaseHTTPProbeWithoutAResponseIsAllNull(t *testing.T) {
 	}
 }
 
-func TestDatabaseUDPProbeColumns(t *testing.T) {
+func TestSQLiteUDPProbeColumns(t *testing.T) {
 	tests := []struct {
 		name       string
 		udp        stats.UDPInfo
@@ -437,7 +437,7 @@ func TestDatabaseUDPProbeColumns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			printer := dbTestPrinter(t, Config{})
+			printer := sqliteTestPrinter(t, Config{})
 
 			probeStats := dbTestStats()
 			probeStats.Protocol = config.UDP
@@ -463,9 +463,9 @@ func TestDatabaseUDPProbeColumns(t *testing.T) {
 	}
 }
 
-func TestDatabaseTimestampAndSourceAddressFollowTheConfig(t *testing.T) {
+func TestSQLiteTimestampAndSourceAddressFollowTheConfig(t *testing.T) {
 	t.Run("left empty unless asked for", func(t *testing.T) {
-		printer := dbTestPrinter(t, Config{})
+		printer := sqliteTestPrinter(t, Config{})
 
 		probeStats := dbTestStats()
 		probeStats.LocalAddr = &net.TCPAddr{IP: net.ParseIP("10.0.0.1"), Port: 12345}
@@ -481,7 +481,7 @@ func TestDatabaseTimestampAndSourceAddressFollowTheConfig(t *testing.T) {
 	})
 
 	t.Run("written when asked for", func(t *testing.T) {
-		printer := dbTestPrinter(t, Config{WithTimestamp: true, WithSourceAddress: true})
+		printer := sqliteTestPrinter(t, Config{WithTimestamp: true, WithSourceAddress: true})
 
 		probeStats := dbTestStats()
 		probeStats.LocalAddr = &net.TCPAddr{IP: net.ParseIP("10.0.0.1"), Port: 12345}
@@ -500,8 +500,8 @@ func TestDatabaseTimestampAndSourceAddressFollowTheConfig(t *testing.T) {
 	})
 }
 
-func TestDatabasePrintStatisticsRow(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLitePrintStatisticsRow(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	start := time.Now().Add(-time.Hour)
 
@@ -538,8 +538,8 @@ func TestDatabasePrintStatisticsRow(t *testing.T) {
 	}
 }
 
-func TestDatabaseStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLiteStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	// A run where every probe failed: there is no latency to summarize and
 	// no uptime streak to point at.
@@ -571,8 +571,8 @@ func TestDatabaseStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 	}
 }
 
-func TestDatabaseStatisticsRetriesAreLeftOutForAnIPTarget(t *testing.T) {
-	printer := dbTestPrinter(t, Config{})
+func TestSQLiteStatisticsRetriesAreLeftOutForAnIPTarget(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
 
 	// A literal IP is never resolved, so a retry count would be meaningless
 	// even if the field happened to hold one.
@@ -590,8 +590,8 @@ func TestDatabaseStatisticsRetriesAreLeftOutForAnIPTarget(t *testing.T) {
 	}
 }
 
-func TestDatabaseShutdownWritesStatisticsAndClosesTheDatabase(t *testing.T) {
-	printer, err := NewDatabasePrinter(Config{Target: "example.com", Port: 443, OutputDBPath: ":memory:"})
+func TestSQLiteShutdownWritesStatisticsAndClosesTheDatabase(t *testing.T) {
+	printer, err := NewSQLitePrinter(Config{Target: "example.com", Port: 443, OutputSQLitePath: ":memory:"})
 	if err != nil {
 		t.Fatal(err)
 	}

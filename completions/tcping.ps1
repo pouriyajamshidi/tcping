@@ -3,7 +3,7 @@
 # Install by dot-sourcing it from your profile ($PROFILE):
 #   . C:\path\to\tcping.ps1
 #
-# The sqlite3 output flag (--db) is missing on purpose: it is not available
+# The sqlite3 output flag (--sqlite) is missing on purpose: it is not available
 # in the Windows builds.
 
 $script:TcpingFlags = [ordered]@{

@@ -138,7 +138,7 @@ To install it by hand instead, extract the downloaded zip file and copy `tcping.
 > TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official statement from the Go team [here](https://go.dev/doc/faq#virus).
 
 > [!WARNING]
-> The `--db` (sqlite3) output format is not available on Windows binaries anymore. All the other flags work as expected.
+> The `--sqlite` (sqlite3) output format is not available on Windows binaries anymore. All the other flags work as expected.
 
 ### macOS
 
@@ -311,7 +311,7 @@ which you get with `nix develop`.
 
 Completion scripts for `bash`, `zsh`, `fish` and `PowerShell` live in the
 [completions](completions) folder. They complete the flags, the interface names
-for `-I` and the file names for `--csv` and `--db`.
+for `-I` and the file names for `--csv` and `--sqlite`.
 
 The Linux packages and the [one-line install](#linux---one-line-install) put them
 in place for you. The release archives ship them next to the binary, so they can
@@ -375,7 +375,7 @@ And the output formats it can produce, instead of the default colored one:
 tcping www.example.com 443 -j              # JSON, add --pretty to prettify it
 tcping www.example.com 443 --no-color      # plain, no ANSI colors
 tcping www.example.com 443 --csv out.csv   # CSV file
-tcping www.example.com 443 --db out.db     # sqlite3 database
+tcping www.example.com 443 --sqlite out.db # sqlite3 database
 ```
 
 The Docker image takes the same targets and flags:
@@ -546,7 +546,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `--pretty` | | Prettify the `JSON` output. No effect without `-j` |
 | `--csv <file>` | | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix |
 | `--csv-fixed-name` | | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file |
-| `--db <file>` | | Store the output in a sqlite3 database, e.g. `--db /tmp/tcping.db`. Not available on Windows |
+| `--sqlite <file>` | | Store the output in a sqlite3 database, e.g. `--sqlite /tmp/tcping.db`. Not available on Windows |
 
 ### Metrics
 

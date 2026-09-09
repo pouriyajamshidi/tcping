@@ -29,7 +29,7 @@ _arguments -s \
 	'--pretty[Prettify the JSON output. No effect without -j]' \
 	'--csv=[Store the output in a CSV file]:file:_files' \
 	'--csv-fixed-name[Use the --csv filename as it is, without a date/time suffix]' \
-	'--db=[Store the output in a sqlite3 database]:file:_files' \
+	'--sqlite=[Store the output in a sqlite3 database]:file:_files' \
 	'--alloy=[Send the results to a Grafana Alloy OTLP HTTP endpoint]:URL:_urls' \
 	'--influxdb=[Write the results to an InfluxDB v2 or v3 server]:URL:_urls' \
 	'--influxdb-org=[InfluxDB organization to write to]:organization:' \

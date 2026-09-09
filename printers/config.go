@@ -19,7 +19,7 @@ type Config struct {
 	WithSourceAddress bool
 	OmitStatistics    bool // Do not show the statistics. Only available for terminal printers
 	Verbose           bool // Show everything an HTTP(S) probe learned, not just the status.
-	OutputDBPath      string
+	OutputSQLitePath  string
 	OutputCSVPath     string
 	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
 

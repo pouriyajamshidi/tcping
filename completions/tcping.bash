@@ -18,7 +18,7 @@ _tcping() {
 	fi
 
 	case $opt in
-	csv | db)
+	csv | sqlite)
 		mapfile -t COMPREPLY < <(compgen -f -- "$cur")
 		compopt -o filenames
 		return
@@ -41,7 +41,7 @@ _tcping() {
 		-c -i -t -4 -6 -I
 		-r --resolve-every-probe --dns-server --dns-timeout
 		-D --no-color --show-source-address --failures-only --no-stats -v
-		-j --pretty --csv --csv-fixed-name --db
+		-j --pretty --csv --csv-fixed-name --sqlite
 		--alloy --influxdb --influxdb-org --influxdb-bucket --influxdb-token
 		--stats-interval --source-label
 		--insecure --udp-server"

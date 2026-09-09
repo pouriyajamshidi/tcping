@@ -130,8 +130,8 @@ func TestCompletionScriptsMatchFlags(t *testing.T) {
 			path:    "../../completions/tcping.ps1",
 			flagsIn: powershellFlags,
 			// The sqlite3 printer is a stub on Windows, so the Windows
-			// script does not offer --db.
-			omitted: map[string]bool{"db": true},
+			// script does not offer --sqlite.
+			omitted: map[string]bool{"sqlite": true},
 		},
 	}
 

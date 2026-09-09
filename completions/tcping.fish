@@ -34,7 +34,7 @@ complete -c tcping -s j -d 'Output in JSON format'
 complete -c tcping -l pretty -d 'Prettify the JSON output. No effect without -j'
 complete -c tcping -l csv -r -F -d 'Store the output in a CSV file'
 complete -c tcping -l csv-fixed-name -d 'Use the --csv filename as it is, without a date/time suffix'
-complete -c tcping -l db -r -F -d 'Store the output in a sqlite3 database'
+complete -c tcping -l sqlite -r -F -d 'Store the output in a sqlite3 database'
 
 complete -c tcping -l alloy -x -d 'Send the results to a Grafana Alloy OTLP HTTP endpoint'
 complete -c tcping -l influxdb -x -d 'Write the results to an InfluxDB v2 or v3 server'

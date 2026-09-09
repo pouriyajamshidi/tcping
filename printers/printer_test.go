@@ -28,11 +28,11 @@ func TestNewPrinter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Database Printer Initialization",
+			name: "SQLite Printer Initialization",
 			cfg: Config{
-				OutputDBPath: ":memory:",
-				Target:       "example.com",
-				Port:         443,
+				OutputSQLitePath: ":memory:",
+				Target:           "example.com",
+				Port:             443,
 			},
 			wantErr: false,
 		},

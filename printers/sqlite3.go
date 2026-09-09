@@ -134,8 +134,8 @@ const (
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
-// DatabasePrinter stores one probe stream and its final statistics in SQLite.
-type DatabasePrinter struct {
+// SQLitePrinter stores one probe stream and its final statistics in SQLite.
+type SQLitePrinter struct {
 	conn           *sqlite.Conn
 	probeTableName string
 	statsTableName string
@@ -143,12 +143,12 @@ type DatabasePrinter struct {
 	cfg            Config
 }
 
-// NewDatabasePrinter opens the database and creates the probe and statistics tables.
-func NewDatabasePrinter(cfg Config) (*DatabasePrinter, error) {
+// NewSQLitePrinter opens the database and creates the probe and statistics tables.
+func NewSQLitePrinter(cfg Config) (*SQLitePrinter, error) {
 	portStr := strconv.FormatUint(uint64(cfg.Port), 10)
 	probeTableName := sanitizeTableName(cfg.Target, portStr)
 	statsTableName := probeTableName + "_stats"
-	filePath := addDBExtension(cfg.OutputDBPath)
+	filePath := addDBExtension(cfg.OutputSQLitePath)
 
 	flags := sqlite.OpenCreate | sqlite.OpenReadWrite
 	if filePath != ":memory:" {
@@ -179,7 +179,7 @@ func NewDatabasePrinter(cfg Config) (*DatabasePrinter, error) {
 		return nil, fmt.Errorf("error creating the statistics table: %w", err)
 	}
 
-	return &DatabasePrinter{
+	return &SQLitePrinter{
 		conn:           conn,
 		probeTableName: probeTableName,
 		statsTableName: statsTableName,
@@ -284,7 +284,7 @@ func millisecondsFloat(d time.Duration) float64 {
 	return math.Round(float64(d.Nanoseconds())/float64(time.Millisecond)*1000) / 1000
 }
 
-func (p *DatabasePrinter) insertProbe(
+func (p *SQLitePrinter) insertProbe(
 	reachable bool,
 	s *stats.Statistics,
 	latency string,
@@ -355,7 +355,7 @@ func endedPeriodArgs(s *stats.Statistics) []any {
 }
 
 // PrintStart prints a message indicating that TCPing has started.
-func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
+func (p *SQLitePrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
 		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.filePath)
 		return
@@ -365,22 +365,22 @@ func (p *DatabasePrinter) PrintStart(s *stats.Statistics) {
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
-func (p *DatabasePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+func (p *SQLitePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 	fmt.Printf("Resolved in %s ms\n", s.NameResolutionDurationStr())
 }
 
 // PrintProbeSuccess writes successful probe details to the database.
-func (p *DatabasePrinter) PrintProbeSuccess(s *stats.Statistics) {
+func (p *SQLitePrinter) PrintProbeSuccess(s *stats.Statistics) {
 	p.insertProbe(true, s, s.RTTStr(), s.OngoingSuccessfulProbes, 0)
 }
 
 // PrintProbeFailure writes failed probe details to the database.
-func (p *DatabasePrinter) PrintProbeFailure(s *stats.Statistics) {
+func (p *SQLitePrinter) PrintProbeFailure(s *stats.Statistics) {
 	p.insertProbe(false, s, "", 0, s.OngoingUnsuccessfulProbes)
 }
 
 // PrintStatistics stores the same summary data that PlainPrinter presents.
-func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
+func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 	lastSuccessful := ""
 	if !s.LastSuccessfulProbe.IsZero() {
 		lastSuccessful = s.LastSuccessfulProbeFormatted()
@@ -477,26 +477,26 @@ func (p *DatabasePrinter) PrintStatistics(s *stats.Statistics) {
 }
 
 // PrintRetryingToResolve prints a message indicating that the program is retrying to resolve a hostname.
-func (p *DatabasePrinter) PrintRetryingToResolve(hostname string) {
+func (p *SQLitePrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
 // PrintError goes to the terminal rather than to database, since an error
 // here usually means database is the thing that is not working.
-func (p *DatabasePrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "Database Error: "+format+"\n", args...)
+func (p *SQLitePrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "SQLite Error: "+format+"\n", args...)
 }
 
 // Shutdown prints statistics and calls done() to close the database.
 // Statistics are already finalized by finalizeStatistics by the time this
 // runs. It does not exit the program - that decision belongs to the
 // caller, not the printer.
-func (p *DatabasePrinter) Shutdown(s *stats.Statistics) {
+func (p *SQLitePrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
 	p.done()
 }
 
-func (p *DatabasePrinter) done() {
+func (p *SQLitePrinter) done() {
 	if p.conn != nil {
 		_ = p.conn.Close()
 	}

@@ -294,7 +294,7 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 | `--csv`                | 以 CSV 格式输出到指定的文件路径                                                     |
 | `-j`                   | 以 `JSON` 格式输出                                                                |
 | `--pretty`             | 美化 `JSON` 输出                                                                 |
-| `--db`                 | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--db /tmp/tcping.db`         |
+| `--sqlite`             | 用于存储 tcping 输出到 sqlite 数据库的路径和文件名。例如 `--sqlite /tmp/tcping.db`         |
 | `-v`                   | 打印版本                                                                         |
 | `-u`                   | 检查更新                                                                         |
 | `--failures-only` | 仅显示探测失败，并省略打印探测成功消息                                                |
