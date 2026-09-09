@@ -201,7 +201,18 @@ wget "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-
 
 ### Linux - Debian and Derivatives
 
-On **Debian** and its flavors such as **Ubuntu**, download the `.deb` package:
+On **Debian** and its flavors such as **Ubuntu**, add the packages repository
+once and `apt` takes care of installs and upgrades from then on:
+
+```bash
+sudo install -d /etc/apt/keyrings &&
+  sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/packages.gpg -o /etc/apt/keyrings/packages.gpg &&
+  echo "deb [signed-by=/etc/apt/keyrings/packages.gpg] https://pouriyajamshidi.github.io/packages/deb ./" | sudo tee /etc/apt/sources.list.d/packages.list &&
+  sudo apt update &&
+  sudo apt install tcping
+```
+
+Or, without adding anything, download the `.deb` package:
 
 ```bash
 wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.deb -O /tmp/tcping.deb
@@ -217,7 +228,15 @@ sudo apt install -y /tmp/tcping.deb
 
 ### Linux - Fedora, RHEL and Derivatives
 
-On **Fedora**, **RHEL**, **CentOS** and their flavors, download the `.rpm` package:
+On **Fedora**, **RHEL**, **CentOS** and their flavors, add the packages repository
+once and `dnf` takes care of installs and upgrades from then on:
+
+```bash
+sudo curl -fsSL https://pouriyajamshidi.github.io/packages/rpm/packages.repo -o /etc/yum.repos.d/packages.repo &&
+  sudo dnf install tcping
+```
+
+Or, without adding anything, download the `.rpm` package:
 
 ```bash
 wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.rpm -O /tmp/tcping.rpm
@@ -235,7 +254,14 @@ Older machines that do not have `dnf` can use `sudo yum install -y /tmp/tcping.r
 
 ### Linux - Arch and Derivatives
 
-On **Arch**, **Manjaro**, **EndeavourOS** and their flavors, download the package:
+On **Arch**, **Manjaro**, **EndeavourOS** and their flavors, install it from the
+[AUR](https://aur.archlinux.org/packages/tcping-bin) using your favorite helper:
+
+```bash
+yay -S tcping-bin
+```
+
+Or download the package:
 
 ```bash
 wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.pkg.tar.zst -O /tmp/tcping.pkg.tar.zst
@@ -251,7 +277,17 @@ sudo pacman -U /tmp/tcping.pkg.tar.zst
 
 ### Linux - Alpine
 
-On **Alpine**, download the `.apk` package:
+On **Alpine**, add the packages repository once and `apk` takes care of installs
+and upgrades from then on:
+
+```bash
+sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/packages.rsa.pub -o /etc/apk/keys/packages.rsa.pub &&
+  echo "https://pouriyajamshidi.github.io/packages/apk" | sudo tee -a /etc/apk/repositories &&
+  sudo apk update &&
+  sudo apk add tcping
+```
+
+Or, without adding anything, download the `.apk` package:
 
 ```bash
 wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.apk -O /tmp/tcping.apk
