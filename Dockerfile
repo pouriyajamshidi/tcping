@@ -1,20 +1,24 @@
 # Build stage
 ##################################################
-FROM docker.io/golang:1.26.7-alpine3.23 AS build
+# Pinned to the build machine's own platform so the compiler always runs
+# natively. Go cross-compiles to TARGETARCH below, so there is no emulation.
+FROM --platform=$BUILDPLATFORM docker.io/golang:1.26.7-alpine3.23 AS build
 
 WORKDIR /build
 
 # Install dependencies
-# git is needed for the Makefile to derive VERSION from git tags/branch
-RUN apk --no-cache add bash make git
+RUN apk --no-cache add bash make
 
 # Cache libraries
 COPY go.mod go.sum ./
 RUN go mod download
 
 # Build
+# Set by buildx, one value per platform in the build. Empty for a plain
+# "docker build", where an unset GOARCH means the host architecture anyway.
+ARG TARGETARCH
 COPY ./ ./
-RUN make build
+RUN GOARCH=$TARGETARCH make build
 
 # Final stage
 ##################################################
