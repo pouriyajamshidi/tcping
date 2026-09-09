@@ -30,6 +30,27 @@ STATICCHECK_VERSION := 2026.2.1
 # Builds the Linux packages from nfpm.yaml. Pinned for the same reason.
 NFPM_VERSION := v2.47.0
 
+# The Nix targets run "nix" directly. On a machine that does not have Nix
+# installed, "make nix CONTAINER=1" and "make nix-update CONTAINER=1" run the
+# very same commands inside the image below. The named volume keeps the Nix
+# store between runs, so only the first build pays for the downloads.
+NIX_IMAGE := nixos/nix:2.35.2
+NIX_STORE_VOLUME := tcping-nix-store
+
+ifdef CONTAINER
+# The sh -c is only there to write a git config first: Nix reads the repository
+# through git, which refuses a tree owned by another user. Everything after
+# $(NIX) lands in "$$@" and is passed on to nix.
+NIX := docker run --rm \
+	-v "$(CURDIR)":/src -w /src \
+	-v $(NIX_STORE_VOLUME):/nix \
+	$(NIX_IMAGE) \
+	sh -c 'printf "[safe]\n\tdirectory = *\n" > /root/.gitconfig; \
+		exec nix --extra-experimental-features "nix-command flakes" "$$@"' nix
+else
+NIX := nix
+endif
+
 # IO directories
 TARGET_DIR := target
 OUTPUT_DIR := output
@@ -95,7 +116,7 @@ endif
 # Phony targets
 # ==================================================
 
-.PHONY: all build release freebsd linux darwin windows check check-format check-fix clean update format fix vet lint staticcheck test container gifs
+.PHONY: all build release freebsd linux darwin windows check check-format check-fix clean update format fix vet lint staticcheck test container nix nix-update gifs
 
 all: build
 
@@ -190,6 +211,25 @@ test:
 container:
 	@echo "[+] Building container image"
 	@docker build -t tcping:latest .
+
+# Build the flake, which is what a Nix user gets from "nix build" or
+# "nix run github:pouriyajamshidi/tcping". Nix only sees files that git knows
+# about, so a brand new file has to be "git add"ed before it will build.
+nix:
+	@echo "[+] Building the flake"
+	@$(NIX) build --no-link --print-out-paths .#default
+
+# The flake pins a hash of the Go module downloads, which goes stale whenever
+# go.sum changes. A stale hash makes the build fail and print the correct one,
+# which is where this reads it from, so the hash never has to be typed by hand.
+nix-update:
+	@echo "[+] Checking the flake vendorHash"
+	@log=$$($(NIX) build --no-link .#default 2>&1); \
+	if [ $$? -eq 0 ]; then echo "[+] Already up to date"; exit 0; fi; \
+	hash=$$(echo "$$log" | awk '/got:/ {print $$2}'); \
+	if [ -z "$$hash" ]; then echo "$$log"; exit 1; fi; \
+	sed -i 's|vendorHash = ".*";|vendorHash = "'"$$hash"'";|' flake.nix; \
+	echo "[+] vendorHash updated to $$hash"
 
 gifs: $(GIF_ARTIFACTS)
 

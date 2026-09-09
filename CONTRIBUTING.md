@@ -8,6 +8,7 @@ Pull requests are welcome to solve bugs, add new features and also to help me wi
 4. Commit your work.
 5. Add tests if possible.
 6. Run `make check`. It checks formatting, vets, lints and tests, which is what the pull request runs too. If it flags formatting or outdated constructs, `make format` and `make fix` apply them.
-7. Create a pull request
+7. If you changed the dependencies, run `make nix-update` so the flake keeps building, and commit the change. Without Nix installed, `make nix-update CONTAINER=1` does the same thing in a container.
+8. Create a pull request
 
 Please make sure to only work on a specific issue on your pull request and not address two or more tickets in one PR. This will help me to review your pull request easier and also contributes to a cleaner git history.

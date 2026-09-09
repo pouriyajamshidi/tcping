@@ -62,6 +62,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
     - [Linux - Arch and Derivatives](#linux---arch-and-derivatives)
     - [Linux - Alpine](#linux---alpine)
     - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
+    - [Nix](#nix)
     - [Alternative Ways](#alternative-ways)
     - [Shell Completions](#shell-completions)
   - [Usage](#usage)
@@ -301,6 +302,25 @@ The archive also carries a `completions` folder. See [Shell Completions](#shell-
 
 > [!TIP]
 > In case you have `brew` installed, you can install tcping using `brew install pouriyajamshidi/tap/tcping`
+
+### Nix
+
+**tcping** ships a flake, so on any machine that has [Nix](https://nixos.org/download/)
+you can run it without installing anything:
+
+```bash
+nix run github:pouriyajamshidi/tcping -- example.com 80
+```
+
+Or install it for good:
+
+```bash
+nix profile install github:pouriyajamshidi/tcping
+```
+
+Both give you the binary and the [shell completions](#shell-completions). The
+flake also has a `devShells.default` with everything needed to work on tcping,
+which you get with `nix develop`.
 
 ### Alternative Ways
 

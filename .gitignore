@@ -12,6 +12,7 @@ patches/
 .tool-versions
 /target/
 /output/
+/result
 tmp/
 
 # secrets / credentials
