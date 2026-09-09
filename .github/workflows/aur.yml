@@ -1,0 +1,177 @@
+name: Publish to the AUR
+
+# Pushes a PKGBUILD to aur.archlinux.org/tcping-bin.git so "yay -S tcping-bin"
+# picks up the new version on its own.
+#
+# Called by the release workflow once the release page exists and its Linux
+# archives are uploaded. It cannot listen for "release: published": a release
+# created with the GITHUB_TOKEN does not trigger other workflows.
+#
+# The package is called tcping-bin because it installs the released binary
+# instead of building from source, which is what the AUR expects of a package
+# whose name ends in "-bin". The plain "tcping" name on the AUR is taken by an
+# unrelated project.
+#
+# Needs an AUR_SSH_KEY secret: the private half of an SSH key that is added to
+# your account on aur.archlinux.org. That key is the only thing the AUR uses to
+# decide who may push.
+#
+# TODO: the secret is not set yet, because AUR registrations were closed when
+# this was written. Until it is set, every step below is skipped and the job
+# passes without publishing anything. Register at
+# https://aur.archlinux.org/register once it reopens, add an SSH key to that
+# account and store its private half as AUR_SSH_KEY, and this starts working on
+# the next release with no change to the workflow.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to publish to the AUR, for example v3.0.0"
+        required: true
+        type: string
+  # for re-running by hand
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish to the AUR, for example v3.0.0"
+        required: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    # makepkg turns the PKGBUILD into the .SRCINFO that the AUR reads, and it
+    # only exists on Arch. No action that needs Node is used below, so a plain
+    # Arch image is enough.
+    container: archlinux:base-devel
+
+    steps:
+      - name: Check whether the AUR key is set
+        id: key
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          if [ -z "$AUR_SSH_KEY" ]; then
+            echo "[!] AUR_SSH_KEY is not set, skipping the AUR"
+            echo "set=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "set=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the packages the image does not ship
+        if: ${{ steps.key.outputs.set == 'true' }}
+        run: pacman -Sy --noconfirm --needed git openssh
+
+      - name: Work out the tag and version
+        if: ${{ steps.key.outputs.set == 'true' }}
+        id: release
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Hash the release files
+        if: ${{ steps.key.outputs.set == 'true' }}
+        id: sha
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/$TAG"
+          for target in linux-amd64 linux-arm64; do
+            file="tcping-$target.tar.gz"
+            curl -fsSL -o "$file" "$base/$file"
+            echo "${target//-/_}=$(sha256sum "$file" | cut -d' ' -f1)" >>"$GITHUB_OUTPUT"
+          done
+
+          # Arch does not keep a copy of the MIT license for packages to point
+          # at, so the package has to ship its own. It is not in the archives,
+          # so it comes from the tag.
+          curl -fsSL -o LICENSE "https://raw.githubusercontent.com/${{ github.repository }}/$TAG/LICENSE"
+          echo "license=$(sha256sum LICENSE | cut -d' ' -f1)" >>"$GITHUB_OUTPUT"
+
+      - name: Set up the AUR SSH key
+        if: ${{ steps.key.outputs.set == 'true' }}
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" >~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Pinned instead of ssh-keyscanned, so a machine in the middle cannot
+          # hand us its own key. This matches the fingerprint
+          # SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4 that
+          # aur.archlinux.org publishes over HTTPS.
+          echo "aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN" >~/.ssh/known_hosts
+
+      - name: Clone the AUR package
+        if: ${{ steps.key.outputs.set == 'true' }}
+        # An AUR package that does not exist yet clones as an empty repository
+        # and is created by the first push, so this works for the first release
+        # as well as later ones.
+        run: git clone ssh://aur@aur.archlinux.org/tcping-bin.git aur
+
+      - name: Write the PKGBUILD
+        if: ${{ steps.key.outputs.set == 'true' }}
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/$TAG"
+          cat >aur/PKGBUILD <<EOF
+          # Maintainer: Pouriya Jamshidi <https://github.com/pouriyajamshidi>
+          # Generated by the tcping release workflow. Do not edit by hand.
+          pkgname=tcping-bin
+          pkgver=$VERSION
+          pkgrel=1
+          pkgdesc="Ping TCP ports using tcping. Inspired by Linux's ping utility. Written in Go"
+          arch=('x86_64' 'aarch64')
+          url="https://github.com/pouriyajamshidi/tcping"
+          license=('MIT')
+          provides=('tcping')
+          conflicts=('tcping')
+          # The binary is the one from the release page, so leave it as it
+          # is. Stripping it would ship something the release checksums do not
+          # cover, and without stripping there is nothing to put in a debug
+          # package, so that is off too.
+          options=('!strip' '!debug')
+          source=("LICENSE-\$pkgver::https://raw.githubusercontent.com/${{ github.repository }}/$TAG/LICENSE")
+          sha256sums=('${{ steps.sha.outputs.license }}')
+          source_x86_64=("tcping-\$pkgver-x86_64.tar.gz::$base/tcping-linux-amd64.tar.gz")
+          sha256sums_x86_64=('${{ steps.sha.outputs.linux_amd64 }}')
+          source_aarch64=("tcping-\$pkgver-aarch64.tar.gz::$base/tcping-linux-arm64.tar.gz")
+          sha256sums_aarch64=('${{ steps.sha.outputs.linux_arm64 }}')
+
+          package() {
+            install -Dm755 "\$srcdir/tcping" "\$pkgdir/usr/bin/tcping"
+            install -Dm644 "\$srcdir/completions/tcping.bash" "\$pkgdir/usr/share/bash-completion/completions/tcping"
+            install -Dm644 "\$srcdir/completions/_tcping" "\$pkgdir/usr/share/zsh/site-functions/_tcping"
+            install -Dm644 "\$srcdir/completions/tcping.fish" "\$pkgdir/usr/share/fish/vendor_completions.d/tcping.fish"
+            install -Dm644 "\$srcdir/LICENSE-\$pkgver" "\$pkgdir/usr/share/licenses/\$pkgname/LICENSE"
+          }
+          EOF
+
+      - name: Write the .SRCINFO
+        if: ${{ steps.key.outputs.set == 'true' }}
+        working-directory: aur
+        # makepkg refuses to run as root, which is what the container is, so it
+        # runs as a user made for it. It only reads the PKGBUILD here.
+        run: |
+          useradd --create-home build
+          sudo --user=build makepkg --printsrcinfo >.SRCINFO
+
+      - name: Push the package
+        if: ${{ steps.key.outputs.set == 'true' }}
+        working-directory: aur
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          git diff --cached --quiet && echo "[+] AUR package already up to date" && exit 0
+          git commit -m "tcping $VERSION"
+          git push origin HEAD:master
