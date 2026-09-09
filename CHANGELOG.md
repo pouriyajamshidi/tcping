@@ -17,6 +17,7 @@
 - build: ship `.rpm`, `.apk` and Arch Linux packages next to the `.deb`, so Fedora, RHEL, Alpine and Arch users get the binary and the shell completions installed for them. All four are now built from one `nfpm.yaml` instead of the `.deb` being assembled by hand
 - build: add a Homebrew tap workflow, so `brew install pouriyajamshidi/tap/tcping` picks up a new release without being updated by hand
 - build: add a winget workflow, so `winget install pj.tcping` picks up a new release without running `wingetcreate` by hand
+- build: ship a Nix flake, so `nix run github:pouriyajamshidi/tcping` works without installing anything. The version is read from `internal/version/version.go` like everywhere else, `make nix-update` refreshes the module hash after a dependency change, and a workflow builds the flake on every pull request so it cannot go stale unnoticed
 - build: add `staticcheck`, and a single `make check` target that runs the formatting and `go fix` checks, `go vet`, revive, staticcheck and the tests, which is what the workflows run too. It only reports: `make format` and `make fix` are what rewrite your files, so a pull request that skipped them cannot go green
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
 - improvement: when the `-I` flag is used, show the interface name on probe **failures** too
