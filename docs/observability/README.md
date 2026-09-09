@@ -62,6 +62,69 @@ docker compose down -v
 The `-v` throws the stored metrics away too. Leave it off to keep them. The
 stack only holds 6 hours of data either way.
 
+## What tcping sends
+
+Every probe is sent as it happens, and the whole statistics block you would
+normally see on exit is sent every 10 seconds on top of that, so a run that
+nobody is watching still reports it. `--stats-interval` changes that interval.
+
+The statistics carry the packet loss, the minimum, average, maximum and mean
+deviation of the latency, the total uptime and downtime, the longest streak of
+each and when it ran from and to, when the last successful and unsuccessful
+probes landed, how many times the hostname had to be looked up again and how
+often it answered from a different address, and when the run started, how long
+it has been going and when it ended. Times are sent as milliseconds since the
+epoch, since a metric can only carry a number.
+
+### Through Alloy
+
+Every probe sends `tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
+`tcping_probes_total`, labelled with the source, target, port and protocol. An
+HTTP(S) target also sends the status code, the connect, TLS handshake and
+first-byte timings, and the days left on the certificate. A UDP target sends
+whether the reply was echoed back, whether the port refused us and how big the
+reply was.
+
+The address the target resolved to is sent on its own as
+`tcping_target_address`, which is always 1 and carries the address as a label.
+It is kept off the probe metrics because a label is part of what identifies a
+series: with `-r` or `--resolve-every-probe` a hostname that resolves somewhere
+else mid-run would leave the old series behind and start a new one, which
+breaks a graph into pieces and makes the counters add up wrong. Query it on its
+own to see which addresses a target has been answering from:
+
+```promql
+tcping_target_address{target="www.example.com"}
+```
+
+If you want the address alongside the probes, join to it, keeping in mind that
+this only works while the target has one address at a time. A round-robin
+hostname has several of them live at once and the join has nothing to pick
+between them:
+
+```promql
+tcping_probe_rtt_milliseconds * on (source, target, port) group_left (ip) tcping_target_address
+```
+
+### Through InfluxDB
+
+Every probe writes one point, named after what was probed: `tcping_tcp`,
+`tcping_udp` or `tcping_http`, tagged with the source, target, port and
+protocol. All three hold `success`, `rtt_ms`, the address the target resolved
+to in the `ip` field, and the successful and unsuccessful probe counts. The
+address is a field rather than a tag for the same reason it is its own metric
+on the Alloy side: tags identify a series, and a hostname that resolves
+somewhere else mid-run would otherwise leave the old series behind.
+
+A `tcping_http` point also carries the status code, the connect, TLS handshake
+and first-byte timings and the days left on the certificate, and a `tcping_udp`
+point carries the probe number, the size of the reply and whether it was echoed
+back or refused. The statistics go to `tcping_statistics`.
+
+The API token can be given with `--influxdb-token`, or in the `INFLUXDB_TOKEN`
+environment variable, which keeps it out of your shell history. The flag wins
+if both are set.
+
 ## Several machines probing the same target
 
 Every probe carries a `source` label, which defaults to the hostname of the
@@ -158,8 +221,8 @@ For InfluxDB there is no middle piece at all, tcping writes line protocol
 directly, so an existing v2 or v3 server only needs an org, a bucket and a
 token.
 
-The metrics, the fields and how to query them are described in the
-[main README](../../README.md#usage), under the Alloy and InfluxDB examples.
+The metrics and the fields are the same wherever they land, see
+[what tcping sends](#what-tcping-sends).
 
 ## Nothing is showing up
 

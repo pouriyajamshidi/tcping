@@ -11,30 +11,24 @@
 ![Tests](https://github.com/pouriyajamshidi/tcping/actions/workflows/test.yml/badge.svg)
 ![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
-![Go project version](https://badge.fury.io/go/github.com%2Fpouriyajamshidi%2Ftcping.svg)
+![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
 > [!CAUTION]
 > This is a work in progress branch, not the main one.
 
-A cross-platform ping program using `TCP`, `UDP` or `HTTP(s)` instead of `ICMP`, inspired by Linux's ping utility.
+A cross-platform ping program using `TCP`, `UDP` or `HTTP(S)` instead of `ICMP`, inspired by Linux's ping utility.
 
 > [!TIP]
 > This document is also available in [中文](README.cn.md).
 
-Here are some of the features of **TCPING**:
-
-- An alternative to `ping` in environments that `ICMP` is blocked.
-- Probes over `TCP`, `HTTP(S)` and `UDP`, picked from the target you give it.
-- Outputs information in **colored**, **plain**, **JSON**, **CSV** and **sqlite3** formats, or sends it to **Grafana Alloy** and **InfluxDB** as metrics.
-- Monitor and audit your or your peers network latency, packet loss, and connection quality.
-- Lets you specify the **source interface**, **timeout**, and **interval** between probes.
-- Supports both `IPv4` or `IPv6` and lets you enforce using either.
-- Prints total connection statistics by pressing the `Enter` key, without stopping the program.
-- Reports the longest encountered `downtime` and `uptime` duration and time.
-- Reports the minimum, average, maximum and mean deviation of the latency, the same way `ping` does.
-- Retries hostname resolution after a predetermined number of probe failures using the `-r` flag, or before every single probe using `--resolve-every-probe`. Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
-- Reports how long hostname resolution itself took, at startup and on every retry.
-- Uses different `sequence numbering` for _successful_ and _unsuccessful_ probes to infer the total failed or successful probes at a glance.
+- An alternative to `ping` where `ICMP` is blocked, probing over `TCP`, `HTTP(S)` or `UDP`.
+- Reports the packet loss and the minimum, average, maximum and mean deviation of the latency, the same way `ping` does, plus the longest uptime and downtime and when they happened.
+- Prints the statistics at any time by pressing the `Enter` key, without stopping the program.
+- Outputs in **colored**, **plain**, **JSON**, **CSV** or **sqlite3** format, or sends every probe to **Grafana Alloy** or **InfluxDB** as metrics.
+- Shows the status code, the TLS version and cipher, the certificate expiry and the connect, TLS handshake and first-byte timings of every `HTTP(S)` probe.
+- Resolves the target's hostname again after a number of failures (`-r`) or before every probe (`--resolve-every-probe`), and reports how long each lookup took. Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
+- Lets you pick the **source interface**, the **timeout**, the **interval** and the **DNS server**, and enforce `IPv4` or `IPv6`.
+- Numbers _successful_ and _unsuccessful_ probes separately, so the totals are visible at a glance.
 
 Check out the [demos](#demos) to get a look and feel of **tcping**.
 
@@ -42,46 +36,13 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Table of Contents
 
-- [TCPING](#tcping)
-  - [Table of Contents](#table-of-contents)
-  - [Demos](#demos)
-    - [Basic usage](#basic-usage)
-    - [Retry hostname lookup (`-r`) flag](#retry-hostname-lookup--r-flag)
-    - [JSON output (`-j --pretty`) flag](#json-output--j---pretty-flag)
-    - [Hostname resolution timing (`--resolve-every-probe`) flag](#hostname-resolution-timing---resolve-every-probe-flag)
-    - [Source interface (`-I`) flag](#source-interface--i-flag)
-    - [HTTP(S) probes](#https-probes)
-    - [HTTP(S) probe details (`-v`) flag](#https-probe-details--v-flag)
-    - [Skipping certificate verification (`--insecure`) flag](#skipping-certificate-verification---insecure-flag)
-  - [Download and Installation](#download-and-installation)
-    - [Windows](#windows)
-    - [macOS](#macos)
-    - [Linux - Quick Install](#linux---quick-install)
-    - [Linux - Debian and Derivatives](#linux---debian-and-derivatives)
-    - [Linux - Fedora, RHEL and Derivatives](#linux---fedora-rhel-and-derivatives)
-    - [Linux - Arch and Derivatives](#linux---arch-and-derivatives)
-    - [Linux - Alpine](#linux---alpine)
-    - [BSD and Linux - Manual Way](#bsd-and-linux---manual-way)
-    - [Nix](#nix)
-    - [Alternative Ways](#alternative-ways)
-    - [Shell Completions](#shell-completions)
-  - [Usage](#usage)
-    - [Probing over HTTP(S)](#probing-over-https)
-    - [Probing over UDP](#probing-over-udp)
-    - [Sending the results to Grafana Alloy](#sending-the-results-to-grafana-alloy)
-    - [Sending the results to InfluxDB](#sending-the-results-to-influxdb)
-  - [Flags](#flags)
-    - [General](#general)
-    - [Probing](#probing)
-    - [Name resolution](#name-resolution)
-    - [Terminal output](#terminal-output)
-    - [File and machine-readable output](#file-and-machine-readable-output)
-    - [Metrics](#metrics)
-    - [HTTP(S) and UDP](#https-and-udp)
-  - [Contributing](#contributing)
-  - [Feature Requests and Issues](#feature-requests-and-issues)
-  - [Help The Project](#help-the-project)
-  - [License](#license)
+- [Demos](#demos)
+- [Download and Installation](#download-and-installation)
+- [Usage](#usage)
+- [Flags](#flags)
+- [Contributing](#contributing)
+- [Help The Project](#help-the-project)
+- [License](#license)
 
 ---
 
@@ -142,11 +103,26 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Download and Installation
 
-We offer prebuilt binaries for various operating systems ([Windows](#windows), [Linux](#linux---quick-install), [macOS](#macos), [FreeBSD](#bsd-and-linux---manual-way), [Docker](#alternative-ways)) and architectures (_amd64_, _arm64_), which can be found on the [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/). Linux users also get native packages for [Debian](#linux---debian-and-derivatives), [Fedora](#linux---fedora-rhel-and-derivatives), [Arch](#linux---arch-and-derivatives) and [Alpine](#linux---alpine).
+| Platform | Install with |
+| --- | --- |
+| [Windows](#windows) | `winget install pj.tcping` |
+| [macOS](#macos) | `brew install pouriyajamshidi/tap/tcping` |
+| [Debian, Ubuntu](#linux---package-repositories) | `sudo apt install tcping`, after adding the repository |
+| [Fedora, RHEL, CentOS](#linux---package-repositories) | `sudo dnf install tcping`, after adding the repository |
+| [Alpine](#linux---package-repositories) | `sudo apk add tcping`, after adding the repository |
+| [Arch, Manjaro](#linux---package-repositories) | `yay -S tcping-bin` |
+| [Any Linux](#linux---one-line-install) | a [one-line install](#linux---one-line-install) or a [package file](#linux---package-files) |
+| [BSD](#bsd-and-linux---manual-way) | the [prebuilt binary](#bsd-and-linux---manual-way) |
+| [Nix](#nix) | `nix profile install github:pouriyajamshidi/tcping` |
+| [Docker](#other-ways) | `docker run -it pouriyajamshidi/tcping example.com 443` |
+| [Go](#other-ways) | `go install github.com/pouriyajamshidi/tcping/v3@latest` |
 
-The binaries are static, meaning they carry everything they need inside one file and do not depend on any library being present on your machine.
+The binaries are static, meaning they carry everything they need inside one file
+and do not depend on any library being present on your machine. They live on the
+[release page](https://github.com/pouriyajamshidi/tcping/releases/latest/), for
+_amd64_ and _arm64_.
 
-Once you are done with the download and installation, head to the [usage](#usage) section.
+Once you are done with the installation, head to the [usage](#usage) section.
 
 ### Windows
 
@@ -156,7 +132,7 @@ The best way to install **tcping** on Windows is through _Windows Package Manage
 winget install pj.tcping
 ```
 
-If you wish to manually install **tcping**, extract the downloaded zip file and copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32`
+To install it by hand instead, extract the downloaded zip file and copy `tcping.exe` to your system [PATH](https://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/) like `C:\Windows\System32`.
 
 > [!CAUTION]
 > TCPING might falsely get flagged by Windows Defender or some anti-malware software. This is common among Go programs. Check out the official statement from the Go team [here](https://go.dev/doc/faq#virus).
@@ -166,17 +142,13 @@ If you wish to manually install **tcping**, extract the downloaded zip file and 
 
 ### macOS
 
-Install using `brew`:
-
 ```bash
 brew install pouriyajamshidi/tap/tcping
 ```
 
-You can also manually download and install **tcping** following the steps described in [this section](#bsd-and-linux---manual-way).
+### Linux - One-line install
 
-### Linux - Quick Install
-
-Paste the following in your terminal to grab the latest static binary for your architecture and install it:
+Paste the following in your terminal to grab the latest binary for your architecture and install it:
 
 ```bash
 cd /tmp &&
@@ -199,10 +171,12 @@ If you don't have `curl`, swap its line for `wget`:
 wget "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH.tar.gz" &&
 ```
 
-### Linux - Debian and Derivatives
+### Linux - Package repositories
 
-On **Debian** and its flavors such as **Ubuntu**, add the packages repository
-once and `apt` takes care of installs and upgrades from then on:
+Adding the repository once means `apt`, `dnf` or `apk` handles installs and
+upgrades from then on, like any other package.
+
+**Debian**, **Ubuntu** and their flavors:
 
 ```bash
 sudo install -d /etc/apt/keyrings &&
@@ -212,73 +186,14 @@ sudo install -d /etc/apt/keyrings &&
   sudo apt install tcping
 ```
 
-Or, without adding anything, download the `.deb` package:
-
-```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.deb -O /tmp/tcping.deb
-# Or for ARM64 machines
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.deb -O /tmp/tcping.deb
-```
-
-And install it:
-
-```bash
-sudo apt install -y /tmp/tcping.deb
-```
-
-### Linux - Fedora, RHEL and Derivatives
-
-On **Fedora**, **RHEL**, **CentOS** and their flavors, add the packages repository
-once and `dnf` takes care of installs and upgrades from then on:
+**Fedora**, **RHEL**, **CentOS** and their flavors:
 
 ```bash
 sudo curl -fsSL https://pouriyajamshidi.github.io/packages/rpm/packages.repo -o /etc/yum.repos.d/packages.repo &&
   sudo dnf install tcping
 ```
 
-Or, without adding anything, download the `.rpm` package:
-
-```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.rpm -O /tmp/tcping.rpm
-# Or for ARM64 machines
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.rpm -O /tmp/tcping.rpm
-```
-
-And install it:
-
-```bash
-sudo dnf install -y /tmp/tcping.rpm
-```
-
-Older machines that do not have `dnf` can use `sudo yum install -y /tmp/tcping.rpm` instead.
-
-### Linux - Arch and Derivatives
-
-On **Arch**, **Manjaro**, **EndeavourOS** and their flavors, install it from the
-[AUR](https://aur.archlinux.org/packages/tcping-bin) using your favorite helper:
-
-```bash
-yay -S tcping-bin
-```
-
-Or download the package:
-
-```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.pkg.tar.zst -O /tmp/tcping.pkg.tar.zst
-# Or for ARM64 machines
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.pkg.tar.zst -O /tmp/tcping.pkg.tar.zst
-```
-
-And install it:
-
-```bash
-sudo pacman -U /tmp/tcping.pkg.tar.zst
-```
-
-### Linux - Alpine
-
-On **Alpine**, add the packages repository once and `apk` takes care of installs
-and upgrades from then on:
+**Alpine**:
 
 ```bash
 sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/packages.rsa.pub -o /etc/apk/keys/packages.rsa.pub &&
@@ -287,24 +202,30 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/packages.rsa.pub
   sudo apk add tcping
 ```
 
-Or, without adding anything, download the `.apk` package:
+**Arch**, **Manjaro**, **EndeavourOS** and their flavors have it on the
+[AUR](https://aur.archlinux.org/packages/tcping-bin), so use your favorite helper:
 
 ```bash
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-amd64.apk -O /tmp/tcping.apk
-# Or for ARM64 machines
-wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-arm64.apk -O /tmp/tcping.apk
+yay -S tcping-bin
 ```
 
-And install it:
+### Linux - Package files
 
-```bash
-sudo apk add --allow-untrusted /tmp/tcping.apk
-```
+Without adding a repository, download the package for your distro from the
+[release page](https://github.com/pouriyajamshidi/tcping/releases/latest/) and
+install it:
 
-The `--allow-untrusted` flag is needed because our packages are not signed with
-an Alpine key.
+| Distro | Package | Install |
+| --- | --- | --- |
+| Debian, Ubuntu | `tcping-amd64.deb` | `sudo apt install -y ./tcping-amd64.deb` |
+| Fedora, RHEL, CentOS | `tcping-amd64.rpm` | `sudo dnf install -y ./tcping-amd64.rpm` |
+| Arch, Manjaro | `tcping-amd64.pkg.tar.zst` | `sudo pacman -U ./tcping-amd64.pkg.tar.zst` |
+| Alpine | `tcping-amd64.apk` | `sudo apk add --allow-untrusted ./tcping-amd64.apk` |
 
-If you are using different Linux distros, proceed to [this section](#bsd-and-linux---manual-way).
+Swap `amd64` for `arm64` on ARM machines. All four install the binary and the
+[shell completions](#shell-completions) for you. Machines without `dnf` can use
+`yum` instead, and Alpine needs `--allow-untrusted` because our packages are not
+signed with an Alpine key.
 
 ### BSD and Linux - Manual Way
 
@@ -316,28 +237,15 @@ wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-f
 curl -LO https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-arm64.tar.gz
 ```
 
-Extract the file:
+Extract it and copy the executable to your system `PATH` like `/usr/local/bin/`:
 
 ```bash
-tar -xvf tcping-freebsd-amd64.tar.gz
-```
-
-Make the file executable:
-
-```bash
-chmod +x tcping
-```
-
-Copy the executable to your system `PATH` like `/usr/local/bin/`:
-
-```bash
-sudo cp tcping /usr/local/bin/
+tar -xvf tcping-freebsd-amd64.tar.gz &&
+  chmod +x tcping &&
+  sudo cp tcping /usr/local/bin/
 ```
 
 The archive also carries a `completions` folder. See [Shell Completions](#shell-completions) to install them.
-
-> [!TIP]
-> In case you have `brew` installed, you can install tcping using `brew install pouriyajamshidi/tap/tcping`
 
 ### Nix
 
@@ -358,9 +266,7 @@ Both give you the binary and the [shell completions](#shell-completions). The
 flake also has a `devShells.default` with everything needed to work on tcping,
 which you get with `nix develop`.
 
-### Alternative Ways
-
-These are some additional ways in which **tcping** can be installed:
+### Other ways
 
 - `Docker` images:
 
@@ -407,7 +313,7 @@ Completion scripts for `bash`, `zsh`, `fish` and `PowerShell` live in the
 [completions](completions) folder. They complete the flags, the interface names
 for `-I` and the file names for `--csv` and `--db`.
 
-The Linux packages and the [Linux quick install](#linux---quick-install) put them
+The Linux packages and the [one-line install](#linux---one-line-install) put them
 in place for you. The release archives ship them next to the binary, so they can
 also be installed from there with the commands below.
 
@@ -441,91 +347,50 @@ Start a new shell afterwards to pick them up.
 
 ## Usage
 
-**tcping** can run in various ways.
-
-1. The simplest form is providing the target and the port number:
+Give **tcping** a target and a port, and it starts probing:
 
 ```bash
 tcping www.example.com 443
-```
-
-2. You can also use the `host:port` format:
-
-```bash
-tcping www.example.com:443
-# Or with an IP address
+tcping www.example.com:443          # host:port works too
 tcping 192.168.1.1:80
-# IPv6 addresses (use quotes to prevent shell interpretation)
-tcping '[2001:db8::1]:443'
+tcping '[2001:db8::1]:443'          # quoted, so the shell leaves it alone
+tcping https://www.example.com      # probed over HTTP(S)
+tcping udp://127.0.0.1 53           # probed over UDP
 ```
 
-3. Specify the interval between probes (2 seconds), the timeout (5 seconds) and source interface:
+Some of the things you can ask of a run:
 
 ```bash
-tcping www.example.com 443 -i 2 -t 5 -I eth2
+tcping www.example.com 443 -c 5            # stop after 5 probes
+tcping www.example.com 443 -i 2 -t 5       # 2 seconds between probes, 5 seconds timeout
+tcping www.example.com 443 -I eth2         # send the probes from a given interface
+tcping www.example.com 443 -4              # or -6, to enforce an address family
+tcping www.example.com 443 -D              # show a timestamp for each probe
+tcping www.example.com 443 -r 5            # resolve the hostname again after 5 failures
 ```
 
-4. Enforce using IPv4 or IPv6 only:
+And the output formats it can produce, instead of the default colored one:
 
 ```bash
-  tcping www.example.com 443 -4
-  # Or
-  tcping www.example.com 443 -6
+tcping www.example.com 443 -j              # JSON, add --pretty to prettify it
+tcping www.example.com 443 --no-color      # plain, no ANSI colors
+tcping www.example.com 443 --csv out.csv   # CSV file
+tcping www.example.com 443 --db out.db     # sqlite3 database
 ```
 
-5. Show timestamp of probes:
+The Docker image takes the same targets and flags:
 
 ```bash
-tcping www.example.com 443 -D
-```
-
-6. Retry resolving the hostname after 5 failures:
-
-```bash
-tcping www.example.com 443 -r 5
-
-```
-
-7. Stop after 5 probes:
-
-```bash
-tcping www.example.com 443 -c 5
-```
-
-8. Change the default output from colored to:
-
-```bash
-# Save the output in CSV format:
-tcping www.example.com 443 --csv example.com.csv
-# Save the output in sqlite3 format:
-tcping www.example.com 443 --db example.com.db
-# Show the output in JSON format:
-tcping www.example.com 443 -j
-# Show the output in JSON format - pretty:
-tcping www.example.com 443 -j --pretty
-# Show the output in plain (no ANSI colors):
-tcping www.example.com 443 --no-color
-```
-
-> [!NOTE]
-> Check the **available flags** [here](#flags) for a more advanced usage.
-
-The Docker image can be used with the same set of flags, like:
-
-```bash
-# If downloaded from Docker Hub
 docker run -it pouriyajamshidi/tcping:latest example.com 443
-# Or using host:port format
-docker run -it pouriyajamshidi/tcping:latest example.com:443
-
-# If downloaded from GitHub container registry:
-docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com 443
-# Or using host:port format
+# Or, from the GitHub container registry
 docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 ```
 
 > [!TIP]
 > Press the `Enter` key while the program is running to see the summary of all probes without stopping the program, as shown in the [demos](#demos) section.
+
+> [!NOTE]
+> Check the **available flags** [here](#flags) for a more advanced usage.
 
 ### Probing over HTTP(S)
 
@@ -586,44 +451,33 @@ Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
     reply echoed back probe 4
 ```
 
-### Sending the results to Grafana Alloy
+### Sending the results to Grafana Alloy or InfluxDB
+
+Instead of printing each probe, tcping can send it as a metric, which turns a
+run into a graph and lets several machines watch the same target. To
+[Grafana Alloy](https://grafana.com/docs/alloy/latest/) over OTLP, which can
+forward it to Prometheus:
 
 ```bash
 tcping www.example.com 443 --alloy http://localhost:4318
 ```
 
-Instead of printing each probe, tcping sends it to Alloy over OTLP, which can
-forward it to Prometheus and turn a run into a graph. Every probe sends
-`tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
-`tcping_probes_total`, labelled with the source, target, port and protocol. An
-HTTP(S) target also sends the status code, the connect, TLS handshake and
-first-byte timings, and the days left on the certificate. A UDP target sends
-whether the reply was echoed back, whether the port refused us and how big the
-reply was.
+Or straight to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as
+line protocol:
 
-The address the target resolved to is sent on its own as
-`tcping_target_address`, which is always 1 and carries the address as a label.
-It is kept off the probe metrics because a label is part of what identifies a
-series: with `-r` or `--resolve-every-probe` a hostname that resolves somewhere
-else mid-run would leave the old series behind and start a new one, which
-breaks a graph into pieces and makes the counters add up wrong. Query it on its
-own to see which addresses a target has been answering from:
-
-```promql
-tcping_target_address{target="www.example.com"}
+```bash
+export INFLUXDB_TOKEN=your-api-token
+tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping
 ```
 
-If you want the address alongside the probes, join to it, keeping in mind that
-this only works while the target has one address at a time. A round-robin
-hostname has several of them live at once and the join has nothing to pick
-between them:
+Every probe carries its round trip time, whether it succeeded, the address the
+target resolved to and the counters, along with the HTTP or UDP details when
+the target is one of those. The whole statistics block you would normally see
+on exit is sent every 10 seconds on top of that, so a run that nobody is
+watching still reports it. Use `--stats-interval` to change that interval.
 
-```promql
-tcping_probe_rtt_milliseconds * on (source, target, port) group_left (ip) tcping_target_address
-```
-
-The `source` label says which machine the probe was sent from. It defaults to
-that machine's hostname, so several machines probing the same target land in
+Each machine names itself in the metrics with the `source` label, which
+defaults to its hostname, so several machines probing the same target land in
 their own series instead of on top of each other. Use `--source-label` to name
 them yourself:
 
@@ -631,67 +485,9 @@ them yourself:
 tcping www.example.com 443 --alloy http://localhost:4318 --source-label paris
 ```
 
-The whole statistics block you would normally see on exit is sent every 10
-seconds, so a run that nobody is watching still reports it: the packet loss,
-the minimum, average, maximum and mean deviation of the latency, the total
-uptime and downtime, the longest streak of each and when it ran from and to,
-when the last successful and unsuccessful probes landed, how many times the
-hostname had to be looked up again and how often it answered from a different
-address, and when the run started, how long it has been going and when it
-ended. Times are sent as milliseconds since the epoch, since a metric can only
-carry a number. Use `--stats-interval` to change the interval.
-
-On the Alloy side you need an OTLP receiver pointed at Prometheus. A working
-one, along with a Prometheus, an InfluxDB and a Grafana dashboard you can
-start in one command, is in
-[docs/observability](docs/observability/README.md).
-
-### Sending the results to InfluxDB
-
-```bash
-export INFLUXDB_TOKEN=your-api-token
-tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping
-```
-
-Instead of printing each probe, tcping writes it to InfluxDB v2 or v3 as line
-protocol. Every probe writes one point, named after what was probed:
-`tcping_tcp`, `tcping_udp` or `tcping_http`, tagged with the source, target,
-port and protocol. All three hold `success`, `rtt_ms`, the address the target
-resolved to in the `ip` field, and the successful and unsuccessful probe
-counts. The address is a field rather than a tag because tags identify a
-series: with `-r` or `--resolve-every-probe` a hostname that resolves somewhere
-else mid-run would otherwise leave the old series behind and start a new one. A `tcping_http` point also carries the status code,
-the connect, TLS handshake and first-byte timings and the days left on the
-certificate, and a `tcping_udp` point carries the probe number, the size of
-the reply and whether it was echoed back or refused.
-
-The whole statistics block you would normally see on exit is written to
-`tcping_statistics` every 10 seconds, so a run that nobody is watching still
-reports it: the packet loss, the minimum, average, maximum and mean deviation
-of the latency, the total uptime and downtime, the longest streak of each and
-when it ran from and to, when the last successful and unsuccessful probes
-landed, how many times the hostname had to be looked up again and how often it
-answered from a different address, and when the run started, how long it has
-been going and when it ended. Times are written as milliseconds since the
-epoch, since a string field cannot be graphed. Use
-`--stats-interval` to change the interval.
-
-The `source` tag says which machine the probe was sent from. It defaults to
-that machine's hostname, so several machines writing to the same bucket land
-in their own series instead of on top of each other. Use `--source-label` to
-name them yourself:
-
-```bash
-tcping www.example.com 443 --influxdb http://localhost:8086 \
-  --influxdb-org home --influxdb-bucket tcping --source-label paris
-```
-
-The API token can be given with `--influxdb-token`, or in the `INFLUXDB_TOKEN`
-environment variable, which keeps it out of your shell history. The flag wins
-if both are set.
-
-To try this without setting a server up first, there is a ready made stack in
-[docs/observability](docs/observability/README.md).
+Everything that gets sent, how to query it, and a ready made Alloy, Prometheus,
+InfluxDB and Grafana stack you can start in one command to try this without
+setting a server up first, are in [docs/observability](docs/observability/README.md).
 
 ---
 
@@ -775,7 +571,9 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 ## Contributing
 
-Pull requests are welcome to solve bugs, add new features and to help with the open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues)
+Pull requests are welcome to solve bugs, add new features and to help with the
+open issues that can be found [here](https://github.com/pouriyajamshidi/tcping/issues).
+Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
 
 1. Pick any issue that you feel comfortable with.
 1. Fork the repository.
@@ -785,9 +583,10 @@ Pull requests are welcome to solve bugs, add new features and to help with the o
 1. Run the tests `go test ./...` or `make test` and ensure they are successful.
 1. Create a pull request
 
-Current number of open issues: ![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg).
-
 Please make sure that your pull request **only covers one specific issue/feature** and doesn't handle two or more issues. This makes it simpler for us to review your pull request and helps keeping a clean git history.
+
+Unless you are fixing a really tiny issue, please first communicate your
+intention on an **issue** before starting your work.
 
 To try your changes against a bad network, `tools/netcond.sh` can add latency,
 drop a share of the packets or block one destination outright, and undo
@@ -799,25 +598,14 @@ sudo ./tools/netcond.sh loss 1.1.1.1 40
 sudo ./tools/netcond.sh clear
 ```
 
-## Feature Requests and Issues
-
-Do you wish that tcping could do more? Or maybe you have faced a bug?
-
-Please feel free to open an issue and if you can, you are welcome to [open a pull request](#contributing) to contribute.
-
-Although, keep in mind that unless you are fixing a really tiny issue, please ensure to first communicate your intention on an **issue** before starting your work.
-
 ## Help The Project
 
 If tcping is useful for you, consider sharing it with your network to extend its reach and help other people to also benefit from it.
 
 Furthermore, you can support the project using the links below:
 
-- Buy me a coffee: ["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/docs/custom_images/orange_img.png)
-
-- GitHub Sponsors: [sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)
-
-- Total number of sponsors: ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
+- [Buy me a coffee](https://www.buymeacoffee.com/pouriyajamshidi)
+- [GitHub Sponsors](https://github.com/sponsors/pouriyajamshidi) ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
 
 ## License
 
