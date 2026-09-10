@@ -14,6 +14,7 @@ type Config struct {
 
 	OutputJSON        bool
 	PrettyJSON        bool
+	JSONURL           string // Address of an HTTP server to POST the JSON events to. Empty unless -json-url was given.
 	NoColor           bool
 	WithTimestamp     bool
 	WithSourceAddress bool

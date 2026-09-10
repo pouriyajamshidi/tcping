@@ -16,7 +16,7 @@ import (
 func NewPrinter(cfg Config) (probe.Printer, error) {
 	switch {
 	case cfg.OutputJSON:
-		return NewJSONPrinter(cfg), nil
+		return NewJSONPrinter(cfg)
 
 	case cfg.OutputSQLitePath != "":
 		return NewSQLitePrinter(cfg)

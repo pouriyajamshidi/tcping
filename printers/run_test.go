@@ -249,7 +249,7 @@ func TestRunTranscript_JSONEvents(t *testing.T) {
 	var events bytes.Buffer
 
 	scriptedRun{
-		printer:    NewJSONPrinter(Config{Writer: &events}),
+		printer:    jsonTestPrinter(t, Config{Writer: &events}),
 		outcomes:   upDownUp,
 		enterAfter: 4,
 	}.run(t)

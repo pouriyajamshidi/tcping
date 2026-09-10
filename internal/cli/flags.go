@@ -105,9 +105,11 @@ type flags struct {
 
 	skipTLSVerify bool
 	udpServer     bool
+	jsonServer    bool
 
 	outputJSON bool
 	prettyJSON bool
+	jsonURL    string
 
 	CSVPath        string
 	csvNoTimestamp bool
@@ -231,6 +233,13 @@ func registerFlags() *flags {
 		datagram back to its sender, so a UDP probe pointed at this machine
 		gets a reply and can tell that its packet arrived.`)
 
+	flag.BoolVar(&f.jsonServer,
+		"json-server",
+		false,
+		`Do not probe. Listen on the given host and port and print every JSON
+		event posted to it, so a tcping using -json-url elsewhere has
+		somewhere to send its run.`)
+
 	flag.BoolVar(&f.noColor, "no-color", false, "Do not colorize output.")
 
 	flag.BoolVar(&f.outputJSON,
@@ -243,6 +252,13 @@ func registerFlags() *flags {
 		false,
 		`Prettify the JSON output.
 		No effect without the '-j' flag.`)
+
+	flag.StringVar(&f.jsonURL,
+		"json-url",
+		"",
+		`Send the JSON output to an HTTP server instead of printing it,
+		one POST per event, e.g. http://localhost:8000/tcping
+		Turns on JSON output on its own, so '-j' is not needed.`)
 
 	flag.StringVar(&f.CSVPath,
 		"csv",
@@ -296,10 +312,11 @@ func registerFlags() *flags {
 	flag.StringVar(&f.sourceLabel,
 		"source-label",
 		"",
-		`Name this machine in the metrics sent to Alloy or InfluxDB, so that
-		several machines probing the same target can be told apart.
-		Defaults to the machine's hostname. No effect without the -alloy or
-		-influxdb flag.`)
+		`Name this machine in the JSON events and in the metrics sent to
+		Alloy or InfluxDB, so that several machines probing the same target
+		can be told apart. Results that are sent elsewhere carry the
+		machine's hostname when this is not given. No effect without the
+		-j, -json-url, -alloy or -influxdb flag.`)
 
 	flag.StringVar(&f.SQLitePath,
 		"sqlite",
@@ -321,7 +338,7 @@ func (f *flags) validate() {
 		usage()
 	}
 
-	if f.prettyJSON && !f.outputJSON {
+	if f.prettyJSON && !f.outputJSON && f.jsonURL == "" {
 		fmt.Fprintln(os.Stderr, "--pretty has no effect without the -j flag")
 		usage()
 	}
@@ -330,6 +347,13 @@ func (f *flags) validate() {
 	// there are no statistics to omit.
 	if f.omitStatistics && (f.SQLitePath != "" || f.CSVPath != "" || f.alloyURL != "" || f.influxDBURL != "") {
 		fmt.Fprintln(os.Stderr, "--no-stats has no effect when the output goes to a file, a database or a metrics endpoint")
+		usage()
+	}
+
+	// Both of them take over the target as the address to listen on, so
+	// only one of them can have it.
+	if f.udpServer && f.jsonServer {
+		fmt.Fprintln(os.Stderr, "Only one of --udp-server and --json-server can be used")
 		usage()
 	}
 
@@ -356,9 +380,12 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 	}
 
 	// Without this, several machines probing the same target would all
-	// write to the same series and their numbers would be mixed together.
+	// look alike: the same series in the metrics, and events a collector
+	// cannot tell apart. Only results that leave the machine get the
+	// hostname by default, so a plain -j run does not put it in output
+	// that never went anywhere.
 	sourceLabel := f.sourceLabel
-	if sourceLabel == "" {
+	if sourceLabel == "" && (f.jsonURL != "" || f.alloyURL != "" || f.influxDBURL != "") {
 		hostname, err := os.Hostname()
 		if err != nil {
 			hostname = "unknown"
@@ -367,10 +394,13 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 	}
 
 	return printers.Config{
-		Target:            target,
-		Port:              port,
-		OutputJSON:        f.outputJSON,
+		Target: target,
+		Port:   port,
+		// An address to send the events to is a JSON destination, so it
+		// picks the JSON printer without -j having to be given as well.
+		OutputJSON:        f.outputJSON || f.jsonURL != "",
 		PrettyJSON:        f.prettyJSON,
+		JSONURL:           f.jsonURL,
 		NoColor:           f.noColor,
 		WithTimestamp:     f.showTimestamp,
 		WithSourceAddress: f.showSourceAddress,

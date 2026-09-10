@@ -15,20 +15,37 @@ type JSONPrinter struct {
 	cfg     Config
 }
 
-// NewJSONPrinter creates a JSON printer writing to the destination in cfg.
-func NewJSONPrinter(cfg Config) *JSONPrinter {
-	encoder := json.NewEncoder(writerOrStdout(cfg))
+// NewJSONPrinter creates a JSON printer writing to the destination in cfg:
+// an HTTP server when one was given, the terminal otherwise.
+func NewJSONPrinter(cfg Config) (*JSONPrinter, error) {
+	writer := writerOrStdout(cfg)
+
+	if cfg.JSONURL != "" {
+		stream, err := newJSONStreamWriter(cfg.JSONURL)
+		if err != nil {
+			return nil, err
+		}
+
+		writer = stream
+	}
+
+	encoder := json.NewEncoder(writer)
 
 	if cfg.PrettyJSON {
 		encoder.SetIndent("", "\t")
 	}
 
-	return &JSONPrinter{encoder: encoder, cfg: cfg}
+	return &JSONPrinter{encoder: encoder, cfg: cfg}, nil
 }
 
+// jsonEvent is the envelope every event comes in. The source names the
+// machine that did the probing, so that a collector taking events from
+// several of them can tell whose run it is looking at. It is on every event
+// rather than only on the first, because each one is read on its own.
 type jsonEvent struct {
-	Type string `json:"type"`
-	Data any    `json:"data,omitempty"`
+	Type   string `json:"type"`
+	Source string `json:"source,omitempty"`
+	Data   any    `json:"data,omitempty"`
 }
 
 type jsonStart struct {
@@ -161,8 +178,9 @@ type jsonStatistics struct {
 
 func (p *JSONPrinter) encode(event string, data any) {
 	_ = p.encoder.Encode(jsonEvent{
-		Type: event,
-		Data: data,
+		Type:   event,
+		Source: p.cfg.SourceLabel,
+		Data:   data,
 	})
 }
 

@@ -31,6 +31,19 @@ func jsonTestStats() *stats.Statistics {
 	}
 }
 
+// jsonTestPrinter creates a printer for a test, failing the test if the
+// config it was given is not one a printer can be built from.
+func jsonTestPrinter(t *testing.T, cfg Config) *JSONPrinter {
+	t.Helper()
+
+	p, err := NewJSONPrinter(cfg)
+	if err != nil {
+		t.Fatalf("could not create the JSON printer: %v", err)
+	}
+
+	return p
+}
+
 // jsonEvents runs f and returns everything the printer wrote, decoded. The
 // printer writes to a buffer of our own rather than to stdout, which is what
 // Config.Writer is for.
@@ -40,7 +53,7 @@ func jsonEvents(t *testing.T, cfg Config, f func(p *JSONPrinter)) []map[string]a
 	var out bytes.Buffer
 	cfg.Writer = &out
 
-	f(NewJSONPrinter(cfg))
+	f(jsonTestPrinter(t, cfg))
 
 	var events []map[string]any
 
@@ -470,7 +483,7 @@ func TestJSONPrintsOneEventPerLine(t *testing.T) {
 	s := jsonTestStats()
 
 	out := captureStdout(t, func() {
-		p := NewJSONPrinter(Config{})
+		p := jsonTestPrinter(t, Config{})
 		p.PrintStart(s)
 		p.PrintProbeSuccess(s)
 		p.PrintProbeFailure(s)
@@ -489,10 +502,48 @@ func TestJSONPrintsOneEventPerLine(t *testing.T) {
 	}
 }
 
+// A collector taking events from several machines has each one on its own,
+// so the name of the machine that probed has to be on every event rather
+// than only on the one that opened the run.
+func TestJSONEventsCarryTheSourceLabel(t *testing.T) {
+	s := jsonTestStats()
+
+	events := jsonEvents(t, Config{SourceLabel: "paris"}, func(p *JSONPrinter) {
+		p.PrintStart(s)
+		p.PrintProbeSuccess(s)
+		p.PrintProbeFailure(s)
+		p.PrintStatistics(s)
+		p.PrintError("no route to host")
+	})
+
+	if len(events) != 5 {
+		t.Fatalf("printed %d events, want 5", len(events))
+	}
+
+	for _, event := range events {
+		if event["source"] != "paris" {
+			t.Errorf("the %v event carries source %v, want paris", event["type"], event["source"])
+		}
+	}
+}
+
+// Without a label there is nothing to say. A run that only prints to the
+// terminal is given none, so the machine's name does not end up in output
+// that never left it.
+func TestJSONEventsLeaveOutAnEmptySourceLabel(t *testing.T) {
+	events := jsonEvents(t, Config{}, func(p *JSONPrinter) {
+		p.PrintStart(jsonTestStats())
+	})
+
+	if _, found := events[0]["source"]; found {
+		t.Errorf("the event carries a source it was never given: %v", events[0])
+	}
+}
+
 func TestJSONPrettyPrint(t *testing.T) {
 	var out bytes.Buffer
 
-	NewJSONPrinter(Config{PrettyJSON: true, Writer: &out}).PrintStart(jsonTestStats())
+	jsonTestPrinter(t, Config{PrettyJSON: true, Writer: &out}).PrintStart(jsonTestStats())
 
 	if !strings.Contains(out.String(), "\n\t\"type\"") {
 		t.Errorf("output is not indented: %q", out.String())

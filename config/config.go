@@ -29,6 +29,7 @@ type Config struct {
 	ShowFailuresOnly           bool // Only print probe failures.
 	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
 	UDPServer                  bool // Listen on the given address and echo datagrams back instead of probing.
+	JSONServer                 bool // Listen on the given address and print the JSON events posted to it instead of probing.
 	Resolver                   *dns.Resolver
 }
 

@@ -90,6 +90,18 @@ func Run() {
 		return
 	}
 
+	if cfg.JSONServer {
+		ctx := setupSignalHandler(context.Background())
+
+		listenAddr := net.JoinHostPort(cfg.IP.String(), strconv.Itoa(int(cfg.Port)))
+		if err := server.ListenJSON(ctx, listenAddr); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to listen on %s: %s\n", listenAddr, err)
+			os.Exit(1)
+		}
+
+		return
+	}
+
 	statistics := stats.NewStatistics(cfg)
 
 	printer, err := printers.NewPrinter(printerCfg)

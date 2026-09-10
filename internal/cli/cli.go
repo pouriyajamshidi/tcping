@@ -111,6 +111,7 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		ShowFailuresOnly:           f.showFailuresOnly,
 		SkipTLSVerify:              f.skipTLSVerify,
 		UDPServer:                  f.udpServer,
+		JSONServer:                 f.jsonServer,
 		Resolver:                   resolver,
 		ShouldRetryResolve:         shouldRetryResolve,
 		ResolveEveryProbe:          f.resolveEveryProbe,
