@@ -192,8 +192,8 @@ upgrades from then on, like any other package.
 
 ```bash
 sudo install -d /etc/apt/keyrings &&
-  sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/packages.gpg -o /etc/apt/keyrings/packages.gpg &&
-  echo "deb [signed-by=/etc/apt/keyrings/packages.gpg] https://pouriyajamshidi.github.io/packages/deb ./" | sudo tee /etc/apt/sources.list.d/packages.list &&
+  sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.gpg -o /etc/apt/keyrings/pouriyajamshidi.gpg &&
+  echo "deb [signed-by=/etc/apt/keyrings/pouriyajamshidi.gpg] https://pouriyajamshidi.github.io/packages/deb ./" | sudo tee /etc/apt/sources.list.d/pouriyajamshidi.list &&
   sudo apt update &&
   sudo apt install tcping
 ```
@@ -201,14 +201,14 @@ sudo install -d /etc/apt/keyrings &&
 **Fedora**, **RHEL**, **CentOS** and their flavors:
 
 ```bash
-sudo curl -fsSL https://pouriyajamshidi.github.io/packages/rpm/packages.repo -o /etc/yum.repos.d/packages.repo &&
+sudo curl -fsSL https://pouriyajamshidi.github.io/packages/rpm/pouriyajamshidi.repo -o /etc/yum.repos.d/pouriyajamshidi.repo &&
   sudo dnf install tcping
 ```
 
 **Alpine**:
 
 ```bash
-sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/packages.rsa.pub -o /etc/apk/keys/packages.rsa.pub &&
+sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.rsa.pub -o /etc/apk/keys/pouriyajamshidi.rsa.pub &&
   echo "https://pouriyajamshidi.github.io/packages/apk" | sudo tee -a /etc/apk/repositories &&
   sudo apk update &&
   sudo apk add tcping

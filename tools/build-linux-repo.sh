@@ -36,7 +36,8 @@ Environment:
   PROJECT       the project being published, which is also the prefix of its
                 package files. Defaults to tcping
   REPO_NAME     names the things the whole repository shares: the keys, the
-                .repo file for dnf and the repository id. Defaults to packages
+                .repo file for dnf and the repository id. Defaults to
+                pouriyajamshidi
   REPO_URL      where the tree is going to be served from. Defaults to
                 https://pouriyajamshidi.github.io/packages
 EOF
@@ -50,7 +51,7 @@ fi
 PACKAGE_DIR=$(realpath "$1")
 REPO_DIR=$(realpath -m "$2")
 PROJECT=${PROJECT:-tcping}
-REPO_NAME=${REPO_NAME:-packages}
+REPO_NAME=${REPO_NAME:-pouriyajamshidi}
 REPO_URL=${REPO_URL:-https://pouriyajamshidi.github.io/packages}
 
 : "${GPG_KEY:?set GPG_KEY to the armored gpg private key}"
@@ -206,7 +207,7 @@ touch "$REPO_DIR/.nojekyll"
 held=$(awk '/^Package: / {print "- `" $2 "`"}' "$REPO_DIR/deb/Packages" | sort --unique)
 
 cat >"$REPO_DIR/README.md" <<EOF
-# $REPO_NAME
+# Packages
 
 An apt, dnf and apk repository, served at <$REPO_URL>.
 
