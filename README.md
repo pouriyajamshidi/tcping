@@ -57,6 +57,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
+### Timestamped probes over IPv4 (`-D -4`) flags
+
+![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+
+---
+
 ### Retry hostname lookup (`-r`) flag
 
 ![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)

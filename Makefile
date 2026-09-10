@@ -97,6 +97,7 @@ RELEASE_ARTIFACTS := \
 	$(WINDOWS_ARTIFACTS)
 GIF_ARTIFACTS := \
 	$(GIFS_DIR)/tcping.gif \
+	$(GIFS_DIR)/tcping_timestamp.gif \
 	$(GIFS_DIR)/tcping_resolve.gif \
 	$(GIFS_DIR)/tcping_json_pretty.gif \
 	$(GIFS_DIR)/tcping_dns_timing.gif \
