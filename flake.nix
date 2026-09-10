@@ -70,6 +70,7 @@
             gnumake
             zip
             vhs
+            tmux
           ];
         };
       });
