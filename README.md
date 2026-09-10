@@ -63,6 +63,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
+### Plain output, statistics only when Enter is pressed (`--no-color --no-stats`) flags
+
+![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+
+---
+
 ### Retry hostname lookup (`-r`) flag
 
 ![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
@@ -72,6 +78,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 ### JSON output (`-j --pretty`) flag
 
 ![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+
+---
+
+### Streaming the JSON output to a collector (`--json-url --json-server`) flags
+
+![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
 
 ---
 
@@ -108,6 +120,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 ### UDP probes against a UDP server (`--udp-server`) flag
 
 ![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+
+---
+
+### Only the failed probes (`--failures-only`) flag
+
+![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -463,6 +481,61 @@ Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
     reply echoed back probe 4
 ```
 
+### Streaming the JSON output to a server
+
+The `JSON` output does not have to be printed. Give `--json-url` an address and
+every event is `POST`ed there as it happens, one event per request, so a machine
+that is probing can report to a machine that is collecting:
+
+```bash
+tcping www.example.com 443 --json-url http://localhost:8000/tcping
+```
+
+The events and their fields are exactly the ones `-j` prints, so anything that
+already reads the piped output reads these too. Every streamed event also
+names the machine that sent it in its `source` field, which defaults to that
+machine's hostname, so a collector taking events from several of them can tell
+whose run it is looking at. Use `--source-label` to name them yourself:
+
+```bash
+tcping www.example.com 443 --json-url http://collector:8000/tcping --source-label paris
+```
+
+tcping can be the receiving side as well, the same way `--udp-server` answers
+UDP probes. `--json-server` does not probe: it listens on the given host and
+port and prints every event posted to it, on any path, so the machine
+collecting needs nothing installed either:
+
+```bash
+# on the machine collecting:
+tcping --json-server 0.0.0.0 8000
+
+# on the machine probing it:
+tcping www.example.com 443 --json-url http://collector:8000/tcping
+```
+
+The events go to its standard output and everything else to standard error, so
+`tcping --json-server 0.0.0.0 8000 > events.jsonl` leaves a file of nothing but
+events, and anything that is not `JSON` is refused rather than printed.
+
+Any server that accepts a `POST` with a `JSON` body works just as well, e.g.:
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+@app.post("/tcping")
+async def tcping(event: dict) -> None:
+    print(event)
+```
+
+All the events of a run go over one connection, which is kept open between
+probes rather than dialed again for each one. A server that is down or unhappy
+does not stop the probing: tcping says so once and keeps going, dropping the
+events it cannot deliver.
+
 ### Sending the results to Grafana Alloy or InfluxDB
 
 Instead of printing each probe, tcping can send it as a metric, which turns a
@@ -556,6 +629,8 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | --- | --- | --- |
 | `-j` | | Output in `JSON` format |
 | `--pretty` | | Prettify the `JSON` output. No effect without `-j` |
+| `--json-url <URL>` | | Send the `JSON` output to an HTTP server instead of printing it, one `POST` per event, e.g. `--json-url http://localhost:8000/tcping`. Turns on `JSON` output on its own, so `-j` is not needed |
+| `--json-server` | | Do not probe. Listen on the given host and port and print every `JSON` event posted to it, so a tcping using `--json-url` elsewhere has somewhere to send its run, e.g. `tcping --json-server 0.0.0.0 8000` |
 | `--csv <file>` | | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix |
 | `--csv-fixed-name` | | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file |
 | `--sqlite <file>` | | Store the output in a sqlite3 database, e.g. `--sqlite /tmp/tcping.db`. Not available on Windows |
@@ -570,7 +645,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `--influxdb-bucket <bucket>` | | InfluxDB bucket to write to. Required with `--influxdb` |
 | `--influxdb-token <token>` | | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable, which keeps it out of your shell history |
 | `--stats-interval <seconds>` | `10` | How often to send the statistics to Alloy or InfluxDB. No effect without `--alloy` or `--influxdb` |
-| `--source-label <name>` | hostname | Name this machine in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart |
+| `--source-label <name>` | hostname | Name this machine in the `JSON` events and in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart. Results that are sent elsewhere carry the hostname when this is not given; output that stays on the machine carries nothing |
 
 ### HTTP(S) and UDP
 
