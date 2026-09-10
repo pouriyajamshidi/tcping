@@ -32,6 +32,8 @@ $script:TcpingFlags = [ordered]@{
 
 	'-j'                     = 'Output in JSON format'
 	'--pretty'               = 'Prettify the JSON output. No effect without -j'
+	'--json-url'             = 'Send the JSON output to an HTTP server instead of printing it'
+	'--json-server'          = 'Do not probe. Print the JSON events posted to the given host and port'
 	'--csv'                  = 'Store the output in a CSV file'
 	'--csv-fixed-name'       = 'Use the --csv filename as it is, without a date/time suffix'
 

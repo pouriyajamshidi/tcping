@@ -27,6 +27,8 @@ _arguments -s \
 	'-v[Show all the details an HTTP(S) or UDP probe collects]' \
 	'-j[Output in JSON format]' \
 	'--pretty[Prettify the JSON output. No effect without -j]' \
+	'--json-url=[Send the JSON output to an HTTP server instead of printing it]:URL:_urls' \
+	'--json-server[Do not probe. Print the JSON events posted to the given host and port]' \
 	'--csv=[Store the output in a CSV file]:file:_files' \
 	'--csv-fixed-name[Use the --csv filename as it is, without a date/time suffix]' \
 	'--sqlite=[Store the output in a sqlite3 database]:file:_files' \
