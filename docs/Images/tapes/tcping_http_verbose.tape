@@ -1,7 +1,8 @@
 Set Shell "bash"
-Set FontSize 16
-Set Width 1600
-Set Height 1000
+Set FontSize 20
+Set Padding 30
+Set Width 1475
+Set Height 985
 
 Type "tcping https://example.com -v -c 3"
 Sleep 500ms  Enter
