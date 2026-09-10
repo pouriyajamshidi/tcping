@@ -24,7 +24,7 @@ export CGO_ENABLED := 0
 
 # Linters. Pinned so a local run and a CI run report the same thing.
 # Bumping revive is what pulls in newly added revive rules, see revive.toml.
-REVIVE_VERSION := v1.15.0
+REVIVE_VERSION := v1.16.0
 STATICCHECK_VERSION := 2026.2.1
 
 # Builds the Linux packages from nfpm.yaml. Pinned for the same reason.
