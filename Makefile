@@ -347,14 +347,11 @@ gif-binary:
 	@mkdir -p $(GIF_BIN_DIR)
 	@go build $(GO_LDFLAGS) -o $(GIF_BIN) $(GO_MAIN_PATH)
 
-$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape gif-binary FORCE
+# vhs can exit 0 without writing anything (it did so in v0.12.0, which cancels
+# its context before calling ffmpeg), so the GIF is written next to the binary
+# first and only moved into place once we know it exists.
+$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape gif-binary
 	@echo "[+] Generating GIF: $@"
-	@PATH="$(abspath $(GIF_BIN_DIR)):$$PATH" vhs $< -o $@
-
-# ==================================================
-# Helpers
-# ==================================================
-
-# Force target
-# See https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
-FORCE:
+	@PATH="$(abspath $(GIF_BIN_DIR)):$$PATH" vhs $< -o $(GIF_BIN_DIR)/$(@F)
+	@test -s $(GIF_BIN_DIR)/$(@F) || { echo "[-] vhs wrote no GIF for $<"; exit 1; }
+	@mv $(GIF_BIN_DIR)/$(@F) $@
