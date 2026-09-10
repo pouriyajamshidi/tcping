@@ -97,6 +97,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
 
+---
+
+### UDP probes against a UDP server (`--udp-server`) flag
+
+![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+
 </details>
 
 ---
