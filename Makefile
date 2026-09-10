@@ -100,6 +100,9 @@ GIF_ARTIFACTS := \
 	$(GIFS_DIR)/tcping_timestamp.gif \
 	$(GIFS_DIR)/tcping_resolve.gif \
 	$(GIFS_DIR)/tcping_json_pretty.gif \
+	$(GIFS_DIR)/tcping_json_stream.gif \
+	$(GIFS_DIR)/tcping_plain.gif \
+	$(GIFS_DIR)/tcping_failures_only.gif \
 	$(GIFS_DIR)/tcping_dns_timing.gif \
 	$(GIFS_DIR)/tcping_interface.gif \
 	$(GIFS_DIR)/tcping_http.gif \
@@ -351,7 +354,13 @@ gif-binary:
 # vhs can exit 0 without writing anything (it did so in v0.12.0, which cancels
 # its context before calling ffmpeg), so the GIF is written next to the binary
 # first and only moved into place once we know it exists.
-$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape gif-binary
+#
+# gif-binary is an order-only prerequisite, after the pipe. It always runs,
+# because it is phony, but it no longer makes every GIF out of date, so
+# "make gifs" only re-records the tapes that changed. Recording all of them
+# again after an output change is "rm -rf $(GIFS_DIR)" followed by
+# "make gifs", or "make gifs -B".
+$(GIFS_DIR)/%.gif: $(TAPES_DIR)/%.tape | gif-binary
 	@echo "[+] Generating GIF: $@"
 	@PATH="$(abspath $(GIF_BIN_DIR)):$$PATH" vhs $< -o $(GIF_BIN_DIR)/$(@F)
 	@test -s $(GIF_BIN_DIR)/$(@F) || { echo "[-] vhs wrote no GIF for $<"; exit 1; }
