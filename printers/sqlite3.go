@@ -328,11 +328,12 @@ func (p *SQLitePrinter) insertProbe(
 	args = append(args, httpArgs(s)...)
 	args = append(args, udpArgs(s)...)
 
-	if err := sqlitex.Execute(
+	err := sqlitex.Execute(
 		p.conn,
 		fmt.Sprintf(probeInsert, p.probeTableName),
 		&sqlitex.ExecOptions{Args: args},
-	); err != nil {
+	)
+	if err != nil {
 		p.PrintError("Failed writing probe data to database: %v", err)
 	}
 }
@@ -460,11 +461,12 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		endTime,
 	}
 
-	if err := sqlitex.Execute(
+	err := sqlitex.Execute(
 		p.conn,
 		fmt.Sprintf(statsInsert, p.statsTableName),
 		&sqlitex.ExecOptions{Args: args},
-	); err != nil {
+	)
+	if err != nil {
 		p.PrintError("Failed writing statistics to database: %v", err)
 		return
 	}

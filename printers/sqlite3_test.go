@@ -166,7 +166,7 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 		successfulProbes string
 	)
 
-	if err := sqlitex.Execute(printer.conn,
+	err = sqlitex.Execute(printer.conn,
 		fmt.Sprintf(`SELECT typeof(reachable), typeof(destination_is_ip), typeof(latency), typeof(ongoing_successful_probes) FROM %s`, printer.probeTableName),
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -177,7 +177,8 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 				return nil
 			},
 		},
-	); err != nil {
+	)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -226,7 +227,7 @@ func queryRow(t *testing.T, printer *SQLitePrinter, query string) []string {
 	var row []string
 	rows := 0
 
-	if err := sqlitex.Execute(printer.conn, query, &sqlitex.ExecOptions{
+	err := sqlitex.Execute(printer.conn, query, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			rows++
 			row = make([]string, stmt.ColumnCount())
@@ -239,7 +240,8 @@ func queryRow(t *testing.T, printer *SQLitePrinter, query string) []string {
 			}
 			return nil
 		},
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("query %q failed: %v", query, err)
 	}
 
