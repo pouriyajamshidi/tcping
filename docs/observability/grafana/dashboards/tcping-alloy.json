@@ -1,0 +1,1505 @@
+{
+  "timezone": "browser",
+  "editable": true,
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "uid": "tcping-alloy",
+  "title": "tcping (Alloy)",
+  "tags": [
+    "tcping",
+    "alloy",
+    "prometheus"
+  ],
+  "description": "Probes tcping sent to Grafana Alloy with --alloy, read back from Prometheus.",
+  "links": [
+    {
+      "title": "The same probes through InfluxDB",
+      "type": "link",
+      "url": "/d/tcping-influxdb",
+      "icon": "external link",
+      "tooltip": "Open the InfluxDB dashboard",
+      "asDropdown": false,
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": true,
+      "tags": []
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "source",
+        "label": "Source",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(tcping_probe_success, source)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(tcping_probe_success, source)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "transparent": true,
+      "options": {
+        "mode": "markdown",
+        "content": "### Read from Prometheus, by way of Grafana Alloy\nEverything below is the OTLP metrics `tcping --alloy` sent to Alloy, which remote wrote them to Prometheus. A run that only uses `--influxdb` does not show up here: it is on the [tcping (InfluxDB)](/d/tcping-influxdb) dashboard."
+      }
+    },
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Probes",
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Round trip time",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_probe_rtt_milliseconds{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The same probes taking the --alloy route into Prometheus."
+    },
+    {
+      "id": 3,
+      "type": "state-timeline",
+      "title": "Probe result",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_probe_success{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 90,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "no reply",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "reply",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mergeValues": true,
+        "showValue": "never",
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "description": "1 while the target answers, 0 for every probe that failed."
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Packet loss",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_packet_loss_percent{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "description": "One tile per target, from the running summary."
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Successful and unsuccessful probes",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_probes_total{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{result}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The two counts the statistics block opens with, as they grow."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latency min / average / max / mdev",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_rtt_milliseconds{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The running summary tcping sends every --stats-interval."
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Uptime and downtime",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Total uptime and downtime",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_uptime_seconds_total{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_downtime_seconds_total{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0."
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Length of each uptime and downtime streak",
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_last_uptime_seconds{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "tcping_last_downtime_seconds{source=~\"$source\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Sent when a streak ends: how long the target had been up when it went down, and how long the outage lasted."
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Longest uptime and downtime",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "{__name__=~\"tcping_longest_(up|down)time_seconds|tcping_longest_(up|down)time_(start|end)_milliseconds\", source=~\"$source\"}",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByLabels",
+          "options": {
+            "value": "__name__",
+            "join": [
+              "source",
+              "protocol",
+              "target",
+              "port"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "source": 0,
+              "protocol": 1,
+              "target": 2,
+              "port": 3,
+              "tcping_longest_uptime_seconds": 4,
+              "tcping_longest_uptime_start_milliseconds": 5,
+              "tcping_longest_uptime_end_milliseconds": 6,
+              "tcping_longest_downtime_seconds": 7,
+              "tcping_longest_downtime_start_milliseconds": 8,
+              "tcping_longest_downtime_end_milliseconds": 9
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tcping_longest_uptime_seconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "longest uptime"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tcping_longest_uptime_start_milliseconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "uptime from"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tcping_longest_uptime_end_milliseconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "uptime to"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tcping_longest_downtime_seconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "longest downtime"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tcping_longest_downtime_start_milliseconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "downtime from"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tcping_longest_downtime_end_milliseconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "downtime to"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "protocol"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "target"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 165
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "port"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 65
+              }
+            ]
+          }
+        ]
+      },
+      "options": {},
+      "description": "The longest the target stayed up and the longest it stayed down, and when each of those ran from and to. A streak is only known once it has ended, so a target that has not changed state yet has neither."
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "The run",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 12,
+          "type": "table",
+          "title": "The run so far",
+          "gridPos": {
+            "x": 0,
+            "y": 45,
+            "w": 24,
+            "h": 6
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "{__name__=~\"tcping_(start_time|end_time|last_successful_probe|last_unsuccessful_probe)_milliseconds|tcping_run_duration_seconds|tcping_hostname_(resolution_retries|changes)_total\", source=~\"$source\"}",
+              "legendFormat": "",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "joinByLabels",
+              "options": {
+                "value": "__name__",
+                "join": [
+                  "source",
+                  "protocol",
+                  "target",
+                  "port"
+                ]
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "source": 0,
+                  "protocol": 1,
+                  "target": 2,
+                  "port": 3,
+                  "tcping_start_time_milliseconds": 4,
+                  "tcping_run_duration_seconds": 5,
+                  "tcping_end_time_milliseconds": 6,
+                  "tcping_last_successful_probe_milliseconds": 7,
+                  "tcping_last_unsuccessful_probe_milliseconds": 8,
+                  "tcping_hostname_resolution_retries_total": 9,
+                  "tcping_hostname_changes_total": 10
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_start_time_milliseconds"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "started"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_run_duration_seconds"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "running for"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_end_time_milliseconds"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "ended"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_last_successful_probe_milliseconds"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "last successful probe"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_last_unsuccessful_probe_milliseconds"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "last unsuccessful probe"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_hostname_resolution_retries_total"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "hostname retries"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_hostname_changes_total"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "address changes"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "source"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 105
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "protocol"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 85
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "target"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 165
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "port"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 65
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "hostname_resolution_retries"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "hostname_changes"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_hostname_resolution_retries_total"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_hostname_changes_total"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {},
+          "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us. The end time only fills in once the run has finished."
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "Name resolution",
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 14,
+          "type": "timeseries",
+          "title": "Name resolution time",
+          "gridPos": {
+            "x": 0,
+            "y": 52,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_name_resolution_milliseconds{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "One point per hostname lookup."
+        },
+        {
+          "id": 15,
+          "type": "table",
+          "title": "Resolved address",
+          "gridPos": {
+            "x": 12,
+            "y": 52,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_target_address{source=~\"$source\"}",
+              "legendFormat": "",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "job": true
+                },
+                "indexByName": {
+                  "source": 0,
+                  "protocol": 1,
+                  "target": 2,
+                  "port": 3,
+                  "ip": 4
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "source"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "protocol"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "target"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 200
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "port"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {},
+          "description": "The address each target resolved to. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "HTTP",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 17,
+          "type": "timeseries",
+          "title": "HTTP timings",
+          "gridPos": {
+            "x": 0,
+            "y": 62,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_http_connect_milliseconds{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} connect"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_http_tls_handshake_milliseconds{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} tls handshake"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} first byte"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "Connect, TLS handshake and time to first byte."
+        },
+        {
+          "id": 18,
+          "type": "timeseries",
+          "title": "HTTP status code",
+          "gridPos": {
+            "x": 12,
+            "y": 62,
+            "w": 6,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_http_status_code{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "stepAfter"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "What the server answered with on each probe."
+        },
+        {
+          "id": 19,
+          "type": "stat",
+          "title": "Certificate days remaining",
+          "gridPos": {
+            "x": 18,
+            "y": 62,
+            "w": 6,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_certificate_days_remaining{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "unit": "suffix: days",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 14
+                  },
+                  {
+                    "color": "green",
+                    "value": 30
+                  }
+                ]
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "area",
+            "textMode": "auto"
+          },
+          "description": "How long the certificate of each HTTPS target is still good for."
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "UDP",
+      "gridPos": {
+        "x": 0,
+        "y": 71,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "UDP reply size",
+          "gridPos": {
+            "x": 0,
+            "y": 72,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_udp_reply_bytes{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "How much came back. Zero means nothing answered."
+        },
+        {
+          "id": 22,
+          "type": "state-timeline",
+          "title": "UDP reply echoed and port unreachable",
+          "gridPos": {
+            "x": 12,
+            "y": 72,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_udp_reply_echoed{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} echoed"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "tcping_udp_port_unreachable{source=~\"$source\"}",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} unreachable"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "lineWidth": 0,
+                "fillOpacity": 90,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "false": {
+                      "text": "no",
+                      "color": "#5a6270",
+                      "index": 0
+                    },
+                    "true": {
+                      "text": "yes",
+                      "color": "green",
+                      "index": 1
+                    },
+                    "0": {
+                      "text": "no",
+                      "color": "#5a6270",
+                      "index": 2
+                    },
+                    "1": {
+                      "text": "yes",
+                      "color": "green",
+                      "index": 3
+                    }
+                  }
+                }
+              ],
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "mergeValues": true,
+            "showValue": "never",
+            "alignValue": "left",
+            "rowHeight": 0.9,
+            "legend": {
+              "showLegend": false,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "description": "A reply carrying our own payload back is the only proof something is listening, and an ICMP refusal the only proof nothing is."
+        }
+      ]
+    }
+  ]
+}

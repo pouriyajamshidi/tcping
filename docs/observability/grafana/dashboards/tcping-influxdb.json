@@ -1,0 +1,1427 @@
+{
+  "timezone": "browser",
+  "editable": true,
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "uid": "tcping-influxdb",
+  "title": "tcping (InfluxDB)",
+  "tags": [
+    "tcping",
+    "influxdb"
+  ],
+  "description": "Probes tcping wrote straight to InfluxDB with --influxdb.",
+  "links": [
+    {
+      "title": "The same probes through Alloy",
+      "type": "link",
+      "url": "/d/tcping-alloy",
+      "icon": "external link",
+      "tooltip": "Open the Alloy dashboard",
+      "asDropdown": false,
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": true,
+      "tags": []
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "source",
+        "label": "Source",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb"
+        },
+        "definition": "tag values of \"source\"",
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"tcping\", tag: \"source\")",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "transparent": true,
+      "options": {
+        "mode": "markdown",
+        "content": "### Read from InfluxDB\nEverything below is the line protocol `tcping --influxdb` wrote into the `tcping` bucket. A run that only uses `--alloy` does not show up here: it is on the [tcping (Alloy)](/d/tcping-alloy) dashboard."
+      }
+    },
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Probes",
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Round trip time",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "min",
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "How long each probe took."
+    },
+    {
+      "id": 3,
+      "type": "state-timeline",
+      "title": "Probe result",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 90,
+            "spanNulls": false
+          },
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "no reply",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "reply",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mergeValues": true,
+        "showValue": "never",
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "description": "1 while the target answers, 0 for every probe that failed."
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Packet loss",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"packet_loss_percent\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "percent",
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "description": "One tile per target, from the running summary."
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Successful and unsuccessful probes",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The two counts the statistics block opens with, as they grow."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latency min / average / max / mdev",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The running summary tcping writes every --stats-interval."
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Uptime and downtime",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Total uptime and downtime",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0."
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Length of each uptime and downtime streak",
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_uptime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"uptime\")"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_downtime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"downtime\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          },
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "One point per streak, written when it ends: how long the target had been up when it went down, and how long the outage lasted."
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Longest uptime and downtime",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb"
+          },
+          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^longest_(up|down)time(_start|_end)?_(seconds|ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"longest_uptime_seconds\", \"longest_uptime_start_ms\", \"longest_uptime_end_ms\", \"longest_downtime_seconds\", \"longest_downtime_start_ms\", \"longest_downtime_end_ms\"])\n  |> group()"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "source": 0,
+              "protocol": 1,
+              "target": 2,
+              "port": 3,
+              "longest_uptime_seconds": 4,
+              "longest_uptime_start_ms": 5,
+              "longest_uptime_end_ms": 6,
+              "longest_downtime_seconds": 7,
+              "longest_downtime_start_ms": 8,
+              "longest_downtime_end_ms": 9
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "longest_uptime_seconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "longest uptime"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "longest_uptime_start_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "uptime from"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "longest_uptime_end_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "uptime to"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "longest_downtime_seconds"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "longest downtime"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "longest_downtime_start_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "downtime from"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "longest_downtime_end_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "downtime to"
+              },
+              {
+                "id": "unit",
+                "value": "time:MMM D HH:mm:ss"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "protocol"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "target"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 165
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "port"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 65
+              }
+            ]
+          }
+        ]
+      },
+      "options": {},
+      "description": "The longest the target stayed up and the longest it stayed down, and when each of those ran from and to. A streak is only known once it has ended, so a target that has not changed state yet has neither."
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "The run",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 12,
+          "type": "table",
+          "title": "The run so far",
+          "gridPos": {
+            "x": 0,
+            "y": 45,
+            "w": 24,
+            "h": 6
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(start_time_ms|end_time_ms|run_duration_seconds|last_(un)?successful_probe_ms|hostname_(resolution_retries|changes))$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"start_time_ms\", \"run_duration_seconds\", \"end_time_ms\", \"last_successful_probe_ms\", \"last_unsuccessful_probe_ms\", \"hostname_resolution_retries\", \"hostname_changes\"])\n  |> group()"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "source": 0,
+                  "protocol": 1,
+                  "target": 2,
+                  "port": 3,
+                  "start_time_ms": 4,
+                  "run_duration_seconds": 5,
+                  "end_time_ms": 6,
+                  "last_successful_probe_ms": 7,
+                  "last_unsuccessful_probe_ms": 8,
+                  "hostname_resolution_retries": 9,
+                  "hostname_changes": 10
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "start_time_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "started"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "run_duration_seconds"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "running for"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "end_time_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "ended"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "last_successful_probe_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "last successful probe"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "last_unsuccessful_probe_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "last unsuccessful probe"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "hostname_resolution_retries"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "hostname retries"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "hostname_changes"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "address changes"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "source"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 105
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "protocol"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 85
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "target"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 165
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "port"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 65
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "hostname_resolution_retries"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "hostname_changes"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_hostname_resolution_retries_total"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tcping_hostname_changes_total"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {},
+          "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us. The end time only fills in once the run has finished."
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "Name resolution",
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 14,
+          "type": "timeseries",
+          "title": "Name resolution time",
+          "gridPos": {
+            "x": 0,
+            "y": 52,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              },
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "One point per hostname lookup, so a run that resolves every probe fills in and one that resolved once does not."
+        },
+        {
+          "id": 15,
+          "type": "table",
+          "title": "Resolved address",
+          "gridPos": {
+            "x": 12,
+            "y": 52,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "source": 0,
+                  "protocol": 1,
+                  "target": 2,
+                  "port": 3,
+                  "ip": 4
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "source"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "protocol"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "target"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 200
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "port"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {},
+          "description": "The address each target resolved to. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "HTTP",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 17,
+          "type": "timeseries",
+          "title": "HTTP timings",
+          "gridPos": {
+            "x": 0,
+            "y": 62,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              },
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "min",
+                "mean",
+                "max",
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "Connect, TLS handshake and time to first byte. Only fills in for an http:// or https:// target, and the handshake only over HTTPS."
+        },
+        {
+          "id": 18,
+          "type": "timeseries",
+          "title": "HTTP status code",
+          "gridPos": {
+            "x": 12,
+            "y": 62,
+            "w": 6,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "stepAfter"
+              },
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "What the server answered with on each probe."
+        },
+        {
+          "id": 19,
+          "type": "stat",
+          "title": "Certificate days remaining",
+          "gridPos": {
+            "x": 18,
+            "y": 62,
+            "w": 6,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"certificate_days_remaining\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "unit": "suffix: days",
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 14
+                  },
+                  {
+                    "color": "green",
+                    "value": 30
+                  }
+                ]
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "area",
+            "textMode": "auto"
+          },
+          "description": "How long the certificate of each HTTPS target is still good for."
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "UDP",
+      "gridPos": {
+        "x": 0,
+        "y": 71,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "UDP reply size",
+          "gridPos": {
+            "x": 0,
+            "y": 72,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              },
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "How much came back. Zero means nothing answered."
+        },
+        {
+          "id": 22,
+          "type": "state-timeline",
+          "title": "UDP reply echoed and port unreachable",
+          "gridPos": {
+            "x": 12,
+            "y": 72,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "influxdb"
+              },
+              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field =~ /^(echoed|rejected)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "lineWidth": 0,
+                "fillOpacity": 90,
+                "spanNulls": false
+              },
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "false": {
+                      "text": "no",
+                      "color": "#5a6270",
+                      "index": 0
+                    },
+                    "true": {
+                      "text": "yes",
+                      "color": "green",
+                      "index": 1
+                    },
+                    "0": {
+                      "text": "no",
+                      "color": "#5a6270",
+                      "index": 2
+                    },
+                    "1": {
+                      "text": "yes",
+                      "color": "green",
+                      "index": 3
+                    }
+                  }
+                }
+              ],
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "mergeValues": true,
+            "showValue": "never",
+            "alignValue": "left",
+            "rowHeight": 0.9,
+            "legend": {
+              "showLegend": false,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "description": "A reply carrying our own payload back is the only proof something is listening, and an ICMP refusal the only proof nothing is."
+        }
+      ]
+    }
+  ]
+}
