@@ -3,19 +3,24 @@
 # below. Needs tmux on the PATH.
 #
 # The size is measured rather than guessed. A terminal cell is 0.667 by 1.318
-# times the font size, so 92 columns and 34 rows come out as the width and
-# height below, padding included. 92 columns is the summary's widest line with
-# a few to spare, and the 34 rows are the probe's 25, the server's 8 and the
-# divider between them. Sizing the window to the output rather than to the
-# screen is what keeps the text readable: GitHub scales the GIF down to the
-# width of the README, so every column we do not need, and every pixel of
-# padding around them, costs font size.
+# times the font size, so 89 columns and 33 rows come out as the width and
+# height below, padding included. 89 columns is the summary's widest line, the
+# one carrying two timestamps, with one to spare, and the 33 rows are the
+# probe's 24, the server's 8 and the divider between them, none of them spare.
+# The server's 8 are its command line, its 6 lines of output and the row the
+# cursor waits on: give it 7 and the command scrolls off the top.
+#
+# Only the column count is worth arguing about. GitHub scales the GIF down to
+# the width of the README, so the text lands at the README width divided by the
+# columns: every column we do not need, and every pixel of padding around them,
+# costs font size. Rows and the font size below do not, since a taller window
+# or a bigger font scales right back down.
 
 Set Shell "bash"
 Set FontSize 20
 Set Padding 30
-Set Width 1290
-Set Height 960
+Set Width 1250
+Set Height 930
 
 # Build the split off camera so the recording starts on two ready panes. The
 # panes run "bash --norc" with the recorder's prompt exported into them, so
