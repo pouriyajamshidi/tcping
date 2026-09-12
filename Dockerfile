@@ -26,6 +26,10 @@ FROM scratch
 
 LABEL maintainer="Pouriya Jamshidi"
 
+# An https:// probe checks the server certificate, and scratch has no root
+# certificates to check it against, so without this every HTTPS probe fails.
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
 COPY --from=build /build/target/tcping /usr/bin/
 
 ENTRYPOINT ["tcping"]
