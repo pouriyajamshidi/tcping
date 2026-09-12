@@ -22,6 +22,10 @@ GO_MAIN_PATH := ./cmd/tcping
 # the local one, so what you test is what gets released.
 export CGO_ENABLED := 0
 
+# The pinned versions below are watched by the pinned-versions workflow,
+# which opens an issue when a newer release is out. Dependabot does not
+# read a Makefile, so it cannot bump them itself.
+
 # Linters. Pinned so a local run and a CI run report the same thing.
 # Bumping revive is what pulls in newly added revive rules, see revive.toml.
 REVIVE_VERSION := v1.16.0
