@@ -498,7 +498,7 @@ machine's hostname, so a collector taking events from several of them can tell
 whose run it is looking at. Use `--source-label` to name them yourself:
 
 ```bash
-tcping www.example.com 443 --json-url http://collector:8000/tcping --source-label paris
+tcping www.example.com 443 --json-url http://collector:8000/tcping --source-label brussels
 ```
 
 tcping can be the receiving side as well, the same way `--udp-server` answers
@@ -551,8 +551,8 @@ Or straight to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as
 line protocol:
 
 ```bash
-export INFLUXDB_TOKEN=your-api-token
-tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping
+export INFLUXDB_TOKEN=your-api-token && \
+  tcping www.example.com 443 --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping
 ```
 
 Every probe carries its round trip time, whether it succeeded, the address the
@@ -567,12 +567,13 @@ their own series instead of on top of each other. Use `--source-label` to name
 them yourself:
 
 ```bash
-tcping www.example.com 443 --alloy http://localhost:4318 --source-label paris
+tcping www.example.com 443 --alloy http://localhost:4318 --source-label brussels
 ```
 
 Everything that gets sent, how to query it, and a ready made Alloy, Prometheus,
-InfluxDB and Grafana stack you can start in one command to try this without
-setting a server up first, are in [docs/observability](docs/observability/README.md).
+InfluxDB, Grafana and tcping stack you can start in one command to try this
+without setting a server up first, are in
+[docs/observability](docs/observability/README.md).
 
 ---
 
