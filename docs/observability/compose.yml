@@ -1,5 +1,5 @@
 # A sample observability stack for tcping. See README.md next to this file
-# for how to run it and what the dashboard shows.
+# for how to run it and what the dashboards show.
 #
 # WARNING: every password and token below is a throwaway one, written in
 # plain text so the stack starts without any setup. Do not reuse them, and do
@@ -7,6 +7,23 @@
 
 # Fixed so the stack keeps the same name no matter where it is started from.
 name: tcping
+
+# What every tcping container below shares. The image is the released v3 tag,
+# built from this repository until v3 is out: a missing image makes
+# "docker compose up" build it, and once v3 is released "docker compose pull"
+# replaces it with the published one without a line here changing.
+x-tcping: &tcping
+  image: pouriyajamshidi/tcping:v3
+  build:
+    context: ../..
+  restart: unless-stopped
+  networks:
+    - tcping
+  deploy:
+    resources:
+      limits:
+        cpus: "0.10"
+        memory: 32M
 
 services:
   alloy:
@@ -68,6 +85,11 @@ services:
       - influxdb-data:/var/lib/influxdb2
     ports:
       - "8086:8086" # This is where tcping writes to
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     networks:
       - tcping
     deploy:
@@ -102,6 +124,145 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+
+  # tcping listening instead of probing, so the UDP probes below have
+  # something inside the stack to talk to and get a real reply from.
+  udp-echo:
+    <<: *tcping
+    container_name: udp-echo
+    command: ["--udp-server", "0.0.0.0", "9999"]
+
+  # The probes.
+  #
+  # Every dashboard row has a run feeding it, and each run is sent to Alloy
+  # and to InfluxDB by a pair of containers, so the two dashboards show the
+  # same thing and can be compared.
+  #
+  # -4 because Docker gives a container no IPv6 address unless it is turned
+  # on, and a hostname with an AAAA record would otherwise be probed over a
+  # network that is not there.
+  #
+  # --source-label names the machine the probe came from. These two are the
+  # same laptop pretending to be two places, which is what the Source
+  # dropdown at the top of a dashboard picks between.
+
+  tcping-alloy-tcp-brussels:
+    <<: *tcping
+    container_name: tcping-alloy-tcp-brussels
+    depends_on:
+      - alloy
+    command:
+      - --alloy=http://alloy:4318
+      - --source-label=brussels
+      - "-4"
+      - github.com
+      - "443"
+
+  # --resolve-every-probe is what fills in the Name resolution row: without
+  # it the hostname is looked up once at startup and never again.
+  tcping-alloy-tcp-tokyo:
+    <<: *tcping
+    container_name: tcping-alloy-tcp-tokyo
+    depends_on:
+      - alloy
+    command:
+      - --alloy=http://alloy:4318
+      - --source-label=tokyo
+      - --resolve-every-probe
+      - "-4"
+      - github.com
+      - "443"
+
+  tcping-alloy-https:
+    <<: *tcping
+    container_name: tcping-alloy-https
+    depends_on:
+      - alloy
+    command:
+      - --alloy=http://alloy:4318
+      - --source-label=brussels
+      - "-4"
+      - https://cloudflare.com
+
+  tcping-alloy-udp:
+    <<: *tcping
+    container_name: tcping-alloy-udp
+    depends_on:
+      - alloy
+      - udp-echo
+    command:
+      - --alloy=http://alloy:4318
+      - --source-label=brussels
+      - udp://udp-echo
+      - "9999"
+
+  tcping-influxdb-tcp-brussels:
+    <<: *tcping
+    container_name: tcping-influxdb-tcp-brussels
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment: &influxdb-token
+      # The token can go in the environment instead of on the command line,
+      # which keeps it out of the shell history and out of "docker inspect".
+      INFLUXDB_TOKEN: tcping-dev-token
+    command:
+      - --influxdb=http://influxdb:8086
+      - --influxdb-org=home
+      - --influxdb-bucket=tcping
+      - --source-label=brussels
+      - "-4"
+      - github.com
+      - "443"
+
+  tcping-influxdb-tcp-tokyo:
+    <<: *tcping
+    container_name: tcping-influxdb-tcp-tokyo
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment: *influxdb-token
+    command:
+      - --influxdb=http://influxdb:8086
+      - --influxdb-org=home
+      - --influxdb-bucket=tcping
+      - --source-label=tokyo
+      - --resolve-every-probe
+      - "-4"
+      - github.com
+      - "443"
+
+  tcping-influxdb-https:
+    <<: *tcping
+    container_name: tcping-influxdb-https
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment: *influxdb-token
+    command:
+      - --influxdb=http://influxdb:8086
+      - --influxdb-org=home
+      - --influxdb-bucket=tcping
+      - --source-label=brussels
+      - "-4"
+      - https://cloudflare.com
+
+  tcping-influxdb-udp:
+    <<: *tcping
+    container_name: tcping-influxdb-udp
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      udp-echo:
+        condition: service_started
+    environment: *influxdb-token
+    command:
+      - --influxdb=http://influxdb:8086
+      - --influxdb-org=home
+      - --influxdb-bucket=tcping
+      - --source-label=brussels
+      - udp://udp-echo
+      - "9999"
 
 networks:
   tcping:

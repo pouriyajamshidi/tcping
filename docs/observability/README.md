@@ -5,17 +5,20 @@ or to [InfluxDB](https://www.influxdata.com/) instead of printing them, which
 turns a run into a graph and lets several machines watch the same target.
 
 This directory is a complete stack you can start in one command to try that
-out, or to copy pieces of into your own setup.
+out, or to copy pieces of into your own setup. tcping is part of the stack, so
+starting it gives you graphs with something in them straight away, without
+having to run anything by hand.
 
 ## What is in here
 
 | File | What it does |
 | --- | --- |
-| `compose.yml` | Alloy, Prometheus, InfluxDB and Grafana, wired together |
+| `compose.yml` | Alloy, Prometheus, InfluxDB, Grafana and nine tcping containers, wired together |
 | `config.alloy` | Alloy taking OTLP from tcping and pushing it to Prometheus |
 | `prometheus.yml` | Prometheus with nothing to scrape, it only receives |
-| `grafana/provisioning/` | Both data sources, so nothing has to be clicked |
-| `grafana/dashboards/tcping.json` | The dashboard |
+| `grafana/provisioning/` | Both data sources and both dashboards, so nothing has to be clicked |
+| `grafana/dashboards/tcping-influxdb.json` | The dashboard reading from InfluxDB |
+| `grafana/dashboards/tcping-alloy.json` | The same dashboard reading from Prometheus |
 
 > [!WARNING]
 > Every password and token in here is a throwaway one, written in plain text
@@ -25,33 +28,46 @@ out, or to copy pieces of into your own setup.
 ## Start it
 
 ```bash
-cd docs/observability
-docker compose up -d
+cd docs/observability && docker compose up -d
 ```
+
+The tcping containers use the `pouriyajamshidi/tcping:v3` image. Until v3 is
+released that tag is not on any registry, so the first `docker compose up`
+builds it from this repository. Once v3 is out, `docker compose pull` replaces
+it with the published one and nothing in `compose.yml` has to change.
 
 That gives you:
 
-- Grafana on <http://localhost:3000>, no login needed
+- Grafana on <http://localhost:3000>, no login needed, with both dashboards
 - Alloy's UI on <http://localhost:12346>, to check it is receiving anything
 - Prometheus on <http://localhost:9090>
 - InfluxDB on <http://localhost:8086>, user `tcping`, password `tcping-dev-password`
 
-Then point tcping at it. Through Alloy:
+And these tcping containers, probing away:
+
+| Container | What it probes | Sends to |
+| --- | --- | --- |
+| `tcping-alloy-tcp-brussels` | `github.com:443` over TCP, labelled `brussels` | Alloy |
+| `tcping-alloy-tcp-tokyo` | the same, labelled `tokyo`, resolving every probe | Alloy |
+| `tcping-alloy-https` | `https://cloudflare.com` | Alloy |
+| `tcping-alloy-udp` | `udp-echo:9999` over UDP | Alloy |
+| `tcping-influxdb-tcp-brussels` | `github.com:443` over TCP, labelled `brussels` | InfluxDB |
+| `tcping-influxdb-tcp-tokyo` | the same, labelled `tokyo`, resolving every probe | InfluxDB |
+| `tcping-influxdb-https` | `https://cloudflare.com` | InfluxDB |
+| `tcping-influxdb-udp` | `udp-echo:9999` over UDP | InfluxDB |
+| `udp-echo` | nothing, it is `tcping --udp-server` answering the UDP probes |  |
+
+They come in pairs on purpose: the same four runs go to Alloy and to InfluxDB,
+so the two dashboards show the same thing and can be held next to each other.
+The `--resolve-every-probe` on the `tokyo` runs is what puts anything in the
+**Name resolution** row, and `udp-echo` is tcping listening instead of probing,
+so the UDP probes get a real reply from inside the stack.
+
+Stop one of them if you want to watch a target go down:
 
 ```bash
-tcping --alloy http://localhost:4318 example.com 443
+docker compose stop udp-echo
 ```
-
-Or straight to InfluxDB:
-
-```bash
-export INFLUXDB_TOKEN=tcping-dev-token
-tcping --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping example.com 443
-```
-
-One tcping run sends to one place, so start a second one if you want the
-same target going to both. Open the `tcping` dashboard in Grafana and the
-probes start showing up.
 
 When you are done:
 
@@ -61,6 +77,24 @@ docker compose down -v
 
 The `-v` throws the stored metrics away too. Leave it off to keep them. The
 stack only holds 6 hours of data either way.
+
+## Pointing your own tcping at it
+
+The stack listens for anything, not only its own containers. Through Alloy:
+
+```bash
+tcping --alloy http://localhost:4318 example.com 443
+```
+
+Or straight to InfluxDB:
+
+```bash
+export INFLUXDB_TOKEN=tcping-dev-token && \
+  tcping --influxdb http://localhost:8086 --influxdb-org home --influxdb-bucket tcping example.com 443
+```
+
+One tcping run sends to one place, so start a second one if you want the same
+target going to both.
 
 ## What tcping sends
 
@@ -94,7 +128,7 @@ breaks a graph into pieces and makes the counters add up wrong. Query it on its
 own to see which addresses a target has been answering from:
 
 ```promql
-tcping_target_address{target="www.example.com"}
+tcping_target_address{target="github.com"}
 ```
 
 If you want the address alongside the probes, join to it, keeping in mind that
@@ -119,11 +153,13 @@ somewhere else mid-run would otherwise leave the old series behind.
 A `tcping_http` point also carries the status code, the connect, TLS handshake
 and first-byte timings and the days left on the certificate, and a `tcping_udp`
 point carries the probe number, the size of the reply and whether it was echoed
-back or refused. The statistics go to `tcping_statistics`.
+back or refused. The statistics go to `tcping_statistics`, each ended uptime
+and downtime streak to `tcping_uptime` and `tcping_downtime`, and each hostname
+lookup to `tcping_name_resolution`.
 
 The API token can be given with `--influxdb-token`, or in the `INFLUXDB_TOKEN`
 environment variable, which keeps it out of your shell history. The flag wins
-if both are set.
+if both are set. The containers in `compose.yml` use the environment variable.
 
 ## Several machines probing the same target
 
@@ -133,20 +169,32 @@ their own series instead of on top of each other, and you can see the target
 from both at once.
 
 Use `--source-label` to name a machine yourself, which is also how to fake a
-second machine on one laptop:
+second machine on one laptop, and what the stack does to get its `brussels` and
+`tokyo`:
 
 ```bash
-tcping --alloy http://localhost:4318 --source-label paris example.com 443
+tcping --alloy http://localhost:4318 --source-label brussels example.com 443
 tcping --alloy http://localhost:4318 --source-label tokyo example.com 443
 ```
 
-The **Source** dropdown at the top of the dashboard picks which ones to show.
-It is filled from InfluxDB, so a machine that only sends to Alloy will not be
-in the list, but **All** leaves every panel unfiltered and shows it anyway.
+The **Source** dropdown at the top of each dashboard picks which ones to show,
+and is filled from that dashboard's own data source.
 
-## The dashboard
+## The dashboards
 
-Everything tcping sends has a panel, grouped into rows:
+There are two, holding the same panels in the same places:
+
+- **tcping (InfluxDB)** reads the points `--influxdb` wrote.
+- **tcping (Alloy)** reads the metrics `--alloy` sent, out of the Prometheus
+  that Alloy remote wrote them to.
+
+Which one to open is simply which way you sent the run. They are kept apart
+rather than mixed into one dashboard because Flux and PromQL are different
+query languages, so a single panel cannot be pointed at both. Each carries a
+line at the top saying which it reads and a link to the other one, so the same
+run can be compared side by side.
+
+Every panel tcping can fill has a place in both, grouped into rows:
 
 | Row | What is in it |
 | --- | --- |
@@ -156,55 +204,78 @@ Everything tcping sends has a panel, grouped into rows:
 | **Name resolution** | How long each lookup took, and the address every target resolved to |
 | **HTTP** | Connect, TLS handshake and first byte timings, the status code, and the days left on the certificate |
 | **UDP** | Reply size, whether the reply carried our own payload back, and whether the port was unreachable |
-| **Through Alloy** | All of the above again, read from Prometheus instead of InfluxDB |
 
-The first two rows are open and the rest start collapsed. Every row but the
-last reads from InfluxDB, so a run that only uses `--alloy` fills in the
-**Through Alloy** row and leaves the others empty, and a run that only uses
-`--influxdb` does the opposite.
+The first two rows are open and the rest start collapsed. A row only fills in
+when a run is feeding it: **HTTP** needs an `http://` or `https://` target,
+**UDP** needs a `udp://` one, and **Name resolution** needs a hostname that is
+looked up more than once.
 
 Every panel keys its series on the source, the protocol, the target and the
-port, so a legend entry reads `paris TCP github.com:443` and the same host
+port, so a legend entry reads `brussels TCP github.com:443` and the same host
 probed on two ports stays on two lines.
 
 `allowUiUpdates` is on, so you can edit panels in Grafana and try things. The
-edits live in Grafana's volume, not in the JSON file here, and `docker compose
+edits live in Grafana's volume, not in the JSON files here, and `docker compose
 down -v` throws them away. To keep one, export the dashboard JSON and write it
-over `grafana/dashboards/tcping.json`.
+over the file in `grafana/dashboards/`.
 
 ## What it looks like
 
-The shots below come from a handful of runs against `example.com` and
-`example.edu`, two of them labelled `paris` and `tokyo` so the sources can be
-told apart, with the time range set to the last 5 minutes.
+The shots below are the stack as `docker compose up -d` leaves it, running for
+about half an hour, with the time range set to the last 15 minutes.
 
 **Probes** is the row you will spend most of your time in. Round trip time and
-the probe result are side by side, and the packet loss, the counts and the
-latency summary sit underneath:
+the probe result are side by side, the packet loss of every run sits under
+them, and the counts and the latency summary under that:
 
-![The Probes row of the dashboard](../Images/observability/dashboard-probes.png)
+![The Probes row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-probes.png)
+
+Probes are sent as they happen, so the graphs fill in on their own:
+
+![Probes arriving as they happen](../Images/observability/dashboard-live.gif)
+
+**Uptime and downtime** is where an outage ends up. The totals climb, each
+streak gets a point when it ends, and the table underneath keeps the longest of
+each with the times it ran from and to:
+
+![The uptime and downtime row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-uptime.png)
+
+Stopping `udp-echo` is enough to see it happen. The UDP target goes red, its
+packet loss climbs, and both recover when the container comes back:
+
+![A target going down and coming back](../Images/observability/dashboard-outage.gif)
 
 **The run** is one line per run, so you can see at a glance how long each one
-has been going and when it last got an answer:
+has been going and when it last got an answer. The `tokyo` line is the one
+resolving every probe, which is why it is the only one with hostname lookups
+and address changes to report:
 
-![The run row of the dashboard](../Images/observability/dashboard-the-run.png)
+![The run row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-the-run.png)
 
 **Name resolution** needs `--resolve-every-probe` to have anything in the
-graph. The table next to it lists the address each target is currently on,
-which is how you catch a target moving between addresses:
+graph, which is why the stack passes it to the `tokyo` runs. The table next to
+it lists the address each target is currently on, which is how you catch a
+target moving between addresses:
 
-![The name resolution row of the dashboard](../Images/observability/dashboard-name-resolution.png)
+![The name resolution row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-name-resolution.png)
 
 **HTTP** only fills in for an `http://` or `https://` target, and carries the
 connect, TLS handshake and first byte timings, the status code, and how long
 the certificate has left:
 
-![The HTTP row of the dashboard](../Images/observability/dashboard-http.png)
+![The HTTP row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-http.png)
 
-**Through Alloy** is the same set of panels read from Prometheus, so a run
-using `--alloy` looks the same as one using `--influxdb`:
+**UDP** tells a lost probe apart from a refused one: a reply carrying our own
+payload back is the only proof something is listening, and a refusal the only
+proof nothing is:
 
-![The Through Alloy row of the dashboard](../Images/observability/dashboard-alloy.png)
+![The UDP row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-udp.png)
+
+And **tcping (Alloy)** is the same set of panels reading from Prometheus, so a
+run using `--alloy` looks like one using `--influxdb`. The same outage is in
+it, because the stack sends every run both ways:
+
+![The Probes row of the Alloy dashboard](../Images/observability/dashboard-alloy-probes.png)
 
 ## Using this outside the playground
 
@@ -226,12 +297,17 @@ The metrics and the fields are the same wherever they land, see
 
 ## Nothing is showing up
 
+- Check the probes are happening at all with `docker compose logs tcping-influxdb-tcp-brussels`.
+  Each container prints one line saying what it is probing and where the
+  metrics are going, and nothing after that.
 - Alloy's UI on <http://localhost:12346> shows the health of each component.
   If the receiver is healthy but the remote write is not, Prometheus is the
   problem.
 - A rejected write does not stop the run. tcping prints the error to stderr
   and says the metrics are being dropped, then keeps probing, so watch stderr
   rather than the probe output. A wrong InfluxDB token shows up this way.
+- Make sure you are on the dashboard for the way you sent the run. A run using
+  `--alloy` leaves **tcping (InfluxDB)** empty, and the other way round.
 - The statistics panels only fill in after the first statistics push, which is
   every 10 seconds by default. `--stats-interval` changes that.
 - **Name resolution time** stays empty unless the hostname is looked up more
