@@ -25,7 +25,10 @@
       packages = forAllSystems (pkgs: rec {
         default = tcping;
 
-        tcping = pkgs.buildGoModule {
+        # nixpkgs keeps one patch release per Go minor, and its default go is
+        # older than the patch go.mod asks for, so build with the next minor.
+        # Bump this whenever go.mod outgrows it.
+        tcping = (pkgs.buildGoModule.override { go = pkgs.go_1_27; }) {
           pname = "tcping";
           inherit version;
 
@@ -33,7 +36,7 @@
 
           # Hash of the downloaded modules. It changes whenever go.sum does,
           # and "make nix-update" is what refreshes it.
-          vendorHash = "sha256-x7HvBlAUyl9mJEJ6R40syjKjxGUhZzwXuq1rtucLhJ4=";
+          vendorHash = "sha256-qd7zu18nc4tXBwoUscgjFlzTL7dft4qxS55rlFCD3ss=";
 
           # Same flags as the Makefile, so the Nix build produces the same
           # static binary the release archives carry.
@@ -65,7 +68,9 @@
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           packages = with pkgs; [
-            go
+            # The same toolchain the package above builds with, so "make check"
+            # in the dev shell is not older than what go.mod asks for.
+            go_1_27
             gopls
             gnumake
             zip
