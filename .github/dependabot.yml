@@ -11,3 +11,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  # The golang base image in the Dockerfile.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
