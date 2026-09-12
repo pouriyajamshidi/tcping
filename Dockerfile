@@ -2,7 +2,7 @@
 ##################################################
 # Pinned to the build machine's own platform so the compiler always runs
 # natively. Go cross-compiles to TARGETARCH below, so there is no emulation.
-FROM --platform=$BUILDPLATFORM docker.io/golang:1.26.8-alpine3.23 AS build
+FROM --platform=$BUILDPLATFORM docker.io/golang:1.27.1-alpine3.23 AS build
 
 WORKDIR /build
 
