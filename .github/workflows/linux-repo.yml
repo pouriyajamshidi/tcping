@@ -49,35 +49,29 @@ jobs:
       PACKAGES_REPO: pouriyajamshidi/packages
 
     steps:
-      - name: Check whether the keys are set
-        id: keys
+      - name: Check the keys are set
         env:
           PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
         run: |
           if [ -z "$PACKAGES_TOKEN" ] || [ -z "$GPG_PRIVATE_KEY" ] || [ -z "$APK_PRIVATE_KEY" ]; then
-            echo "[!] The packages repository secrets are not set, skipping it"
-            echo "set=false" >>"$GITHUB_OUTPUT"
-          else
-            echo "set=true" >>"$GITHUB_OUTPUT"
+            echo "[-] The packages repository secrets are not set"
+            exit 1
           fi
 
       - name: Checkout repository
-        if: ${{ steps.keys.outputs.set == 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.tag }}
 
       - name: Work out the version
-        if: ${{ steps.keys.outputs.set == 'true' }}
         id: release
         env:
           TAG: ${{ inputs.tag }}
         run: echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
 
       - name: Download the packages of this release
-        if: ${{ steps.keys.outputs.set == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
@@ -88,7 +82,6 @@ jobs:
           ls -l packages
 
       - name: Write the signing keys
-        if: ${{ steps.keys.outputs.set == 'true' }}
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
@@ -99,7 +92,6 @@ jobs:
           chmod 600 signing/gpg.asc signing/apk.rsa
 
       - name: Clone the repository as it stands
-        if: ${{ steps.keys.outputs.set == 'true' }}
         env:
           PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
         run: |
@@ -109,7 +101,6 @@ jobs:
             "https://x-access-token:$PACKAGES_TOKEN@github.com/$PACKAGES_REPO.git" site
 
       - name: Build the repository
-        if: ${{ steps.keys.outputs.set == 'true' }}
         env:
           GPG_KEY: signing/gpg.asc
           APK_KEY: signing/apk.rsa
@@ -117,7 +108,6 @@ jobs:
         run: ./tools/build-linux-repo.sh packages site
 
       - name: Publish it
-        if: ${{ steps.keys.outputs.set == 'true' }}
         working-directory: site
         env:
           VERSION: ${{ steps.release.outputs.version }}

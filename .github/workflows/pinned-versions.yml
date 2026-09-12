@@ -1,8 +1,13 @@
-name: Check pinned versions in the Makefile
+name: Check pinned versions
 
 # Dependabot only reads manifests it knows about, so the tool versions pinned
-# in the Makefile are watched here instead. Every outdated pin turns into an
-# issue, and the bump itself is still done by hand.
+# in the Makefile are bumped here instead. Every outdated pin gets a pull
+# request of its own, so they can be merged one at a time.
+#
+# The pull requests are opened with PINNED_VERSIONS_TOKEN rather than the
+# built-in GITHUB_TOKEN, because a pull request opened by the built-in token
+# does not start the other workflows, which would leave these arriving without
+# a test run.
 on:
   workflow_dispatch:
   schedule:
@@ -10,22 +15,34 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   pinned-versions:
-    name: Compare the Makefile pins against the latest releases
+    name: Bump the Makefile pins
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Also what "git push" below authenticates with.
+          token: ${{ secrets.PINNED_VERSIONS_TOKEN }}
 
-      - name: Check the pinned versions
+      - name: Bump the pinned versions
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PINNED_VERSIONS_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "[-] The PINNED_VERSIONS_TOKEN secret is not set"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          base=$(git rev-parse HEAD)
 
           # Reads the value of a "NAME := value" line out of the Makefile.
           pinned() { sed -n "s/^$1 := //p" Makefile; }
@@ -34,32 +51,44 @@ jobs:
           # candidates are not returned by this endpoint, which is what we want.
           latest_release() { gh api "repos/$1/releases/latest" --jq .tag_name; }
 
-          open_issues=$(gh issue list --state open --limit 100 --json title --jq '.[].title')
           outdated=0
 
-          # Opens one issue per outdated pin, unless the same issue is already
-          # open. The title carries both versions, so a newer release than the
-          # one already reported still gets an issue of its own.
-          report() {
-            name=$1 current=$2 latest=$3
+          # Opens one pull request per outdated pin. The version is the tail of
+          # the pinned value, which is the whole value for the tools and the
+          # tag for the image.
+          bump() {
+            name=$1 var=$2 current=$3 latest=$4 note=$5
             if [ "$current" = "$latest" ]; then
-              echo "[+] $name is up to date ($current)"
+              echo "[+] $name is up to date (${current##*:})"
               return
             fi
+
             outdated=1
-            title="Bump $name from $current to $latest"
-            if grep -Fxq "$title" <<< "$open_issues"; then
-              echo "[-] $name is outdated ($current -> $latest), issue already open"
+            branch="bump-$name-${latest##*:}"
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              echo "[-] $name is outdated (${current##*:} -> ${latest##*:}), $branch already exists"
               return
             fi
-            echo "[-] $name is outdated ($current -> $latest), opening an issue"
-            gh issue create --title "$title" \
-              --body "The Makefile pins \`$name\` at \`$current\`, and \`$latest\` is out."
+
+            echo "[-] $name is outdated (${current##*:} -> ${latest##*:}), opening a pull request"
+            git switch -C "$branch" "$base" >/dev/null
+            sed -i "s|^$var := .*|$var := $latest|" Makefile
+            git commit --quiet -am "bump $name to ${latest##*:}"
+            git push --quiet origin "$branch"
+            gh pr create --base "$BASE_BRANCH" --head "$branch" \
+              --title "Bump $name from ${current##*:} to ${latest##*:}" \
+              --body "$(printf 'The Makefile pinned `%s` at `%s`, and `%s` is out.\n\n%s' \
+                "$name" "${current##*:}" "${latest##*:}" "$note")"
           }
 
-          report revive "$(pinned REVIVE_VERSION)" "$(latest_release mgechev/revive)"
-          report staticcheck "$(pinned STATICCHECK_VERSION)" "$(latest_release dominikh/go-tools)"
-          report nfpm "$(pinned NFPM_VERSION)" "$(latest_release goreleaser/nfpm)"
+          bump revive REVIVE_VERSION \
+            "$(pinned REVIVE_VERSION)" "$(latest_release mgechev/revive)" \
+            "A revive bump can pull in newly added rules, so read the test run before merging."
+          bump staticcheck STATICCHECK_VERSION \
+            "$(pinned STATICCHECK_VERSION)" "$(latest_release dominikh/go-tools)" ""
+          bump nfpm NFPM_VERSION \
+            "$(pinned NFPM_VERSION)" "$(latest_release goreleaser/nfpm)" \
+            "nfpm only runs during a release, so the test run here does not exercise it. \`make linux\` does."
 
           # The Nix image is not a GitHub release, so its tags come from Docker
           # Hub. Only the plain X.Y.Z tags are candidates, which leaves out
@@ -67,7 +96,8 @@ jobs:
           nix_latest=$(curl -fsSL "https://hub.docker.com/v2/repositories/nixos/nix/tags?page_size=100" \
             | jq -r '.results[].name' \
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
-          report nixos/nix "$(pinned NIX_IMAGE | cut -d: -f2)" "$nix_latest"
+          bump nix NIX_IMAGE "$(pinned NIX_IMAGE)" "nixos/nix:$nix_latest" \
+            "This image is only used by \"make nix CONTAINER=1\". The Nix workflow installs Nix directly, so it does not exercise this pin."
 
           if [ "$outdated" -eq 0 ]; then
             echo "[+] Every pin is up to date"
