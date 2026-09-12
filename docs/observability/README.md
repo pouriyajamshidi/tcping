@@ -295,6 +295,42 @@ token.
 The metrics and the fields are the same wherever they land, see
 [what tcping sends](#what-tcping-sends).
 
+### Taking a dashboard to your own Grafana
+
+Both dashboards read their data source from a **Data source** dropdown rather
+than naming one, so importing either into a Grafana you already have does not
+mean editing any JSON:
+
+1. Open **Dashboards**, then **New**, then **Import**.
+2. Paste the contents of `grafana/dashboards/tcping-influxdb.json`, or
+   `tcping-alloy.json` for the Prometheus one, and press **Load**.
+3. Pick a folder and press **Import**.
+
+It lands next to your existing dashboards as its own entry, without touching
+them. The **Data source** dropdown at the top then picks which of your
+InfluxDB, or Prometheus, servers to read.
+
+Two things to know:
+
+- The InfluxDB dashboard reads the bucket name from a `bucket` variable,
+  which is set to `tcping`. If your bucket is called something else, change it
+  once under **Dashboard settings**, then **Variables**, then **bucket**.
+- Importing only one of the two leaves the link at the top pointing at a
+  dashboard you do not have. Import both, or delete the link under
+  **Dashboard settings**, then **Links**.
+
+To lift single panels into a dashboard you already have rather than importing
+the whole thing, import it first, then use a panel's menu, **Copy**, and
+**Paste panel** on the other dashboard.
+
+> [!IMPORTANT]
+> The InfluxDB dashboard's queries are written in **Flux**, so its data source
+> has to be an InfluxDB **v2** one with the query language set to Flux.
+> tcping writes happily to InfluxDB **v3**, which speaks the same line
+> protocol, but v3 dropped Flux, so the panels come up empty against it and
+> the queries would have to be rewritten in SQL. Until that dashboard exists,
+> v3 users are better served by the Alloy and Prometheus side.
+
 ## Nothing is showing up
 
 - Check the probes are happening at all with `docker compose logs tcping-influxdb-tcp-brussels`.

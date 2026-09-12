@@ -31,15 +31,35 @@
   "templating": {
     "list": [
       {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "influxdb",
+        "refresh": 1,
+        "hide": 0,
+        "current": {}
+      },
+      {
+        "name": "bucket",
+        "label": "Bucket",
+        "type": "constant",
+        "query": "tcping",
+        "current": {
+          "text": "tcping",
+          "value": "tcping"
+        },
+        "hide": 2
+      },
+      {
         "name": "source",
         "label": "Source",
         "type": "query",
         "datasource": {
           "type": "influxdb",
-          "uid": "influxdb"
+          "uid": "${datasource}"
         },
         "definition": "tag values of \"source\"",
-        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"tcping\", tag: \"source\")",
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"${bucket}\", tag: \"source\")",
         "refresh": 2,
         "multi": true,
         "includeAll": true,
@@ -101,9 +121,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
         }
       ],
       "fieldConfig": {
@@ -153,9 +173,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
         }
       ],
       "fieldConfig": {
@@ -234,9 +254,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"packet_loss_percent\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"packet_loss_percent\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
         }
       ],
       "fieldConfig": {
@@ -293,9 +313,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
         }
       ],
       "fieldConfig": {
@@ -339,9 +359,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
         }
       ],
       "fieldConfig": {
@@ -399,9 +419,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
         }
       ],
       "fieldConfig": {
@@ -446,17 +466,17 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_uptime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"uptime\")"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_uptime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"uptime\")"
         },
         {
           "refId": "B",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_downtime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"downtime\")"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_downtime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"downtime\")"
         }
       ],
       "fieldConfig": {
@@ -501,9 +521,9 @@
           "refId": "A",
           "datasource": {
             "type": "influxdb",
-            "uid": "influxdb"
+            "uid": "${datasource}"
           },
-          "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^longest_(up|down)time(_start|_end)?_(seconds|ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"longest_uptime_seconds\", \"longest_uptime_start_ms\", \"longest_uptime_end_ms\", \"longest_downtime_seconds\", \"longest_downtime_start_ms\", \"longest_downtime_end_ms\"])\n  |> group()"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^longest_(up|down)time(_start|_end)?_(seconds|ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"longest_uptime_seconds\", \"longest_uptime_start_ms\", \"longest_uptime_end_ms\", \"longest_downtime_seconds\", \"longest_downtime_start_ms\", \"longest_downtime_end_ms\"])\n  |> group()"
         }
       ],
       "transformations": [
@@ -705,9 +725,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(start_time_ms|end_time_ms|run_duration_seconds|last_(un)?successful_probe_ms|hostname_(resolution_retries|changes))$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"start_time_ms\", \"run_duration_seconds\", \"end_time_ms\", \"last_successful_probe_ms\", \"last_unsuccessful_probe_ms\", \"hostname_resolution_retries\", \"hostname_changes\"])\n  |> group()"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(start_time_ms|end_time_ms|run_duration_seconds|last_(un)?successful_probe_ms|hostname_(resolution_retries|changes))$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"start_time_ms\", \"run_duration_seconds\", \"end_time_ms\", \"last_successful_probe_ms\", \"last_unsuccessful_probe_ms\", \"hostname_resolution_retries\", \"hostname_changes\"])\n  |> group()"
             }
           ],
           "transformations": [
@@ -968,9 +988,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
             }
           ],
           "fieldConfig": {
@@ -1020,9 +1040,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
             }
           ],
           "transformations": [
@@ -1125,9 +1145,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
             }
           ],
           "fieldConfig": {
@@ -1177,9 +1197,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
             }
           ],
           "fieldConfig": {
@@ -1224,9 +1244,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"certificate_days_remaining\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"certificate_days_remaining\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
             }
           ],
           "fieldConfig": {
@@ -1298,9 +1318,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
             }
           ],
           "fieldConfig": {
@@ -1345,9 +1365,9 @@
               "refId": "A",
               "datasource": {
                 "type": "influxdb",
-                "uid": "influxdb"
+                "uid": "${datasource}"
               },
-              "query": "from(bucket: \"tcping\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field =~ /^(echoed|rejected)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field =~ /^(echoed|rejected)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
             }
           ],
           "fieldConfig": {

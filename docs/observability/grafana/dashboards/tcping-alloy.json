@@ -32,12 +32,21 @@
   "templating": {
     "list": [
       {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "refresh": 1,
+        "hide": 0,
+        "current": {}
+      },
+      {
         "name": "source",
         "label": "Source",
         "type": "query",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${datasource}"
         },
         "definition": "label_values(tcping_probe_success, source)",
         "query": {
@@ -106,7 +115,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_probe_rtt_milliseconds{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -158,7 +167,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_probe_success{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -239,7 +248,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_packet_loss_percent{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -298,7 +307,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_probes_total{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{result}}"
@@ -344,7 +353,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_rtt_milliseconds{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
@@ -404,7 +413,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_uptime_seconds_total{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
@@ -413,7 +422,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_downtime_seconds_total{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
@@ -460,7 +469,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_last_uptime_seconds{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
@@ -469,7 +478,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "tcping_last_downtime_seconds{source=~\"$source\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
@@ -516,7 +525,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "{__name__=~\"tcping_longest_(up|down)time_seconds|tcping_longest_(up|down)time_(start|end)_milliseconds\", source=~\"$source\"}",
           "legendFormat": "",
@@ -734,7 +743,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "{__name__=~\"tcping_(start_time|end_time|last_successful_probe|last_unsuccessful_probe)_milliseconds|tcping_run_duration_seconds|tcping_hostname_(resolution_retries|changes)_total\", source=~\"$source\"}",
               "legendFormat": "",
@@ -1011,7 +1020,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_name_resolution_milliseconds{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -1063,7 +1072,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_target_address{source=~\"$source\"}",
               "legendFormat": "",
@@ -1176,7 +1185,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_http_connect_milliseconds{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} connect"
@@ -1185,7 +1194,7 @@
               "refId": "B",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_http_tls_handshake_milliseconds{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} tls handshake"
@@ -1194,7 +1203,7 @@
               "refId": "C",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} first byte"
@@ -1246,7 +1255,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_http_status_code{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -1293,7 +1302,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_certificate_days_remaining{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -1367,7 +1376,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_udp_reply_bytes{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
@@ -1414,7 +1423,7 @@
               "refId": "A",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_udp_reply_echoed{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} echoed"
@@ -1423,7 +1432,7 @@
               "refId": "B",
               "datasource": {
                 "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${datasource}"
               },
               "expr": "tcping_udp_port_unreachable{source=~\"$source\"}",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} unreachable"
