@@ -327,7 +327,7 @@ tcping -u
 1. 创建一个分支。
 1. 提交您的工作。
 1. 如果可能，请添加测试。
-1. 运行测试 `go test` 或 `make test` 并确保它们成功。
+1. 运行测试 `make test` 并确保它们成功。
 1. 创建一个拉取请求
 
 当前未解决问题的数量：![GitHub issues](https://img.shields.io/github/issues/pouriyajamshidi/tcping.svg)。
