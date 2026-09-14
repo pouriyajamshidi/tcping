@@ -51,7 +51,6 @@ type InfluxDBPrinter struct {
 	// Names the machine we are probing from, so that several machines
 	// writing to the same bucket do not land in the same series.
 	source string
-	warned bool // Whether we already complained about a write that failed.
 }
 
 // NewInfluxDBPrinter creates an InfluxDBPrinter pointed at the given
@@ -128,8 +127,8 @@ func (p *InfluxDBPrinter) line(s *stats.Statistics, measurement, fields string) 
 }
 
 // send POSTs one batch of lines to InfluxDB. A failure does not stop the
-// probing, and we say so only once, so an InfluxDB that is down does not
-// fill the terminal with the same error every second.
+// probing, but every one of them is printed, so an InfluxDB that stays down
+// is never hidden.
 func (p *InfluxDBPrinter) send(lines []string) {
 	if len(lines) == 0 {
 		return
@@ -137,7 +136,7 @@ func (p *InfluxDBPrinter) send(lines []string) {
 
 	req, err := http.NewRequest(http.MethodPost, p.endpoint, strings.NewReader(strings.Join(lines, "\n")))
 	if err != nil {
-		p.warnOnce("could not build the request: %v", err)
+		p.PrintError("could not build the request: %v", err)
 		return
 	}
 
@@ -147,7 +146,7 @@ func (p *InfluxDBPrinter) send(lines []string) {
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.warnOnce("could not reach InfluxDB at %s: %v", p.endpoint, err)
+		p.PrintError("could not reach InfluxDB at %s: %v", p.endpoint, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -156,18 +155,12 @@ func (p *InfluxDBPrinter) send(lines []string) {
 		// InfluxDB says what it did not like in the body, and that is the
 		// only way to tell a wrong token from a wrong bucket.
 		reason, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		p.warnOnce("InfluxDB rejected the write with %s: %s", resp.Status, strings.TrimSpace(string(reason)))
-	}
-}
-
-func (p *InfluxDBPrinter) warnOnce(format string, args ...any) {
-	if p.warned {
-		return
+		p.PrintError("InfluxDB rejected the write with %s: %s", resp.Status, strings.TrimSpace(string(reason)))
 	}
 
-	p.warned = true
-	fmt.Fprintf(os.Stderr, "InfluxDB Error: "+format+"\n", args...)
-	fmt.Fprintln(os.Stderr, "Probing continues, but the metrics are being dropped.")
+	// Reading the body to the end is what lets the connection be reused by
+	// the next probe instead of a new one being opened every second.
+	_, _ = io.Copy(io.Discard, resp.Body)
 }
 
 // probeMeasurement is the name a probe is written under. There is one per

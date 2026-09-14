@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"os"
@@ -113,7 +114,6 @@ type OTLPPrinter struct {
 	// summary would only be sent when you press Enter or when tcping exits,
 	// which never happens on a long run that no one is watching.
 	statsInterval time.Duration
-	warned        bool // Whether we already complained about a send that failed.
 	headerName    string
 	headerValue   string
 	cfg           Config
@@ -224,8 +224,8 @@ func (p *OTLPPrinter) counter(name, unit string, points ...otlpPoint) otlpMetric
 }
 
 // send POSTs one batch of metrics to the endpoint. A failure does not stop
-// the probing, and we say so only once, so an endpoint that is down does not
-// fill the terminal with the same error every second.
+// the probing, but every one of them is printed, so an endpoint that stays
+// down is never hidden.
 func (p *OTLPPrinter) send(metrics []otlpMetric) {
 	if len(metrics) == 0 {
 		return
@@ -242,13 +242,13 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) {
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		p.warnOnce("could not encode metrics: %v", err)
+		p.PrintError("could not encode metrics: %v", err)
 		return
 	}
 
 	req, err := http.NewRequest(http.MethodPost, p.endpoint, bytes.NewReader(body))
 	if err != nil {
-		p.warnOnce("could not build the request: %v", err)
+		p.PrintError("could not build the request: %v", err)
 		return
 	}
 
@@ -260,24 +260,18 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) {
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.warnOnce("could not reach %s: %v", p.endpoint, err)
+		p.PrintError("could not reach %s: %v", p.endpoint, err)
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		p.warnOnce("the OTLP endpoint rejected the metrics with %s", resp.Status)
-	}
-}
+	// Reading the body to the end is what lets the connection be reused by
+	// the next probe instead of a new one being opened every second.
+	_, _ = io.Copy(io.Discard, resp.Body)
 
-func (p *OTLPPrinter) warnOnce(format string, args ...any) {
-	if p.warned {
-		return
+	if resp.StatusCode/100 != 2 {
+		p.PrintError("the OTLP endpoint rejected the metrics with %s", resp.Status)
 	}
-
-	p.warned = true
-	fmt.Fprintf(os.Stderr, "OTLP Error: "+format+"\n", args...)
-	fmt.Fprintln(os.Stderr, "Probing continues, but the metrics are being dropped.")
 }
 
 // httpMetrics are the extra timings an HTTP(S) probe learned. They are the

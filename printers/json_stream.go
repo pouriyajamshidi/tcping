@@ -24,7 +24,6 @@ const jsonStreamTimeout = 2 * time.Second
 type jsonStreamWriter struct {
 	client *http.Client
 	url    string
-	warned bool // Whether we already complained about a POST that failed.
 }
 
 // newJSONStreamWriter creates a writer pointed at the given address. The
@@ -50,9 +49,8 @@ func newJSONStreamWriter(address string) (*jsonStreamWriter, error) {
 	}, nil
 }
 
-// Write POSTs one JSON event. A failure does not stop the probing, and we
-// say so only once, so a server that is down does not fill the terminal with
-// the same error every second.
+// Write POSTs one JSON event. A failure does not stop the probing, but every
+// one of them is printed, so a server that stays down is never hidden.
 //
 // It never reports an error back, because json.Encoder remembers the first
 // one it is given and refuses to encode anything afterwards. A single failed
@@ -61,7 +59,7 @@ func newJSONStreamWriter(address string) (*jsonStreamWriter, error) {
 func (w *jsonStreamWriter) Write(event []byte) (int, error) {
 	req, err := http.NewRequest(http.MethodPost, w.url, bytes.NewReader(event))
 	if err != nil {
-		w.warnOnce("could not build the request: %v", err)
+		fmt.Fprintf(os.Stderr, "JSON stream Error: could not build the request: %v\n", err)
 		return len(event), nil
 	}
 
@@ -70,7 +68,7 @@ func (w *jsonStreamWriter) Write(event []byte) (int, error) {
 
 	resp, err := w.client.Do(req)
 	if err != nil {
-		w.warnOnce("could not reach %s: %v", w.url, err)
+		fmt.Fprintf(os.Stderr, "JSON stream Error: could not reach %s: %v\n", w.url, err)
 		return len(event), nil
 	}
 	defer resp.Body.Close()
@@ -80,18 +78,8 @@ func (w *jsonStreamWriter) Write(event []byte) (int, error) {
 	_, _ = io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode/100 != 2 {
-		w.warnOnce("%s rejected the event with %s", w.url, resp.Status)
+		fmt.Fprintf(os.Stderr, "JSON stream Error: %s rejected the event with %s\n", w.url, resp.Status)
 	}
 
 	return len(event), nil
-}
-
-func (w *jsonStreamWriter) warnOnce(format string, args ...any) {
-	if w.warned {
-		return
-	}
-
-	w.warned = true
-	fmt.Fprintf(os.Stderr, "JSON stream Error: "+format+"\n", args...)
-	fmt.Fprintln(os.Stderr, "Probing continues, but the events are being dropped.")
 }

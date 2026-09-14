@@ -3,9 +3,12 @@ package printers
 import (
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -56,6 +59,74 @@ func TestOTLPSendsTheGivenHeader(t *testing.T) {
 
 	if got != "secret: with colon" {
 		t.Errorf("X-Honeycomb-Team = %q, want %q", got, "secret: with colon")
+	}
+}
+
+// Any 2xx means the metrics got through. Collectors and hosted backends do not
+// all answer with 200, and a 202 or 204 must not be reported as a rejection.
+func TestOTLPAcceptsAny2xx(t *testing.T) {
+	tests := []struct {
+		status   int
+		warnings int
+	}{
+		{http.StatusOK, 0},
+		{http.StatusAccepted, 0},
+		{http.StatusNoContent, 0},
+		{http.StatusBadRequest, 1},
+		{http.StatusInternalServerError, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.status)
+			}))
+			defer server.Close()
+
+			printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			stderr := captureStderr(t, func() {
+				printer.PrintProbeSuccess(otlpTestStats())
+			})
+
+			if warnings := strings.Count(stderr, "OTLP Error:"); warnings != tt.warnings {
+				t.Errorf("complained %d times, want %d:\n%s", warnings, tt.warnings, stderr)
+			}
+		})
+	}
+}
+
+// Probes are a second apart, so every one of them opening a new connection
+// would be a lot of wasted handshakes on a long run.
+func TestOTLPReusesTheConnection(t *testing.T) {
+	var connections atomic.Int32
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"partialSuccess":{}}`))
+	}))
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	server.Start()
+	defer server.Close()
+
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for range 3 {
+		printer.PrintProbeSuccess(otlpTestStats())
+	}
+
+	if got := connections.Load(); got != 1 {
+		t.Errorf("3 probes opened %d connections, want 1", got)
 	}
 }
 
@@ -196,21 +267,23 @@ func TestOTLPUDPProbeSendsWhatItLearned(t *testing.T) {
 	}
 }
 
-// An OTLP endpoint that is not there must not stop the probing, and must not
-// repeat the same complaint on every probe.
+// An OTLP endpoint that is not there must not stop the probing, and every
+// failed send has to be reported, so an outage that lasts is never hidden.
 func TestOTLPKeepsGoingWhenUnreachable(t *testing.T) {
 	printer, err := NewOTLPPrinter(Config{OTLPURL: "http://127.0.0.1:1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	printer.PrintProbeSuccess(otlpTestStats())
+	stderr := captureStderr(t, func() {
+		for range 3 {
+			printer.PrintProbeSuccess(otlpTestStats())
+		}
+	})
 
-	if !printer.warned {
-		t.Error("expected the printer to warn about an unreachable OTLP endpoint")
+	if errors := strings.Count(stderr, "OTLP Error:"); errors != 3 {
+		t.Errorf("3 failed sends printed %d errors, want 3:\n%s", errors, stderr)
 	}
-
-	printer.PrintProbeSuccess(otlpTestStats())
 }
 
 // The run summary has to keep flowing on its own, otherwise a tcping that

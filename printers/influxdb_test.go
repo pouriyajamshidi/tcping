@@ -3,10 +3,12 @@ package printers
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -104,6 +106,40 @@ func influxDBServer(t *testing.T, writes *[][]string) *httptest.Server {
 
 		w.WriteHeader(http.StatusNoContent)
 	}))
+}
+
+// Probes are a second apart, so every one of them opening a new connection
+// would be a lot of wasted handshakes on a long run. A rejection is the case
+// to check, because only part of its body is read for the error message.
+func TestInfluxDBReusesTheConnection(t *testing.T) {
+	var connections atomic.Int32
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(strings.Repeat("x", 4096)))
+	}))
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	server.Start()
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	captureStderr(t, func() {
+		for range 3 {
+			printer.PrintProbeSuccess(influxDBTestStats())
+		}
+	})
+
+	if got := connections.Load(); got != 1 {
+		t.Errorf("3 probes opened %d connections, want 1", got)
+	}
 }
 
 func TestInfluxDBPrintProbeSuccess(t *testing.T) {
@@ -259,21 +295,23 @@ func TestInfluxDBEscapesTags(t *testing.T) {
 	}
 }
 
-// An InfluxDB that is not there must not stop the probing, and must not
-// repeat the same complaint on every probe.
+// An InfluxDB that is not there must not stop the probing, and every failed
+// write has to be reported, so an outage that lasts is never hidden.
 func TestInfluxDBKeepsGoingWhenUnreachable(t *testing.T) {
 	printer, err := NewInfluxDBPrinter(influxDBTestConfig("http://127.0.0.1:1"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	printer.PrintProbeSuccess(influxDBTestStats())
+	stderr := captureStderr(t, func() {
+		for range 3 {
+			printer.PrintProbeSuccess(influxDBTestStats())
+		}
+	})
 
-	if !printer.warned {
-		t.Error("expected the printer to warn about an unreachable InfluxDB")
+	if errors := strings.Count(stderr, "InfluxDB Error:"); errors != 3 {
+		t.Errorf("3 failed writes printed %d errors, want 3:\n%s", errors, stderr)
 	}
-
-	printer.PrintProbeSuccess(influxDBTestStats())
 }
 
 // The run summary has to keep flowing on its own, otherwise a tcping that

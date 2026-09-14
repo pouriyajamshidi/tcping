@@ -124,7 +124,7 @@ func TestJSONStreamSendsEveryEvent(t *testing.T) {
 }
 
 // A server that is not answering, or not happy with what it got, must not
-// stop the probing, and must not repeat itself every second either.
+// stop the probing, and every event it refused has to be reported.
 func TestJSONStreamKeepsProbingWhenTheServerRejects(t *testing.T) {
 	server := newJSONStreamServer(t, http.StatusInternalServerError)
 
@@ -146,8 +146,8 @@ func TestJSONStreamKeepsProbingWhenTheServerRejects(t *testing.T) {
 		t.Errorf("the events fell back to the terminal:\n%s", out)
 	}
 
-	if warnings := strings.Count(stderr, "JSON stream Error:"); warnings != 1 {
-		t.Errorf("complained %d times, want once:\n%s", warnings, stderr)
+	if errors := strings.Count(stderr, "JSON stream Error:"); errors != 9 {
+		t.Errorf("9 refused events printed %d errors, want 9:\n%s", errors, stderr)
 	}
 }
 

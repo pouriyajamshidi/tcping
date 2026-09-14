@@ -344,9 +344,9 @@ the whole thing, import it first, then use a panel's menu, **Copy**, and
 - Alloy's UI on <http://localhost:12346> shows the health of each component.
   If the receiver is healthy but the remote write is not, Prometheus is the
   problem.
-- A rejected write does not stop the run. tcping prints the error to stderr
-  and says the metrics are being dropped, then keeps probing, so watch stderr
-  rather than the probe output. A wrong InfluxDB token shows up this way.
+- A rejected write does not stop the run. tcping prints an error to stderr
+  for every write that fails and keeps probing, so watch stderr rather than
+  the probe output. A wrong InfluxDB token shows up this way.
 - Make sure you are on the dashboard for the way you sent the run. A run using
   `--otlp` leaves **tcping (InfluxDB)** empty, and the other way round.
 - The statistics panels only fill in after the first statistics push, which is
