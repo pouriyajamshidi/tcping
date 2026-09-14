@@ -668,7 +668,7 @@ Current number of open issues: ![GitHub issues](https://img.shields.io/github/is
 1. Create a branch.
 1. Commit your work.
 1. Add tests.
-1. Run the tests `go test ./...` or `make test` and ensure they are successful.
+1. Run the tests with `make test` and ensure they are successful.
 1. Create a pull request
 
 Please make sure that your pull request **only covers one specific issue/feature** and doesn't handle two or more issues. This makes it simpler for us to review your pull request and helps keeping a clean git history.
