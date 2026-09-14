@@ -213,9 +213,11 @@ staticcheck:
 	@echo "[+] Running Staticcheck"
 	@go run honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION) -checks=all ./...
 
+# The race detector needs cgo, so it is turned back on for the tests only.
+# The builds stay static. This needs a C compiler, such as gcc, on the machine.
 test:
 	@echo "[+] Running tests"
-	@go test ./...
+	@CGO_ENABLED=1 go test -race ./...
 
 container:
 	@echo "[+] Building container image"
