@@ -44,9 +44,9 @@ func TestNewPrinter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Alloy Printer Initialization",
+			name: "OTLP Printer Initialization",
 			cfg: Config{
-				AlloyURL: "http://localhost:4318",
+				OTLPURL: "http://localhost:4318",
 			},
 			wantErr: false,
 		},

@@ -1,6 +1,6 @@
 # Observing tcping
 
-tcping can send its probes to [Grafana Alloy](https://grafana.com/docs/alloy/latest/)
+tcping can send its probes over OTLP to [Grafana Alloy](https://grafana.com/docs/alloy/latest/)
 or to [InfluxDB](https://www.influxdata.com/) instead of printing them, which
 turns a run into a graph and lets several machines watch the same target.
 
@@ -83,7 +83,7 @@ stack only holds 6 hours of data either way.
 The stack listens for anything, not only its own containers. Through Alloy:
 
 ```bash
-tcping --alloy http://localhost:4318 example.com 443
+tcping --otlp http://localhost:4318 example.com 443
 ```
 
 Or straight to InfluxDB:
@@ -173,8 +173,8 @@ second machine on one laptop, and what the stack does to get its `brussels` and
 `tokyo`:
 
 ```bash
-tcping --alloy http://localhost:4318 --source-label brussels example.com 443
-tcping --alloy http://localhost:4318 --source-label tokyo example.com 443
+tcping --otlp http://localhost:4318 --source-label brussels example.com 443
+tcping --otlp http://localhost:4318 --source-label tokyo example.com 443
 ```
 
 The **Source** dropdown at the top of each dashboard picks which ones to show,
@@ -185,7 +185,7 @@ and is filled from that dashboard's own data source.
 There are two, holding the same panels in the same places:
 
 - **tcping (InfluxDB)** reads the points `--influxdb` wrote.
-- **tcping (Alloy)** reads the metrics `--alloy` sent, out of the Prometheus
+- **tcping (Alloy)** reads the metrics `--otlp` sent, out of the Prometheus
   that Alloy remote wrote them to.
 
 Which one to open is simply which way you sent the run. They are kept apart
@@ -272,7 +272,7 @@ proof nothing is:
 ![The UDP row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-udp.png)
 
 And **tcping (Alloy)** is the same set of panels reading from Prometheus, so a
-run using `--alloy` looks like one using `--influxdb`. The same outage is in
+run using `--otlp` looks like one using `--influxdb`. The same outage is in
 it, because the stack sends every run both ways:
 
 ![The Probes row of the Alloy dashboard](../Images/observability/dashboard-alloy-probes.png)
@@ -283,6 +283,11 @@ The only part of this that is really tcping-specific is `config.alloy`: an
 OTLP receiver on 4318, an exporter that turns the metrics into Prometheus
 ones, and a remote write to wherever your Prometheus lives. Point the URL at
 your own Prometheus and it works the same.
+
+`--otlp` is not tied to Alloy. Anything that takes OTLP over HTTP works, such
+as the OpenTelemetry Collector or a hosted backend. Those usually want a token,
+which goes in with `--otlp-header "Authorization: Bearer <token>"` or the
+`OTLP_HEADER` environment variable.
 
 > [!NOTE]
 > Prometheus needs `--web.enable-remote-write-receiver` for Alloy to be able
@@ -343,7 +348,7 @@ the whole thing, import it first, then use a panel's menu, **Copy**, and
   and says the metrics are being dropped, then keeps probing, so watch stderr
   rather than the probe output. A wrong InfluxDB token shows up this way.
 - Make sure you are on the dashboard for the way you sent the run. A run using
-  `--alloy` leaves **tcping (InfluxDB)** empty, and the other way round.
+  `--otlp` leaves **tcping (InfluxDB)** empty, and the other way round.
 - The statistics panels only fill in after the first statistics push, which is
   every 10 seconds by default. `--stats-interval` changes that.
 - **Name resolution time** stays empty unless the hostname is looked up more

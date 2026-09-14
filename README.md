@@ -24,7 +24,7 @@ A cross-platform ping program using `TCP`, `UDP` or `HTTP(S)` instead of `ICMP`,
 - An alternative to `ping` where `ICMP` is blocked, probing over `TCP`, `HTTP(S)` or `UDP`.
 - Reports the packet loss and the minimum, average, maximum and mean deviation of the latency, the same way `ping` does, plus the longest uptime and downtime and when they happened.
 - Prints the statistics at any time by pressing the `Enter` key, without stopping the program.
-- Outputs in **colored**, **plain**, **JSON**, **CSV** or **sqlite3** format, or sends every probe to **Grafana Alloy** or **InfluxDB** as metrics.
+- Outputs in **colored**, **plain**, **JSON**, **CSV** or **sqlite3** format, or sends every probe as metrics over **OTLP** (Grafana Alloy, the OpenTelemetry Collector and others) or to **InfluxDB**.
 - Shows the status code, the TLS version and cipher, the certificate expiry and the connect, TLS handshake and first-byte timings of every `HTTP(S)` probe.
 - Resolves the target's hostname again after a number of failures (`-r`) or before every probe (`--resolve-every-probe`), and reports how long each lookup took. Suitable to test your `DNS` load balancing or Global Server Load Balancer `(GSLB)`.
 - Lets you pick the **source interface**, the **timeout**, the **interval** and the **DNS server**, and enforce `IPv4` or `IPv6`.
@@ -536,15 +536,25 @@ probes rather than dialed again for each one. A server that is down or unhappy
 does not stop the probing: tcping says so once and keeps going, dropping the
 events it cannot deliver.
 
-### Sending the results to Grafana Alloy or InfluxDB
+### Sending the results over OTLP or to InfluxDB
 
 Instead of printing each probe, tcping can send it as a metric, which turns a
-run into a graph and lets several machines watch the same target. To
-[Grafana Alloy](https://grafana.com/docs/alloy/latest/) over OTLP, which can
-forward it to Prometheus:
+run into a graph and lets several machines watch the same target. Over OTLP,
+to anything that accepts it, such as
+[Grafana Alloy](https://grafana.com/docs/alloy/latest/), which can forward it to
+Prometheus:
 
 ```bash
-tcping www.example.com 443 --alloy http://localhost:4318
+tcping www.example.com 443 --otlp http://localhost:4318
+```
+
+Hosted backends want a token, each in a header of its own. Give the whole
+header with `--otlp-header`, or in the `OTLP_HEADER` environment variable to keep
+it out of your shell history:
+
+```bash
+export OTLP_HEADER="Authorization: Bearer your-api-token" && \
+  tcping www.example.com 443 --otlp https://otlp.example.com
 ```
 
 Or straight to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as
@@ -567,7 +577,7 @@ their own series instead of on top of each other. Use `--source-label` to name
 them yourself:
 
 ```bash
-tcping www.example.com 443 --alloy http://localhost:4318 --source-label brussels
+tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 ```
 
 Everything that gets sent, how to query it, and a ready made Alloy, Prometheus,
@@ -640,13 +650,14 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--alloy <URL>` | | Send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, e.g. `--alloy http://localhost:4318` |
+| `--otlp <URL>` | | Send the results to an OTLP HTTP endpoint, such as [Grafana Alloy](https://grafana.com/docs/alloy/latest/) or the OpenTelemetry Collector, as metrics instead of printing them, e.g. `--otlp http://localhost:4318` |
+| `--otlp-header <header>` | | Extra HTTP header to send to the `--otlp` endpoint, as `"Name: value"`, e.g. `"Authorization: Bearer <token>"`. Can also be given in the `OTLP_HEADER` environment variable, which keeps it out of your shell history |
 | `--influxdb <URL>` | | Write the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as line protocol instead of printing them, e.g. `--influxdb http://localhost:8086` |
 | `--influxdb-org <org>` | | InfluxDB organization to write to. Required with `--influxdb` |
 | `--influxdb-bucket <bucket>` | | InfluxDB bucket to write to. Required with `--influxdb` |
 | `--influxdb-token <token>` | | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable, which keeps it out of your shell history |
-| `--stats-interval <seconds>` | `10` | How often to send the statistics to Alloy or InfluxDB. No effect without `--alloy` or `--influxdb` |
-| `--source-label <name>` | hostname | Name this machine in the `JSON` events and in the metrics sent to Alloy or InfluxDB, so that several machines probing the same target can be told apart. Results that are sent elsewhere carry the hostname when this is not given; output that stays on the machine carries nothing |
+| `--stats-interval <seconds>` | `10` | How often to send the statistics to the OTLP endpoint or InfluxDB. No effect without `--otlp` or `--influxdb` |
+| `--source-label <name>` | hostname | Name this machine in the `JSON` events and in the metrics sent over OTLP or to InfluxDB, so that several machines probing the same target can be told apart. Results that are sent elsewhere carry the hostname when this is not given; output that stays on the machine carries nothing |
 
 ### HTTP(S) and UDP
 

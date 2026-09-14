@@ -3,6 +3,7 @@ package printers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
-// The OTLP JSON payload we POST to Alloy. It is the same envelope every
+// The OTLP JSON payload we POST to the endpoint. It is the same envelope every
 // time: one resource that says who we are, one scope, and the metrics we
 // filled in for this event. Hand-written because OTLP over HTTP accepts
 // plain JSON, so there is no need for protobuf or an SDK.
@@ -80,13 +81,13 @@ const (
 
 	// Probes are usually a second apart, so a send that hangs longer than
 	// this would hold up the next probe.
-	alloyTimeout = 2 * time.Second
+	otlpTimeout = 2 * time.Second
 
 	otlpMetricsPath = "/v1/metrics"
 
 	// Used when the caller did not ask for an interval, so a zero value
 	// does not end up meaning "send the summary with every probe".
-	defaultAlloyStatsInterval = 10 * time.Second
+	defaultOTLPStatsInterval = 10 * time.Second
 )
 
 func attr(key, value string) otlpAttr {
@@ -99,10 +100,11 @@ func unixNano(t time.Time) string {
 	return strconv.FormatInt(t.UnixNano(), 10)
 }
 
-// AlloyPrinter sends probe results to Grafana Alloy as OTLP metrics instead
-// of printing them. Alloy forwards them to Prometheus, so a run shows up as
-// a graph rather than as lines of text.
-type AlloyPrinter struct {
+// OTLPPrinter sends probe results as OTLP metrics instead of printing them,
+// to anything that speaks OTLP over HTTP, such as Grafana Alloy or the
+// OpenTelemetry Collector. Those forward them to a store like Prometheus, so
+// a run shows up as a graph rather than as lines of text.
+type OTLPPrinter struct {
 	client    *http.Client
 	endpoint  string
 	startTime time.Time // Beginning of the run, which every counter is measured from.
@@ -112,14 +114,16 @@ type AlloyPrinter struct {
 	// which never happens on a long run that no one is watching.
 	statsInterval time.Duration
 	warned        bool // Whether we already complained about a send that failed.
+	headerName    string
+	headerValue   string
 	cfg           Config
 }
 
-// NewAlloyPrinter creates an AlloyPrinter pointed at the given Alloy address.
+// NewOTLPPrinter creates an OTLPPrinter pointed at the given address.
 // The address can be given with or without the OTLP path, so both
 // "http://localhost:4318" and "http://localhost:4318/v1/metrics" work.
-func NewAlloyPrinter(cfg Config) *AlloyPrinter {
-	endpoint := cfg.AlloyURL
+func NewOTLPPrinter(cfg Config) (*OTLPPrinter, error) {
+	endpoint := cfg.OTLPURL
 
 	if !strings.Contains(endpoint, "://") {
 		endpoint = "http://" + endpoint
@@ -131,16 +135,30 @@ func NewAlloyPrinter(cfg Config) *AlloyPrinter {
 
 	statsInterval := cfg.StatsInterval
 	if statsInterval <= 0 {
-		statsInterval = defaultAlloyStatsInterval
+		statsInterval = defaultOTLPStatsInterval
 	}
 
-	return &AlloyPrinter{
-		client:        &http.Client{Timeout: alloyTimeout},
+	// Hosted backends want a token, and each one wants it in a different
+	// header, so we take the whole header rather than just the token.
+	var headerName, headerValue string
+	if cfg.OTLPHeader != "" {
+		name, value, ok := strings.Cut(cfg.OTLPHeader, ":")
+		if !ok || strings.TrimSpace(name) == "" {
+			return nil, errors.New(`the OTLP header must look like "Name: value", for example "Authorization: Bearer <token>"`)
+		}
+		headerName = strings.TrimSpace(name)
+		headerValue = strings.TrimSpace(value)
+	}
+
+	return &OTLPPrinter{
+		client:        &http.Client{Timeout: otlpTimeout},
 		endpoint:      endpoint,
 		startTime:     time.Now(),
 		statsInterval: statsInterval,
+		headerName:    headerName,
+		headerValue:   headerValue,
 		cfg:           cfg,
-	}
+	}, nil
 }
 
 // labels are the attributes put on every data point, which is what makes
@@ -157,7 +175,7 @@ func NewAlloyPrinter(cfg Config) *AlloyPrinter {
 // series, so a hostname that resolves to a different address mid-run would
 // start a new series and leave the old one behind. It is sent on its own as
 // tcping_target_address instead.
-func (p *AlloyPrinter) labels(s *stats.Statistics, extra ...otlpAttr) []otlpAttr {
+func (p *OTLPPrinter) labels(s *stats.Statistics, extra ...otlpAttr) []otlpAttr {
 	labels := []otlpAttr{
 		attr("source", p.cfg.SourceLabel),
 		attr("target", s.Hostname),
@@ -169,7 +187,7 @@ func (p *AlloyPrinter) labels(s *stats.Statistics, extra ...otlpAttr) []otlpAttr
 }
 
 // gauge is a single measurement taken right now.
-func (p *AlloyPrinter) gauge(name, unit string, value float64, labels []otlpAttr) otlpMetric {
+func (p *OTLPPrinter) gauge(name, unit string, value float64, labels []otlpAttr) otlpMetric {
 	return otlpMetric{
 		Name: name,
 		Unit: unit,
@@ -185,7 +203,7 @@ func (p *AlloyPrinter) gauge(name, unit string, value float64, labels []otlpAttr
 
 // counter is a running total for the whole run. Prometheus works out the
 // rate itself, so we always send the total rather than what changed.
-func (p *AlloyPrinter) counter(name, unit string, points ...otlpPoint) otlpMetric {
+func (p *OTLPPrinter) counter(name, unit string, points ...otlpPoint) otlpMetric {
 	now := unixNano(time.Now())
 	start := unixNano(p.startTime)
 
@@ -205,10 +223,10 @@ func (p *AlloyPrinter) counter(name, unit string, points ...otlpPoint) otlpMetri
 	}
 }
 
-// send POSTs one batch of metrics to Alloy. A failure does not stop the
-// probing, and we say so only once, so an Alloy that is down does not fill
-// the terminal with the same error every second.
-func (p *AlloyPrinter) send(metrics []otlpMetric) {
+// send POSTs one batch of metrics to the endpoint. A failure does not stop
+// the probing, and we say so only once, so an endpoint that is down does not
+// fill the terminal with the same error every second.
+func (p *OTLPPrinter) send(metrics []otlpMetric) {
 	if len(metrics) == 0 {
 		return
 	}
@@ -236,33 +254,36 @@ func (p *AlloyPrinter) send(metrics []otlpMetric) {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", version.UserAgent)
+	if p.headerName != "" {
+		req.Header.Set(p.headerName, p.headerValue)
+	}
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.warnOnce("could not reach Alloy at %s: %v", p.endpoint, err)
+		p.warnOnce("could not reach %s: %v", p.endpoint, err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		p.warnOnce("Alloy rejected the metrics with %s", resp.Status)
+		p.warnOnce("the OTLP endpoint rejected the metrics with %s", resp.Status)
 	}
 }
 
-func (p *AlloyPrinter) warnOnce(format string, args ...any) {
+func (p *OTLPPrinter) warnOnce(format string, args ...any) {
 	if p.warned {
 		return
 	}
 
 	p.warned = true
-	fmt.Fprintf(os.Stderr, "Alloy Error: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "OTLP Error: "+format+"\n", args...)
 	fmt.Fprintln(os.Stderr, "Probing continues, but the metrics are being dropped.")
 }
 
 // httpMetrics are the extra timings an HTTP(S) probe learned. They are the
 // reason to graph an HTTP target at all: a slow connect and a slow first
 // byte mean different things.
-func (p *AlloyPrinter) httpMetrics(s *stats.Statistics) []otlpMetric {
+func (p *OTLPPrinter) httpMetrics(s *stats.Statistics) []otlpMetric {
 	if !s.IsHTTP() || !s.HasHTTPResponse() {
 		return nil
 	}
@@ -288,7 +309,7 @@ func (p *AlloyPrinter) httpMetrics(s *stats.Statistics) []otlpMetric {
 // udpMetrics are what a UDP probe learned. A reply that carried our own
 // payload back is the only proof that something is really listening, and an
 // ICMP refusal the only proof that nothing is, so both are worth a graph.
-func (p *AlloyPrinter) udpMetrics(s *stats.Statistics) []otlpMetric {
+func (p *OTLPPrinter) udpMetrics(s *stats.Statistics) []otlpMetric {
 	if !s.IsUDP() {
 		return nil
 	}
@@ -314,7 +335,7 @@ func oneIf(b bool) float64 {
 // probeMetrics is what every probe sends, successful or not. The gauge says
 // what just happened and the counter says how the run is going, so a graph
 // can show both the last probe and the trend.
-func (p *AlloyPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpMetric {
+func (p *OTLPPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpMetric {
 	metrics := []otlpMetric{
 		p.gauge("tcping_probe_success", "", oneIf(succeeded), p.labels(s)),
 		// Always 1. The value means nothing, the labels are the point: this
@@ -367,7 +388,7 @@ func rttOf(rtt float32) float64 {
 
 // PrintStart says where the metrics are going, then leaves the terminal
 // alone for the rest of the run.
-func (p *AlloyPrinter) PrintStart(s *stats.Statistics) {
+func (p *OTLPPrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
 		fmt.Printf("Probing %s on port %d over %s - sending metrics to: %s\n",
 			s.Hostname, s.Port, s.ProtocolStr(), p.endpoint)
@@ -379,19 +400,19 @@ func (p *AlloyPrinter) PrintStart(s *stats.Statistics) {
 }
 
 // PrintNameResolutionDuration sends how long the hostname resolution took.
-func (p *AlloyPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+func (p *OTLPPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 	p.send([]otlpMetric{
 		p.gauge("tcping_name_resolution_milliseconds", "ms", msOf(s.NameResolutionDuration), p.labels(s)),
 	})
 }
 
 // PrintProbeSuccess sends the metrics of a successful probe.
-func (p *AlloyPrinter) PrintProbeSuccess(s *stats.Statistics) {
+func (p *OTLPPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	p.send(append(p.probeMetrics(s, true), p.dueStatistics(s)...))
 }
 
 // PrintProbeFailure sends the metrics of a failed probe.
-func (p *AlloyPrinter) PrintProbeFailure(s *stats.Statistics) {
+func (p *OTLPPrinter) PrintProbeFailure(s *stats.Statistics) {
 	p.send(append(p.probeMetrics(s, false), p.dueStatistics(s)...))
 }
 
@@ -399,7 +420,7 @@ func (p *AlloyPrinter) PrintProbeFailure(s *stats.Statistics) {
 // the last one, and nothing otherwise. Sending it along with a probe means
 // no goroutine and no second request, and it keeps the summary flowing on a
 // run that is never going to be stopped by hand.
-func (p *AlloyPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
+func (p *OTLPPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
 	if time.Since(p.lastStats) < p.statsInterval {
 		return nil
 	}
@@ -413,7 +434,7 @@ func (p *AlloyPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
 }
 
 // PrintStatistics sends the summary of the run so far.
-func (p *AlloyPrinter) PrintStatistics(s *stats.Statistics) {
+func (p *OTLPPrinter) PrintStatistics(s *stats.Statistics) {
 	p.lastStats = time.Now()
 	p.send(p.statisticsMetrics(s))
 }
@@ -426,7 +447,7 @@ func (p *AlloyPrinter) PrintStatistics(s *stats.Statistics) {
 // because a metric can only carry a number. Milliseconds rather than seconds
 // because that is what Grafana's date units read, and what the rest of
 // tcping's timings are already in.
-func (p *AlloyPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
+func (p *OTLPPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 	labels := p.labels(s)
 
 	metrics := []otlpMetric{
@@ -501,21 +522,21 @@ func (p *AlloyPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 }
 
 // PrintRetryingToResolve has no number behind it, so it goes to the terminal.
-func (p *AlloyPrinter) PrintRetryingToResolve(hostname string) {
+func (p *OTLPPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
 }
 
-// PrintError goes to the terminal rather than to Alloy, since an error
-// here usually means Alloy is the thing that is not working.
-func (p *AlloyPrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "Alloy Error: "+format+"\n", args...)
+// PrintError goes to the terminal rather than to the endpoint, since an
+// error here usually means the endpoint is the thing that is not working.
+func (p *OTLPPrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "OTLP Error: "+format+"\n", args...)
 }
 
-// Shutdown sends the final statistics and closes the connection to Alloy.
+// Shutdown sends the final statistics and closes the connection to the endpoint.
 // Statistics are already finalized by finalizeStatistics by the time this
 // runs. It does not exit the program - that decision belongs to the caller,
 // not the printer.
-func (p *AlloyPrinter) Shutdown(s *stats.Statistics) {
+func (p *OTLPPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
 	p.client.CloseIdleConnections()
 }

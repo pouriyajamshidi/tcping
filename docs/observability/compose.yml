@@ -152,7 +152,7 @@ services:
     depends_on:
       - alloy
     command:
-      - --alloy=http://alloy:4318
+      - --otlp=http://alloy:4318
       - --source-label=brussels
       - "-4"
       - github.com
@@ -166,7 +166,7 @@ services:
     depends_on:
       - alloy
     command:
-      - --alloy=http://alloy:4318
+      - --otlp=http://alloy:4318
       - --source-label=tokyo
       - --resolve-every-probe
       - "-4"
@@ -179,7 +179,7 @@ services:
     depends_on:
       - alloy
     command:
-      - --alloy=http://alloy:4318
+      - --otlp=http://alloy:4318
       - --source-label=brussels
       - "-4"
       - https://cloudflare.com
@@ -191,7 +191,7 @@ services:
       - alloy
       - udp-echo
     command:
-      - --alloy=http://alloy:4318
+      - --otlp=http://alloy:4318
       - --source-label=brussels
       - udp://udp-echo
       - "9999"

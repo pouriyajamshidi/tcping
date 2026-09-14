@@ -43,8 +43,8 @@
 - refactor (breaking): rename the CSV `Status` column to `Reachable` (values are now lowercase `true`/`false` instead of `Reply`/`No Reply`) and the stats file's `Metric` column to `Statistic`
 - refactor (breaking): `-v` now turns on verbose output for HTTP(S) probes; the version is printed with `--version` instead
 - refactor (breaking): rename `--show-failures-only` to `--failures-only`
-- refactor (breaking): rename `--db` to `--sqlite`, so the flag names its database like `--csv`, `--alloy` and `--influxdb` do
-- refactor (breaking): rename `printers.DatabasePrinter` to `printers.SQLitePrinter`, so the printer names its database like the CSV, Alloy and InfluxDB ones do. Its errors now start with `SQLite Error:` instead of `Database Error:`
+- refactor (breaking): rename `--db` to `--sqlite`, so the flag names its database like `--csv`, `--otlp` and `--influxdb` do
+- refactor (breaking): rename `printers.DatabasePrinter` to `printers.SQLitePrinter`, so the printer names its database like the CSV, OTLP and InfluxDB ones do. Its errors now start with `SQLite Error:` instead of `Database Error:`
 - refactor (breaking): remove the `--non-interactive` flag. tcping now works out on its own whether it is attached to a terminal and in the foreground, so running it under `nohup` or `disown` needs no flag
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
@@ -62,7 +62,7 @@
 - feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
 - feat: show how long hostname resolution took - at startup, on every retry-resolve, and per-entry in the "IP address changes" summary
 - feat: report the mean deviation of the latency (`mdev`) alongside the minimum, average and maximum, the same way `ping` does. It is carried by every printer: the summary line, the JSON `latencyMdev` field, the CSV `Latency Mdev` row, the sqlite3 `latency_mdev` column, Alloy's `tcping_rtt_milliseconds{stat="mdev"}` and InfluxDB's `rtt_mdev_ms`
-- feat: add `--alloy` flag to send the results to a [Grafana Alloy](https://grafana.com/docs/alloy/latest/) OTLP HTTP endpoint as metrics instead of printing them, along with `--stats-interval` to control how often the statistics are sent
+- feat: add `--otlp` flag to send the results as metrics to an OTLP HTTP endpoint, such as [Grafana Alloy](https://grafana.com/docs/alloy/latest/) or the OpenTelemetry Collector, instead of printing them, along with `--stats-interval` to control how often the statistics are sent and `--otlp-header` (or the `OTLP_HEADER` environment variable) to send a token to hosted backends
 - feat: add `--influxdb` flag to write the results to an InfluxDB v2 or v3 server as line protocol, along with `--influxdb-org`, `--influxdb-bucket` and `--influxdb-token`. The API token can also be given in the `INFLUXDB_TOKEN` environment variable
 - feat: add `--json-url` flag to send the JSON output to an HTTP server instead of printing it, one `POST` per event, e.g. `--json-url http://localhost:8000/tcping`. The events and their fields are the ones `-j` prints, and a server that is down or rejecting them does not stop the probing
 - feat: add `--json-server` flag to listen on the given host and port and print every JSON event posted to it instead of probing, so the machine collecting a `--json-url` stream needs nothing written for it. The events go to standard output and everything else to standard error, so the output can be redirected into a file of nothing but events
@@ -79,7 +79,7 @@
 - docs: add demo GIFs for `--failures-only`, and for `--no-color` and `--no-stats` together. The failures one stops the UDP server halfway through the run, so it shows the silence while the probes are being answered and the summary still counting the probes that were never printed. The plain one presses the **Enter** key mid-run, which is the only place the statistics-on-demand behaviour is shown
 - build: `make gifs` only re-records the tapes that changed. The binary it records with is a phony target, which used to mark every GIF out of date, so a single tape edit re-recorded all of them. Use `make gifs -B` to force the lot after an output change
 - docs: size the demo GIFs to the output they record rather than to the screen. GitHub scales them down to the width of the README, so every column that was not needed was making the text smaller: the JSON one was 110 columns wide for output that needs 61, and the HTTP verbose and certificate ones 138 for output that needs 100. The source interface demo also now forces IPv4, so its probe lines stop wrapping and the machine's public IPv6 address does not end up in the README
-- docs: add `docs/observability`, a Docker Compose stack with Alloy, Prometheus, InfluxDB and Grafana that can be started in one command to try the `--alloy` and `--influxdb` output without setting a server up first
+- docs: add `docs/observability`, a Docker Compose stack with Alloy, Prometheus, InfluxDB and Grafana that can be started in one command to try the `--otlp` and `--influxdb` output without setting a server up first
 - tools: add `tools/netcond.sh` to apply latency, packet loss or a full block toward a single destination, so tcping can be tested against a bad network without waiting for one
 - improvement: `-I` now keeps working correctly when the interface has both an IPv4 and an IPv6 address and the target's resolved address family changes mid-run
 - improvement: DNS resolution is now sourced from `-I`'s interface too, matching what probes already did

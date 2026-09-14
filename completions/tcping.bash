@@ -30,7 +30,7 @@ _tcping() {
 		return
 		;;
 	c | i | t | r | dns-server | dns-timeout | stats-interval | source-label | \
-		json-url | alloy | influxdb | influxdb-org | influxdb-bucket | influxdb-token)
+		json-url | otlp | otlp-header | influxdb | influxdb-org | influxdb-bucket | influxdb-token)
 		# These need a value we cannot guess. Complete nothing rather
 		# than offering flags where a value belongs.
 		return
@@ -42,7 +42,7 @@ _tcping() {
 		-r --resolve-every-probe --dns-server --dns-timeout
 		-D --no-color --show-source-address --failures-only --no-stats -v
 		-j --pretty --json-url --csv --csv-fixed-name --sqlite
-		--alloy --influxdb --influxdb-org --influxdb-bucket --influxdb-token
+		--otlp --otlp-header --influxdb --influxdb-org --influxdb-bucket --influxdb-token
 		--stats-interval --source-label
 		--insecure --udp-server --json-server"
 

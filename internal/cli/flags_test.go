@@ -316,8 +316,8 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			want:  "--no-stats has no effect",
 		},
 		{
-			name:  "omitting statistics that go to Alloy",
-			flags: flags{omitStatistics: true, alloyURL: "http://localhost:4318", statsInterval: 10, intervalBetweenProbes: 1},
+			name:  "omitting statistics that go to an OTLP endpoint",
+			flags: flags{omitStatistics: true, otlpURL: "http://localhost:4318", statsInterval: 10, intervalBetweenProbes: 1},
 			want:  "--no-stats has no effect",
 		},
 		{
@@ -336,8 +336,8 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			want:  "Interval between probes should be more than 0 seconds",
 		},
 		{
-			name:  "a zero statistics interval with an Alloy URL",
-			flags: flags{alloyURL: "http://localhost:4318", statsInterval: 0, intervalBetweenProbes: 1},
+			name:  "a zero statistics interval with an OTLP URL",
+			flags: flags{otlpURL: "http://localhost:4318", statsInterval: 0, intervalBetweenProbes: 1},
 			want:  "Statistics interval should be more than 0 seconds",
 		},
 		{
@@ -400,7 +400,7 @@ func TestValidateAcceptsFlagsThatGoTogether(t *testing.T) {
 			flags: flags{omitStatistics: true, intervalBetweenProbes: 1},
 		},
 		{
-			name:  "a statistics interval of zero without an Alloy or InfluxDB URL",
+			name:  "a statistics interval of zero without an OTLP or InfluxDB URL",
 			flags: flags{statsInterval: 0, intervalBetweenProbes: 1},
 		},
 	}

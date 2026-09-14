@@ -14,7 +14,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
-func TestAlloyEndpoint(t *testing.T) {
+func TestOTLPEndpoint(t *testing.T) {
 	tests := []struct {
 		given string
 		want  string
@@ -26,17 +26,50 @@ func TestAlloyEndpoint(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		p := NewAlloyPrinter(Config{AlloyURL: tt.given})
+		p, err := NewOTLPPrinter(Config{OTLPURL: tt.given})
+		if err != nil {
+			t.Fatalf("NewOTLPPrinter(%q) returned %v", tt.given, err)
+		}
 
 		if p.endpoint != tt.want {
-			t.Errorf("NewAlloyPrinter(%q) endpoint = %q, want %q", tt.given, p.endpoint, tt.want)
+			t.Errorf("NewOTLPPrinter(%q) endpoint = %q, want %q", tt.given, p.endpoint, tt.want)
 		}
 	}
 }
 
-// alloyTestStats is a probe that succeeded in 3.5ms, which is enough to
+// Hosted backends each want their token in a header of their own choosing,
+// so the header given has to arrive as it was written.
+func TestOTLPSendsTheGivenHeader(t *testing.T) {
+	var got string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("X-Honeycomb-Team")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL, OTLPHeader: "X-Honeycomb-Team: secret: with colon"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer.PrintProbeSuccess(otlpTestStats())
+
+	if got != "secret: with colon" {
+		t.Errorf("X-Honeycomb-Team = %q, want %q", got, "secret: with colon")
+	}
+}
+
+func TestOTLPRejectsABadHeader(t *testing.T) {
+	for _, header := range []string{"no colon here", ": no name"} {
+		if _, err := NewOTLPPrinter(Config{OTLPURL: "http://localhost:4318", OTLPHeader: header}); err == nil {
+			t.Errorf("expected an error for the header %q", header)
+		}
+	}
+}
+
+// otlpTestStats is a probe that succeeded in 3.5ms, which is enough to
 // check what a successful probe sends.
-func alloyTestStats() *stats.Statistics {
+func otlpTestStats() *stats.Statistics {
 	return &stats.Statistics{
 		Hostname:              "example.com",
 		IP:                    netip.MustParseAddr("93.184.216.34"),
@@ -48,22 +81,25 @@ func alloyTestStats() *stats.Statistics {
 	}
 }
 
-func TestAlloyPrintProbeSuccess(t *testing.T) {
+func TestOTLPPrintProbeSuccess(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL})
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer.PrintProbeSuccess(otlpTestStats())
 
 	if len(got.ResourceMetrics) != 1 {
 		t.Fatalf("expected 1 resourceMetrics, got %d", len(got.ResourceMetrics))
@@ -88,20 +124,23 @@ func TestAlloyPrintProbeSuccess(t *testing.T) {
 }
 
 // A failed probe has no round trip time, so sending one would be a lie.
-func TestAlloyPrintProbeFailureHasNoRTT(t *testing.T) {
+func TestOTLPPrintProbeFailureHasNoRTT(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL})
-	printer.PrintProbeFailure(alloyTestStats())
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer.PrintProbeFailure(otlpTestStats())
 
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
 		if m.Name == "tcping_probe_rtt_milliseconds" {
@@ -113,21 +152,24 @@ func TestAlloyPrintProbeFailureHasNoRTT(t *testing.T) {
 // A UDP probe cannot say much, so the little it does learn has to be sent:
 // whether the reply was our own payload coming back and whether the port
 // refused us.
-func TestAlloyUDPProbeSendsWhatItLearned(t *testing.T) {
+func TestOTLPUDPProbeSendsWhatItLearned(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL})
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	s := alloyTestStats()
+	s := otlpTestStats()
 	s.Protocol = config.UDP
 	s.UDP.Echoed = true
 	s.UDP.ReplySize = 4
@@ -154,23 +196,26 @@ func TestAlloyUDPProbeSendsWhatItLearned(t *testing.T) {
 	}
 }
 
-// An Alloy that is not there must not stop the probing, and must not repeat
-// the same complaint on every probe.
-func TestAlloyKeepsGoingWhenUnreachable(t *testing.T) {
-	printer := NewAlloyPrinter(Config{AlloyURL: "http://127.0.0.1:1"})
-
-	printer.PrintProbeSuccess(alloyTestStats())
-
-	if !printer.warned {
-		t.Error("expected the printer to warn about an unreachable Alloy")
+// An OTLP endpoint that is not there must not stop the probing, and must not
+// repeat the same complaint on every probe.
+func TestOTLPKeepsGoingWhenUnreachable(t *testing.T) {
+	printer, err := NewOTLPPrinter(Config{OTLPURL: "http://127.0.0.1:1"})
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer.PrintProbeSuccess(otlpTestStats())
+
+	if !printer.warned {
+		t.Error("expected the printer to warn about an unreachable OTLP endpoint")
+	}
+
+	printer.PrintProbeSuccess(otlpTestStats())
 }
 
 // The run summary has to keep flowing on its own, otherwise a tcping that
 // nobody stops never reports one.
-func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
+func TestOTLPStatisticsRideAlongWithProbes(t *testing.T) {
 	var payloads []otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +223,7 @@ func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
 
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 
 		payloads = append(payloads, got)
@@ -186,10 +231,13 @@ func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{
-		AlloyURL:      server.URL,
+	printer, err := NewOTLPPrinter(Config{
+		OTLPURL:       server.URL,
 		StatsInterval: 10 * time.Second,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	hasSummary := func(p otlpPayload) bool {
 		for _, m := range p.ResourceMetrics[0].ScopeMetrics[0].Metrics {
@@ -201,31 +249,34 @@ func TestAlloyStatisticsRideAlongWithProbes(t *testing.T) {
 	}
 
 	// The first probe carries a summary, so the metrics show up right away.
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer.PrintProbeSuccess(otlpTestStats())
 	if !hasSummary(payloads[0]) {
 		t.Error("the first probe should carry the run summary")
 	}
 
 	// The next one does not, since the interval has not passed.
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer.PrintProbeSuccess(otlpTestStats())
 	if hasSummary(payloads[1]) {
 		t.Error("the summary should not be sent with every probe")
 	}
 
 	// Once it has, it comes along again.
 	printer.lastStats = time.Now().Add(-printer.statsInterval)
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer.PrintProbeSuccess(otlpTestStats())
 	if !hasSummary(payloads[2]) {
 		t.Error("the summary should be sent again once the interval passed")
 	}
 }
 
-// The Alloy printer prints nothing after this line, so it is the only place
+// The OTLP printer prints nothing after this line, so it is the only place
 // the user gets to see which address is being probed.
-func TestAlloyPrintStartShowsTheIP(t *testing.T) {
-	p := NewAlloyPrinter(Config{AlloyURL: "http://localhost:4318"})
+func TestOTLPPrintStartShowsTheIP(t *testing.T) {
+	p, err := NewOTLPPrinter(Config{OTLPURL: "http://localhost:4318"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	s := alloyTestStats()
+	s := otlpTestStats()
 	s.NameResolutionDuration = 12 * time.Millisecond
 
 	t.Run("hostname target", func(t *testing.T) {
@@ -238,7 +289,7 @@ func TestAlloyPrintStartShowsTheIP(t *testing.T) {
 	})
 
 	t.Run("IP target", func(t *testing.T) {
-		ipTarget := alloyTestStats()
+		ipTarget := otlpTestStats()
 		ipTarget.Hostname = "93.184.216.34"
 		ipTarget.DestIsIP = true
 
@@ -251,23 +302,26 @@ func TestAlloyPrintStartShowsTheIP(t *testing.T) {
 	})
 }
 
-// Several machines can send to the same Alloy, so every data point has to
-// say which one it came from. It has to be on the point itself, not on the
+// Several machines can send to the same OTLP endpoint, so every data point
+// has to say which one it came from. It has to be on the point itself, not on the
 // resource, or Prometheus would not have it as a label.
-func TestAlloySourceLabelIsOnEveryDataPoint(t *testing.T) {
+func TestOTLPSourceLabelIsOnEveryDataPoint(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL, SourceLabel: "probe-1"})
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL, SourceLabel: "probe-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer.PrintProbeSuccess(otlpTestStats())
 
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
 		points := []otlpPoint{}
@@ -297,20 +351,23 @@ func TestAlloySourceLabelIsOnEveryDataPoint(t *testing.T) {
 // identify the series, so a hostname that resolves somewhere else mid-run
 // would leave the old series behind and start a new one. It gets a metric
 // of its own instead.
-func TestAlloyResolvedIPHasItsOwnMetric(t *testing.T) {
+func TestOTLPResolvedIPHasItsOwnMetric(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL, SourceLabel: "probe-1"})
-	printer.PrintProbeSuccess(alloyTestStats())
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL, SourceLabel: "probe-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer.PrintProbeSuccess(otlpTestStats())
 
 	var address *otlpMetric
 
@@ -347,19 +404,22 @@ func TestAlloyResolvedIPHasItsOwnMetric(t *testing.T) {
 
 // Everything the statistics block prints in the terminal has to be in the
 // summary too, otherwise a graph cannot show it.
-func TestAlloyStatisticsCarryTheWholeSummary(t *testing.T) {
+func TestOTLPStatisticsCarryTheWholeSummary(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL, SourceLabel: "probe-1"})
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL, SourceLabel: "probe-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	printer.PrintStatistics(statisticsTestStats())
 
 	values := map[string]float64{}
@@ -399,20 +459,23 @@ func TestAlloyStatisticsCarryTheWholeSummary(t *testing.T) {
 
 // A run that has not gone down yet has no streaks and no failed probe, and
 // sending zeros for those would claim things that never happened.
-func TestAlloyStatisticsOmitWhatHasNotHappened(t *testing.T) {
+func TestOTLPStatisticsOmitWhatHasNotHappened(t *testing.T) {
 	var got otlpPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if err := json.Unmarshal(body, &got); err != nil {
-			t.Errorf("Alloy received invalid JSON: %v", err)
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	printer := NewAlloyPrinter(Config{AlloyURL: server.URL, SourceLabel: "probe-1"})
-	printer.PrintStatistics(alloyTestStats())
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL, SourceLabel: "probe-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	printer.PrintStatistics(otlpTestStats())
 
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
 		switch m.Name {

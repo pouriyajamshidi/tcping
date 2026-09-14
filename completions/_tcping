@@ -32,13 +32,14 @@ _arguments -s \
 	'--csv=[Store the output in a CSV file]:file:_files' \
 	'--csv-fixed-name[Use the --csv filename as it is, without a date/time suffix]' \
 	'--sqlite=[Store the output in a sqlite3 database]:file:_files' \
-	'--alloy=[Send the results to a Grafana Alloy OTLP HTTP endpoint]:URL:_urls' \
+	'--otlp=[Send the results to an OTLP HTTP endpoint]:URL:_urls' \
+	'--otlp-header=[Extra HTTP header for the OTLP endpoint]:header:' \
 	'--influxdb=[Write the results to an InfluxDB v2 or v3 server]:URL:_urls' \
 	'--influxdb-org=[InfluxDB organization to write to]:organization:' \
 	'--influxdb-bucket=[InfluxDB bucket to write to]:bucket:' \
 	'--influxdb-token=[InfluxDB API token]:token:' \
-	'--stats-interval=[How often to send the statistics to Alloy or InfluxDB, in seconds]:seconds:' \
-	'--source-label=[Name this machine in the metrics sent to Alloy or InfluxDB]:name:' \
+	'--stats-interval=[How often to send the statistics to OTLP or InfluxDB, in seconds]:seconds:' \
+	'--source-label=[Name this machine in the metrics sent to OTLP or InfluxDB]:name:' \
 	'--insecure[Do not verify the server certificate of an https:// target]' \
 	'--udp-server[Do not probe. Echo every received UDP datagram back to its sender]' \
 	'1:target:_hosts' \

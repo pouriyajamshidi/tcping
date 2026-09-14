@@ -115,7 +115,8 @@ type flags struct {
 	csvNoTimestamp bool
 	SQLitePath     string
 
-	alloyURL string
+	otlpURL    string
+	otlpHeader string
 
 	influxDBURL    string
 	influxDBOrg    string
@@ -273,11 +274,20 @@ func registerFlags() *flags {
 		suffix. Repeated runs will then overwrite the same file instead of
 		creating a new one.`)
 
-	flag.StringVar(&f.alloyURL,
-		"alloy",
+	flag.StringVar(&f.otlpURL,
+		"otlp",
 		"",
-		`Send the results to a Grafana Alloy OTLP HTTP endpoint as metrics
-		instead of printing them, e.g. http://localhost:4318`)
+		`Send the results to an OTLP HTTP endpoint, such as Grafana Alloy or
+		the OpenTelemetry Collector, as metrics instead of printing them,
+		e.g. http://localhost:4318`)
+
+	flag.StringVar(&f.otlpHeader,
+		"otlp-header",
+		"",
+		`Extra HTTP header to send to the -otlp endpoint, as "Name: value",
+		e.g. "Authorization: Bearer <token>". Most hosted backends need one.
+		Can also be given in the OTLP_HEADER environment variable, which
+		keeps it out of the shell history.`)
 
 	flag.StringVar(&f.influxDBURL,
 		"influxdb",
@@ -305,18 +315,18 @@ func registerFlags() *flags {
 	flag.Float64Var(&f.statsInterval,
 		"stats-interval",
 		10,
-		`How often to send the statistics to Alloy or InfluxDB, in seconds.
+		`How often to send the statistics to OTLP or InfluxDB, in seconds.
 		They are sent along with the next probe, so a longer probe interval
-		delays them. No effect without the -alloy or -influxdb flag.`)
+		delays them. No effect without the -otlp or -influxdb flag.`)
 
 	flag.StringVar(&f.sourceLabel,
 		"source-label",
 		"",
 		`Name this machine in the JSON events and in the metrics sent to
-		Alloy or InfluxDB, so that several machines probing the same target
+		OTLP or InfluxDB, so that several machines probing the same target
 		can be told apart. Results that are sent elsewhere carry the
 		machine's hostname when this is not given. No effect without the
-		-j, -json-url, -alloy or -influxdb flag.`)
+		-j, -json-url, -otlp or -influxdb flag.`)
 
 	flag.StringVar(&f.SQLitePath,
 		"sqlite",
@@ -345,7 +355,7 @@ func (f *flags) validate() {
 
 	// The file and metric printers always write their final record, so
 	// there are no statistics to omit.
-	if f.omitStatistics && (f.SQLitePath != "" || f.CSVPath != "" || f.alloyURL != "" || f.influxDBURL != "") {
+	if f.omitStatistics && (f.SQLitePath != "" || f.CSVPath != "" || f.otlpURL != "" || f.influxDBURL != "") {
 		fmt.Fprintln(os.Stderr, "--no-stats has no effect when the output goes to a file, a database or a metrics endpoint")
 		usage()
 	}
@@ -364,7 +374,7 @@ func (f *flags) validate() {
 		os.Exit(1)
 	}
 
-	if (f.alloyURL != "" || f.influxDBURL != "") && secondsToDuration(f.statsInterval) <= 0 {
+	if (f.otlpURL != "" || f.influxDBURL != "") && secondsToDuration(f.statsInterval) <= 0 {
 		fmt.Fprintln(os.Stderr, "Statistics interval should be more than 0 seconds")
 		os.Exit(1)
 	}
@@ -373,10 +383,15 @@ func (f *flags) validate() {
 // newPrinterConfig collects everything the printers need out of the flags.
 func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 	// The flag wins, but the environment variable is still accepted so the
-	// token can be kept out of the shell history.
+	// token or header can be kept out of the shell history.
 	influxDBToken := f.influxDBToken
 	if influxDBToken == "" {
 		influxDBToken = os.Getenv("INFLUXDB_TOKEN")
+	}
+
+	otlpHeader := f.otlpHeader
+	if otlpHeader == "" {
+		otlpHeader = os.Getenv("OTLP_HEADER")
 	}
 
 	// Without this, several machines probing the same target would all
@@ -385,7 +400,7 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 	// hostname by default, so a plain -j run does not put it in output
 	// that never went anywhere.
 	sourceLabel := f.sourceLabel
-	if sourceLabel == "" && (f.jsonURL != "" || f.alloyURL != "" || f.influxDBURL != "") {
+	if sourceLabel == "" && (f.jsonURL != "" || f.otlpURL != "" || f.influxDBURL != "") {
 		hostname, err := os.Hostname()
 		if err != nil {
 			hostname = "unknown"
@@ -409,7 +424,8 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 		OutputSQLitePath:  f.SQLitePath,
 		OutputCSVPath:     f.CSVPath,
 		CSVNoTimestamp:    f.csvNoTimestamp,
-		AlloyURL:          f.alloyURL,
+		OTLPURL:           f.otlpURL,
+		OTLPHeader:        otlpHeader,
 
 		InfluxDBURL:    f.influxDBURL,
 		InfluxDBOrg:    f.influxDBOrg,

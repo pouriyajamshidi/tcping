@@ -90,7 +90,7 @@
       "transparent": true,
       "options": {
         "mode": "markdown",
-        "content": "### Read from InfluxDB\nEverything below is the line protocol `tcping --influxdb` wrote into the `tcping` bucket. A run that only uses `--alloy` does not show up here: it is on the [tcping (Alloy)](/d/tcping-alloy) dashboard."
+        "content": "### Read from InfluxDB\nEverything below is the line protocol `tcping --influxdb` wrote into the `tcping` bucket. A run that only uses `--otlp` does not show up here: it is on the [tcping (Alloy)](/d/tcping-alloy) dashboard."
       }
     },
     {

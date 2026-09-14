@@ -37,13 +37,14 @@ $script:TcpingFlags = [ordered]@{
 	'--csv'                  = 'Store the output in a CSV file'
 	'--csv-fixed-name'       = 'Use the --csv filename as it is, without a date/time suffix'
 
-	'--alloy'                = 'Send the results to a Grafana Alloy OTLP HTTP endpoint'
+	'--otlp'                 = 'Send the results to an OTLP HTTP endpoint'
+	'--otlp-header'          = 'Extra HTTP header for the OTLP endpoint, as "Name: value"'
 	'--influxdb'             = 'Write the results to an InfluxDB v2 or v3 server'
 	'--influxdb-org'         = 'InfluxDB organization to write to'
 	'--influxdb-bucket'      = 'InfluxDB bucket to write to'
 	'--influxdb-token'       = 'InfluxDB API token'
-	'--stats-interval'       = 'How often to send the statistics to Alloy or InfluxDB, in seconds'
-	'--source-label'         = 'Name this machine in the metrics sent to Alloy or InfluxDB'
+	'--stats-interval'       = 'How often to send the statistics to OTLP or InfluxDB, in seconds'
+	'--source-label'         = 'Name this machine in the metrics sent to OTLP or InfluxDB'
 
 	'--insecure'             = 'Do not verify the server certificate of an https:// target'
 	'--udp-server'           = 'Do not probe. Echo every received UDP datagram back to its sender'

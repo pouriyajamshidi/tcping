@@ -1,5 +1,5 @@
 // Package printers holds the places a run's results can go: the terminal,
-// with or without color, a JSON, CSV or SQLite file, and the Alloy and
+// with or without color, a JSON, CSV or SQLite file, and the OTLP and
 // InfluxDB endpoints. NewPrinter picks one based on the flags given.
 package printers
 
@@ -24,8 +24,8 @@ func NewPrinter(cfg Config) (probe.Printer, error) {
 	case cfg.OutputCSVPath != "":
 		return NewCSVPrinter(cfg)
 
-	case cfg.AlloyURL != "":
-		return NewAlloyPrinter(cfg), nil
+	case cfg.OTLPURL != "":
+		return NewOTLPPrinter(cfg)
 
 	case cfg.InfluxDBURL != "":
 		return NewInfluxDBPrinter(cfg)
