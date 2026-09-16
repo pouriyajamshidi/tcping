@@ -284,11 +284,6 @@ OTLP receiver on 4318, an exporter that turns the metrics into Prometheus
 ones, and a remote write to wherever your Prometheus lives. Point the URL at
 your own Prometheus and it works the same.
 
-`--otlp` is not tied to Alloy. Anything that takes OTLP over HTTP works, such
-as the OpenTelemetry Collector or a hosted backend. Those usually want a token,
-which goes in with `--otlp-header "Authorization: Bearer <token>"` or the
-`OTLP_HEADER` environment variable.
-
 > [!NOTE]
 > Prometheus needs `--web.enable-remote-write-receiver` for Alloy to be able
 > to push to it.
@@ -299,6 +294,59 @@ token.
 
 The metrics and the fields are the same wherever they land, see
 [what tcping sends](#what-tcping-sends).
+
+### Using the OpenTelemetry Collector instead of Alloy
+
+`--otlp` is not tied to Alloy. The
+[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) does the
+same job, out of the same three pieces `config.alloy` has: an OTLP receiver on
+4318, an exporter that writes Prometheus metrics, and the address of your
+Prometheus.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  prometheus_remote_write:
+    endpoint: http://prometheus:9090/api/v1/write
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus_remote_write]
+```
+
+Save that as `otelcol.yaml` and run the `contrib` image, which is the one
+carrying that exporter:
+
+```bash
+docker run -p 4318:4318 -v "$PWD/otelcol.yaml:/etc/otelcol/config.yaml:ro" \
+  otel/opentelemetry-collector-contrib:0.161.0 --config=/etc/otelcol/config.yaml
+```
+
+Then point tcping at it the same way as at Alloy:
+
+```bash
+tcping --otlp http://localhost:4318 example.com 443
+```
+
+The metric names and labels come out the same either way, so **tcping (Alloy)**
+is also the dashboard to open for a collector run, despite its name.
+
+> [!NOTE]
+> The exporter used to be called `prometheusremotewrite`. That name still
+> works, but the collector logs a deprecation warning for it, so write new
+> configs with `prometheus_remote_write`.
+
+Anything else that speaks OTLP over HTTP works the same way, including hosted
+backends. Those usually want a token, which goes in with
+`--otlp-header "Authorization: Bearer <token>"` or the `OTLP_HEADER`
+environment variable.
 
 ### Taking a dashboard to your own Grafana
 
