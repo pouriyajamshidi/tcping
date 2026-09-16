@@ -170,7 +170,7 @@ $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
 	echo "Description: $(DESCRIPTION)" >>control; \
 	popd >/dev/null; \
 	\
-	dpkg-deb --build $$PKG_DIR $@
+	dpkg-deb --root-owner-group --build $$PKG_DIR $@
 
 # ==================================================
 # Miscellaneous outputs
