@@ -140,7 +140,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 | [Debian, Ubuntu](#linux---package-repositories) | `sudo apt install tcping`, after adding the repository |
 | [Fedora, RHEL, CentOS](#linux---package-repositories) | `sudo dnf install tcping`, after adding the repository |
 | [Alpine](#linux---package-repositories) | `sudo apk add tcping`, after adding the repository |
-| [Arch, Manjaro](#linux---package-repositories) | `yay -S tcping-bin` |
+| [Arch, Manjaro](#linux---package-repositories) | `yay -S tcping-go-bin` |
 | [Any Linux](#linux---one-line-install) | a [one-line install](#linux---one-line-install) or a [package file](#linux---package-files) |
 | [BSD](#bsd-and-linux---manual-way) | the [prebuilt binary](#bsd-and-linux---manual-way) |
 | [Nix](#nix) | `nix profile install github:pouriyajamshidi/tcping` |
@@ -233,10 +233,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**, **Manjaro**, **EndeavourOS** and their flavors have it on the
-[AUR](https://aur.archlinux.org/packages/tcping-bin), so use your favorite helper:
+[AUR](https://aur.archlinux.org/packages/tcping-go-bin), so use your favorite helper:
 
 ```bash
-yay -S tcping-bin
+yay -S tcping-go-bin
 ```
 
 ### Linux - Package files
