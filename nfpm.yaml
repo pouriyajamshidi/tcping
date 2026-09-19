@@ -25,12 +25,12 @@ contents:
     file_info:
       mode: 0755
 
-  - src: completions/tcping.bash
+  - src: internal/completions/tcping.bash
     dst: /usr/share/bash-completion/completions/tcping
     file_info:
       mode: 0644
 
-  - src: completions/tcping.fish
+  - src: internal/completions/tcping.fish
     dst: /usr/share/fish/vendor_completions.d/tcping.fish
     file_info:
       mode: 0644
@@ -38,22 +38,22 @@ contents:
   # Debian keeps completions shipped by a package in vendor-completions and
   # leaves site-functions to the machine's admin. The other distros only have
   # site-functions, so the same file lands in two different places.
-  - src: completions/_tcping
+  - src: internal/completions/_tcping
     dst: /usr/share/zsh/vendor-completions/_tcping
     file_info:
       mode: 0644
     packager: deb
-  - src: completions/_tcping
+  - src: internal/completions/_tcping
     dst: /usr/share/zsh/site-functions/_tcping
     file_info:
       mode: 0644
     packager: rpm
-  - src: completions/_tcping
+  - src: internal/completions/_tcping
     dst: /usr/share/zsh/site-functions/_tcping
     file_info:
       mode: 0644
     packager: apk
-  - src: completions/_tcping
+  - src: internal/completions/_tcping
     dst: /usr/share/zsh/site-functions/_tcping
     file_info:
       mode: 0644

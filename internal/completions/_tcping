@@ -2,13 +2,14 @@
 #
 # zsh completion for tcping
 #
-# Install by dropping this file in a directory that is in your $fpath, e.g.:
-#   sudo install -Dm 644 _tcping /usr/share/zsh/site-functions/_tcping
+# Install by saving it as _tcping in a directory that is in your $fpath, e.g.:
+#   tcping --completions zsh | sudo tee /usr/share/zsh/site-functions/_tcping >/dev/null
 
 _arguments -s \
 	'-h[Show the available flags and exit]' \
 	'--version[Show the version and exit]' \
 	'-u[Check for updates and exit]' \
+	'--completions=[Print the completion script for a shell and exit]:shell:(bash zsh fish powershell)' \
 	'-c[Stop after <n> probes, regardless of the result]:count:' \
 	'-i[Interval between probes, in seconds]:seconds:' \
 	'-t[Time to wait for a response, in seconds. 0 means infinite]:seconds:' \

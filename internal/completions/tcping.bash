@@ -1,7 +1,7 @@
 # bash completion for tcping
 #
 # Install with:
-#   sudo install -Dm 644 tcping.bash /usr/share/bash-completion/completions/tcping
+#   tcping --completions bash | sudo tee /usr/share/bash-completion/completions/tcping >/dev/null
 
 _tcping() {
 	local cur prev opt flags
@@ -23,6 +23,10 @@ _tcping() {
 		compopt -o filenames
 		return
 		;;
+	completions)
+		mapfile -t COMPREPLY < <(compgen -W "bash zsh fish powershell" -- "$cur")
+		return
+		;;
 	I)
 		local interfaces
 		interfaces=$(ls /sys/class/net 2>/dev/null || ifconfig -l 2>/dev/null)
@@ -37,7 +41,7 @@ _tcping() {
 		;;
 	esac
 
-	flags="-h --version -u
+	flags="-h --version -u --completions
 		-c -i -t -4 -6 -I
 		-r --resolve-every-probe --dns-server --dns-timeout
 		-D --no-color --show-source-address --failures-only --no-stats -v

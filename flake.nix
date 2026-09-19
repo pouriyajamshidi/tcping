@@ -49,9 +49,9 @@
           subPackages = [ "cmd/tcping" ];
 
           postInstall = ''
-            install -Dm644 completions/tcping.bash $out/share/bash-completion/completions/tcping
-            install -Dm644 completions/_tcping $out/share/zsh/site-functions/_tcping
-            install -Dm644 completions/tcping.fish $out/share/fish/vendor_completions.d/tcping.fish
+            install -Dm644 internal/completions/tcping.bash $out/share/bash-completion/completions/tcping
+            install -Dm644 internal/completions/_tcping $out/share/zsh/site-functions/_tcping
+            install -Dm644 internal/completions/tcping.fish $out/share/fish/vendor_completions.d/tcping.fish
           '';
 
           meta = {

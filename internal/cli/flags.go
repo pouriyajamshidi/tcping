@@ -127,8 +127,9 @@ type flags struct {
 
 	sourceLabel string
 
-	showVer      bool
-	checkUpdates bool
+	showVer          bool
+	checkUpdates     bool
+	completionsShell string
 }
 
 // registerFlags declares every command line flag and returns the struct that
@@ -336,6 +337,12 @@ func registerFlags() *flags {
 	flag.BoolVar(&f.showVer, "version", false, "Show version and exit.")
 
 	flag.BoolVar(&f.checkUpdates, "u", false, "Check for updates and exit.")
+
+	flag.StringVar(&f.completionsShell,
+		"completions",
+		"",
+		`Print the completion script for a shell and exit.
+		One of bash, zsh, fish or powershell.`)
 
 	return &f
 }

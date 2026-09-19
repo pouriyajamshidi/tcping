@@ -35,6 +35,10 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		checkForUpdates()
 	}
 
+	if f.completionsShell != "" {
+		printCompletions(f.completionsShell)
+	}
+
 	f.validate()
 
 	// The target says which protocol to speak: an http(s):// URL selects an

@@ -1,7 +1,7 @@
 # PowerShell completion for tcping
 #
-# Install by dot-sourcing it from your profile ($PROFILE):
-#   . C:\path\to\tcping.ps1
+# Install by loading it from your profile ($PROFILE):
+#   tcping --completions powershell | Out-String | Invoke-Expression
 #
 # The sqlite3 output flag (--sqlite) is missing on purpose: it is not available
 # in the Windows builds.
@@ -10,6 +10,7 @@ $script:TcpingFlags = [ordered]@{
 	'-h'                     = 'Show the available flags and exit'
 	'--version'              = 'Show the version and exit'
 	'-u'                     = 'Check for updates and exit'
+	'--completions'          = 'Print the completion script for a shell and exit'
 
 	'-c'                     = 'Stop after <n> probes, regardless of the result'
 	'-i'                     = 'Interval between probes, in seconds'

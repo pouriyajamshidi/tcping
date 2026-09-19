@@ -1,7 +1,7 @@
 # fish completion for tcping
 #
 # Install with:
-#   install -Dm 644 tcping.fish ~/.config/fish/completions/tcping.fish
+#   tcping --completions fish > ~/.config/fish/completions/tcping.fish
 
 # The target is a hostname, an IP or a URL, and its port is a number.
 # Neither is a file, so turn file completion off and offer known hosts.
@@ -10,6 +10,7 @@ complete -c tcping -f -a '(__fish_print_hostnames)' -d Target
 complete -c tcping -s h -d 'Show the available flags and exit'
 complete -c tcping -l version -d 'Show the version and exit'
 complete -c tcping -s u -d 'Check for updates and exit'
+complete -c tcping -l completions -x -a 'bash zsh fish powershell' -d 'Print the completion script for a shell and exit'
 
 complete -c tcping -s c -x -d 'Stop after <n> probes, regardless of the result'
 complete -c tcping -s i -x -d 'Interval between probes, in seconds'
