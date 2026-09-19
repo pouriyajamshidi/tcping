@@ -339,36 +339,37 @@ which you get with `nix develop`.
 
 ### Shell Completions
 
-Completion scripts for `bash`, `zsh`, `fish` and `PowerShell` live in the
-[completions](completions) folder. They complete the flags, the interface names
-for `-I` and the file names for `--csv` and `--sqlite`.
+**tcping** carries completion scripts for `bash`, `zsh`, `fish` and `PowerShell`
+and prints them with `--completions <shell>`. They complete the flags, the
+interface names for `-I` and the file names for `--csv` and `--sqlite`.
 
-The Linux packages and the [one-line install](#linux---one-line-install) put them
-in place for you. The release archives ship them next to the binary, so they can
-also be installed from there with the commands below.
+The Linux packages, Homebrew, the AUR package, Nix and the
+[one-line install](#linux---one-line-install) put them in place for you.
+Otherwise, save the one for your shell:
 
 - `bash`:
 
   ```bash
-  sudo install -Dm 644 completions/tcping.bash /usr/share/bash-completion/completions/tcping
+  tcping --completions bash | sudo tee /usr/share/bash-completion/completions/tcping >/dev/null
   ```
 
 - `zsh`:
 
   ```bash
-  sudo install -Dm 644 completions/_tcping /usr/share/zsh/site-functions/_tcping
+  tcping --completions zsh | sudo tee /usr/share/zsh/site-functions/_tcping >/dev/null
   ```
 
 - `fish`:
 
   ```bash
-  install -Dm 644 completions/tcping.fish ~/.config/fish/completions/tcping.fish
+  mkdir -p ~/.config/fish/completions &&
+    tcping --completions fish > ~/.config/fish/completions/tcping.fish
   ```
 
-- `PowerShell`, by dot-sourcing the script from your profile:
+- `PowerShell`, by loading it from your profile:
 
   ```powershell
-  Add-Content $PROFILE ". C:\path\to\tcping.ps1"
+  Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
 Start a new shell afterwards to pick them up.
