@@ -1,5 +1,10 @@
-# A sample observability stack for tcping. See README.md next to this file
-# for how to run it and what the dashboards show.
+# tcping writing straight to InfluxDB. See README.md next to this file for how
+# to run it and what the dashboards show.
+#
+# Every compose.*.yml here can be started on its own, or together with the
+# others by passing several -f flags. Grafana and udp-echo are written the
+# same way in every file, so they come up once however many files are
+# started.
 #
 # WARNING: every password and token below is a throwaway one, written in
 # plain text so the stack starts without any setup. Do not reuse them, and do
@@ -26,50 +31,6 @@ x-tcping: &tcping
         memory: 32M
 
 services:
-  alloy:
-    image: grafana/alloy:v1.19.2
-    container_name: alloy
-    command:
-      - run
-      - --server.http.listen-addr=0.0.0.0:12345
-      - --storage.path=/var/lib/alloy/data
-      - /etc/alloy/config.alloy
-    volumes:
-      - ./config.alloy:/etc/alloy/config.alloy:ro
-      - alloy-data:/var/lib/alloy/data
-    ports:
-      - "4318:4318"   # OTLP over HTTP, this is where tcping sends to
-      - "12346:12345" # Alloy UI
-    networks:
-      - tcping
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 256M
-
-  prometheus:
-    image: prom/prometheus:v3.14.0
-    container_name: prometheus
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --web.enable-remote-write-receiver
-      - --storage.tsdb.retention.time=6h
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - tcping
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 512M
-
   influxdb:
     image: influxdb:2.9.1
     container_name: influxdb
@@ -116,9 +77,6 @@ services:
       - "3000:3000"
     networks:
       - tcping
-    depends_on:
-      - influxdb
-      - prometheus
     deploy:
       resources:
         limits:
@@ -134,9 +92,7 @@ services:
 
   # The probes.
   #
-  # Every dashboard row has a run feeding it, and each run is sent to Alloy
-  # and to InfluxDB by a pair of containers, so the two dashboards show the
-  # same thing and can be compared.
+  # Every dashboard row has a run feeding it.
   #
   # -4 because Docker gives a container no IPv6 address unless it is turned
   # on, and a hostname with an AAAA record would otherwise be probed over a
@@ -144,57 +100,9 @@ services:
   #
   # --source-label names the machine the probe came from. These two are the
   # same laptop pretending to be two places, which is what the Source
-  # dropdown at the top of a dashboard picks between.
-
-  tcping-alloy-tcp-brussels:
-    <<: *tcping
-    container_name: tcping-alloy-tcp-brussels
-    depends_on:
-      - alloy
-    command:
-      - --otlp=http://alloy:4318
-      - --source-label=brussels
-      - "-4"
-      - github.com
-      - "443"
-
-  # --resolve-every-probe is what fills in the Name resolution row: without
-  # it the hostname is looked up once at startup and never again.
-  tcping-alloy-tcp-tokyo:
-    <<: *tcping
-    container_name: tcping-alloy-tcp-tokyo
-    depends_on:
-      - alloy
-    command:
-      - --otlp=http://alloy:4318
-      - --source-label=tokyo
-      - --resolve-every-probe
-      - "-4"
-      - github.com
-      - "443"
-
-  tcping-alloy-https:
-    <<: *tcping
-    container_name: tcping-alloy-https
-    depends_on:
-      - alloy
-    command:
-      - --otlp=http://alloy:4318
-      - --source-label=brussels
-      - "-4"
-      - https://cloudflare.com
-
-  tcping-alloy-udp:
-    <<: *tcping
-    container_name: tcping-alloy-udp
-    depends_on:
-      - alloy
-      - udp-echo
-    command:
-      - --otlp=http://alloy:4318
-      - --source-label=brussels
-      - udp://udp-echo
-      - "9999"
+  # dropdown at the top of a dashboard picks between. The InfluxDB runs are
+  # the only ones in their own database, so they need no prefix to keep them
+  # apart from the others.
 
   tcping-influxdb-tcp-brussels:
     <<: *tcping
@@ -215,6 +123,8 @@ services:
       - github.com
       - "443"
 
+  # --resolve-every-probe is what fills in the Name resolution row: without
+  # it the hostname is looked up once at startup and never again.
   tcping-influxdb-tcp-tokyo:
     <<: *tcping
     container_name: tcping-influxdb-tcp-tokyo
@@ -269,7 +179,5 @@ networks:
     driver: bridge
 
 volumes:
-  alloy-data:
-  prometheus-data:
   influxdb-data:
   grafana-data:

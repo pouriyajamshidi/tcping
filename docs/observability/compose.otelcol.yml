@@ -1,0 +1,180 @@
+# tcping sending OTLP to the OpenTelemetry Collector, which remote writes it
+# to Prometheus.
+# See README.md next to this file for how to run it and what the dashboards
+# show.
+#
+# Every compose.*.yml here can be started on its own, or together with the
+# others by passing several -f flags. Prometheus, Grafana and udp-echo are
+# written the same way in every file, so they come up once however many files
+# are started.
+#
+# WARNING: every password and token below is a throwaway one, written in
+# plain text so the stack starts without any setup. Do not reuse them, and do
+# not put this stack on a network you do not control.
+
+# Fixed so the stack keeps the same name no matter where it is started from.
+name: tcping
+
+# What every tcping container below shares. The image is the released v3 tag,
+# built from this repository until v3 is out: a missing image makes
+# "docker compose up" build it, and once v3 is released "docker compose pull"
+# replaces it with the published one without a line here changing.
+x-tcping: &tcping
+  image: pouriyajamshidi/tcping:v3
+  build:
+    context: ../..
+  restart: unless-stopped
+  networks:
+    - tcping
+  deploy:
+    resources:
+      limits:
+        cpus: "0.10"
+        memory: 32M
+
+services:
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    container_name: otelcol
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otelcol.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      # OTLP over HTTP, this is where tcping sends to. 4319 on the host
+      # because Alloy has 4318 when both are started.
+      - "4319:4318"
+    networks:
+      - tcping
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      # tcping sends OTLP here directly.
+      - --web.enable-otlp-receiver
+      # Alloy and the collector push here with remote write.
+      - --web.enable-remote-write-receiver
+      - --storage.tsdb.retention.time=6h
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - tcping
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:13.2.1
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # No login screen between you and the graphs.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - tcping
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  # tcping listening instead of probing, so the UDP probes below have
+  # something inside the stack to talk to and get a real reply from.
+  udp-echo:
+    <<: *tcping
+    container_name: udp-echo
+    command: ["--udp-server", "0.0.0.0", "9999"]
+
+  # The probes.
+  #
+  # Every dashboard row has a run feeding it.
+  #
+  # -4 because Docker gives a container no IPv6 address unless it is turned
+  # on, and a hostname with an AAAA record would otherwise be probed over a
+  # network that is not there.
+  #
+  # --source-label names the machine the probe came from. These two are the
+  # same laptop pretending to be two places, which is what the Source
+  # dropdown at the top of a dashboard picks between. The "otelcol-" in
+  # front keeps them apart from the Prometheus and Alloy runs when those are
+  # started too, since all three land in the same Prometheus.
+
+  tcping-otelcol-tcp-brussels:
+    <<: *tcping
+    container_name: tcping-otelcol-tcp-brussels
+    depends_on:
+      - otelcol
+    command:
+      - --otlp=http://otelcol:4318
+      - --source-label=otelcol-brussels
+      - "-4"
+      - github.com
+      - "443"
+
+  # --resolve-every-probe is what fills in the Name resolution row: without
+  # it the hostname is looked up once at startup and never again.
+  tcping-otelcol-tcp-tokyo:
+    <<: *tcping
+    container_name: tcping-otelcol-tcp-tokyo
+    depends_on:
+      - otelcol
+    command:
+      - --otlp=http://otelcol:4318
+      - --source-label=otelcol-tokyo
+      - --resolve-every-probe
+      - "-4"
+      - github.com
+      - "443"
+
+  tcping-otelcol-https:
+    <<: *tcping
+    container_name: tcping-otelcol-https
+    depends_on:
+      - otelcol
+    command:
+      - --otlp=http://otelcol:4318
+      - --source-label=otelcol-brussels
+      - "-4"
+      - https://cloudflare.com
+
+  tcping-otelcol-udp:
+    <<: *tcping
+    container_name: tcping-otelcol-udp
+    depends_on:
+      - otelcol
+      - udp-echo
+    command:
+      - --otlp=http://otelcol:4318
+      - --source-label=otelcol-brussels
+      - udp://udp-echo
+      - "9999"
+
+networks:
+  tcping:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

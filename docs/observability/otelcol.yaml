@@ -1,0 +1,17 @@
+# The same job config.alloy does, written for the OpenTelemetry Collector:
+# take OTLP from tcping over HTTP on 4318 and remote write it to Prometheus.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  prometheus_remote_write:
+    endpoint: http://prometheus:9090/api/v1/write
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus_remote_write]
