@@ -16,11 +16,11 @@
   "description": "Probes tcping wrote straight to InfluxDB with --influxdb.",
   "links": [
     {
-      "title": "The same probes through Alloy",
+      "title": "The same probes through Prometheus",
       "type": "link",
-      "url": "/d/tcping-alloy",
+      "url": "/d/tcping-prometheus",
       "icon": "external link",
-      "tooltip": "Open the Alloy dashboard",
+      "tooltip": "Open the Prometheus dashboard",
       "asDropdown": false,
       "targetBlank": false,
       "includeVars": true,
@@ -90,7 +90,7 @@
       "transparent": true,
       "options": {
         "mode": "markdown",
-        "content": "### Read from InfluxDB\nEverything below is the line protocol `tcping --influxdb` wrote into the `tcping` bucket. A run that only uses `--otlp` does not show up here: it is on the [tcping (Alloy)](/d/tcping-alloy) dashboard."
+        "content": "### Read from InfluxDB\nEverything below is the line protocol `tcping --influxdb` wrote into the `tcping` bucket. A run that only uses `--otlp` does not show up here: it is on the [tcping (Prometheus)](/d/tcping-prometheus) dashboard."
       }
     },
     {

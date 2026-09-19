@@ -7,14 +7,13 @@
     "from": "now-15m",
     "to": "now"
   },
-  "uid": "tcping-alloy",
-  "title": "tcping (Alloy)",
+  "uid": "tcping-prometheus",
+  "title": "tcping (Prometheus)",
   "tags": [
     "tcping",
-    "alloy",
     "prometheus"
   ],
-  "description": "Probes tcping sent to Grafana Alloy with --otlp, read back from Prometheus.",
+  "description": "Probes tcping sent with --otlp, read back from Prometheus.",
   "links": [
     {
       "title": "The same probes through InfluxDB",
@@ -84,7 +83,7 @@
       "transparent": true,
       "options": {
         "mode": "markdown",
-        "content": "### Read from Prometheus, by way of Grafana Alloy\nEverything below is the OTLP metrics `tcping --otlp` sent to Alloy, which remote wrote them to Prometheus. A run that only uses `--influxdb` does not show up here: it is on the [tcping (InfluxDB)](/d/tcping-influxdb) dashboard."
+        "content": "### Read from Prometheus\nEverything below is the OTLP metrics `tcping --otlp` sent, either straight to Prometheus or through Alloy or the OpenTelemetry Collector, which remote write them to Prometheus. A run that only uses `--influxdb` does not show up here: it is on the [tcping (InfluxDB)](/d/tcping-influxdb) dashboard."
       }
     },
     {
