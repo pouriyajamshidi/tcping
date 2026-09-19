@@ -1,24 +1,31 @@
 # Observing tcping
 
-tcping can send its probes over OTLP to [Grafana Alloy](https://grafana.com/docs/alloy/latest/)
-or to [InfluxDB](https://www.influxdata.com/) instead of printing them, which
-turns a run into a graph and lets several machines watch the same target.
+tcping can send its probes over OTLP, to [Prometheus](https://prometheus.io/),
+[Grafana Alloy](https://grafana.com/docs/alloy/latest/) or the
+[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/), or to
+[InfluxDB](https://www.influxdata.com/), instead of printing them. That turns
+a run into a graph and lets several machines watch the same target.
 
-This directory is a complete stack you can start in one command to try that
-out, or to copy pieces of into your own setup. tcping is part of the stack, so
-starting it gives you graphs with something in them straight away, without
-having to run anything by hand.
+This directory holds a stack for each of those, which you can start on its
+own or together with the others, to try them out or to copy pieces of into
+your own setup. tcping is part of every stack, so starting one gives you
+graphs with something in them straight away, without having to run anything
+by hand.
 
 ## What is in here
 
 | File | What it does |
 | --- | --- |
-| `compose.yml` | Alloy, Prometheus, InfluxDB, Grafana and nine tcping containers, wired together |
+| `compose.prometheus.yml` | tcping sending OTLP straight to Prometheus |
+| `compose.alloy.yml` | tcping sending OTLP to Alloy, which pushes it to Prometheus |
+| `compose.otelcol.yml` | tcping sending OTLP to the OpenTelemetry Collector, which pushes it to Prometheus |
+| `compose.influxdb.yml` | tcping writing straight to InfluxDB |
 | `config.alloy` | Alloy taking OTLP from tcping and pushing it to Prometheus |
+| `otelcol.yaml` | The collector doing the same |
 | `prometheus.yml` | Prometheus with nothing to scrape, it only receives |
 | `grafana/provisioning/` | Both data sources and both dashboards, so nothing has to be clicked |
-| `grafana/dashboards/tcping-influxdb.json` | The dashboard reading from InfluxDB |
-| `grafana/dashboards/tcping-alloy.json` | The same dashboard reading from Prometheus |
+| `grafana/dashboards/tcping-prometheus.json` | The dashboard reading from Prometheus |
+| `grafana/dashboards/tcping-influxdb.json` | The same dashboard reading from InfluxDB |
 
 > [!WARNING]
 > Every password and token in here is a throwaway one, written in plain text
@@ -27,52 +34,73 @@ having to run anything by hand.
 
 ## Start it
 
+Pick the way you want tcping to send its probes, and start that file:
+
 ```bash
-cd docs/observability && docker compose up -d
+cd docs/observability && docker compose -f compose.prometheus.yml up -d
 ```
+
+| File | Path the probes take |
+| --- | --- |
+| `compose.prometheus.yml` | tcping, then Prometheus |
+| `compose.alloy.yml` | tcping, then Alloy, then Prometheus |
+| `compose.otelcol.yml` | tcping, then the OpenTelemetry Collector, then Prometheus |
+| `compose.influxdb.yml` | tcping, then InfluxDB |
+
+Or start several at once to compare them, by passing more than one `-f`:
+
+```bash
+cd docs/observability && \
+  docker compose -f compose.prometheus.yml -f compose.alloy.yml -f compose.otelcol.yml -f compose.influxdb.yml up -d
+```
+
+The parts they share, Prometheus, Grafana and `udp-echo`, are written the same
+way in every file, so they are started once however many files you pass.
 
 The tcping containers use the `pouriyajamshidi/tcping:v3` image. Until v3 is
 released that tag is not on any registry, so the first `docker compose up`
 builds it from this repository. Once v3 is out, `docker compose pull` replaces
-it with the published one and nothing in `compose.yml` has to change.
+it with the published one and nothing in the compose files has to change.
 
-That gives you:
+Depending on the files you started, that gives you:
 
 - Grafana on <http://localhost:3000>, no login needed, with both dashboards
-- Alloy's UI on <http://localhost:12346>, to check it is receiving anything
-- Prometheus on <http://localhost:9090>
+- Prometheus on <http://localhost:9090>, taking OTLP on `/api/v1/otlp`
+- Alloy on <http://localhost:4318>, with its UI on <http://localhost:12346> to check it is receiving anything
+- The collector on <http://localhost:4319>, since Alloy has 4318 when both are started
 - InfluxDB on <http://localhost:8086>, user `tcping`, password `tcping-dev-password`
 
-And these tcping containers, probing away:
+Every file starts the same four tcping runs, pointed at its own backend:
 
-| Container | What it probes | Sends to |
+| Container | What it probes | Source label |
 | --- | --- | --- |
-| `tcping-alloy-tcp-brussels` | `github.com:443` over TCP, labelled `brussels` | Alloy |
-| `tcping-alloy-tcp-tokyo` | the same, labelled `tokyo`, resolving every probe | Alloy |
-| `tcping-alloy-https` | `https://cloudflare.com` | Alloy |
-| `tcping-alloy-udp` | `udp-echo:9999` over UDP | Alloy |
-| `tcping-influxdb-tcp-brussels` | `github.com:443` over TCP, labelled `brussels` | InfluxDB |
-| `tcping-influxdb-tcp-tokyo` | the same, labelled `tokyo`, resolving every probe | InfluxDB |
-| `tcping-influxdb-https` | `https://cloudflare.com` | InfluxDB |
-| `tcping-influxdb-udp` | `udp-echo:9999` over UDP | InfluxDB |
-| `udp-echo` | nothing, it is `tcping --udp-server` answering the UDP probes |  |
+| `tcping-<backend>-tcp-brussels` | `github.com:443` over TCP | `<prefix>-brussels` |
+| `tcping-<backend>-tcp-tokyo` | the same, resolving every probe | `<prefix>-tokyo` |
+| `tcping-<backend>-https` | `https://cloudflare.com` | `<prefix>-brussels` |
+| `tcping-<backend>-udp` | `udp-echo:9999` over UDP | `<prefix>-brussels` |
+| `udp-echo` | nothing, it is `tcping --udp-server` answering the UDP probes | |
 
-They come in pairs on purpose: the same four runs go to Alloy and to InfluxDB,
-so the two dashboards show the same thing and can be held next to each other.
+`<backend>` is `prometheus`, `alloy`, `otelcol` or `influxdb`, and `<prefix>`
+is `prom`, `alloy` or `otelcol`. The prefix is there because those three all
+land in the same Prometheus, and without it they would write over each
+other's series. The InfluxDB runs are just `brussels` and `tokyo`: they are
+the only ones in their own database, so they have nothing to be told apart
+from.
+
 The `--resolve-every-probe` on the `tokyo` runs is what puts anything in the
-**Name resolution** row, and `udp-echo` is tcping listening instead of probing,
-so the UDP probes get a real reply from inside the stack.
+**Name resolution** row, and `udp-echo` is tcping listening instead of
+probing, so the UDP probes get a real reply from inside the stack.
 
 Stop one of them if you want to watch a target go down:
 
 ```bash
-docker compose stop udp-echo
+docker compose -f compose.prometheus.yml stop udp-echo
 ```
 
-When you are done:
+When you are done, pass the same `-f` files you started with:
 
 ```bash
-docker compose down -v
+docker compose -f compose.prometheus.yml down -v
 ```
 
 The `-v` throws the stored metrics away too. Leave it off to keep them. The
@@ -80,7 +108,14 @@ stack only holds 6 hours of data either way.
 
 ## Pointing your own tcping at it
 
-The stack listens for anything, not only its own containers. Through Alloy:
+The stack listens for anything, not only its own containers. Straight to
+Prometheus:
+
+```bash
+tcping --otlp http://localhost:9090/api/v1/otlp example.com 443
+```
+
+Through Alloy, or through the collector on 4319:
 
 ```bash
 tcping --otlp http://localhost:4318 example.com 443
@@ -110,7 +145,7 @@ often it answered from a different address, and when the run started, how long
 it has been going and when it ended. Times are sent as milliseconds since the
 epoch, since a metric can only carry a number.
 
-### Through Alloy
+### Over OTLP
 
 Every probe sends `tcping_probe_success`, `tcping_probe_rtt_milliseconds` and
 `tcping_probes_total`, labelled with the source, target, port and protocol. An
@@ -147,7 +182,7 @@ Every probe writes one point, named after what was probed: `tcping_tcp`,
 protocol. All three hold `success`, `rtt_ms`, the address the target resolved
 to in the `ip` field, and the successful and unsuccessful probe counts. The
 address is a field rather than a tag for the same reason it is its own metric
-on the Alloy side: tags identify a series, and a hostname that resolves
+on the OTLP side: tags identify a series, and a hostname that resolves
 somewhere else mid-run would otherwise leave the old series behind.
 
 A `tcping_http` point also carries the status code, the connect, TLS handshake
@@ -159,7 +194,7 @@ lookup to `tcping_name_resolution`.
 
 The API token can be given with `--influxdb-token`, or in the `INFLUXDB_TOKEN`
 environment variable, which keeps it out of your shell history. The flag wins
-if both are set. The containers in `compose.yml` use the environment variable.
+if both are set. The containers in `compose.influxdb.yml` use the environment variable.
 
 ## Several machines probing the same target
 
@@ -169,8 +204,8 @@ their own series instead of on top of each other, and you can see the target
 from both at once.
 
 Use `--source-label` to name a machine yourself, which is also how to fake a
-second machine on one laptop, and what the stack does to get its `brussels` and
-`tokyo`:
+second machine on one laptop, and what the stack does to get its `brussels`
+and `tokyo`:
 
 ```bash
 tcping --otlp http://localhost:4318 --source-label brussels example.com 443
@@ -184,9 +219,10 @@ and is filled from that dashboard's own data source.
 
 There are two, holding the same panels in the same places:
 
+- **tcping (Prometheus)** reads the metrics `--otlp` sent, whether they went
+  straight to Prometheus or through Alloy or the collector. All three come
+  out with the same names and labels.
 - **tcping (InfluxDB)** reads the points `--influxdb` wrote.
-- **tcping (Alloy)** reads the metrics `--otlp` sent, out of the Prometheus
-  that Alloy remote wrote them to.
 
 Which one to open is simply which way you sent the run. They are kept apart
 rather than mixed into one dashboard because Flux and PromQL are different
@@ -221,8 +257,8 @@ over the file in `grafana/dashboards/`.
 
 ## What it looks like
 
-The shots below are the stack as `docker compose up -d` leaves it, running for
-about half an hour, with the time range set to the last 15 minutes.
+The shots below are the stack running for about half an hour, with the time
+range set to the last 15 minutes.
 
 **Probes** is the row you will spend most of your time in. Round trip time and
 the probe result are side by side, the packet loss of every run sits under
@@ -271,22 +307,39 @@ proof nothing is:
 
 ![The UDP row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-udp.png)
 
-And **tcping (Alloy)** is the same set of panels reading from Prometheus, so a
-run using `--otlp` looks like one using `--influxdb`. The same outage is in
-it, because the stack sends every run both ways:
+And **tcping (Prometheus)** is the same set of panels reading from
+Prometheus, so a run using `--otlp` looks like one using `--influxdb`. This
+one is `compose.prometheus.yml` over the last 5 minutes:
 
-![The Probes row of the Alloy dashboard](../Images/observability/dashboard-alloy-probes.png)
+![The Probes row of the Prometheus dashboard](../Images/observability/dashboard-prometheus-probes.png)
 
 ## Using this outside the playground
 
-The only part of this that is really tcping-specific is `config.alloy`: an
-OTLP receiver on 4318, an exporter that turns the metrics into Prometheus
-ones, and a remote write to wherever your Prometheus lives. Point the URL at
-your own Prometheus and it works the same.
+The simplest setup needs nothing between tcping and Prometheus. Start your
+Prometheus with `--web.enable-otlp-receiver` and point tcping at it:
+
+```bash
+tcping --otlp http://your-prometheus:9090/api/v1/otlp example.com 443
+```
+
+Alloy or the collector are worth adding when you want to send the same
+metrics to several places, or change them on the way. The only tcping-specific
+part of either is its config, `config.alloy` or `otelcol.yaml`: an OTLP
+receiver on 4318, and a remote write to wherever your Prometheus lives. Point
+the URL at your own Prometheus and it works the same. The collector needs the
+`contrib` image, which is the one carrying the remote write exporter.
 
 > [!NOTE]
-> Prometheus needs `--web.enable-remote-write-receiver` for Alloy to be able
-> to push to it.
+> Prometheus needs `--web.enable-remote-write-receiver` for Alloy or the
+> collector to be able to push to it.
+
+> [!NOTE]
+> The collector's exporter used to be called `prometheusremotewrite`. That
+> name still works, but the collector logs a deprecation warning for it, so
+> write new configs with `prometheus_remote_write`.
+
+The metric names and labels come out the same whichever of the three you use,
+so **tcping (Prometheus)** is the dashboard to open for all of them.
 
 For InfluxDB there is no middle piece at all, tcping writes line protocol
 directly, so an existing v2 or v3 server only needs an org, a bucket and a
@@ -294,54 +347,6 @@ token.
 
 The metrics and the fields are the same wherever they land, see
 [what tcping sends](#what-tcping-sends).
-
-### Using the OpenTelemetry Collector instead of Alloy
-
-`--otlp` is not tied to Alloy. The
-[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) does the
-same job, out of the same three pieces `config.alloy` has: an OTLP receiver on
-4318, an exporter that writes Prometheus metrics, and the address of your
-Prometheus.
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: 0.0.0.0:4318
-
-exporters:
-  prometheus_remote_write:
-    endpoint: http://prometheus:9090/api/v1/write
-
-service:
-  pipelines:
-    metrics:
-      receivers: [otlp]
-      exporters: [prometheus_remote_write]
-```
-
-Save that as `otelcol.yaml` and run the `contrib` image, which is the one
-carrying that exporter:
-
-```bash
-docker run -p 4318:4318 -v "$PWD/otelcol.yaml:/etc/otelcol/config.yaml:ro" \
-  otel/opentelemetry-collector-contrib:0.161.0 --config=/etc/otelcol/config.yaml
-```
-
-Then point tcping at it the same way as at Alloy:
-
-```bash
-tcping --otlp http://localhost:4318 example.com 443
-```
-
-The metric names and labels come out the same either way, so **tcping (Alloy)**
-is also the dashboard to open for a collector run, despite its name.
-
-> [!NOTE]
-> The exporter used to be called `prometheusremotewrite`. That name still
-> works, but the collector logs a deprecation warning for it, so write new
-> configs with `prometheus_remote_write`.
 
 Anything else that speaks OTLP over HTTP works the same way, including hosted
 backends. Those usually want a token, which goes in with
@@ -356,7 +361,7 @@ mean editing any JSON:
 
 1. Open **Dashboards**, then **New**, then **Import**.
 2. Paste the contents of `grafana/dashboards/tcping-influxdb.json`, or
-   `tcping-alloy.json` for the Prometheus one, and press **Load**.
+   `tcping-prometheus.json` for the Prometheus one, and press **Load**.
 3. Pick a folder and press **Import**.
 
 It lands next to your existing dashboards as its own entry, without touching
@@ -382,16 +387,18 @@ the whole thing, import it first, then use a panel's menu, **Copy**, and
 > tcping writes happily to InfluxDB **v3**, which speaks the same line
 > protocol, but v3 dropped Flux, so the panels come up empty against it and
 > the queries would have to be rewritten in SQL. Until that dashboard exists,
-> v3 users are better served by the Alloy and Prometheus side.
+> v3 users are better served by the Prometheus side.
 
 ## Nothing is showing up
 
-- Check the probes are happening at all with `docker compose logs tcping-influxdb-tcp-brussels`.
+- Check the probes are happening at all with
+  `docker compose -f compose.influxdb.yml logs tcping-influxdb-tcp-brussels`.
   Each container prints one line saying what it is probing and where the
   metrics are going, and nothing after that.
 - Alloy's UI on <http://localhost:12346> shows the health of each component.
   If the receiver is healthy but the remote write is not, Prometheus is the
-  problem.
+  problem. The collector logs a failed remote write in
+  `docker compose -f compose.otelcol.yml logs otelcol`.
 - A rejected write does not stop the run. tcping prints an error to stderr
   for every write that fails and keeps probing, so watch stderr rather than
   the probe output. A wrong InfluxDB token shows up this way.

@@ -541,9 +541,15 @@ events it cannot deliver.
 
 Instead of printing each probe, tcping can send it as a metric, which turns a
 run into a graph and lets several machines watch the same target. Over OTLP,
-to anything that accepts it, such as
-[Grafana Alloy](https://grafana.com/docs/alloy/latest/), which can forward it to
-Prometheus:
+to anything that accepts it, such as [Prometheus](https://prometheus.io/)
+started with `--web.enable-otlp-receiver`:
+
+```bash
+tcping www.example.com 443 --otlp http://localhost:9090/api/v1/otlp
+```
+
+Or [Grafana Alloy](https://grafana.com/docs/alloy/latest/) and the
+OpenTelemetry Collector, which can forward it on to several places:
 
 ```bash
 tcping www.example.com 443 --otlp http://localhost:4318
@@ -581,9 +587,9 @@ them yourself:
 tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 ```
 
-Everything that gets sent, how to query it, and a ready made Alloy, Prometheus,
-InfluxDB, Grafana and tcping stack you can start in one command to try this
-without setting a server up first, are in
+Everything that gets sent, how to query it, and ready made Prometheus, Alloy,
+OpenTelemetry Collector and InfluxDB stacks, with Grafana and tcping, that you
+can start in one command to try this without setting a server up first, are in
 [docs/observability](docs/observability/README.md).
 
 ---
