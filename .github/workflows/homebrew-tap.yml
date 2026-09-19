@@ -94,9 +94,7 @@ jobs:
 
             def install
               bin.install "tcping"
-              bash_completion.install "completions/tcping.bash" => "tcping"
-              zsh_completion.install "completions/_tcping"
-              fish_completion.install "completions/tcping.fish"
+              generate_completions_from_executable(bin/"tcping", "--completions")
             end
 
             test do

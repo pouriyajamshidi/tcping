@@ -186,14 +186,10 @@ ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/') &&
 curl -LO "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-$ARCH.tar.gz" &&
 tar -xf "tcping-linux-$ARCH.tar.gz" &&
 sudo install tcping /usr/local/bin/ &&
-sudo install -Dm 644 completions/tcping.bash /usr/share/bash-completion/completions/tcping &&
-sudo install -Dm 644 completions/_tcping /usr/share/zsh/site-functions/_tcping &&
-sudo install -Dm 644 completions/tcping.fish /usr/share/fish/vendor_completions.d/tcping.fish &&
 tcping --version
 ```
 
-The last three lines install the [shell completions](#shell-completions). Drop
-the ones for the shells you do not use, and start a new shell to pick them up.
+See [Shell Completions](#shell-completions) to set up tab completion.
 
 If you don't have `curl`, swap its line for `wget`:
 
@@ -275,7 +271,7 @@ tar -xvf tcping-freebsd-amd64.tar.gz &&
   sudo cp tcping /usr/local/bin/
 ```
 
-The archive also carries a `completions` folder. See [Shell Completions](#shell-completions) to install them.
+See [Shell Completions](#shell-completions) to set up tab completion.
 
 ### Nix
 

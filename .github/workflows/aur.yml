@@ -147,9 +147,10 @@ jobs:
 
           package() {
             install -Dm755 "\$srcdir/tcping" "\$pkgdir/usr/bin/tcping"
-            install -Dm644 "\$srcdir/completions/tcping.bash" "\$pkgdir/usr/share/bash-completion/completions/tcping"
-            install -Dm644 "\$srcdir/completions/_tcping" "\$pkgdir/usr/share/zsh/site-functions/_tcping"
-            install -Dm644 "\$srcdir/completions/tcping.fish" "\$pkgdir/usr/share/fish/vendor_completions.d/tcping.fish"
+            install -d "\$pkgdir/usr/share/bash-completion/completions" "\$pkgdir/usr/share/zsh/site-functions" "\$pkgdir/usr/share/fish/vendor_completions.d"
+            "\$srcdir/tcping" --completions bash >"\$pkgdir/usr/share/bash-completion/completions/tcping"
+            "\$srcdir/tcping" --completions zsh >"\$pkgdir/usr/share/zsh/site-functions/_tcping"
+            "\$srcdir/tcping" --completions fish >"\$pkgdir/usr/share/fish/vendor_completions.d/tcping.fish"
             install -Dm644 "\$srcdir/LICENSE-\$pkgver" "\$pkgdir/usr/share/licenses/\$pkgname/LICENSE"
           }
           EOF

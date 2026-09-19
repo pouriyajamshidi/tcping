@@ -1,6 +1,6 @@
 // Package completions holds the shell completion scripts. They are built into
 // the binary so that "tcping --completions <shell>" can print them, and the
-// release archives and packages ship the same files.
+// Linux packages and the Nix flake install the same files.
 package completions
 
 import _ "embed"

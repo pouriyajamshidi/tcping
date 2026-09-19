@@ -62,13 +62,12 @@ TAPES_DIR := docs/Images/tapes
 GIFS_DIR := docs/Images/gifs
 COMPLETIONS_DIR := internal/completions
 
-# Shipped inside the release archives so they can be installed without
-# cloning the repository. PowerShell only goes in the Windows zip.
+# Installed by the Linux packages. The archives do not carry them, since
+# "tcping --completions <shell>" prints the same scripts.
 UNIX_COMPLETIONS := \
 	$(COMPLETIONS_DIR)/tcping.bash \
 	$(COMPLETIONS_DIR)/_tcping \
 	$(COMPLETIONS_DIR)/tcping.fish
-WINDOWS_COMPLETIONS := $(COMPLETIONS_DIR)/tcping.ps1
 
 # File lists
 # One list per platform so a single platform can be built on its own,
@@ -289,20 +288,16 @@ $(OUTPUT_DIR)/:
 	@mkdir -p $@
 
 # .tar.gz archive
-#
-# The completions go in a "completions" folder at the top of the archive,
-# not under internal/, because that is where Homebrew and the AUR package
-# look for them.
-$(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(UNIX_COMPLETIONS) $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
-	@tar -C $$(dirname $<) -czvf $@ tcping -C "$(CURDIR)/internal" $(UNIX_COMPLETIONS:internal/%=%) >/dev/null
+	@tar -C $$(dirname $<) -czvf $@ tcping >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
 # .zip archive (Windows)
-$(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(WINDOWS_COMPLETIONS) $(OUTPUT_DIR)/
+$(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(OUTPUT_DIR)/
 	@echo "[+] Compressing binary: $@"
-	@zip -j $@ $< $(WINDOWS_COMPLETIONS) >/dev/null
+	@zip -j $@ $< >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
