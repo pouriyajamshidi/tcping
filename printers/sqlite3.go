@@ -70,7 +70,7 @@ const (
 		latency_min REAL,
 		latency_avg REAL,
 		latency_max REAL,
-		latency_mdev REAL,
+		latency_stddev REAL,
 		start_time TEXT,
 		end_time TEXT
 	);`
@@ -128,7 +128,7 @@ const (
 		latency_min,
 		latency_avg,
 		latency_max,
-		latency_mdev,
+		latency_stddev,
 		start_time,
 		end_time
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
@@ -413,12 +413,12 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 	latencyMin := any(nil)
 	latencyAvg := any(nil)
 	latencyMax := any(nil)
-	latencyMdev := any(nil)
+	latencyStdDev := any(nil)
 	if s.TotalSuccessfulProbes > 0 {
 		latencyMin = math.Round(float64(s.RTTResults.Min)*1000) / 1000
 		latencyAvg = math.Round(float64(s.RTTResults.Average)*1000) / 1000
 		latencyMax = math.Round(float64(s.RTTResults.Max)*1000) / 1000
-		latencyMdev = math.Round(float64(s.RTTResults.Mdev)*1000) / 1000
+		latencyStdDev = math.Round(float64(s.RTTResults.StdDev)*1000) / 1000
 	}
 
 	endTime := ""
@@ -456,7 +456,7 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		latencyMin,
 		latencyAvg,
 		latencyMax,
-		latencyMdev,
+		latencyStdDev,
 		s.StartTimeFormatted(),
 		endTime,
 	}

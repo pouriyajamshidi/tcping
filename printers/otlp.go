@@ -508,7 +508,7 @@ func (p *OTLPPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Min), p.labels(s, attr("stat", "min"))),
 			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Average), p.labels(s, attr("stat", "avg"))),
 			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Max), p.labels(s, attr("stat", "max"))),
-			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.Mdev), p.labels(s, attr("stat", "mdev"))),
+			p.gauge("tcping_rtt_milliseconds", "ms", rttOf(s.RTTResults.StdDev), p.labels(s, attr("stat", "stddev"))),
 		)
 	}
 

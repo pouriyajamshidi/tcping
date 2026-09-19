@@ -514,7 +514,7 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 	probeStats.TotalUnsuccessfulProbes = 2
 	probeStats.TotalUptime = 8 * time.Second
 	probeStats.TotalDowntime = 2 * time.Second
-	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, Mdev: 0.75}
+	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, StdDev: 0.75}
 	probeStats.RetriedHostnameLookups = 3
 
 	// PrintStatistics reports to the terminal as well as the database.
@@ -524,7 +524,7 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 		`SELECT hostname, ip_address, port, protocol, total_packets,
 		        total_successful_packets, total_unsuccessful_packets,
 		        total_packet_loss_percent, hostname_resolve_retries,
-		        latency_min, latency_avg, latency_max, latency_mdev
+		        latency_min, latency_avg, latency_max, latency_stddev
 		 FROM %s`, printer.statsTableName))
 
 	want := []string{
@@ -553,7 +553,7 @@ func TestSQLiteStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 	captureStdout(t, func() { printer.PrintStatistics(probeStats) })
 
 	got := queryRow(t, printer, fmt.Sprintf(
-		`SELECT latency_min, latency_avg, latency_max, latency_mdev,
+		`SELECT latency_min, latency_avg, latency_max, latency_stddev,
 		        longest_uptime, longest_consecutive_uptime_start,
 		        last_successful_probe, end_time
 		 FROM %s`, printer.statsTableName))

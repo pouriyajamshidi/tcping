@@ -68,7 +68,7 @@ type Statistics struct {
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
 	LatestRTT                 float32       // RTT of the most recent successful probe.
-	RTTResults                RTTResult     // Running min/average/max/mdev RTT across the entire run.
+	RTTResults                RTTResult     // Running min/average/max/stddev RTT across the entire run.
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.
 	// True when ResolveEveryProbe just resolved successfully for this
 	// probe. Lets PrintProbeSuccess/PrintProbeFailure fold
@@ -449,18 +449,24 @@ type RTTResult struct {
 	Min     float32 // Minimum RTT value.
 	Max     float32 // Maximum RTT value.
 	Average float32 // Average RTT value.
-	// Mdev is how far the samples sit from the average, the same number
-	// ping ends its summary with. A small one means every probe took about
-	// as long as the last, a large one means the latency is jumping around.
-	Mdev float32
+	// StdDev is the standard deviation, how far the samples sit from the
+	// average. It is the same number ping ends its summary with, which Linux
+	// ping calls mdev and BSD and macOS ping call stddev. A small one means
+	// every probe took about as long as the last, a large one means the
+	// latency is jumping around.
+	StdDev float32
 
-	// Running sum of (sample - average) squared, which Mdev is the root of.
-	// Accumulated as the samples come in so none of them has to be kept.
-	squaredDeltas float32
+	// The running average and the running sum of (sample - average) squared,
+	// which StdDev is the root of. Accumulated as the samples come in so none of
+	// them has to be kept. They are float64 because on a run with millions of
+	// probes a float32 average stops moving: each new sample changes it by
+	// less than a float32 can hold.
+	mean          float64
+	squaredDeltas float64
 }
 
 // Update folds a new RTT sample into the running min, max, average and
-// mdev. sampleCount must be the total number of successful probes observed
+// stddev. sampleCount must be the total number of successful probes observed
 // so far, including this one (e.g. Statistics.TotalSuccessfulProbes).
 func (r *RTTResult) Update(rttMs float32, sampleCount uint) {
 	if sampleCount <= 1 {
@@ -474,11 +480,13 @@ func (r *RTTResult) Update(rttMs float32, sampleCount uint) {
 	// Running average: avg_n = avg_(n-1) + (x_n - avg_(n-1)) / n
 	// The distance from the average is taken before and after that step,
 	// which is what keeps the sum from losing precision on a long run.
-	delta := rttMs - r.Average
-	r.Average += delta / float32(sampleCount)
-	r.squaredDeltas += delta * (rttMs - r.Average)
+	x := float64(rttMs)
+	delta := x - r.mean
+	r.mean += delta / float64(sampleCount)
+	r.squaredDeltas += delta * (x - r.mean)
 
-	r.Mdev = float32(math.Sqrt(float64(r.squaredDeltas / float32(sampleCount))))
+	r.Average = float32(r.mean)
+	r.StdDev = float32(math.Sqrt(r.squaredDeltas / float64(sampleCount)))
 }
 
 // LongestTime holds information about the longest period of uptime or downtime.

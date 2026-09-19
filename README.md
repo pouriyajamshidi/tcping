@@ -22,7 +22,7 @@ A cross-platform ping program using `TCP`, `UDP` or `HTTP(S)` instead of `ICMP`,
 > This document is also available in [中文](README.cn.md).
 
 - An alternative to `ping` where `ICMP` is blocked, probing over `TCP`, `HTTP(S)` or `UDP`.
-- Reports the packet loss and the minimum, average, maximum and mean deviation of the latency, the same way `ping` does, plus the longest uptime and downtime and when they happened.
+- Reports the packet loss and the minimum, average, maximum and standard deviation of the latency, the same way `ping` does, plus the longest uptime and downtime and when they happened.
 - Prints the statistics at any time by pressing the `Enter` key, without stopping the program.
 - Outputs in **colored**, **plain**, **JSON**, **CSV** or **sqlite3** format, or sends every probe as metrics over **OTLP** (Grafana Alloy, the OpenTelemetry Collector and others) or to **InfluxDB**.
 - Shows the status code, the TLS version and cipher, the certificate expiry and the connect, TLS handshake and first-byte timings of every `HTTP(S)` probe.

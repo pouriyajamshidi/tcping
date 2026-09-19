@@ -523,7 +523,7 @@ func TestCSVStatisticsFile(t *testing.T) {
 	probeStats.EndTime = start.Add(time.Hour)
 	probeStats.TotalSuccessfulProbes = 8
 	probeStats.TotalUnsuccessfulProbes = 2
-	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, Mdev: 0.75}
+	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, StdDev: 0.75}
 	probeStats.RetriedHostnameLookups = 3
 
 	p.PrintStart(probeStats)
@@ -545,7 +545,7 @@ func TestCSVStatisticsFile(t *testing.T) {
 		"Latency Min":                  "1.500",
 		"Latency Avg":                  "3.250",
 		"Latency Max":                  "9.000",
-		"Latency Mdev":                 "0.750",
+		"Latency StdDev":               "0.750",
 	}
 	for name, value := range want {
 		if rows[name] != value {
@@ -580,7 +580,7 @@ func TestCSVStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 
 	// Without a successful probe there is no latency to summarize, and a
 	// zero would read as a very fast target.
-	for _, name := range []string{"Latency Min", "Latency Avg", "Latency Max", "Latency Mdev"} {
+	for _, name := range []string{"Latency Min", "Latency Avg", "Latency Max", "Latency StdDev"} {
 		if rows[name] != "" {
 			t.Errorf("statistic %q = %q, want it empty without a successful probe", name, rows[name])
 		}

@@ -333,7 +333,7 @@ func TestJSONPrintStatistics(t *testing.T) {
 	s.LongestUptime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: 3 * time.Second}
 	s.LongestDowntime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: time.Second}
 	s.RetriedHostnameLookups = 2
-	s.RTTResults = stats.RTTResult{Min: 1, Average: 2, Max: 3, Mdev: 0.5}
+	s.RTTResults = stats.RTTResult{Min: 1, Average: 2, Max: 3, StdDev: 0.5}
 	s.EndTime = s.StartTime.Add(4 * time.Second)
 
 	eventType, data := printOneJSONEvent(t, Config{}, func(p *JSONPrinter) {
@@ -361,7 +361,7 @@ func TestJSONPrintStatistics(t *testing.T) {
 		"latencyMin":             float64(1),
 		"latencyAvg":             float64(2),
 		"latencyMax":             float64(3),
-		"latencyMdev":            float64(0.5),
+		"latencyStdDev":          float64(0.5),
 		"duration":               "00:00:04",
 	})
 }
@@ -382,7 +382,7 @@ func TestJSONStatisticsLeavesOutWhatDidNotHappen(t *testing.T) {
 		"latencyMin",
 		"latencyAvg",
 		"latencyMax",
-		"latencyMdev",
+		"latencyStdDev",
 		"lastSuccessfulProbe",
 		"longestUptime",
 		"longestDowntime",

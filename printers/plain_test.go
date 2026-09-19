@@ -296,7 +296,7 @@ func TestPlainPrintStatistics(t *testing.T) {
 	s.LongestUptime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: 3 * time.Second}
 	s.LongestDowntime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: time.Second}
 	s.RetriedHostnameLookups = 2
-	s.RTTResults = stats.RTTResult{Min: 1, Average: 2, Max: 3, Mdev: 0.5}
+	s.RTTResults = stats.RTTResult{Min: 1, Average: 2, Max: 3, StdDev: 0.5}
 	s.EndTime = s.StartTime.Add(4 * time.Second)
 
 	out := captureStdout(t, func() {
@@ -313,7 +313,7 @@ func TestPlainPrintStatistics(t *testing.T) {
 		"longest consecutive uptime:   3 seconds from ",
 		"longest consecutive downtime: 1 second from ",
 		"retried to resolve hostname: 2 times\n",
-		"rtt min/avg/max/mdev: 1.000/2.000/3.000/0.500 ms\n",
+		"rtt min/avg/max/stddev: 1.000/2.000/3.000/0.500 ms\n",
 		"TCPing started at: ",
 		"TCPing ended at:   ",
 		"duration (HH:MM:SS): 00:00:04\n",
@@ -339,7 +339,7 @@ func TestPlainStatisticsLeavesOutWhatDidNotHappen(t *testing.T) {
 	)
 
 	wantNoLines(t, out,
-		"rtt min/avg/max/mdev",
+		"rtt min/avg/max/stddev",
 		"retried to resolve hostname",
 		"longest consecutive",
 		"TCPing ended at",

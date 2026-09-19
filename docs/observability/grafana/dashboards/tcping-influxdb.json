@@ -347,7 +347,7 @@
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Latency min / average / max / mdev",
+      "title": "Latency min / average / max / stddev",
       "gridPos": {
         "x": 12,
         "y": 18,
@@ -361,7 +361,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|mdev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
         }
       ],
       "fieldConfig": {

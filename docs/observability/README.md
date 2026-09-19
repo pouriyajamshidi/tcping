@@ -198,7 +198,7 @@ Every panel tcping can fill has a place in both, grouped into rows:
 
 | Row | What is in it |
 | --- | --- |
-| **Probes** | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / mdev summary |
+| **Probes** | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary |
 | **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, and the longest of each with the times it ran from and to |
 | **The run** | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries and address changes there were |
 | **Name resolution** | How long each lookup took, and the address every target resolved to |

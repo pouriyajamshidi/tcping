@@ -184,12 +184,12 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	if s.TotalSuccessfulProbes > 0 {
-		msg.WriteString("rtt min/avg/max/mdev: ")
+		msg.WriteString("rtt min/avg/max/stddev: ")
 		fmt.Fprintf(&msg, "%.3f/%.3f/%.3f/%.3f ms\n",
 			s.RTTResults.Min,
 			s.RTTResults.Average,
 			s.RTTResults.Max,
-			s.RTTResults.Mdev,
+			s.RTTResults.StdDev,
 		)
 	}
 

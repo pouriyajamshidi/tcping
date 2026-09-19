@@ -72,8 +72,8 @@ func TestRTTResultUpdate(t *testing.T) {
 
 	// The same number ping would print for these samples, which is the
 	// deviation over the whole population and not over a sample of it.
-	if got, want := r.Mdev, float32(9.625933); got < want-0.001 || got > want+0.001 {
-		t.Errorf("Mdev = %v, want %v", got, want)
+	if got, want := r.StdDev, float32(9.625933); got < want-0.001 || got > want+0.001 {
+		t.Errorf("StdDev = %v, want %v", got, want)
 	}
 }
 
@@ -86,8 +86,32 @@ func TestRTTResultUpdate_IdenticalSamplesHaveNoDeviation(t *testing.T) {
 		r.Update(7.5, uint(i)) //nolint:gosec // i is always positive and small
 	}
 
-	if r.Mdev != 0 {
-		t.Errorf("Mdev = %v, want 0", r.Mdev)
+	if r.StdDev != 0 {
+		t.Errorf("StdDev = %v, want 0", r.StdDev)
+	}
+}
+
+// A long run has to keep tracking the latency. Ten million probes at 10 ms
+// and then ten million at 30 ms average out to 20 ms with a deviation of
+// 10 ms. With a float32 average each late sample moved it by less than a
+// float32 can hold, so it got stuck well short of 20.
+func TestRTTResultUpdate_LongRun(t *testing.T) {
+	var r RTTResult
+
+	const half = 10_000_000
+	for i := uint(1); i <= 2*half; i++ {
+		rtt := float32(10)
+		if i > half {
+			rtt = 30
+		}
+		r.Update(rtt, i)
+	}
+
+	if got, want := r.Average, float32(20); got < want-0.001 || got > want+0.001 {
+		t.Errorf("Average = %v, want %v", got, want)
+	}
+	if got, want := r.StdDev, float32(10); got < want-0.001 || got > want+0.001 {
+		t.Errorf("StdDev = %v, want %v", got, want)
 	}
 }
 
@@ -100,8 +124,8 @@ func TestRTTResultUpdate_SingleSample(t *testing.T) {
 		t.Errorf("RTTResult = %+v, want Min=Max=Average=15", r)
 	}
 
-	if r.Mdev != 0 {
-		t.Errorf("Mdev = %v, want 0, a single sample cannot deviate from itself", r.Mdev)
+	if r.StdDev != 0 {
+		t.Errorf("StdDev = %v, want 0, a single sample cannot deviate from itself", r.StdDev)
 	}
 }
 

@@ -341,7 +341,7 @@
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Latency min / average / max / mdev",
+      "title": "Latency min / average / max / stddev",
       "gridPos": {
         "x": 12,
         "y": 18,
