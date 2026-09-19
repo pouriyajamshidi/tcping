@@ -90,8 +90,9 @@ func fishFlags(script string) []string {
 	return names
 }
 
-// The PowerShell script keeps its flags as the keys of a hash table.
-var powershellFlagSpec = regexp.MustCompile(`(?m)^\s*'-{1,2}([\w-]+)'\s*=`)
+// The PowerShell script adds its flags one per line, as in
+// $script:TcpingFlags['-c'] = '...'.
+var powershellFlagSpec = regexp.MustCompile(`(?m)^\$script:TcpingFlags\['-{1,2}([\w-]+)'\]\s*=`)
 
 func powershellFlags(script string) []string {
 	names := []string{}
