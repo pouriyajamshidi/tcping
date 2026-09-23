@@ -60,6 +60,7 @@ type Statistics struct {
 	LastSuccessfulProbe       time.Time     // Timestamp of the last successful probe.
 	LastUnsuccessfulProbe     time.Time     // Timestamp of the last unsuccessful probe.
 	TotalDowntime             time.Duration // Total accumulated downtime.
+	TotalOutages              uint          // How many separate down periods the run had.
 	TotalUptime               time.Duration // Total accumulated uptime.
 	StartOfUptime             time.Time     // Timestamp when the current uptime started.
 	StartOfDowntime           time.Time     // Timestamp when the current downtime started.

@@ -163,6 +163,9 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow("total downtime: ")
 	printRed("%s\n", s.TotalDowntimeDuration())
 
+	printYellow("outages: ")
+	printRed("%d\n", s.TotalOutages)
+
 	if s.LongestUptime.Duration != 0 {
 		printYellow("longest consecutive uptime:   ")
 		printGreen("%s ", s.LongestUptimeDuration())

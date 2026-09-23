@@ -147,6 +147,20 @@ func TestRunTranscript_UpDownUp(t *testing.T) {
 	}
 }
 
+// A summary with more downtime than its longest outage is not a bug, it is a
+// run with more than one outage. The count is what says so, and it has to
+// cover an opening failure, which starts a downtime before anything was up.
+func TestRunTranscript_OutageCount(t *testing.T) {
+	out := scriptedRun{
+		printer:  NewPlainPrinter(Config{}),
+		outcomes: []bool{false, true, true, false, false, true},
+	}.run(t)
+
+	wantLines(t, out,
+		"outages: 2\n",
+	)
+}
+
 // The colored output is the default one, so it is the one most people read.
 // Only the color may differ from the plain output, never the words, and the
 // escape codes are off while the output is captured.
@@ -346,6 +360,10 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 
 	if statistics["Total Downtime"] == "0 seconds" {
 		t.Errorf("stats file reports no downtime on a run that went down: %v", statistics)
+	}
+
+	if statistics["Outages"] != "1" {
+		t.Errorf("stats file reports %q outages on a run with one: %v", statistics["Outages"], statistics)
 	}
 }
 

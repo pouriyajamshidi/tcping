@@ -272,10 +272,11 @@ func (p *InfluxDBPrinter) endedPeriodLines(s *stats.Statistics) []string {
 // because that is what Grafana's date units read, and what the rest of
 // tcping's timings are already in.
 func (p *InfluxDBPrinter) statisticsLines(s *stats.Statistics) []string {
-	fields := fmt.Sprintf("packet_loss_percent=%g,uptime_seconds=%g,downtime_seconds=%g",
+	fields := fmt.Sprintf("packet_loss_percent=%g,uptime_seconds=%g,downtime_seconds=%g,outages=%di",
 		s.PacketLoss(),
 		s.TotalUptime.Seconds(),
 		s.TotalDowntime.Seconds(),
+		s.TotalOutages,
 	)
 
 	// When the run started, how long it has been going, and how much

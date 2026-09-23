@@ -282,6 +282,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result) {
 	// UP -> DOWN
 	s.LastProbeHadFailed = true
 	s.StartOfDowntime = pingTime
+	s.TotalOutages++
 
 	// Nothing to report on the very first probe: the target was never up.
 	if s.StartOfUptime.IsZero() {

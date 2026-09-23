@@ -330,6 +330,7 @@ func TestJSONPrintStatistics(t *testing.T) {
 	s.LastUnsuccessfulProbe = time.Now()
 	s.TotalUptime = 3 * time.Second
 	s.TotalDowntime = time.Second
+	s.TotalOutages = 1
 	s.LongestUptime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: 3 * time.Second}
 	s.LongestDowntime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: time.Second}
 	s.RetriedHostnameLookups = 2
@@ -355,6 +356,7 @@ func TestJSONPrintStatistics(t *testing.T) {
 		"packetLossPercent":      float64(25),
 		"totalUptime":            "3 seconds",
 		"totalDowntime":          "1 second",
+		"outages":                float64(1),
 		"longestUptime":          "3 seconds",
 		"longestDowntime":        "1 second",
 		"hostnameResolveRetries": float64(2),

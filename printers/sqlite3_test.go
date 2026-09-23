@@ -514,6 +514,7 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 	probeStats.TotalUnsuccessfulProbes = 2
 	probeStats.TotalUptime = 8 * time.Second
 	probeStats.TotalDowntime = 2 * time.Second
+	probeStats.TotalOutages = 2
 	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, StdDev: 0.75}
 	probeStats.RetriedHostnameLookups = 3
 
@@ -523,14 +524,14 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 	got := queryRow(t, printer, fmt.Sprintf(
 		`SELECT hostname, ip_address, port, protocol, total_packets,
 		        total_successful_packets, total_unsuccessful_packets,
-		        total_packet_loss_percent, hostname_resolve_retries,
+		        total_packet_loss_percent, outages, hostname_resolve_retries,
 		        latency_min, latency_avg, latency_max, latency_stddev
 		 FROM %s`, printer.statsTableName))
 
 	want := []string{
 		"example.com", "93.184.216.34", "443", "TCP", "10",
 		"8", "2",
-		"20.0", "3",
+		"20.0", "2", "3",
 		"1.5", "3.25", "9.0", "0.75",
 	}
 	for i := range want {

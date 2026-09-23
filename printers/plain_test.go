@@ -293,6 +293,7 @@ func TestPlainPrintStatistics(t *testing.T) {
 	s.LastUnsuccessfulProbe = time.Now()
 	s.TotalUptime = 3 * time.Second
 	s.TotalDowntime = time.Second
+	s.TotalOutages = 1
 	s.LongestUptime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: 3 * time.Second}
 	s.LongestDowntime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: time.Second}
 	s.RetriedHostnameLookups = 2
@@ -310,6 +311,7 @@ func TestPlainPrintStatistics(t *testing.T) {
 		"unsuccessful probes: 1\n",
 		"total uptime:   3 seconds\n",
 		"total downtime: 1 second\n",
+		"outages: 1\n",
 		"longest consecutive uptime:   3 seconds from ",
 		"longest consecutive downtime: 1 second from ",
 		"retried to resolve hostname: 2 times\n",

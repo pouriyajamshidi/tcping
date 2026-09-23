@@ -23,6 +23,7 @@
 - build: add `staticcheck`, and a single `make check` target that runs the formatting and `go fix` checks, `go vet`, revive, staticcheck and the tests, which is what the workflows run too. It only reports: `make format` and `make fix` are what rewrite your files, so a pull request that skipped them cannot go green
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
 - improvement: when the `-I` flag is used, show the interface name on probe **failures** too
+- improvement: the summary now has an `outages` line counting the separate down periods of the run, so a total downtime larger than the longest outage explains itself. The JSON, CSV, SQLite, InfluxDB and OTLP outputs carry it too
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates

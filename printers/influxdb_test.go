@@ -456,6 +456,7 @@ func statisticsTestStats() *stats.Statistics {
 			End:      start.Add(25 * time.Second),
 			Duration: 5 * time.Second,
 		},
+		TotalOutages:           1,
 		RetriedHostnameLookups: 3,
 		HostnameChanges: []stats.HostnameChange{
 			{Addr: netip.MustParseAddr("93.184.216.34")},
@@ -485,6 +486,7 @@ func TestInfluxDBStatisticsCarryTheWholeSummary(t *testing.T) {
 		"packet_loss_percent=2.5",
 		"uptime_seconds=0",
 		"downtime_seconds=0",
+		"outages=1i",
 		fmt.Sprintf("start_time_ms=%di", statisticsTestEpoch),
 		"run_duration_seconds=60",
 		"hostname_resolution_retries=3i",

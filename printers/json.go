@@ -163,6 +163,7 @@ type jsonStatistics struct {
 	LastUnsuccessfulProbe  string               `json:"lastUnsuccessfulProbe,omitempty"`
 	TotalUptime            string               `json:"totalUptime"`
 	TotalDowntime          string               `json:"totalDowntime"`
+	Outages                uint                 `json:"outages"`
 	LongestUptime          string               `json:"longestUptime,omitempty"`
 	LongestDowntime        string               `json:"longestDowntime,omitempty"`
 	HostnameResolveRetries uint                 `json:"hostnameResolveRetries,omitempty"`
@@ -289,6 +290,7 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		PacketLoss:         s.PacketLoss(),
 		TotalUptime:        s.TotalUptimeDuration(),
 		TotalDowntime:      s.TotalDowntimeDuration(),
+		Outages:            s.TotalOutages,
 		StartTime:          s.StartTimeFormatted(),
 		Duration:           s.RuntimeDuration(),
 	}

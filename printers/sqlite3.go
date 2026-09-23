@@ -53,6 +53,7 @@ const (
 		total_duration TEXT,
 		total_uptime TEXT,
 		total_downtime TEXT,
+		outages INTEGER NOT NULL DEFAULT 0,
 		total_packets INTEGER NOT NULL,
 		total_successful_packets INTEGER NOT NULL,
 		total_unsuccessful_packets INTEGER NOT NULL,
@@ -111,6 +112,7 @@ const (
 		total_duration,
 		total_uptime,
 		total_downtime,
+		outages,
 		total_packets,
 		total_successful_packets,
 		total_unsuccessful_packets,
@@ -131,7 +133,7 @@ const (
 		latency_stddev,
 		start_time,
 		end_time
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // SQLitePrinter stores one probe stream and its final statistics in SQLite.
@@ -439,6 +441,7 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		s.RuntimeDuration(),
 		s.TotalUptimeDuration(),
 		s.TotalDowntimeDuration(),
+		s.TotalOutages,
 		s.TotalProbes(),
 		s.TotalSuccessfulProbes,
 		s.TotalUnsuccessfulProbes,
