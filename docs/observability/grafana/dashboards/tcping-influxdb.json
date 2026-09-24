@@ -507,12 +507,66 @@
       "description": "One point per streak, written when it ends: how long the target had been up when it went down, and how long the outage lasted."
     },
     {
+      "id": 23,
+      "type": "stat",
+      "title": "Outages",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"outages\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "description": "One tile per target: how many separate times it went down during the run. Read it next to the total downtime and the longest outage, since a long total can be one long outage or many short ones."
+    },
+    {
       "id": 10,
       "type": "table",
       "title": "Longest uptime and downtime",
       "gridPos": {
         "x": 0,
-        "y": 38,
+        "y": 42,
         "w": 24,
         "h": 6
       },
@@ -704,7 +758,7 @@
       "title": "The run",
       "gridPos": {
         "x": 0,
-        "y": 44,
+        "y": 48,
         "w": 24,
         "h": 1
       },
@@ -716,7 +770,7 @@
           "title": "The run so far",
           "gridPos": {
             "x": 0,
-            "y": 45,
+            "y": 49,
             "w": 24,
             "h": 6
           },
@@ -967,7 +1021,7 @@
       "title": "Name resolution",
       "gridPos": {
         "x": 0,
-        "y": 51,
+        "y": 55,
         "w": 24,
         "h": 1
       },
@@ -979,7 +1033,7 @@
           "title": "Name resolution time",
           "gridPos": {
             "x": 0,
-            "y": 52,
+            "y": 56,
             "w": 12,
             "h": 9
           },
@@ -1031,7 +1085,7 @@
           "title": "Resolved address",
           "gridPos": {
             "x": 12,
-            "y": 52,
+            "y": 56,
             "w": 12,
             "h": 9
           },
@@ -1124,7 +1178,7 @@
       "title": "HTTP",
       "gridPos": {
         "x": 0,
-        "y": 61,
+        "y": 65,
         "w": 24,
         "h": 1
       },
@@ -1136,7 +1190,7 @@
           "title": "HTTP timings",
           "gridPos": {
             "x": 0,
-            "y": 62,
+            "y": 66,
             "w": 12,
             "h": 9
           },
@@ -1188,7 +1242,7 @@
           "title": "HTTP status code",
           "gridPos": {
             "x": 12,
-            "y": 62,
+            "y": 66,
             "w": 6,
             "h": 9
           },
@@ -1235,7 +1289,7 @@
           "title": "Certificate days remaining",
           "gridPos": {
             "x": 18,
-            "y": 62,
+            "y": 66,
             "w": 6,
             "h": 9
           },
@@ -1297,7 +1351,7 @@
       "title": "UDP",
       "gridPos": {
         "x": 0,
-        "y": 71,
+        "y": 75,
         "w": 24,
         "h": 1
       },
@@ -1309,7 +1363,7 @@
           "title": "UDP reply size",
           "gridPos": {
             "x": 0,
-            "y": 72,
+            "y": 76,
             "w": 12,
             "h": 8
           },
@@ -1356,7 +1410,7 @@
           "title": "UDP reply echoed and port unreachable",
           "gridPos": {
             "x": 12,
-            "y": 72,
+            "y": 76,
             "w": 12,
             "h": 8
           },
