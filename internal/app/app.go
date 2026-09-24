@@ -55,10 +55,6 @@ func summaryRequests() <-chan struct{} {
 		defer close(requests)
 
 		for scanner.Scan() {
-			if scanner.Err() != nil {
-				continue
-			}
-
 			if strings.TrimSpace(scanner.Text()) != "" {
 				continue
 			}
