@@ -258,21 +258,7 @@ func udpArgs(s *stats.Statistics) []any {
 		return make([]any, 2)
 	}
 
-	return []any{s.UDP.ProbeNumber, udpResultText(s)}
-}
-
-// udpResultText describes in one word what a UDP probe learned.
-func udpResultText(s *stats.Statistics) string {
-	switch {
-	case s.UDP.Echoed:
-		return "echoed"
-	case s.UDP.ReplySize > 0:
-		return "replied"
-	case s.UDP.Rejected:
-		return "port unreachable"
-	default:
-		return "no reply"
-	}
+	return []any{s.UDP.ProbeNumber, s.UDPResultStr()}
 }
 
 func nullIfEmpty(v string) any {

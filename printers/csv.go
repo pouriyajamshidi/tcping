@@ -90,21 +90,6 @@ const (
 	colUDPResult      string = "UDP Result"
 )
 
-// udpResult describes what one UDP probe learned, since "Reachable" alone
-// cannot tell a refusal apart from silence.
-func udpResult(s *stats.Statistics) string {
-	switch {
-	case s.UDP.Echoed:
-		return "echoed"
-	case s.UDP.ReplySize > 0:
-		return "replied"
-	case s.UDP.Rejected:
-		return "port unreachable"
-	default:
-		return "no reply"
-	}
-}
-
 const (
 	filePermission os.FileMode = 0644
 	fileFlag       int         = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
@@ -292,7 +277,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	if s.IsUDP() {
-		record = append(record, s.ProbeNumberStr(), udpResult(s))
+		record = append(record, s.ProbeNumberStr(), s.UDPResultStr())
 	}
 
 	if err := p.probeWriter.Write(record); err != nil {
@@ -332,7 +317,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 
 	if s.IsUDP() {
-		record = append(record, s.ProbeNumberStr(), udpResult(s))
+		record = append(record, s.ProbeNumberStr(), s.UDPResultStr())
 	}
 
 	if err := p.probeWriter.Write(record); err != nil {

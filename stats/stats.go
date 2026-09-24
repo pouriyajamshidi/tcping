@@ -267,6 +267,21 @@ func (s *Statistics) ProbeNumberStr() string {
 	return fmt.Sprint(s.UDP.ProbeNumber)
 }
 
+// UDPResultStr describes in a word or two what the most recent UDP probe
+// learned, since "Reachable" alone cannot tell a refusal apart from silence.
+func (s *Statistics) UDPResultStr() string {
+	switch {
+	case s.UDP.Echoed:
+		return "echoed"
+	case s.UDP.ReplySize > 0:
+		return "replied"
+	case s.UDP.Rejected:
+		return "port unreachable"
+	default:
+		return "no reply"
+	}
+}
+
 // StatusCodeStr is the HTTP status code of the last probe, as a string.
 func (s *Statistics) StatusCodeStr() string {
 	return fmt.Sprint(s.HTTP.StatusCode)

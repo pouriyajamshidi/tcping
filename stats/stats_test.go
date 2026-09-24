@@ -283,3 +283,24 @@ func TestHTTPDurationStrings(t *testing.T) {
 		}
 	}
 }
+
+func TestUDPResultStr(t *testing.T) {
+	tests := []struct {
+		name string
+		udp  UDPInfo
+		want string
+	}{
+		{name: "an echo beats a plain reply", udp: UDPInfo{Echoed: true, ReplySize: 8}, want: "echoed"},
+		{name: "a reply that is not our payload", udp: UDPInfo{ReplySize: 40}, want: "replied"},
+		{name: "an ICMP refusal", udp: UDPInfo{Rejected: true}, want: "port unreachable"},
+		{name: "silence", udp: UDPInfo{}, want: "no reply"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := (&Statistics{UDP: tt.udp}).UDPResultStr(); got != tt.want {
+				t.Errorf("UDPResultStr = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

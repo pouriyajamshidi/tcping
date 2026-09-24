@@ -470,27 +470,6 @@ func TestCSVUDPProbeColumns(t *testing.T) {
 	}
 }
 
-func TestUDPResult(t *testing.T) {
-	tests := []struct {
-		name string
-		udp  stats.UDPInfo
-		want string
-	}{
-		{name: "an echo beats a plain reply", udp: stats.UDPInfo{Echoed: true, ReplySize: 8}, want: "echoed"},
-		{name: "a reply that is not our payload", udp: stats.UDPInfo{ReplySize: 40}, want: "replied"},
-		{name: "an ICMP refusal", udp: stats.UDPInfo{Rejected: true}, want: "port unreachable"},
-		{name: "silence", udp: stats.UDPInfo{}, want: "no reply"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := udpResult(&stats.Statistics{UDP: tt.udp}); got != tt.want {
-				t.Errorf("udpResult = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 // statsRows turns the statistics file into a name/value map, since it is
 // written as one "Statistic,Value" pair per line.
 func statsRows(t *testing.T, p *CSVPrinter) map[string]string {

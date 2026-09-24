@@ -611,43 +611,6 @@ func TestSQLiteShutdownWritesStatisticsAndClosesTheDatabase(t *testing.T) {
 	}
 }
 
-func TestUDPResultText(t *testing.T) {
-	tests := []struct {
-		name string
-		udp  stats.UDPInfo
-		want string
-	}{
-		{
-			name: "an echo beats a plain reply",
-			udp:  stats.UDPInfo{Echoed: true, ReplySize: 8},
-			want: "echoed",
-		},
-		{
-			name: "a reply that is not our payload",
-			udp:  stats.UDPInfo{ReplySize: 40},
-			want: "replied",
-		},
-		{
-			name: "an ICMP refusal",
-			udp:  stats.UDPInfo{Rejected: true},
-			want: "port unreachable",
-		},
-		{
-			name: "silence",
-			udp:  stats.UDPInfo{},
-			want: "no reply",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := udpResultText(&stats.Statistics{UDP: tt.udp}); got != tt.want {
-				t.Errorf("udpResultText = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestNullIfEmpty(t *testing.T) {
 	if got := nullIfEmpty(""); got != nil {
 		t.Errorf("nullIfEmpty(\"\") = %v, want nil", got)
