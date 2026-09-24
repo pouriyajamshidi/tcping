@@ -326,6 +326,16 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			want:  "--no-stats has no effect",
 		},
 		{
+			name:  "two output destinations",
+			flags: flags{CSVPath: "out.csv", otlpURL: "http://localhost:4318", statsInterval: 10, intervalBetweenProbes: 1},
+			want:  "Only one of -j/--json-url, --sqlite, --csv, --otlp and --influxdb can be used",
+		},
+		{
+			name:  "JSON output alongside a database",
+			flags: flags{outputJSON: true, SQLitePath: "out.db", intervalBetweenProbes: 1},
+			want:  "Only one of -j/--json-url, --sqlite, --csv, --otlp and --influxdb can be used",
+		},
+		{
 			name:  "a zero probe interval, which would panic the ticker",
 			flags: flags{intervalBetweenProbes: 0},
 			want:  "Interval between probes should be more than 0 seconds",
@@ -394,6 +404,10 @@ func TestValidateAcceptsFlagsThatGoTogether(t *testing.T) {
 		{
 			name:  "pretty alongside JSON",
 			flags: flags{outputJSON: true, prettyJSON: true, intervalBetweenProbes: 1},
+		},
+		{
+			name:  "JSON output sent to a URL",
+			flags: flags{outputJSON: true, jsonURL: "http://localhost:8000", intervalBetweenProbes: 1},
 		},
 		{
 			name:  "omitting statistics on terminal output",

@@ -24,6 +24,7 @@
 - improvement: make print statistics (when the **Enter** key is pressed) snappy. No more waiting when using high probe intervals
 - improvement: when the `-I` flag is used, show the interface name on probe **failures** too
 - improvement: the summary now has an `outages` line counting the separate down periods of the run, so a total downtime larger than the longest outage explains itself. The JSON, CSV, SQLite, InfluxDB and OTLP outputs carry it too
+- improvement: refuse more than one output destination (`-j`/`--json-url`, `--sqlite`, `--csv`, `--otlp`, `--influxdb`) instead of silently using only one of them
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates

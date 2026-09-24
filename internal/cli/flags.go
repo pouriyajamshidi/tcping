@@ -367,6 +367,25 @@ func (f *flags) validate() {
 		usage()
 	}
 
+	// Only one printer runs, so a second destination would be left out
+	// without a word.
+	destinations := 0
+	for _, used := range []bool{
+		f.outputJSON || f.jsonURL != "",
+		f.SQLitePath != "",
+		f.CSVPath != "",
+		f.otlpURL != "",
+		f.influxDBURL != "",
+	} {
+		if used {
+			destinations++
+		}
+	}
+	if destinations > 1 {
+		fmt.Fprintln(os.Stderr, "Only one of -j/--json-url, --sqlite, --csv, --otlp and --influxdb can be used")
+		usage()
+	}
+
 	// Both of them take over the target as the address to listen on, so
 	// only one of them can have it.
 	if f.udpServer && f.jsonServer {
