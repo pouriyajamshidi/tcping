@@ -13,11 +13,11 @@ import (
 // and are in the foreground process group (i.e., safe to read from stdin).
 func isForegroundTerminal() bool {
 	// Must be a terminal first
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		return false
 	}
 
-	fgPgrp, err := unix.IoctlGetInt(int(os.Stdout.Fd()), unix.TIOCGPGRP)
+	fgPgrp, err := unix.IoctlGetInt(int(os.Stdin.Fd()), unix.TIOCGPGRP)
 	if err != nil {
 		return false
 	}

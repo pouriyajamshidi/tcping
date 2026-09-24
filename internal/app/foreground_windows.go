@@ -12,5 +12,5 @@ import (
 // On Windows there is no POSIX-style job control, so we don't need to distinguish
 // foreground vs background for the purpose of avoiding SIGTTIN-like behavior.
 func isForegroundTerminal() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	return term.IsTerminal(int(os.Stdin.Fd()))
 }
