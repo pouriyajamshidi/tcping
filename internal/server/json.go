@@ -21,6 +21,12 @@ const (
 	// A client that connects and then says nothing should not hold a
 	// goroutine forever.
 	readHeaderTimeout = 5 * time.Second
+
+	// The same goes for one that sends its body very slowly, reads our
+	// answer very slowly, or keeps an unused connection open.
+	readTimeout  = 10 * time.Second
+	writeTimeout = 10 * time.Second
+	idleTimeout  = 60 * time.Second
 )
 
 // ListenJSON prints every JSON event POSTed to address, so that a
@@ -42,6 +48,9 @@ func ListenJSON(ctx context.Context, address string) error {
 	server := &http.Server{
 		Handler:           http.HandlerFunc(printEvent),
 		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 
 	// Closing the server is what unblocks Serve below.
