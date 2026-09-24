@@ -266,12 +266,13 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result) {
 	s.TotalUnsuccessfulProbes++
 	s.LastUnsuccessfulProbe = pingTime
 
-	if p.config.NetworkInterface.Use {
+	// Mostly nil, as a failed probe rarely got as far as a connection. With
+	// -I we still know which address it went out from.
+	s.LocalAddr = probeResult.LocalAddr
+	if s.LocalAddr == nil && p.config.NetworkInterface.Use {
 		localIP := p.config.NetworkInterface.LocalIPFor(s.IP)
 		if localIP != nil {
 			s.LocalAddr = &net.TCPAddr{IP: localIP}
-		} else {
-			s.LocalAddr = nil
 		}
 	}
 

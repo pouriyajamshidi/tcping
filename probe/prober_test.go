@@ -295,6 +295,19 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 	}
 }
 
+func TestHandleProbeFailure_ForgetsTheLastSourceAddress(t *testing.T) {
+	p, _ := newTestProber(nil, config.Config{})
+	p.handleProbeSuccess(time.Now(), time.Millisecond, Result{
+		LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321},
+	})
+
+	p.handleProbeFailure(time.Now(), Result{})
+
+	if got := p.statistics.SourceAddr(); got != "" {
+		t.Errorf("SourceAddr() = %q after a failed probe, want empty", got)
+	}
+}
+
 // --- handleProbeSuccess --------------------------------------------------
 
 func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
