@@ -6,6 +6,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"net/netip"
 	"os"
 	"time"
 
@@ -92,7 +93,8 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		os.Exit(1)
 	}
 
-	targetIsAlreadyIP := resolvedIP.String() == target.hostname
+	_, err = netip.ParseAddr(target.hostname)
+	targetIsAlreadyIP := err == nil
 
 	shouldRetryResolve := f.retryHostnameResolveAfterNFailures > 0 && !targetIsAlreadyIP
 
