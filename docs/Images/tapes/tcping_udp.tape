@@ -20,7 +20,7 @@ Set Shell "bash"
 Set FontSize 20
 Set Padding 30
 Set Width 1250
-Set Height 930
+Set Height 960
 
 # Build the split off camera so the recording starts on two ready panes. The
 # panes run "bash --norc" with the recorder's prompt exported into them, so
