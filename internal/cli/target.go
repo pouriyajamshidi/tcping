@@ -58,6 +58,8 @@ func schemeProtocol(target string) (config.Protocol, bool) {
 		return config.HTTPS, true
 	case strings.HasPrefix(target, "udp://"):
 		return config.UDP, true
+	case strings.HasPrefix(target, "tcp://"):
+		return config.TCP, true
 	default:
 		return "", false
 	}
@@ -72,9 +74,10 @@ func defaultPort(protocol config.Protocol) string {
 
 // parseTarget picks the protocol from the user input: an
 // http:// or https:// prefix means an HTTP probe, a udp:// one means a UDP
-// probe, anything else is the plain TCP probe tcping has always done. HTTP
-// gets a default port (80 or 443) but it can still be overridden by the
-// URL's own port or a trailing port argument. UDP has no default port.
+// probe, and a tcp:// one or no prefix at all is the plain TCP probe tcping
+// has always done. HTTP gets a default port (80 or 443) but it can still be
+// overridden by the URL's own port or a trailing port argument. TCP and UDP
+// have no default port.
 func parseTarget(args []string) (probeTarget, error) {
 	if len(args) == 0 {
 		return probeTarget{}, nil
@@ -102,9 +105,9 @@ func parseTarget(args []string) (probeTarget, error) {
 		target.port = args[1]
 	}
 
-	// UDP has no URL to request, just a host and a port to send a datagram
-	// to, so there is nothing left to build here.
-	if protocol == config.UDP {
+	// TCP and UDP have no URL to request, just a host and a port to probe,
+	// so there is nothing left to build here.
+	if protocol == config.TCP || protocol == config.UDP {
 		return target, nil
 	}
 
