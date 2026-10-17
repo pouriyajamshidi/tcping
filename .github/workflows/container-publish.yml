@@ -1,9 +1,23 @@
 name: Docker container build
 
+# Builds the container image and pushes it to Docker Hub and ghcr.
+#
+# Called by the release workflow once make check and the tag checks have
+# passed, so a tag that fails the release never reaches either registry.
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to build the image for, for example v3.0.0"
+        required: true
+        type: string
+  # for re-running by hand
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build the image for, for example v3.0.0"
+        required: true
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -21,13 +35,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # full history so the tag can be checked against master below
-          fetch-depth: 0
-
-      - name: Ensure tag is on master
-        run: |
-          git fetch origin master
-          git branch --remote --contains $GITHUB_SHA | grep origin/master
+          ref: ${{ inputs.tag }}
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -57,9 +65,9 @@ jobs:
             ghcr.io/${{ github.repository }}
 
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern={{version}},value=${{ inputs.tag }}
             # pre-release tags like v3.0.0-rc1 should not move latest
-            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
+            type=raw,value=latest,enable=${{ !contains(inputs.tag, '-') }}
 
           labels: |
             org.opencontainers.image.title=tcping

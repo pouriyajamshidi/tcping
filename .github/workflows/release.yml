@@ -3,8 +3,9 @@ name: Release
 # Builds every release artifact and publishes the GitHub release when a v*
 # tag is pushed, using the tag's CHANGELOG.md section as the release notes.
 #
-# The Homebrew tap and winget workflows are called from here once the
-# release exists, so pushing the tag is the whole release. Merge into master
+# The container, Homebrew tap, winget, AUR and Linux package repository
+# workflows are called from here once the release exists, so pushing the tag
+# is the whole release. Merge into master
 # first: a tag that is not on master is rejected below.
 on:
   push:
@@ -115,6 +116,19 @@ jobs:
           else
             gh release create "$TAG" output/* --notes-file notes.md $prerelease
           fi
+
+  # Pre-releases get an image too, but container-publish.yml does not move the
+  # latest tag for them.
+  container:
+    needs: release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/container-publish.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.release.outputs.tag }}
 
   # A tag carrying a suffix, like v3.0.0-rc1, is a pre-release, so brew, winget,
   # the AUR and the Linux package repository are left pointing at the last real

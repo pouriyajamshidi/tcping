@@ -9,7 +9,7 @@
 ![CodeFactor](https://www.codefactor.io/repository/github/pouriyajamshidi/tcping/badge)
 ![Go](https://github.com/pouriyajamshidi/tcping/actions/workflows/codeql-analysis.yml/badge.svg)
 ![Tests](https://github.com/pouriyajamshidi/tcping/actions/workflows/test.yml/badge.svg)
-![Docker container build](https://github.com/pouriyajamshidi/tcping/actions/workflows/container-publish.yml/badge.svg)
+![Release](https://github.com/pouriyajamshidi/tcping/actions/workflows/release.yml/badge.svg)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
