@@ -96,6 +96,38 @@ func TestHTTPing_Success(t *testing.T) {
 	}
 }
 
+// A probe times how long the server took to answer, not how long the page
+// takes to download, so a slow body must not hold it up.
+func TestHTTPing_DoesNotWaitForTheBody(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("start of a big page"))
+		w.(http.Flusher).Flush()
+
+		// The rest of the body only comes once the test is over.
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(release) })
+
+	h, ip := httpingFor(t, srv, "/")
+	h.timeout = 2 * time.Second
+
+	start := time.Now()
+	_, err := h.Ping(context.Background(), ip)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("Ping() error = %v, want no error", err)
+	}
+	if elapsed > time.Second {
+		t.Errorf("Ping() took %v, want it to return once the headers are in", elapsed)
+	}
+}
+
 // TestHTTPing_ErrorStatusFails covers the rule that a reachable host serving
 // 4xx or 5xx is a failed probe, while its response is still handed back so
 // the printers can say which status it was.

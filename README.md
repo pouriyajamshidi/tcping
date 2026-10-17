@@ -422,7 +422,8 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 ### Probing over HTTP(S)
 
 Give a URL instead of a host and a port and tcping probes it over HTTP(S),
-reporting the status code and how long the whole request took:
+reporting the status code and how long the server took to answer. The body
+is not downloaded, so a big page does not slow the probe down:
 
 ```bash
 tcping https://www.example.com/health

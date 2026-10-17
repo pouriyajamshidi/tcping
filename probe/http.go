@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -115,12 +114,11 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	// The body is left unread. On a big page the probe would otherwise time
+	// the download, or run into the timeout, instead of how long the server
+	// took to answer. Keep-alives are off, so there is no connection to save
+	// by draining it.
 	defer resp.Body.Close()
-
-	// Read the body out so the probe covers the whole response and not just
-	// its headers. A server that hangs up early still gave us a status line
-	// and headers, so a read error here does not fail the probe.
-	_, _ = io.Copy(io.Discard, resp.Body)
 
 	result.StatusCode = resp.StatusCode
 	result.Status = resp.Status
