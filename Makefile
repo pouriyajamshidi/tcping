@@ -111,6 +111,7 @@ GIF_ARTIFACTS := \
 	$(GIFS_DIR)/tcping_http.gif \
 	$(GIFS_DIR)/tcping_http_verbose.gif \
 	$(GIFS_DIR)/tcping_skip_tls.gif \
+	$(GIFS_DIR)/tcping_proxy.gif \
 	$(GIFS_DIR)/tcping_udp.gif
 
 # Conditionals

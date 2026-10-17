@@ -114,6 +114,12 @@
 
 ---
 
+### probeهای HTTP(S) از طریق proxy (پارامتر `--proxy`)
+
+![tcping proxy example](../Images/gifs/tcping_proxy.gif)
+
+---
+
 ### probeهای UDP به یک سرور UDP (پارامتر `--udp-server`)
 
 ![tcping UDP example](../Images/gifs/tcping_udp.gif)

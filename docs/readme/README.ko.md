@@ -114,6 +114,12 @@
 
 ---
 
+### 프록시를 통한 HTTP(S) 프로브(`--proxy`) 플래그
+
+![tcping proxy example](../Images/gifs/tcping_proxy.gif)
+
+---
+
 ### UDP 서버에 대한 UDP 프로브(`--udp-server`) 플래그
 
 ![tcping UDP example](../Images/gifs/tcping_udp.gif)

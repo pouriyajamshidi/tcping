@@ -114,6 +114,12 @@ Bekijk de [demo's](#demos) voor een indruk van het uiterlijk en het gebruik van 
 
 ---
 
+### HTTP(S)-probes via een proxy (`--proxy`) flag
+
+![tcping proxy example](../Images/gifs/tcping_proxy.gif)
+
+---
+
 ### UDP-probes tegen een UDP-server (`--udp-server`) flag
 
 ![tcping UDP example](../Images/gifs/tcping_udp.gif)

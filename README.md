@@ -114,6 +114,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
+### HTTP(S) probes through a proxy (`--proxy`) flag
+
+![tcping proxy example](docs/Images/gifs/tcping_proxy.gif)
+
+---
+
 ### UDP probes against a UDP server (`--udp-server`) flag
 
 ![tcping UDP example](docs/Images/gifs/tcping_udp.gif)

@@ -114,6 +114,12 @@
 
 ---
 
+### 通过代理进行 HTTP(S) 探测（`--proxy`）标志
+
+![tcping proxy example](../Images/gifs/tcping_proxy.gif)
+
+---
+
 ### 对 UDP 服务器进行 UDP 探测（`--udp-server`）标志
 
 ![tcping UDP example](../Images/gifs/tcping_udp.gif)

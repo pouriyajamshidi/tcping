@@ -114,6 +114,12 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 
 ---
 
+### Sondes HTTP(S) à travers un proxy (option `--proxy`)
+
+![tcping proxy example](../Images/gifs/tcping_proxy.gif)
+
+---
+
 ### Sondes UDP vers un serveur UDP (option `--udp-server`)
 
 ![tcping UDP example](../Images/gifs/tcping_udp.gif)

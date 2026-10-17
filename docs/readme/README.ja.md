@@ -114,6 +114,12 @@
 
 ---
 
+### プロキシ経由の HTTP(S) プローブ（`--proxy`）フラグ
+
+![tcping proxy example](../Images/gifs/tcping_proxy.gif)
+
+---
+
 ### UDP サーバーへの UDP プローブ（`--udp-server`）フラグ
 
 ![tcping UDP example](../Images/gifs/tcping_udp.gif)
