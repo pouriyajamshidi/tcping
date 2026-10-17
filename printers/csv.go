@@ -138,7 +138,7 @@ func NewCSVPrinter(cfg Config) (*CSVPrinter, error) {
 }
 
 // addDateAndCSVExtension builds the name of a CSV file from what the user
-// gave to -c, adding the date and time unless noTimestamp is set, and the
+// gave to --csv, adding the date and time unless noTimestamp is set, and the
 // "_stats" suffix for the statistics file.
 func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) string {
 	// Only a real ".csv" ending is replaced. Anything else is part of the
