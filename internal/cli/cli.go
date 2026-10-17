@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
-
 	"github.com/pouriyajamshidi/tcping/v3/dns"
 	"github.com/pouriyajamshidi/tcping/v3/nic"
 	"github.com/pouriyajamshidi/tcping/v3/printers"
