@@ -91,8 +91,8 @@ func fishFlags(script string) []string {
 }
 
 // The PowerShell script adds its flags one per line, as in
-// $script:TcpingFlags['-c'] = '...'.
-var powershellFlagSpec = regexp.MustCompile(`(?m)^\$script:TcpingFlags\['-{1,2}([\w-]+)'\]\s*=`)
+// $flags['-c'] = '...'.
+var powershellFlagSpec = regexp.MustCompile(`(?m)^\s*\$flags\['-{1,2}([\w-]+)'\]\s*=`)
 
 func powershellFlags(script string) []string {
 	names := []string{}
