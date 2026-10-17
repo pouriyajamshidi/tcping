@@ -95,7 +95,7 @@ jobs:
             echo "## Checksums"
             echo
             echo '```'
-            sha256sum output/* | awk '{sub(".*/", "", $2); print $2 ": " $1}'
+            sha256sum release/* | awk '{sub(".*/", "", $2); print $2 ": " $1}'
             echo '```'
           } >>notes.md
 
@@ -111,10 +111,10 @@ jobs:
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "[+] Release $TAG already exists, replacing its assets and notes"
-            gh release upload "$TAG" output/* --clobber
+            gh release upload "$TAG" release/* --clobber
             gh release edit "$TAG" --notes-file notes.md
           else
-            gh release create "$TAG" output/* --notes-file notes.md $prerelease
+            gh release create "$TAG" release/* --notes-file notes.md $prerelease
           fi
 
   # Pre-releases get an image too, but container-publish.yml does not move the
