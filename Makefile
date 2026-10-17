@@ -28,11 +28,11 @@ export CGO_ENABLED := 0
 
 # Linters. Pinned so a local run and a CI run report the same thing.
 # Bumping revive is what pulls in newly added revive rules, see revive.toml.
-REVIVE_VERSION := v1.16.0
-STATICCHECK_VERSION := 2026.2.1
+REVIVE_VERSION := v1.17.1
+STATICCHECK_VERSION := 2026.2.2
 
 # Builds the Linux packages from nfpm.yaml. Pinned for the same reason.
-NFPM_VERSION := v2.47.0
+NFPM_VERSION := v2.48.0
 
 # The Nix targets run "nix" directly. On a machine that does not have Nix
 # installed, "make nix CONTAINER=1" and "make nix-update CONTAINER=1" run the
