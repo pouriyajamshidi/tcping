@@ -274,6 +274,12 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) {
 	}
 }
 
+// msOf turns a duration into milliseconds, the unit the rest of tcping
+// reports latencies in.
+func msOf(d time.Duration) float64 {
+	return float64(d) / float64(time.Millisecond)
+}
+
 // httpMetrics are the extra timings an HTTP(S) probe learned. They are the
 // reason to graph an HTTP target at all: a slow connect and a slow first
 // byte mean different things.
@@ -300,6 +306,15 @@ func (p *OTLPPrinter) httpMetrics(s *stats.Statistics) []otlpMetric {
 	)
 }
 
+// oneIf is how a yes or no is sent, since a metric can only carry a number.
+func oneIf(b bool) float64 {
+	if b {
+		return 1
+	}
+
+	return 0
+}
+
 // udpMetrics are what a UDP probe learned. A reply that carried our own
 // payload back is the only proof that something is really listening, and an
 // ICMP refusal the only proof that nothing is, so both are worth a graph.
@@ -317,13 +332,11 @@ func (p *OTLPPrinter) udpMetrics(s *stats.Statistics) []otlpMetric {
 	}
 }
 
-// oneIf is how a yes or no is sent, since a metric can only carry a number.
-func oneIf(b bool) float64 {
-	if b {
-		return 1
-	}
-
-	return 0
+// rttOf widens an RTT for a data point, which can only carry a float64.
+// Rounding to three decimals, the precision the console printers use, keeps
+// the widening from turning 2.1 into 2.0999999046325684.
+func rttOf(rtt float32) float64 {
+	return math.Round(float64(rtt)*1000) / 1000
 }
 
 // probeMetrics is what every probe sends, successful or not. The gauge says
@@ -365,72 +378,6 @@ func (p *OTLPPrinter) probeMetrics(s *stats.Statistics, succeeded bool) []otlpMe
 	metrics = append(metrics, p.httpMetrics(s)...)
 
 	return append(metrics, p.udpMetrics(s)...)
-}
-
-// msOf turns a duration into milliseconds, the unit the rest of tcping
-// reports latencies in.
-func msOf(d time.Duration) float64 {
-	return float64(d) / float64(time.Millisecond)
-}
-
-// rttOf widens an RTT for a data point, which can only carry a float64.
-// Rounding to three decimals, the precision the console printers use, keeps
-// the widening from turning 2.1 into 2.0999999046325684.
-func rttOf(rtt float32) float64 {
-	return math.Round(float64(rtt)*1000) / 1000
-}
-
-// PrintStart says where the metrics are going, then leaves the terminal
-// alone for the rest of the run.
-func (p *OTLPPrinter) PrintStart(s *stats.Statistics) {
-	if !s.HostnameResolved() {
-		fmt.Printf("Probing %s on port %d over %s%s - sending metrics to: %s\n",
-			s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.endpoint)
-		return
-	}
-
-	fmt.Printf("Probing %s (%s) on port %d over %s%s (resolved in %s ms) - sending metrics to: %s\n",
-		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), viaProxy(s), s.NameResolutionDurationStr(), p.endpoint)
-}
-
-// PrintNameResolutionDuration sends how long the hostname resolution took.
-func (p *OTLPPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
-	p.send([]otlpMetric{
-		p.gauge("tcping_name_resolution_milliseconds", "ms", msOf(s.NameResolutionDuration), p.labels(s)),
-	})
-}
-
-// PrintProbeSuccess sends the metrics of a successful probe.
-func (p *OTLPPrinter) PrintProbeSuccess(s *stats.Statistics) {
-	p.send(append(p.probeMetrics(s, true), p.dueStatistics(s)...))
-}
-
-// PrintProbeFailure sends the metrics of a failed probe.
-func (p *OTLPPrinter) PrintProbeFailure(s *stats.Statistics) {
-	p.send(append(p.probeMetrics(s, false), p.dueStatistics(s)...))
-}
-
-// dueStatistics returns the run summary when enough time has passed since
-// the last one, and nothing otherwise. Sending it along with a probe means
-// no goroutine and no second request, and it keeps the summary flowing on a
-// run that is never going to be stopped by hand.
-func (p *OTLPPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
-	if time.Since(p.lastStats) < p.statsInterval {
-		return nil
-	}
-
-	p.lastStats = time.Now()
-
-	// The run has not stopped, so the uptime or downtime it is in the
-	// middle of is not in the totals yet. Without this the metric would sit
-	// still between outages instead of climbing.
-	return p.statisticsMetrics(s.SummaryNow())
-}
-
-// PrintStatistics sends the summary of the run so far.
-func (p *OTLPPrinter) PrintStatistics(s *stats.Statistics) {
-	p.lastStats = time.Now()
-	p.send(p.statisticsMetrics(s))
 }
 
 // statisticsMetrics is the summary of the run so far: the numbers you would
@@ -516,6 +463,59 @@ func (p *OTLPPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 	}
 
 	return metrics
+}
+
+// dueStatistics returns the run summary when enough time has passed since
+// the last one, and nothing otherwise. Sending it along with a probe means
+// no goroutine and no second request, and it keeps the summary flowing on a
+// run that is never going to be stopped by hand.
+func (p *OTLPPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
+	if time.Since(p.lastStats) < p.statsInterval {
+		return nil
+	}
+
+	p.lastStats = time.Now()
+
+	// The run has not stopped, so the uptime or downtime it is in the
+	// middle of is not in the totals yet. Without this the metric would sit
+	// still between outages instead of climbing.
+	return p.statisticsMetrics(s.SummaryNow())
+}
+
+// PrintStart says where the metrics are going, then leaves the terminal
+// alone for the rest of the run.
+func (p *OTLPPrinter) PrintStart(s *stats.Statistics) {
+	if !s.HostnameResolved() {
+		fmt.Printf("Probing %s on port %d over %s%s - sending metrics to: %s\n",
+			s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.endpoint)
+		return
+	}
+
+	fmt.Printf("Probing %s (%s) on port %d over %s%s (resolved in %s ms) - sending metrics to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), viaProxy(s), s.NameResolutionDurationStr(), p.endpoint)
+}
+
+// PrintNameResolutionDuration sends how long the hostname resolution took.
+func (p *OTLPPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	p.send([]otlpMetric{
+		p.gauge("tcping_name_resolution_milliseconds", "ms", msOf(s.NameResolutionDuration), p.labels(s)),
+	})
+}
+
+// PrintProbeSuccess sends the metrics of a successful probe.
+func (p *OTLPPrinter) PrintProbeSuccess(s *stats.Statistics) {
+	p.send(append(p.probeMetrics(s, true), p.dueStatistics(s)...))
+}
+
+// PrintProbeFailure sends the metrics of a failed probe.
+func (p *OTLPPrinter) PrintProbeFailure(s *stats.Statistics) {
+	p.send(append(p.probeMetrics(s, false), p.dueStatistics(s)...))
+}
+
+// PrintStatistics sends the summary of the run so far.
+func (p *OTLPPrinter) PrintStatistics(s *stats.Statistics) {
+	p.lastStats = time.Now()
+	p.send(p.statisticsMetrics(s))
 }
 
 // PrintRetryingToResolve has no number behind it, so it goes to the terminal.

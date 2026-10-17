@@ -145,6 +145,45 @@ type SQLitePrinter struct {
 	cfg            Config
 }
 
+func addDBExtension(filename string) string {
+	if filename == ":memory:" || strings.HasSuffix(filename, ".db") {
+		return filename
+	}
+	return filename + ".db"
+}
+
+// sanitizeIdentifierPart replaces every character that isn't a letter, digit,
+// or underscore with an underscore. Table names are built with fmt.Sprintf
+// directly into DDL/DML text (SQL identifiers can't be bound as query
+// parameters), so this allow-list is what keeps an arbitrary hostname string
+// from being able to break out of the intended identifier.
+func sanitizeIdentifierPart(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	return b.String()
+}
+
+// sanitizeTableName formats a target/port pair as a valid SQLite identifier.
+func sanitizeTableName(hostname, port string) string {
+	sanitizedHost := sanitizeIdentifierPart(hostname)
+	sanitizedTime := strings.NewReplacer("-", "_", ":", "_", " ", "_").Replace(time.Now().Format(time.DateTime))
+
+	tableName := fmt.Sprintf("%s_%s__%s", sanitizedHost, port, sanitizedTime)
+	if tableName != "" {
+		if r, _ := utf8.DecodeRuneInString(tableName); unicode.IsNumber(r) {
+			tableName = "_" + tableName
+		}
+	}
+	return tableName
+}
+
 // NewSQLitePrinter opens the database and creates the probe and statistics tables.
 func NewSQLitePrinter(cfg Config) (*SQLitePrinter, error) {
 	portStr := strconv.FormatUint(uint64(cfg.Port), 10)
@@ -190,43 +229,15 @@ func NewSQLitePrinter(cfg Config) (*SQLitePrinter, error) {
 	}, nil
 }
 
-func addDBExtension(filename string) string {
-	if filename == ":memory:" || strings.HasSuffix(filename, ".db") {
-		return filename
+func nullIfEmpty(v string) any {
+	if v == "" {
+		return nil
 	}
-	return filename + ".db"
+	return v
 }
 
-// sanitizeTableName formats a target/port pair as a valid SQLite identifier.
-func sanitizeTableName(hostname, port string) string {
-	sanitizedHost := sanitizeIdentifierPart(hostname)
-	sanitizedTime := strings.NewReplacer("-", "_", ":", "_", " ", "_").Replace(time.Now().Format(time.DateTime))
-
-	tableName := fmt.Sprintf("%s_%s__%s", sanitizedHost, port, sanitizedTime)
-	if tableName != "" {
-		if r, _ := utf8.DecodeRuneInString(tableName); unicode.IsNumber(r) {
-			tableName = "_" + tableName
-		}
-	}
-	return tableName
-}
-
-// sanitizeIdentifierPart replaces every character that isn't a letter, digit,
-// or underscore with an underscore. Table names are built with fmt.Sprintf
-// directly into DDL/DML text (SQL identifiers can't be bound as query
-// parameters), so this allow-list is what keeps an arbitrary hostname string
-// from being able to break out of the intended identifier.
-func sanitizeIdentifierPart(s string) string {
-	var b strings.Builder
-	b.Grow(len(s))
-	for _, r := range s {
-		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '_' {
-			b.WriteRune(r)
-		} else {
-			b.WriteRune('_')
-		}
-	}
-	return b.String()
+func millisecondsFloat(d time.Duration) float64 {
+	return math.Round(float64(d.Nanoseconds())/float64(time.Millisecond)*1000) / 1000
 }
 
 // httpArgs returns the HTTP(S) columns for one probe, in the order the probe
@@ -261,15 +272,28 @@ func udpArgs(s *stats.Statistics) []any {
 	return []any{s.UDP.ProbeNumber, s.UDPResultStr()}
 }
 
-func nullIfEmpty(v string) any {
-	if v == "" {
-		return nil
+func boolToInt(value bool) int {
+	if value {
+		return 1
 	}
-	return v
+	return 0
 }
 
-func millisecondsFloat(d time.Duration) float64 {
-	return math.Round(float64(d.Nanoseconds())/float64(time.Millisecond)*1000) / 1000
+// endedPeriodArgs are how long the target had been up, or down, when this
+// probe ended it. Both are nil on a probe that ended neither, which is most
+// of them.
+func endedPeriodArgs(s *stats.Statistics) []any {
+	uptime := any(nil)
+	if s.EndedUptime != 0 {
+		uptime = s.EndedUptimeDuration()
+	}
+
+	downtime := any(nil)
+	if s.EndedDowntime != 0 {
+		downtime = s.EndedDowntimeDuration()
+	}
+
+	return []any{uptime, downtime}
 }
 
 func (p *SQLitePrinter) insertProbe(
@@ -326,21 +350,32 @@ func (p *SQLitePrinter) insertProbe(
 	}
 }
 
-// endedPeriodArgs are how long the target had been up, or down, when this
-// probe ended it. Both are nil on a probe that ended neither, which is most
-// of them.
-func endedPeriodArgs(s *stats.Statistics) []any {
-	uptime := any(nil)
-	if s.EndedUptime != 0 {
-		uptime = s.EndedUptimeDuration()
+func hostnameChanges(s *stats.Statistics) string {
+	if len(s.HostnameChanges) < 2 {
+		return ""
 	}
 
-	downtime := any(nil)
-	if s.EndedDowntime != 0 {
-		downtime = s.EndedDowntimeDuration()
-	}
+	var changes strings.Builder
+	for i := 0; i < len(s.HostnameChanges)-1; i++ {
+		from := s.HostnameChanges[i].Addr.String()
+		if from == "" {
+			continue
+		}
 
-	return []any{uptime, downtime}
+		fmt.Fprintf(&changes, "from %s to %s at %s took %s ms\n",
+			from,
+			s.HostnameChanges[i+1].Addr.String(),
+			s.HostnameChanges[i+1].WhenFormatted(),
+			s.HostnameChanges[i+1].DurationStr(),
+		)
+	}
+	return changes.String()
+}
+
+func (p *SQLitePrinter) done() {
+	if p.conn != nil {
+		_ = p.conn.Close()
+	}
 }
 
 // PrintStart prints a message indicating that TCPing has started.
@@ -485,39 +520,4 @@ func (p *SQLitePrinter) PrintError(format string, args ...any) {
 func (p *SQLitePrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
 	p.done()
-}
-
-func (p *SQLitePrinter) done() {
-	if p.conn != nil {
-		_ = p.conn.Close()
-	}
-}
-
-func boolToInt(value bool) int {
-	if value {
-		return 1
-	}
-	return 0
-}
-
-func hostnameChanges(s *stats.Statistics) string {
-	if len(s.HostnameChanges) < 2 {
-		return ""
-	}
-
-	var changes strings.Builder
-	for i := 0; i < len(s.HostnameChanges)-1; i++ {
-		from := s.HostnameChanges[i].Addr.String()
-		if from == "" {
-			continue
-		}
-
-		fmt.Fprintf(&changes, "from %s to %s at %s took %s ms\n",
-			from,
-			s.HostnameChanges[i+1].Addr.String(),
-			s.HostnameChanges[i+1].WhenFormatted(),
-			s.HostnameChanges[i+1].DurationStr(),
-		)
-	}
-	return changes.String()
 }

@@ -105,6 +105,34 @@ type CSVPrinter struct {
 	cfg         Config
 }
 
+// addDateAndCSVExtension builds the name of a CSV file from what the user
+// gave to --csv, adding the date and time unless noTimestamp is set, and the
+// "_stats" suffix for the statistics file.
+func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) string {
+	// Only a real ".csv" ending is replaced. Anything else is part of the
+	// name, so "example.com" does not turn into "example.csv".
+	ext := filepath.Ext(filename)
+	if ext != ".csv" {
+		ext = ""
+	}
+	base := filename[:len(filename)-len(ext)]
+
+	if noTimestamp {
+		if withStatsExt {
+			return base + "_stats.csv"
+		}
+		return base + ".csv"
+	}
+
+	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
+
+	if withStatsExt {
+		return strings.ReplaceAll(base+"_"+timestamp+"_stats.csv", " ", "_")
+	}
+
+	return strings.ReplaceAll(base+"_"+timestamp+".csv", " ", "_")
+}
+
 // NewCSVPrinter initializes a CSVPrinter instance from the printer config.
 // When cfg.CSVNoTimestamp is true, cfg.OutputCSVPath is used as-is (plus a
 // "_stats" suffix for the stats file) instead of getting a date/time suffix,
@@ -135,34 +163,6 @@ func NewCSVPrinter(cfg Config) (*CSVPrinter, error) {
 		statsFile:   statsFile,
 		cfg:         cfg,
 	}, nil
-}
-
-// addDateAndCSVExtension builds the name of a CSV file from what the user
-// gave to --csv, adding the date and time unless noTimestamp is set, and the
-// "_stats" suffix for the statistics file.
-func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) string {
-	// Only a real ".csv" ending is replaced. Anything else is part of the
-	// name, so "example.com" does not turn into "example.csv".
-	ext := filepath.Ext(filename)
-	if ext != ".csv" {
-		ext = ""
-	}
-	base := filename[:len(filename)-len(ext)]
-
-	if noTimestamp {
-		if withStatsExt {
-			return base + "_stats.csv"
-		}
-		return base + ".csv"
-	}
-
-	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
-
-	if withStatsExt {
-		return strings.ReplaceAll(base+"_"+timestamp+"_stats.csv", " ", "_")
-	}
-
-	return strings.ReplaceAll(base+"_"+timestamp+".csv", " ", "_")
 }
 
 // done flushes the buffer of writers and closes the probe and stats files.
