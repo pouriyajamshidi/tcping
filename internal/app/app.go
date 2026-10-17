@@ -107,7 +107,7 @@ func Run() {
 
 	printer, err := printers.NewPrinter(printerCfg)
 	if err != nil {
-		fmt.Printf("Failed to create printer: %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "Failed to create printer: %s\n", err.Error())
 		os.Exit(1)
 	}
 

@@ -276,14 +276,20 @@ func TestPermuteArgsRejectsAFlagWithoutItsValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, code := runCase(t, "TestPermuteArgsRejectsAFlagWithoutItsValue", tt.name)
+			out, errOut, code := runCase(t, "TestPermuteArgsRejectsAFlagWithoutItsValue", tt.name)
 
 			if code == 0 {
-				t.Errorf("permuteArgs(%q) exited with 0, want a failure. Output:\n%s", tt.args, out)
+				t.Errorf("permuteArgs(%q) exited with 0, want a failure. Output:\n%s", tt.args, errOut)
 			}
 
-			if !strings.Contains(out, "option requires a value") {
-				t.Errorf("permuteArgs(%q) did not say the option requires a value. Output:\n%s", tt.args, out)
+			if !strings.Contains(errOut, "option requires a value") {
+				t.Errorf("permuteArgs(%q) did not say the option requires a value on stderr. Output:\n%s", tt.args, errOut)
+			}
+
+			// The error and the usage text that follows it both belong on
+			// stderr, so nothing should reach stdout.
+			if out != "" {
+				t.Errorf("permuteArgs(%q) wrote to stdout, want it all on stderr:\n%s", tt.args, out)
 			}
 		})
 	}
@@ -371,14 +377,18 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, code := runCase(t, "TestValidateRejectsFlagsThatDoNotGoTogether", tt.name)
+			out, errOut, code := runCase(t, "TestValidateRejectsFlagsThatDoNotGoTogether", tt.name)
 
 			if code == 0 {
-				t.Errorf("validate exited with 0, want a failure. Output:\n%s", out)
+				t.Errorf("validate exited with 0, want a failure. Output:\n%s", errOut)
 			}
 
-			if !strings.Contains(out, tt.want) {
-				t.Errorf("validate did not print %q. Output:\n%s", tt.want, out)
+			if !strings.Contains(errOut, tt.want) {
+				t.Errorf("validate did not print %q on stderr. Output:\n%s", tt.want, errOut)
+			}
+
+			if out != "" {
+				t.Errorf("validate wrote to stdout, want it all on stderr:\n%s", out)
 			}
 		})
 	}

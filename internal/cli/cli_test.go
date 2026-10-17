@@ -30,9 +30,9 @@ func TestProcessUserInputSpotsIPLiterals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.target, func(t *testing.T) {
-			out, code := runCase(t, "TestProcessUserInputSpotsIPLiterals", tt.target)
+			out, errOut, code := runCase(t, "TestProcessUserInputSpotsIPLiterals", tt.target)
 			if code != 0 {
-				t.Fatalf("exited with %d. Output:\n%s", code, out)
+				t.Fatalf("exited with %d. Output:\n%s%s", code, out, errOut)
 			}
 
 			want := fmt.Sprintf("TargetIsIP=%v", tt.want)

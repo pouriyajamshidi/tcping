@@ -58,12 +58,12 @@ func permuteArgs(args []string) {
 
 		if flagsWithValues[option] {
 			if i+1 >= len(args) {
-				fmt.Printf("-%s option requires a value\n", option)
+				fmt.Fprintf(os.Stderr, "-%s option requires a value\n", option)
 				usage()
 			}
 
 			if strings.HasPrefix(args[i+1], "-") {
-				fmt.Printf("-%s option requires a value\n", option)
+				fmt.Fprintf(os.Stderr, "-%s option requires a value\n", option)
 				usage()
 			}
 

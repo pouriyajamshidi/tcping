@@ -68,7 +68,7 @@ func checkForUpdates() {
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
-		fmt.Printf("Could not create request: %s", err)
+		fmt.Fprintf(os.Stderr, "Could not create request: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -79,13 +79,13 @@ func checkForUpdates() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Failed to check for updates %s\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to check for updates: %s\n", err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Failed to check for updates: HTTP %d\n", resp.StatusCode)
+		fmt.Fprintf(os.Stderr, "Failed to check for updates: HTTP %d\n", resp.StatusCode)
 		os.Exit(1)
 	}
 
@@ -94,7 +94,7 @@ func checkForUpdates() {
 	}{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		fmt.Printf("Failed to parse release info: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to parse release info: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -103,7 +103,7 @@ func checkForUpdates() {
 	re := regexp.MustCompile(reg)
 	m := re.FindStringSubmatch(latestTagName)
 	if len(m) == 0 {
-		fmt.Printf("Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
+		fmt.Fprintf(os.Stderr, "Failed to check for updates. The version name does not match the rule: %s\n", latestTagName)
 		os.Exit(1)
 	}
 
