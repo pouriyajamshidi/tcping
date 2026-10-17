@@ -14,6 +14,7 @@ patches/
 /output/
 /result
 tmp/
+temp/
 
 # secrets / credentials
 .env
