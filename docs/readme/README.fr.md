@@ -451,13 +451,13 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Derrière un proxy, donnez-le avec `--proxy`, ou définissez les variables
-d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` que la plupart des outils
-lisent déjà. Les proxys `http://`, `https://` et `socks5://` fonctionnent :
+Derrière un proxy, donnez-le avec `--proxy`. Les proxys `http://`, `https://` et
+`socks5://` fonctionnent. tcping ne lit pas les variables d'environnement
+`HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY`, une sonde ne passe donc par un proxy
+que si vous le demandez :
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 Le proxy se connecte lui-même au nom d'hôte de la cible. Le temps de connexion et
@@ -691,7 +691,7 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 | Option          | Par défaut | Description                                                                                                                                                                                                 |
 | --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                                                  |
-| `--proxy <URL>` |            | Envoyer les sondes `HTTP(S)` à travers un proxy, par ex. `--proxy http://proxy.example.com:3128`. Sans cette option, les variables d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` sont utilisées |
+| `--proxy <URL>` |            | Envoyer les sondes `HTTP(S)` à travers un proxy, par ex. `--proxy http://proxy.example.com:3128`. Les variables d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` ne sont pas utilisées |
 | `--udp-server`  |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse                                |
 
 ---

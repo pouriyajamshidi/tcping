@@ -451,13 +451,13 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Hinter einem Proxy geben Sie ihn mit `--proxy` an, oder Sie setzen die
-Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY`, die die meisten
-Programme ohnehin lesen. `http://`-, `https://`- und `socks5://`-Proxys funktionieren:
+Hinter einem Proxy geben Sie ihn mit `--proxy` an. `http://`-, `https://`- und
+`socks5://`-Proxys funktionieren. tcping liest die Umgebungsvariablen
+`HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` nicht, eine Probe läuft also nur über
+einen Proxy, wenn Sie es verlangen:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 Der Proxy verbindet sich selbst mit dem Hostnamen des Ziels. Verbindungszeit und
@@ -691,7 +691,7 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 | Flag            | Standard | Beschreibung                                                                                                                                                                                 |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                     |
-| `--proxy <URL>` |          | `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128`. Ohne dieses Flag werden die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` verwendet |
+| `--proxy <URL>` |          | `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128`. Die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` werden nicht verwendet |
 | `--udp-server`  |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt    |
 
 ---

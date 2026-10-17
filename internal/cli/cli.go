@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
@@ -142,30 +141,18 @@ func ProcessUserInput() (config.Config, printers.Config) {
 	return cfg, f.newPrinterConfig(target.hostname, validatedPort)
 }
 
-// proxyFor picks the proxy an HTTP(S) target is probed through: the -proxy
-// flag when it is given, the HTTPS_PROXY, HTTP_PROXY and NO_PROXY environment
-// variables otherwise. It returns nil when the probes connect directly.
+// proxyFor parses the -proxy flag an HTTP(S) target is probed through. It
+// returns nil when the probes connect directly. The proxy environment
+// variables are left alone, so a proxy is only ever used when asked for.
 func proxyFor(proxyFlag, targetURL string) (*url.URL, error) {
-	// Only an HTTP(S) target has a URL. A TCP or UDP probe cannot go through
-	// the proxy, and quietly probing directly would hide that.
-	if targetURL == "" {
-		if proxyFlag != "" {
-			return nil, errors.New("--proxy only works with http:// and https:// targets")
-		}
+	if proxyFlag == "" {
 		return nil, nil
 	}
 
-	if proxyFlag == "" {
-		req, err := http.NewRequest(http.MethodGet, targetURL, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		proxy, err := http.ProxyFromEnvironment(req)
-		if err != nil {
-			return nil, fmt.Errorf("invalid proxy in the environment: %w", err)
-		}
-		return proxy, nil
+	// Only an HTTP(S) target has a URL. A TCP or UDP probe cannot go through
+	// the proxy, and quietly probing directly would hide that.
+	if targetURL == "" {
+		return nil, errors.New("--proxy only works with http:// and https:// targets")
 	}
 
 	proxy, err := url.Parse(proxyFlag)

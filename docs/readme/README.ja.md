@@ -446,13 +446,12 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-プロキシの内側では `--proxy` で指定するか、多くのツールが読む
-`HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 環境変数を設定します。
-`http://`、`https://`、`socks5://` のプロキシが使えます。
+プロキシの内側では `--proxy` で指定します。`http://`、`https://`、`socks5://`
+のプロキシが使えます。tcping は `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY`
+環境変数を読まないので、プローブがプロキシを通るのは指定したときだけです。
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 プロキシはターゲットのホスト名へ自分で接続します。そのため接続時間と送信元アドレスは
@@ -677,7 +676,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 | フラグ          | デフォルト | 説明                                                                                                                                                           |
 | --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |            | `https://` のターゲットをプローブするとき、サーバー証明書を検証しない。自己署名や期限切れの証明書に使える                                                      |
-| `--proxy <URL>` |            | `HTTP(S)` のプローブをプロキシ経由で送る。例: `--proxy http://proxy.example.com:3128`。指定しないときは `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 環境変数を使う |
+| `--proxy <URL>` |            | `HTTP(S)` のプローブをプロキシ経由で送る。例: `--proxy http://proxy.example.com:3128`。`HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 環境変数は使わない |
 | `--udp-server`  |            | プローブをしない。指定したホストとポートで待ち受け、受け取った UDP データグラムをすべて送信元へ返す。このマシンへの UDP プローブが応答を得られる               |
 
 ---

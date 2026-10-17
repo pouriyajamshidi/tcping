@@ -447,13 +447,12 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-프록시 뒤에 있다면 `--proxy`로 지정하거나, 대부분의 도구가 읽는
-`HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수를 설정하세요.
-`http://`, `https://`, `socks5://` 프록시를 쓸 수 있습니다.
+프록시 뒤에 있다면 `--proxy`로 지정하세요. `http://`, `https://`, `socks5://`
+프록시를 쓸 수 있습니다. tcping은 `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경
+변수를 읽지 않으므로, 프로브는 직접 지정했을 때만 프록시를 거칩니다.
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 프록시가 대상의 호스트 이름으로 직접 연결하므로, 연결 시간과 출발지 주소는
@@ -679,7 +678,7 @@ OpenTelemetry Collector, InfluxDB 환경은
 | 플래그          | 기본값 | 설명                                                                                                                                                           |
 | --------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |        | `https://` 대상을 프로브할 때 서버 인증서를 검증하지 않음. 자체 서명 또는 만료된 인증서에 유용                                                                 |
-| `--proxy <URL>` |        | `HTTP(S)` 프로브를 프록시를 통해 보냄, 예: `--proxy http://proxy.example.com:3128`. 지정하지 않으면 `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수를 사용함 |
+| `--proxy <URL>` |        | `HTTP(S)` 프로브를 프록시를 통해 보냄, 예: `--proxy http://proxy.example.com:3128`. `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수는 사용하지 않음 |
 | `--udp-server`  |        | 프로브하지 않음. 주어진 호스트와 포트에서 기다리다가 모든 UDP 데이터그램을 보낸 쪽으로 돌려보내, 이 컴퓨터를 향한 UDP 프로브가 응답을 받게 함                  |
 
 ---

@@ -77,68 +77,17 @@ func TestProxyForFlag(t *testing.T) {
 	}
 }
 
-// Go reads the proxy environment variables once per process and keeps them,
-// so each case runs in its own process with its own environment.
-func TestProxyForEnvironment(t *testing.T) {
-	tests := []struct {
-		name      string
-		env       map[string]string
-		proxyFlag string
-		targetURL string
-		want      string
-	}{
-		{
-			name:      "HTTPS_PROXY for an https target",
-			env:       map[string]string{"HTTPS_PROXY": "http://proxy.example.com:3128"},
-			targetURL: "https://example.com/",
-			want:      "http://proxy.example.com:3128",
-		},
-		{
-			name:      "HTTP_PROXY for an http target",
-			env:       map[string]string{"HTTP_PROXY": "http://proxy.example.com:3128"},
-			targetURL: "http://example.com/",
-			want:      "http://proxy.example.com:3128",
-		},
-		{
-			name:      "NO_PROXY leaves the target alone",
-			env:       map[string]string{"HTTPS_PROXY": "http://proxy.example.com:3128", "NO_PROXY": "example.com"},
-			targetURL: "https://example.com/",
-			want:      "<nil>",
-		},
-		{
-			name:      "the flag wins over the environment",
-			env:       map[string]string{"HTTPS_PROXY": "http://proxy.example.com:3128"},
-			proxyFlag: "socks5://127.0.0.1:1080",
-			targetURL: "https://example.com/",
-			want:      "socks5://127.0.0.1:1080",
-		},
+// A proxy is only used when --proxy asks for one, so the environment
+// variables other tools read must not change where a probe goes.
+func TestProxyForIgnoresEnvironment(t *testing.T) {
+	for _, key := range []string{"HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"} {
+		t.Setenv(key, "http://proxy.example.com:3128")
 	}
 
-	if name := os.Getenv(subprocessCase); name != "" {
-		for _, tt := range tests {
-			if tt.name == name {
-				proxy, err := proxyFor(tt.proxyFlag, tt.targetURL)
-				fmt.Printf("proxy=%v err=%v\n", proxy, err)
-			}
+	for _, targetURL := range []string{"https://example.com/", "http://example.com/"} {
+		proxy, err := proxyFor("", targetURL)
+		if err != nil || proxy != nil {
+			t.Errorf("proxyFor(\"\", %q) = %v, %v, want no proxy", targetURL, proxy, err)
 		}
-		os.Exit(0)
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for _, key := range []string{"HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"} {
-				t.Setenv(key, tt.env[key])
-			}
-
-			out, errOut, code := runCase(t, "TestProxyForEnvironment", tt.name)
-			if code != 0 {
-				t.Fatalf("exited with %d. Output:\n%s%s", code, out, errOut)
-			}
-
-			want := fmt.Sprintf("proxy=%s err=<nil>", tt.want)
-			if !strings.Contains(out, want) {
-				t.Errorf("want %s. Output:\n%s", want, out)
-			}
-		})
 	}
 }

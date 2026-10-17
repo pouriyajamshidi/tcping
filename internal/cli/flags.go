@@ -234,8 +234,8 @@ func registerFlags() *flags {
 		"",
 		`Send HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128
 		or socks5://127.0.0.1:1080. The proxy connects to the target's
-		hostname on its own. Without this flag, the HTTPS_PROXY, HTTP_PROXY
-		and NO_PROXY environment variables are used.`)
+		hostname on its own. The HTTPS_PROXY, HTTP_PROXY and NO_PROXY
+		environment variables are not used.`)
 
 	flag.BoolVar(&f.udpServer,
 		"udp-server",

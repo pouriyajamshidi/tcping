@@ -451,13 +451,13 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Achter een proxy geeft u die op met `--proxy`, of u zet de omgevingsvariabelen
-`HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` die de meeste programma's al lezen.
-`http://`-, `https://`- en `socks5://`-proxy's werken:
+Achter een proxy geeft u die op met `--proxy`. `http://`-, `https://`- en
+`socks5://`-proxy's werken. tcping leest de omgevingsvariabelen `HTTPS_PROXY`,
+`HTTP_PROXY` en `NO_PROXY` niet, dus een probe gaat alleen via een proxy als u
+daarom vraagt:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 De proxy maakt zelf verbinding met de hostnaam van het doel. De verbindingstijd
@@ -690,7 +690,7 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 | Flag            | Standaard | Beschrijving                                                                                                                                                                            |
 | --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                                                     |
-| `--proxy <URL>` |           | `HTTP(S)`-probes via een proxy sturen, bijv. `--proxy http://proxy.example.com:3128`. Zonder deze flag worden de omgevingsvariabelen `HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` gebruikt |
+| `--proxy <URL>` |           | `HTTP(S)`-probes via een proxy sturen, bijv. `--proxy http://proxy.example.com:3128`. De omgevingsvariabelen `HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` worden niet gebruikt |
 | `--udp-server`  |           | Niet testen. Luisteren op de opgegeven host en poort en elk UDP-datagram terugsturen naar de afzender, zodat een UDP-probe naar deze computer een antwoord krijgt                       |
 
 ---

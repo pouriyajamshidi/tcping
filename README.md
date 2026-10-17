@@ -451,13 +451,13 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Behind a proxy, give it with `--proxy`, or set the `HTTPS_PROXY`, `HTTP_PROXY`
-and `NO_PROXY` environment variables that most tools already read. `http://`,
-`https://` and `socks5://` proxies work:
+Behind a proxy, give it with `--proxy`. `http://`, `https://` and `socks5://`
+proxies work. tcping does not read the `HTTPS_PROXY`, `HTTP_PROXY` and
+`NO_PROXY` environment variables, so a probe only goes through a proxy when you
+ask for one:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 The proxy connects to the target's hostname on its own, so the connect time
@@ -687,11 +687,11 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 ### HTTP(S) and UDP
 
-| Flag            | Default | Description                                                                                                                                                                    |
-| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--insecure`    |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                                                         |
-| `--proxy <URL>` |         | Send `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128`. Without it, the `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are used |
-| `--udp-server`  |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply                            |
+| Flag            | Default | Description                                                                                                                                                            |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`    |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                                                 |
+| `--proxy <URL>` |         | Send `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128`. The `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are not used |
+| `--udp-server`  |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply                    |
 
 ---
 

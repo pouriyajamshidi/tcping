@@ -451,13 +451,13 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-اگر پشت یک proxy هستید، آن را با `--proxy` بدهید، یا متغیرهای محیطی
-`HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` را تنظیم کنید که بیشتر ابزارها
-از قبل می‌خوانند. proxyهای `http://`، `https://` و `socks5://` کار می‌کنند:
+اگر پشت یک proxy هستید، آن را با `--proxy` بدهید. proxyهای `http://`،
+`https://` و `socks5://` کار می‌کنند. tcping متغیرهای محیطی `HTTPS_PROXY`،
+`HTTP_PROXY` و `NO_PROXY` را نمی‌خواند، پس یک probe فقط وقتی از proxy عبور
+می‌کند که خودتان بخواهید:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
-export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
 ```
 
 خود proxy به نام میزبان هدف وصل می‌شود، پس زمان اتصال و آدرس مبدأ مربوط به
@@ -690,7 +690,7 @@ OpenTelemetry Collector و InfluxDB با Grafana و tcping که می‌توان�
 | پارامتر         | پیش‌فرض | توضیح                                                                                                                                                                       |
 | --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |         | هنگام بررسی هدف `https://` گواهی سرور را تأیید نکن. برای گواهی‌های خودامضا یا منقضی مفید است                                                                                |
-| `--proxy <URL>` |         | probeهای `HTTP(S)` را از طریق یک proxy بفرست، مثلاً `--proxy http://proxy.example.com:3128`. بدون آن، متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` به کار می‌روند |
+| `--proxy <URL>` |         | probeهای `HTTP(S)` را از طریق یک proxy بفرست، مثلاً `--proxy http://proxy.example.com:3128`. متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` به کار نمی‌روند |
 | `--udp-server`  |         | بررسی نکن. روی میزبان و پورت داده‌شده گوش بده و هر datagram‌ی UDP را به فرستنده‌اش برگردان، تا probe‌ی UDP که به این دستگاه می‌رسد پاسخ بگیرد                               |
 
 ---
