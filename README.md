@@ -133,19 +133,19 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Download and Installation
 
-| Platform | Install with |
-| --- | --- |
-| [Windows](#windows) | `winget install pj.tcping` |
-| [macOS](#macos) | `brew install pouriyajamshidi/tap/tcping` |
-| [Debian, Ubuntu](#linux---package-repositories) | `sudo apt install tcping`, after adding the repository |
-| [Fedora, RHEL, CentOS](#linux---package-repositories) | `sudo dnf install tcping`, after adding the repository |
-| [Alpine](#linux---package-repositories) | `sudo apk add tcping`, after adding the repository |
-| [Arch, Manjaro](#linux---package-repositories) | `yay -S tcping-bin` |
-| [Any Linux](#linux---one-line-install) | a [one-line install](#linux---one-line-install) or a [package file](#linux---package-files) |
-| [BSD](#bsd-and-linux---manual-way) | the [prebuilt binary](#bsd-and-linux---manual-way) |
-| [Nix](#nix) | `nix profile install github:pouriyajamshidi/tcping` |
-| [Docker](#other-ways) | `docker run -it pouriyajamshidi/tcping example.com 443` |
-| [Go](#other-ways) | `go install github.com/pouriyajamshidi/tcping/v3@latest` |
+| Platform                                              | Install with                                                                                |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [Windows](#windows)                                   | `winget install pj.tcping`                                                                  |
+| [macOS](#macos)                                       | `brew install pouriyajamshidi/tap/tcping`                                                   |
+| [Debian, Ubuntu](#linux---package-repositories)       | `sudo apt install tcping`, after adding the repository                                      |
+| [Fedora, RHEL, CentOS](#linux---package-repositories) | `sudo dnf install tcping`, after adding the repository                                      |
+| [Alpine](#linux---package-repositories)               | `sudo apk add tcping`, after adding the repository                                          |
+| [Arch, Manjaro](#linux---package-repositories)        | `yay -S tcping-bin`                                                                         |
+| [Any Linux](#linux---one-line-install)                | a [one-line install](#linux---one-line-install) or a [package file](#linux---package-files) |
+| [BSD](#bsd-and-linux---manual-way)                    | the [prebuilt binary](#bsd-and-linux---manual-way)                                          |
+| [Nix](#nix)                                           | `nix profile install github:pouriyajamshidi/tcping`                                         |
+| [Docker](#other-ways)                                 | `docker run -it pouriyajamshidi/tcping example.com 443`                                     |
+| [Go](#other-ways)                                     | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                    |
 
 The binaries are static, meaning they carry everything they need inside one file
 and do not depend on any library being present on your machine. They live on the
@@ -241,12 +241,12 @@ Without adding a repository, download the package for your distro from the
 [release page](https://github.com/pouriyajamshidi/tcping/releases/latest/) and
 install it:
 
-| Distro | Package | Install |
-| --- | --- | --- |
-| Debian, Ubuntu | `tcping-amd64.deb` | `sudo apt install -y ./tcping-amd64.deb` |
-| Fedora, RHEL, CentOS | `tcping-amd64.rpm` | `sudo dnf install -y ./tcping-amd64.rpm` |
-| Arch, Manjaro | `tcping-amd64.pkg.tar.zst` | `sudo pacman -U ./tcping-amd64.pkg.tar.zst` |
-| Alpine | `tcping-amd64.apk` | `sudo apk add --allow-untrusted ./tcping-amd64.apk` |
+| Distro               | Package                    | Install                                             |
+| -------------------- | -------------------------- | --------------------------------------------------- |
+| Debian, Ubuntu       | `tcping-amd64.deb`         | `sudo apt install -y ./tcping-amd64.deb`            |
+| Fedora, RHEL, CentOS | `tcping-amd64.rpm`         | `sudo dnf install -y ./tcping-amd64.rpm`            |
+| Arch, Manjaro        | `tcping-amd64.pkg.tar.zst` | `sudo pacman -U ./tcping-amd64.pkg.tar.zst`         |
+| Alpine               | `tcping-amd64.apk`         | `sudo apk add --allow-untrusted ./tcping-amd64.apk` |
 
 Swap `amd64` for `arm64` on ARM machines. All four install the binary and the
 [shell completions](#shell-completions) for you. Machines without `dnf` can use
@@ -597,77 +597,77 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 ### General
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `-h` | | Show the available flags and exit |
-| `--version` | | Show the version and exit |
-| `-u` | | Check for updates and exit |
+| Flag        | Default | Description                       |
+| ----------- | ------- | --------------------------------- |
+| `-h`        |         | Show the available flags and exit |
+| `--version` |         | Show the version and exit         |
+| `-u`        |         | Check for updates and exit        |
 
 ### Probing
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `-c <n>` | no limit | Stop after `<n>` probes, regardless of the result |
-| `-i <seconds>` | `1` | Interval between probes. Real number allowed, e.g. `-i 0.5` |
-| `-t <seconds>` | `1` | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout |
-| `-4` | | Only use IPv4 addresses |
-| `-6` | | Only use IPv6 addresses |
-| `-I <name\|IP>` | | Interface name or IP address to send the probes and the DNS lookups from |
+| Flag            | Default  | Description                                                                              |
+| --------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `-c <n>`        | no limit | Stop after `<n>` probes, regardless of the result                                        |
+| `-i <seconds>`  | `1`      | Interval between probes. Real number allowed, e.g. `-i 0.5`                              |
+| `-t <seconds>`  | `1`      | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout |
+| `-4`            |          | Only use IPv4 addresses                                                                  |
+| `-6`            |          | Only use IPv6 addresses                                                                  |
+| `-I <name\|IP>` |          | Interface name or IP address to send the probes and the DNS lookups from                 |
 
 > [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
 
 ### Name resolution
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `-r <n>` | never | Retry resolving the target's hostname after `<n>` failed probes, e.g. `-r 10` |
-| `--resolve-every-probe` | | Resolve the target's hostname before every single probe instead of only at startup. Takes precedence over `-r` and has no effect when the target is an IP address |
-| `--dns-server <IP>` | system-wide | Custom DNS server to use. An IP and port combination is allowed, e.g. `--dns-server 1.1.1.1:53` |
-| `--dns-timeout <seconds>` | `2` | Time to wait for a DNS response, in seconds. Real number allowed. `0` means infinite timeout |
+| Flag                      | Default     | Description                                                                                                                                                       |
+| ------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-r <n>`                  | never       | Retry resolving the target's hostname after `<n>` failed probes, e.g. `-r 10`                                                                                     |
+| `--resolve-every-probe`   |             | Resolve the target's hostname before every single probe instead of only at startup. Takes precedence over `-r` and has no effect when the target is an IP address |
+| `--dns-server <IP>`       | system-wide | Custom DNS server to use. An IP and port combination is allowed, e.g. `--dns-server 1.1.1.1:53`                                                                   |
+| `--dns-timeout <seconds>` | `2`         | Time to wait for a DNS response, in seconds. Real number allowed. `0` means infinite timeout                                                                      |
 
 ### Terminal output
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `-D` | | Show a timestamp for each probe |
-| `--no-color` | | Do not colorize the output |
-| `--show-source-address` | | Show the source IP address and port used for the probes |
-| `--failures-only` | | Only show the failed probes. The successful ones are still counted |
-| `--no-stats` | | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes elsewhere than the terminal |
-| `-v` | | Show everything an HTTP(S) probe collected: the HTTP version, the TLS version and cipher, the certificate expiry and the connect, TLS and first-byte timings. For a UDP target, shows the probe's number and whether the reply carried it back, so a lost probe can be told apart from the rest. No effect on TCP targets |
+| Flag                    | Default | Description                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-D`                    |         | Show a timestamp for each probe                                                                                                                                                                                                                                                                                           |
+| `--no-color`            |         | Do not colorize the output                                                                                                                                                                                                                                                                                                |
+| `--show-source-address` |         | Show the source IP address and port used for the probes                                                                                                                                                                                                                                                                   |
+| `--failures-only`       |         | Only show the failed probes. The successful ones are still counted                                                                                                                                                                                                                                                        |
+| `--no-stats`            |         | Do not show the statistics when the program exits. Pressing the **Enter** key still shows them. No effect when the output goes elsewhere than the terminal                                                                                                                                                                |
+| `-v`                    |         | Show everything an HTTP(S) probe collected: the HTTP version, the TLS version and cipher, the certificate expiry and the connect, TLS and first-byte timings. For a UDP target, shows the probe's number and whether the reply carried it back, so a lost probe can be told apart from the rest. No effect on TCP targets |
 
 ### File and machine-readable output
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `-j` | | Output in `JSON` format |
-| `--pretty` | | Prettify the `JSON` output. No effect without `-j` |
-| `--json-url <URL>` | | Send the `JSON` output to an HTTP server instead of printing it, one `POST` per event, e.g. `--json-url http://localhost:8000/tcping`. Turns on `JSON` output on its own, so `-j` is not needed |
-| `--json-server` | | Do not probe. Listen on the given host and port and print every `JSON` event posted to it, so a tcping using `--json-url` elsewhere has somewhere to send its run, e.g. `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>` | | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix |
-| `--csv-fixed-name` | | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file |
-| `--sqlite <file>` | | Store the output in a sqlite3 database, e.g. `--sqlite /tmp/tcping.db`. Not available on Windows |
+| Flag               | Default | Description                                                                                                                                                                                                 |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-j`               |         | Output in `JSON` format                                                                                                                                                                                     |
+| `--pretty`         |         | Prettify the `JSON` output. No effect without `-j`                                                                                                                                                          |
+| `--json-url <URL>` |         | Send the `JSON` output to an HTTP server instead of printing it, one `POST` per event, e.g. `--json-url http://localhost:8000/tcping`. Turns on `JSON` output on its own, so `-j` is not needed             |
+| `--json-server`    |         | Do not probe. Listen on the given host and port and print every `JSON` event posted to it, so a tcping using `--json-url` elsewhere has somewhere to send its run, e.g. `tcping --json-server 0.0.0.0 8000` |
+| `--csv <file>`     |         | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix                                                                                                                 |
+| `--csv-fixed-name` |         | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file                                                                                                     |
+| `--sqlite <file>`  |         | Store the output in a sqlite3 database, e.g. `--sqlite /tmp/tcping.db`. Not available on Windows                                                                                                            |
 
 ### Metrics
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `--otlp <URL>` | | Send the results to an OTLP HTTP endpoint, such as [Grafana Alloy](https://grafana.com/docs/alloy/latest/) or the OpenTelemetry Collector, as metrics instead of printing them, e.g. `--otlp http://localhost:4318` |
-| `--otlp-header <header>` | | Extra HTTP header to send to the `--otlp` endpoint, as `"Name: value"`, e.g. `"Authorization: Bearer <token>"`. Can also be given in the `OTLP_HEADER` environment variable, which keeps it out of your shell history |
-| `--influxdb <URL>` | | Write the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as line protocol instead of printing them, e.g. `--influxdb http://localhost:8086` |
-| `--influxdb-org <org>` | | InfluxDB organization to write to. Required with `--influxdb` |
-| `--influxdb-bucket <bucket>` | | InfluxDB bucket to write to. Required with `--influxdb` |
-| `--influxdb-token <token>` | | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable, which keeps it out of your shell history |
-| `--stats-interval <seconds>` | `10` | How often to send the statistics to the OTLP endpoint or InfluxDB. No effect without `--otlp` or `--influxdb` |
-| `--source-label <name>` | hostname | Name this machine in the `JSON` events and in the metrics sent over OTLP or to InfluxDB, so that several machines probing the same target can be told apart. Results that are sent elsewhere carry the hostname when this is not given; output that stays on the machine carries nothing |
+| Flag                         | Default  | Description                                                                                                                                                                                                                                                                              |
+| ---------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--otlp <URL>`               |          | Send the results to an OTLP HTTP endpoint, such as [Grafana Alloy](https://grafana.com/docs/alloy/latest/) or the OpenTelemetry Collector, as metrics instead of printing them, e.g. `--otlp http://localhost:4318`                                                                      |
+| `--otlp-header <header>`     |          | Extra HTTP header to send to the `--otlp` endpoint, as `"Name: value"`, e.g. `"Authorization: Bearer <token>"`. Can also be given in the `OTLP_HEADER` environment variable, which keeps it out of your shell history                                                                    |
+| `--influxdb <URL>`           |          | Write the results to an [InfluxDB](https://www.influxdata.com/) v2 or v3 server as line protocol instead of printing them, e.g. `--influxdb http://localhost:8086`                                                                                                                       |
+| `--influxdb-org <org>`       |          | InfluxDB organization to write to. Required with `--influxdb`                                                                                                                                                                                                                            |
+| `--influxdb-bucket <bucket>` |          | InfluxDB bucket to write to. Required with `--influxdb`                                                                                                                                                                                                                                  |
+| `--influxdb-token <token>`   |          | InfluxDB API token. Required with `--influxdb`. Can also be given in the `INFLUXDB_TOKEN` environment variable, which keeps it out of your shell history                                                                                                                                 |
+| `--stats-interval <seconds>` | `10`     | How often to send the statistics to the OTLP endpoint or InfluxDB. No effect without `--otlp` or `--influxdb`                                                                                                                                                                            |
+| `--source-label <name>`      | hostname | Name this machine in the `JSON` events and in the metrics sent over OTLP or to InfluxDB, so that several machines probing the same target can be told apart. Results that are sent elsewhere carry the hostname when this is not given; output that stays on the machine carries nothing |
 
 ### HTTP(S) and UDP
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `--insecure` | | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates |
-| `--udp-server` | | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
+| Flag           | Default | Description                                                                                                                                         |
+| -------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`   |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                              |
+| `--udp-server` |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 
 ---
 
@@ -706,8 +706,8 @@ If tcping is useful for you, consider sharing it with your network to extend its
 
 Furthermore, you can support the project using the links below:
 
-- [Buy me a coffee](https://www.buymeacoffee.com/pouriyajamshidi)
-- [GitHub Sponsors](https://github.com/sponsors/pouriyajamshidi) ![GitHub Sponsor](https://img.shields.io/github/sponsors/pouriyajamshidi?label=Sponsor&logo=GitHub)
+- Buy me a coffee: [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/pouriyajamshidi)
+- GitHub Sponsors: [![Sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/pouriyajamshidi)
 
 ## License
 

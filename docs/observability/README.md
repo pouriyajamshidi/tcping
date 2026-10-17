@@ -14,18 +14,18 @@ by hand.
 
 ## What is in here
 
-| File | What it does |
-| --- | --- |
-| `compose.prometheus.yml` | tcping sending OTLP straight to Prometheus |
-| `compose.alloy.yml` | tcping sending OTLP to Alloy, which pushes it to Prometheus |
-| `compose.otelcol.yml` | tcping sending OTLP to the OpenTelemetry Collector, which pushes it to Prometheus |
-| `compose.influxdb.yml` | tcping writing straight to InfluxDB |
-| `config.alloy` | Alloy taking OTLP from tcping and pushing it to Prometheus |
-| `otelcol.yaml` | The collector doing the same |
-| `prometheus.yml` | Prometheus with nothing to scrape, it only receives |
-| `grafana/provisioning/` | Both data sources and both dashboards, so nothing has to be clicked |
-| `grafana/dashboards/tcping-prometheus.json` | The dashboard reading from Prometheus |
-| `grafana/dashboards/tcping-influxdb.json` | The same dashboard reading from InfluxDB |
+| File                                        | What it does                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `compose.prometheus.yml`                    | tcping sending OTLP straight to Prometheus                                        |
+| `compose.alloy.yml`                         | tcping sending OTLP to Alloy, which pushes it to Prometheus                       |
+| `compose.otelcol.yml`                       | tcping sending OTLP to the OpenTelemetry Collector, which pushes it to Prometheus |
+| `compose.influxdb.yml`                      | tcping writing straight to InfluxDB                                               |
+| `config.alloy`                              | Alloy taking OTLP from tcping and pushing it to Prometheus                        |
+| `otelcol.yaml`                              | The collector doing the same                                                      |
+| `prometheus.yml`                            | Prometheus with nothing to scrape, it only receives                               |
+| `grafana/provisioning/`                     | Both data sources and both dashboards, so nothing has to be clicked               |
+| `grafana/dashboards/tcping-prometheus.json` | The dashboard reading from Prometheus                                             |
+| `grafana/dashboards/tcping-influxdb.json`   | The same dashboard reading from InfluxDB                                          |
 
 > [!WARNING]
 > Every password and token in here is a throwaway one, written in plain text
@@ -40,12 +40,12 @@ Pick the way you want tcping to send its probes, and start that file:
 cd docs/observability && docker compose -f compose.prometheus.yml up -d
 ```
 
-| File | Path the probes take |
-| --- | --- |
-| `compose.prometheus.yml` | tcping, then Prometheus |
-| `compose.alloy.yml` | tcping, then Alloy, then Prometheus |
-| `compose.otelcol.yml` | tcping, then the OpenTelemetry Collector, then Prometheus |
-| `compose.influxdb.yml` | tcping, then InfluxDB |
+| File                     | Path the probes take                                      |
+| ------------------------ | --------------------------------------------------------- |
+| `compose.prometheus.yml` | tcping, then Prometheus                                   |
+| `compose.alloy.yml`      | tcping, then Alloy, then Prometheus                       |
+| `compose.otelcol.yml`    | tcping, then the OpenTelemetry Collector, then Prometheus |
+| `compose.influxdb.yml`   | tcping, then InfluxDB                                     |
 
 Or start several at once to compare them, by passing more than one `-f`:
 
@@ -72,13 +72,13 @@ Depending on the files you started, that gives you:
 
 Every file starts the same four tcping runs, pointed at its own backend:
 
-| Container | What it probes | Source label |
-| --- | --- | --- |
-| `tcping-<backend>-tcp-brussels` | `github.com:443` over TCP | `<prefix>-brussels` |
-| `tcping-<backend>-tcp-tokyo` | the same, resolving every probe | `<prefix>-tokyo` |
-| `tcping-<backend>-https` | `https://cloudflare.com` | `<prefix>-brussels` |
-| `tcping-<backend>-udp` | `udp-echo:9999` over UDP | `<prefix>-brussels` |
-| `udp-echo` | nothing, it is `tcping --udp-server` answering the UDP probes | |
+| Container                       | What it probes                                                | Source label        |
+| ------------------------------- | ------------------------------------------------------------- | ------------------- |
+| `tcping-<backend>-tcp-brussels` | `github.com:443` over TCP                                     | `<prefix>-brussels` |
+| `tcping-<backend>-tcp-tokyo`    | the same, resolving every probe                               | `<prefix>-tokyo`    |
+| `tcping-<backend>-https`        | `https://cloudflare.com`                                      | `<prefix>-brussels` |
+| `tcping-<backend>-udp`          | `udp-echo:9999` over UDP                                      | `<prefix>-brussels` |
+| `udp-echo`                      | nothing, it is `tcping --udp-server` answering the UDP probes |                     |
 
 `<backend>` is `prometheus`, `alloy`, `otelcol` or `influxdb`, and `<prefix>`
 is `prom`, `alloy` or `otelcol`. The prefix is there because those three all
@@ -232,14 +232,14 @@ run can be compared side by side.
 
 Every panel tcping can fill has a place in both, grouped into rows:
 
-| Row | What is in it |
-| --- | --- |
-| **Probes** | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary |
-| **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to |
-| **The run** | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries and address changes there were |
-| **Name resolution** | How long each lookup took, and the address every target resolved to |
-| **HTTP** | Connect, TLS handshake and first byte timings, the status code, and the days left on the certificate |
-| **UDP** | Reply size, whether the reply carried our own payload back, and whether the port was unreachable |
+| Row                     | What is in it                                                                                                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Probes**              | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary                                                       |
+| **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to              |
+| **The run**             | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries and address changes there were |
+| **Name resolution**     | How long each lookup took, and the address every target resolved to                                                                                                                    |
+| **HTTP**                | Connect, TLS handshake and first byte timings, the status code, and the days left on the certificate                                                                                   |
+| **UDP**                 | Reply size, whether the reply carried our own payload back, and whether the port was unreachable                                                                                       |
 
 The first two rows are open and the rest start collapsed. A row only fills in
 when a run is feeding it: **HTTP** needs an `http://` or `https://` target,
