@@ -356,6 +356,11 @@ func registerFlags() *flags {
 	return &f
 }
 
+// secondsToDuration returns the corresponding duration from seconds expressed with a float.
+func secondsToDuration(seconds float64) time.Duration {
+	return time.Duration(seconds * float64(time.Second))
+}
+
 // validate rejects flag combinations that do not make sense. It exits the
 // program instead of returning, like the rest of the input handling.
 func (f *flags) validate() {
@@ -488,9 +493,4 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 		StatsInterval: secondsToDuration(f.statsInterval),
 		SourceLabel:   sourceLabel,
 	}
-}
-
-// secondsToDuration returns the corresponding duration from seconds expressed with a float.
-func secondsToDuration(seconds float64) time.Duration {
-	return time.Duration(seconds * float64(time.Second))
 }

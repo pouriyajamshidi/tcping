@@ -48,6 +48,28 @@ type probeTarget struct {
 	url      string // Full URL, HTTP(S) targets only.
 }
 
+// schemeProtocol reports the protocol implied by target's URL scheme, and
+// whether it had one we handle at all.
+func schemeProtocol(target string) (config.Protocol, bool) {
+	switch {
+	case strings.HasPrefix(target, "http://"):
+		return config.HTTP, true
+	case strings.HasPrefix(target, "https://"):
+		return config.HTTPS, true
+	case strings.HasPrefix(target, "udp://"):
+		return config.UDP, true
+	default:
+		return "", false
+	}
+}
+
+func defaultPort(protocol config.Protocol) string {
+	if protocol == config.HTTPS {
+		return "443"
+	}
+	return "80"
+}
+
 // parseTarget picks the protocol from the user input: an
 // http:// or https:// prefix means an HTTP probe, a udp:// one means a UDP
 // probe, anything else is the plain TCP probe tcping has always done. HTTP
@@ -102,26 +124,4 @@ func parseTarget(args []string) (probeTarget, error) {
 	target.url = u.String()
 
 	return target, nil
-}
-
-// schemeProtocol reports the protocol implied by target's URL scheme, and
-// whether it had one we handle at all.
-func schemeProtocol(target string) (config.Protocol, bool) {
-	switch {
-	case strings.HasPrefix(target, "http://"):
-		return config.HTTP, true
-	case strings.HasPrefix(target, "https://"):
-		return config.HTTPS, true
-	case strings.HasPrefix(target, "udp://"):
-		return config.UDP, true
-	default:
-		return "", false
-	}
-}
-
-func defaultPort(protocol config.Protocol) string {
-	if protocol == config.HTTPS {
-		return "443"
-	}
-	return "80"
 }

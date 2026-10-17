@@ -20,6 +20,55 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/printers"
 )
 
+// proxyFor parses the -proxy flag the probes go through. It returns nil
+// when the probes connect directly. The proxy environment variables are left
+// alone, so a proxy is only ever used when asked for.
+func proxyFor(proxyFlag string, protocol config.Protocol) (*url.URL, error) {
+	if proxyFlag == "" {
+		return nil, nil
+	}
+
+	// A UDP probe cannot go through the proxy, and quietly probing directly
+	// would hide that.
+	if protocol == config.UDP {
+		return nil, errors.New("--proxy only works with TCP and HTTP(S) targets")
+	}
+
+	proxy, err := url.Parse(proxyFlag)
+	if err != nil || proxy.Host == "" {
+		return nil, fmt.Errorf("invalid proxy %q, use a URL such as http://proxy.example.com:3128", proxyFlag)
+	}
+
+	switch proxy.Scheme {
+	case "http", "https", "socks5", "socks5h":
+		return proxy, nil
+	default:
+		return nil, fmt.Errorf("unsupported proxy %q, use an http://, https://, socks5:// or socks5h:// URL", proxyFlag)
+	}
+}
+
+// proxyAddress looks the proxy's hostname up, so -4, -6 and --dns-server
+// decide which address of the proxy the probes connect to. A proxy URL
+// without a port gets the usual one for its scheme.
+func proxyAddress(resolver *dns.Resolver, proxy *url.URL) (netip.AddrPort, error) {
+	ip, err := resolver.ResolveHostname(proxy.Hostname())
+	if err != nil {
+		return netip.AddrPort{}, fmt.Errorf("could not resolve the proxy %s: %w", proxy.Hostname(), err)
+	}
+
+	port := proxy.Port()
+	if port == "" {
+		port = map[string]string{"http": "80", "https": "443", "socks5": "1080", "socks5h": "1080"}[proxy.Scheme]
+	}
+
+	portNumber, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return netip.AddrPort{}, fmt.Errorf("invalid proxy port %q", port)
+	}
+
+	return netip.AddrPortFrom(ip, uint16(portNumber)), nil
+}
+
 // ProcessUserInput turns the command line into the settings for a run:
 // what to probe, and where the results go.
 func ProcessUserInput() (config.Config, printers.Config) {
@@ -154,53 +203,4 @@ func ProcessUserInput() (config.Config, printers.Config) {
 	}
 
 	return cfg, f.newPrinterConfig(target.hostname, validatedPort)
-}
-
-// proxyFor parses the -proxy flag the probes go through. It returns nil
-// when the probes connect directly. The proxy environment variables are left
-// alone, so a proxy is only ever used when asked for.
-func proxyFor(proxyFlag string, protocol config.Protocol) (*url.URL, error) {
-	if proxyFlag == "" {
-		return nil, nil
-	}
-
-	// A UDP probe cannot go through the proxy, and quietly probing directly
-	// would hide that.
-	if protocol == config.UDP {
-		return nil, errors.New("--proxy only works with TCP and HTTP(S) targets")
-	}
-
-	proxy, err := url.Parse(proxyFlag)
-	if err != nil || proxy.Host == "" {
-		return nil, fmt.Errorf("invalid proxy %q, use a URL such as http://proxy.example.com:3128", proxyFlag)
-	}
-
-	switch proxy.Scheme {
-	case "http", "https", "socks5", "socks5h":
-		return proxy, nil
-	default:
-		return nil, fmt.Errorf("unsupported proxy %q, use an http://, https://, socks5:// or socks5h:// URL", proxyFlag)
-	}
-}
-
-// proxyAddress looks the proxy's hostname up, so -4, -6 and --dns-server
-// decide which address of the proxy the probes connect to. A proxy URL
-// without a port gets the usual one for its scheme.
-func proxyAddress(resolver *dns.Resolver, proxy *url.URL) (netip.AddrPort, error) {
-	ip, err := resolver.ResolveHostname(proxy.Hostname())
-	if err != nil {
-		return netip.AddrPort{}, fmt.Errorf("could not resolve the proxy %s: %w", proxy.Hostname(), err)
-	}
-
-	port := proxy.Port()
-	if port == "" {
-		port = map[string]string{"http": "80", "https": "443", "socks5": "1080", "socks5h": "1080"}[proxy.Scheme]
-	}
-
-	portNumber, err := strconv.ParseUint(port, 10, 16)
-	if err != nil {
-		return netip.AddrPort{}, fmt.Errorf("invalid proxy port %q", port)
-	}
-
-	return netip.AddrPortFrom(ip, uint16(portNumber)), nil
 }
