@@ -5,12 +5,28 @@ tcping
 tcping.exe
 .DS_Store
 .vscode
+.zed
 *.code-workspace
 patches/
 *.db
 .tool-versions
 /target/
 /output/
+/result
+tmp/
+temp/
+
+# secrets / credentials
+# Unlike .gitignore, a pattern here only matches at the top of the context,
+# so "**/" is what keeps these out of every folder.
+**/.env
+**/.env.*
+**/*.key
+**/*.pem
+**/secrets/
+**/credentials/
+**/.aws/
+**/.ssh/
 
 # container files
 Dockerfile
