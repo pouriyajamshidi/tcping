@@ -13,9 +13,6 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
-> [!CAUTION]
-> Dit is een branch in ontwikkeling, niet de hoofdbranch.
-
 Een platformonafhankelijk ping-programma dat `TCP`, `UDP` of `HTTP(S)` gebruikt in plaats van `ICMP`, geïnspireerd door het ping-hulpprogramma van Linux.
 
 > [!TIP]
@@ -133,19 +130,19 @@ Bekijk de [demo's](#demos) voor een indruk van het uiterlijk en het gebruik van 
 
 ## Downloaden en installeren
 
-| Platform                                          | Installeren met                                                                                  |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [Windows](#windows)                               | `winget install pj.tcping`                                                                       |
-| [macOS](#macos)                                   | `brew install pouriyajamshidi/tap/tcping`                                                        |
-| [Debian, Ubuntu](#linux---pakketbronnen)          | `sudo apt install tcping`, nadat u de pakketbron hebt toegevoegd                                 |
-| [Fedora, RHEL, CentOS](#linux---pakketbronnen)    | `sudo dnf install tcping`, nadat u de pakketbron hebt toegevoegd                                 |
-| [Alpine](#linux---pakketbronnen)                  | `sudo apk add tcping`, nadat u de pakketbron hebt toegevoegd                                     |
-| [Arch, Manjaro](#linux---pakketbronnen)           | `yay -S tcping-bin`                                                                              |
-| [Elke Linux](#linux---installatie-in-één-regel)   | een [installatie in één regel](#linux---installatie-in-één-regel) of een [pakketbestand](#linux---pakketbestanden) |
-| [BSD](#bsd-en-linux---handmatig)                  | het [vooraf gebouwde bestand](#bsd-en-linux---handmatig)                                         |
-| [Nix](#nix)                                       | `nix profile install github:pouriyajamshidi/tcping`                                              |
-| [Docker](#andere-manieren)                        | `docker run -it pouriyajamshidi/tcping example.com 443`                                          |
-| [Go](#andere-manieren)                            | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                         |
+| Platform                                        | Installeren met                                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [Windows](#windows)                             | `winget install pj.tcping`                                                                                         |
+| [macOS](#macos)                                 | `brew install pouriyajamshidi/tap/tcping`                                                                          |
+| [Debian, Ubuntu](#linux---pakketbronnen)        | `sudo apt install tcping`, nadat u de pakketbron hebt toegevoegd                                                   |
+| [Fedora, RHEL, CentOS](#linux---pakketbronnen)  | `sudo dnf install tcping`, nadat u de pakketbron hebt toegevoegd                                                   |
+| [Alpine](#linux---pakketbronnen)                | `sudo apk add tcping`, nadat u de pakketbron hebt toegevoegd                                                       |
+| [Arch, Manjaro](#linux---pakketbronnen)         | `yay -S tcping-bin`                                                                                                |
+| [Elke Linux](#linux---installatie-in-één-regel) | een [installatie in één regel](#linux---installatie-in-één-regel) of een [pakketbestand](#linux---pakketbestanden) |
+| [BSD](#bsd-en-linux---handmatig)                | het [vooraf gebouwde bestand](#bsd-en-linux---handmatig)                                                           |
+| [Nix](#nix)                                     | `nix profile install github:pouriyajamshidi/tcping`                                                                |
+| [Docker](#andere-manieren)                      | `docker run -it pouriyajamshidi/tcping example.com 443`                                                            |
+| [Go](#andere-manieren)                          | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                                           |
 
 De uitvoerbare bestanden zijn statisch: ze bevatten alles wat ze nodig hebben in één bestand
 en zijn niet afhankelijk van een bibliotheek op uw computer. Ze staan op de
@@ -601,76 +598,76 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 
 ### Algemeen
 
-| Flag        | Standaard | Beschrijving                                |
-| ----------- | --------- | ------------------------------------------- |
-| `-h`        |           | De beschikbare flags tonen en afsluiten     |
-| `--version` |           | De versie tonen en afsluiten                |
-| `-u`        |           | Op updates controleren en afsluiten         |
+| Flag        | Standaard | Beschrijving                            |
+| ----------- | --------- | --------------------------------------- |
+| `-h`        |           | De beschikbare flags tonen en afsluiten |
+| `--version` |           | De versie tonen en afsluiten            |
+| `-u`        |           | Op updates controleren en afsluiten     |
 
 ### Testen
 
-| Flag            | Standaard    | Beschrijving                                                                                            |
-| --------------- | ------------ | ------------------------------------------------------------------------------------------------------- |
-| `-c <n>`        | geen limiet  | Stoppen na `<n>` probes, ongeacht het resultaat                                                         |
-| `-i <seconds>`  | `1`          | Interval tussen probes. Kommagetal toegestaan, bijv. `-i 0.5`                                           |
-| `-t <seconds>`  | `1`          | Wachttijd op een antwoord, in seconden. Kommagetal toegestaan. `0` betekent oneindige timeout           |
-| `-4`            |              | Alleen IPv4-adressen gebruiken                                                                          |
-| `-6`            |              | Alleen IPv6-adressen gebruiken                                                                          |
-| `-I <name\|IP>` |              | Interfacenaam of IP-adres om de probes en de DNS-opzoekingen vanaf te sturen                            |
+| Flag            | Standaard   | Beschrijving                                                                                  |
+| --------------- | ----------- | --------------------------------------------------------------------------------------------- |
+| `-c <n>`        | geen limiet | Stoppen na `<n>` probes, ongeacht het resultaat                                               |
+| `-i <seconds>`  | `1`         | Interval tussen probes. Kommagetal toegestaan, bijv. `-i 0.5`                                 |
+| `-t <seconds>`  | `1`         | Wachttijd op een antwoord, in seconden. Kommagetal toegestaan. `0` betekent oneindige timeout |
+| `-4`            |             | Alleen IPv4-adressen gebruiken                                                                |
+| `-6`            |             | Alleen IPv6-adressen gebruiken                                                                |
+| `-I <name\|IP>` |             | Interfacenaam of IP-adres om de probes en de DNS-opzoekingen vanaf te sturen                  |
 
 > [!TIP]
 > Zonder de flags `-4` en `-6` kiest tcping willekeurig een IP-adres op basis van de DNS-opzoekingen.
 
 ### Naamomzetting
 
-| Flag                      | Standaard     | Beschrijving                                                                                                                                                      |
-| ------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-r <n>`                  | nooit         | De hostnaam van het doel opnieuw opzoeken na `<n>` mislukte probes, bijv. `-r 10`                                                                                 |
-| `--resolve-every-probe`   |               | De hostnaam van het doel vóór elke probe opzoeken in plaats van alleen bij het starten. Gaat voor `-r` en heeft geen effect als het doel een IP-adres is            |
-| `--dns-server <IP>`       | van het systeem | Te gebruiken eigen DNS-server. Een combinatie van IP en poort is toegestaan, bijv. `--dns-server 1.1.1.1:53`                                                    |
-| `--dns-timeout <seconds>` | `2`           | Wachttijd op een DNS-antwoord, in seconden. Kommagetal toegestaan. `0` betekent oneindige timeout                                                                 |
+| Flag                      | Standaard       | Beschrijving                                                                                                                                             |
+| ------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-r <n>`                  | nooit           | De hostnaam van het doel opnieuw opzoeken na `<n>` mislukte probes, bijv. `-r 10`                                                                        |
+| `--resolve-every-probe`   |                 | De hostnaam van het doel vóór elke probe opzoeken in plaats van alleen bij het starten. Gaat voor `-r` en heeft geen effect als het doel een IP-adres is |
+| `--dns-server <IP>`       | van het systeem | Te gebruiken eigen DNS-server. Een combinatie van IP en poort is toegestaan, bijv. `--dns-server 1.1.1.1:53`                                             |
+| `--dns-timeout <seconds>` | `2`             | Wachttijd op een DNS-antwoord, in seconden. Kommagetal toegestaan. `0` betekent oneindige timeout                                                        |
 
 ### Terminaluitvoer
 
-| Flag                    | Standaard | Beschrijving                                                                                                                                                                                                                                                                                                                     |
-| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-D`                    |           | Een tijdstempel tonen bij elke probe                                                                                                                                                                                                                                                                                             |
-| `--no-color`            |           | De uitvoer niet kleuren                                                                                                                                                                                                                                                                                                          |
-| `--show-source-address` |           | Het bron-IP-adres en de poort tonen die voor de probes zijn gebruikt                                                                                                                                                                                                                                                             |
-| `--failures-only`       |           | Alleen de mislukte probes tonen. De geslaagde worden nog steeds geteld                                                                                                                                                                                                                                                           |
-| `--no-stats`            |           | De statistieken niet tonen als het programma afsluit. Op de **Enter**-toets drukken toont ze nog steeds. Geen effect als de uitvoer niet naar de terminal gaat                                                                                                                                                                    |
+| Flag                    | Standaard | Beschrijving                                                                                                                                                                                                                                                                                                                              |
+| ----------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-D`                    |           | Een tijdstempel tonen bij elke probe                                                                                                                                                                                                                                                                                                      |
+| `--no-color`            |           | De uitvoer niet kleuren                                                                                                                                                                                                                                                                                                                   |
+| `--show-source-address` |           | Het bron-IP-adres en de poort tonen die voor de probes zijn gebruikt                                                                                                                                                                                                                                                                      |
+| `--failures-only`       |           | Alleen de mislukte probes tonen. De geslaagde worden nog steeds geteld                                                                                                                                                                                                                                                                    |
+| `--no-stats`            |           | De statistieken niet tonen als het programma afsluit. Op de **Enter**-toets drukken toont ze nog steeds. Geen effect als de uitvoer niet naar de terminal gaat                                                                                                                                                                            |
 | `-v`                    |           | Alles tonen wat een HTTP(S)-probe heeft verzameld: de HTTP-versie, de TLS-versie en cipher, de vervaldatum van het certificaat en de tijden voor verbinden, TLS en eerste byte. Bij een UDP-doel het nummer van de probe en of het antwoord het heeft teruggebracht, zodat een verloren probe te herkennen is. Geen effect bij TCP-doelen |
 
 ### Bestands- en machineleesbare uitvoer
 
-| Flag               | Standaard | Beschrijving                                                                                                                                                                                                                       |
-| ------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-j`               |           | Uitvoer in `JSON`-formaat                                                                                                                                                                                                          |
-| `--pretty`         |           | De `JSON`-uitvoer netter opmaken. Geen effect zonder `-j`                                                                                                                                                                          |
-| `--json-url <URL>` |           | De `JSON`-uitvoer naar een HTTP-server sturen in plaats van afdrukken, één `POST` per gebeurtenis, bijv. `--json-url http://localhost:8000/tcping`. Zet `JSON`-uitvoer zelf aan, dus `-j` is niet nodig                             |
+| Flag               | Standaard | Beschrijving                                                                                                                                                                                                                                   |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-j`               |           | Uitvoer in `JSON`-formaat                                                                                                                                                                                                                      |
+| `--pretty`         |           | De `JSON`-uitvoer netter opmaken. Geen effect zonder `-j`                                                                                                                                                                                      |
+| `--json-url <URL>` |           | De `JSON`-uitvoer naar een HTTP-server sturen in plaats van afdrukken, één `POST` per gebeurtenis, bijv. `--json-url http://localhost:8000/tcping`. Zet `JSON`-uitvoer zelf aan, dus `-j` is niet nodig                                        |
 | `--json-server`    |           | Niet testen. Luisteren op de opgegeven host en poort en elke daarheen gestuurde `JSON`-gebeurtenis afdrukken, zodat een tcping met `--json-url` elders een plek heeft om zijn run naartoe te sturen, bijv. `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>`     |           | De uitvoer opslaan in een `CSV`-bestand. De statistieken gaan naar dezelfde naam met het achtervoegsel `_stats`                                                                                                                    |
-| `--csv-fixed-name` |           | De bestandsnaam van `--csv` ongewijzigd gebruiken, zonder datum-/tijdachtervoegsel, zodat herhaalde runs hetzelfde bestand overschrijven                                                                                           |
-| `--sqlite <file>`  |           | De uitvoer opslaan in een sqlite3-database, bijv. `--sqlite /tmp/tcping.db`. Niet beschikbaar op Windows                                                                                                                           |
+| `--csv <file>`     |           | De uitvoer opslaan in een `CSV`-bestand. De statistieken gaan naar dezelfde naam met het achtervoegsel `_stats`                                                                                                                                |
+| `--csv-fixed-name` |           | De bestandsnaam van `--csv` ongewijzigd gebruiken, zonder datum-/tijdachtervoegsel, zodat herhaalde runs hetzelfde bestand overschrijven                                                                                                       |
+| `--sqlite <file>`  |           | De uitvoer opslaan in een sqlite3-database, bijv. `--sqlite /tmp/tcping.db`. Niet beschikbaar op Windows                                                                                                                                       |
 
 ### Metrics
 
-| Flag                         | Standaard | Beschrijving                                                                                                                                                                                                                                                                                        |
-| ---------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--otlp <URL>`               |           | De resultaten als metrics naar een OTLP-HTTP-eindpunt sturen, zoals [Grafana Alloy](https://grafana.com/docs/alloy/latest/) of de OpenTelemetry Collector, in plaats van ze af te drukken, bijv. `--otlp http://localhost:4318`                                                                       |
-| `--otlp-header <header>`     |           | Extra HTTP-header om naar het `--otlp`-eindpunt te sturen, als `"Name: value"`, bijv. `"Authorization: Bearer <token>"`. Kan ook in de omgevingsvariabele `OTLP_HEADER` worden gegeven, wat hem uit uw shell-geschiedenis houdt                                                                     |
-| `--influxdb <URL>`           |           | De resultaten als line protocol naar een [InfluxDB](https://www.influxdata.com/)-v2- of -v3-server schrijven in plaats van ze af te drukken, bijv. `--influxdb http://localhost:8086`                                                                                                                |
-| `--influxdb-org <org>`       |           | InfluxDB-organisatie om naar te schrijven. Verplicht bij `--influxdb`                                                                                                                                                                                                                               |
-| `--influxdb-bucket <bucket>` |           | InfluxDB-bucket om naar te schrijven. Verplicht bij `--influxdb`                                                                                                                                                                                                                                    |
-| `--influxdb-token <token>`   |           | InfluxDB-API-token. Verplicht bij `--influxdb`. Kan ook in de omgevingsvariabele `INFLUXDB_TOKEN` worden gegeven, wat het uit uw shell-geschiedenis houdt                                                                                                                                           |
-| `--stats-interval <seconds>` | `10`      | Hoe vaak de statistieken naar het OTLP-eindpunt of InfluxDB worden gestuurd. Geen effect zonder `--otlp` of `--influxdb`                                                                                                                                                                            |
+| Flag                         | Standaard | Beschrijving                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--otlp <URL>`               |           | De resultaten als metrics naar een OTLP-HTTP-eindpunt sturen, zoals [Grafana Alloy](https://grafana.com/docs/alloy/latest/) of de OpenTelemetry Collector, in plaats van ze af te drukken, bijv. `--otlp http://localhost:4318`                                                                                                 |
+| `--otlp-header <header>`     |           | Extra HTTP-header om naar het `--otlp`-eindpunt te sturen, als `"Name: value"`, bijv. `"Authorization: Bearer <token>"`. Kan ook in de omgevingsvariabele `OTLP_HEADER` worden gegeven, wat hem uit uw shell-geschiedenis houdt                                                                                                 |
+| `--influxdb <URL>`           |           | De resultaten als line protocol naar een [InfluxDB](https://www.influxdata.com/)-v2- of -v3-server schrijven in plaats van ze af te drukken, bijv. `--influxdb http://localhost:8086`                                                                                                                                           |
+| `--influxdb-org <org>`       |           | InfluxDB-organisatie om naar te schrijven. Verplicht bij `--influxdb`                                                                                                                                                                                                                                                           |
+| `--influxdb-bucket <bucket>` |           | InfluxDB-bucket om naar te schrijven. Verplicht bij `--influxdb`                                                                                                                                                                                                                                                                |
+| `--influxdb-token <token>`   |           | InfluxDB-API-token. Verplicht bij `--influxdb`. Kan ook in de omgevingsvariabele `INFLUXDB_TOKEN` worden gegeven, wat het uit uw shell-geschiedenis houdt                                                                                                                                                                       |
+| `--stats-interval <seconds>` | `10`      | Hoe vaak de statistieken naar het OTLP-eindpunt of InfluxDB worden gestuurd. Geen effect zonder `--otlp` of `--influxdb`                                                                                                                                                                                                        |
 | `--source-label <name>`      | hostnaam  | Deze computer een naam geven in de `JSON`-gebeurtenissen en in de metrics die via OTLP of naar InfluxDB worden gestuurd, zodat meerdere computers die hetzelfde doel testen te onderscheiden zijn. Resultaten die elders heen gaan dragen de hostnaam als dit niet is opgegeven; uitvoer die op de computer blijft draagt niets |
 
 ### HTTP(S) en UDP
 
-| Flag           | Standaard | Beschrijving                                                                                                                                                  |
-| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                           |
+| Flag           | Standaard | Beschrijving                                                                                                                                                      |
+| -------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`   |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                               |
 | `--udp-server` |           | Niet testen. Luisteren op de opgegeven host en poort en elk UDP-datagram terugsturen naar de afzender, zodat een UDP-probe naar deze computer een antwoord krijgt |
 
 ---

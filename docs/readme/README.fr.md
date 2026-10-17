@@ -13,9 +13,6 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
-> [!CAUTION]
-> Ceci est une branche en cours de développement, pas la branche principale.
-
 Un programme ping multiplateforme qui utilise `TCP`, `UDP` ou `HTTP(S)` à la place d'`ICMP`, inspiré de l'utilitaire ping de Linux.
 
 > [!TIP]
@@ -133,19 +130,19 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 
 ## Téléchargement et installation
 
-| Plateforme                                        | Installer avec                                                                                  |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [Windows](#windows)                               | `winget install pj.tcping`                                                                      |
-| [macOS](#macos)                                   | `brew install pouriyajamshidi/tap/tcping`                                                       |
-| [Debian, Ubuntu](#linux---dépôts-de-paquets)      | `sudo apt install tcping`, après avoir ajouté le dépôt                                          |
-| [Fedora, RHEL, CentOS](#linux---dépôts-de-paquets) | `sudo dnf install tcping`, après avoir ajouté le dépôt                                         |
-| [Alpine](#linux---dépôts-de-paquets)              | `sudo apk add tcping`, après avoir ajouté le dépôt                                              |
-| [Arch, Manjaro](#linux---dépôts-de-paquets)       | `yay -S tcping-bin`                                                                             |
+| Plateforme                                                 | Installer avec                                                                                                              |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [Windows](#windows)                                        | `winget install pj.tcping`                                                                                                  |
+| [macOS](#macos)                                            | `brew install pouriyajamshidi/tap/tcping`                                                                                   |
+| [Debian, Ubuntu](#linux---dépôts-de-paquets)               | `sudo apt install tcping`, après avoir ajouté le dépôt                                                                      |
+| [Fedora, RHEL, CentOS](#linux---dépôts-de-paquets)         | `sudo dnf install tcping`, après avoir ajouté le dépôt                                                                      |
+| [Alpine](#linux---dépôts-de-paquets)                       | `sudo apk add tcping`, après avoir ajouté le dépôt                                                                          |
+| [Arch, Manjaro](#linux---dépôts-de-paquets)                | `yay -S tcping-bin`                                                                                                         |
 | [N'importe quel Linux](#linux---installation-en-une-ligne) | une [installation en une ligne](#linux---installation-en-une-ligne) ou un [fichier de paquet](#linux---fichiers-de-paquets) |
-| [BSD](#bsd-et-linux---installation-manuelle)      | le [binaire précompilé](#bsd-et-linux---installation-manuelle)                                  |
-| [Nix](#nix)                                       | `nix profile install github:pouriyajamshidi/tcping`                                             |
-| [Docker](#autres-méthodes)                        | `docker run -it pouriyajamshidi/tcping example.com 443`                                         |
-| [Go](#autres-méthodes)                            | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                        |
+| [BSD](#bsd-et-linux---installation-manuelle)               | le [binaire précompilé](#bsd-et-linux---installation-manuelle)                                                              |
+| [Nix](#nix)                                                | `nix profile install github:pouriyajamshidi/tcping`                                                                         |
+| [Docker](#autres-méthodes)                                 | `docker run -it pouriyajamshidi/tcping example.com 443`                                                                     |
+| [Go](#autres-méthodes)                                     | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                                                    |
 
 Les binaires sont statiques : ils contiennent tout ce dont ils ont besoin dans un seul fichier
 et ne dépendent d'aucune bibliothèque présente sur votre machine. Ils se trouvent sur la
@@ -601,22 +598,22 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 
 ### Général
 
-| Option      | Par défaut | Description                                   |
-| ----------- | ---------- | --------------------------------------------- |
-| `-h`        |            | Afficher les options disponibles et quitter   |
-| `--version` |            | Afficher la version et quitter                |
-| `-u`        |            | Vérifier les mises à jour et quitter          |
+| Option      | Par défaut | Description                                 |
+| ----------- | ---------- | ------------------------------------------- |
+| `-h`        |            | Afficher les options disponibles et quitter |
+| `--version` |            | Afficher la version et quitter              |
+| `-u`        |            | Vérifier les mises à jour et quitter        |
 
 ### Sondes
 
-| Option          | Par défaut | Description                                                                                               |
-| --------------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| `-c <n>`        | illimité   | S'arrêter après `<n>` sondes, quel que soit le résultat                                                   |
-| `-i <seconds>`  | `1`        | Intervalle entre les sondes. Nombre réel autorisé, par ex. `-i 0.5`                                       |
-| `-t <seconds>`  | `1`        | Temps d'attente d'une réponse, en secondes. Nombre réel autorisé. `0` signifie pas de délai d'attente     |
-| `-4`            |            | N'utiliser que des adresses IPv4                                                                          |
-| `-6`            |            | N'utiliser que des adresses IPv6                                                                          |
-| `-I <name\|IP>` |            | Nom d'interface ou adresse IP depuis laquelle envoyer les sondes et les requêtes DNS                      |
+| Option          | Par défaut | Description                                                                                           |
+| --------------- | ---------- | ----------------------------------------------------------------------------------------------------- |
+| `-c <n>`        | illimité   | S'arrêter après `<n>` sondes, quel que soit le résultat                                               |
+| `-i <seconds>`  | `1`        | Intervalle entre les sondes. Nombre réel autorisé, par ex. `-i 0.5`                                   |
+| `-t <seconds>`  | `1`        | Temps d'attente d'une réponse, en secondes. Nombre réel autorisé. `0` signifie pas de délai d'attente |
+| `-4`            |            | N'utiliser que des adresses IPv4                                                                      |
+| `-6`            |            | N'utiliser que des adresses IPv6                                                                      |
+| `-I <name\|IP>` |            | Nom d'interface ou adresse IP depuis laquelle envoyer les sondes et les requêtes DNS                  |
 
 > [!TIP]
 > Sans les options `-4` et `-6`, tcping choisit une adresse IP au hasard parmi les résultats des requêtes DNS.
@@ -626,51 +623,51 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 | Option                    | Par défaut | Description                                                                                                                                                       |
 | ------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `-r <n>`                  | jamais     | Résoudre à nouveau le nom d'hôte de la cible après `<n>` sondes échouées, par ex. `-r 10`                                                                         |
-| `--resolve-every-probe`   |            | Résoudre le nom d'hôte de la cible avant chaque sonde au lieu de seulement au démarrage. A priorité sur `-r` et n'a aucun effet quand la cible est une adresse IP  |
+| `--resolve-every-probe`   |            | Résoudre le nom d'hôte de la cible avant chaque sonde au lieu de seulement au démarrage. A priorité sur `-r` et n'a aucun effet quand la cible est une adresse IP |
 | `--dns-server <IP>`       | du système | Serveur DNS personnalisé à utiliser. Une combinaison IP et port est autorisée, par ex. `--dns-server 1.1.1.1:53`                                                  |
 | `--dns-timeout <seconds>` | `2`        | Temps d'attente d'une réponse DNS, en secondes. Nombre réel autorisé. `0` signifie pas de délai d'attente                                                         |
 
 ### Sortie du terminal
 
-| Option                  | Par défaut | Description                                                                                                                                                                                                                                                                                                                       |
-| ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-D`                    |            | Afficher un horodatage pour chaque sonde                                                                                                                                                                                                                                                                                          |
-| `--no-color`            |            | Ne pas colorer la sortie                                                                                                                                                                                                                                                                                                          |
-| `--show-source-address` |            | Afficher l'adresse IP source et le port utilisés pour les sondes                                                                                                                                                                                                                                                                  |
-| `--failures-only`       |            | N'afficher que les sondes échouées. Les réussies sont toujours comptées                                                                                                                                                                                                                                                           |
-| `--no-stats`            |            | Ne pas afficher les statistiques à la fermeture du programme. Appuyer sur la touche **Entrée** les affiche toujours. Sans effet quand la sortie ne va pas vers le terminal                                                                                                                                                         |
+| Option                  | Par défaut | Description                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-D`                    |            | Afficher un horodatage pour chaque sonde                                                                                                                                                                                                                                                                                                                           |
+| `--no-color`            |            | Ne pas colorer la sortie                                                                                                                                                                                                                                                                                                                                           |
+| `--show-source-address` |            | Afficher l'adresse IP source et le port utilisés pour les sondes                                                                                                                                                                                                                                                                                                   |
+| `--failures-only`       |            | N'afficher que les sondes échouées. Les réussies sont toujours comptées                                                                                                                                                                                                                                                                                            |
+| `--no-stats`            |            | Ne pas afficher les statistiques à la fermeture du programme. Appuyer sur la touche **Entrée** les affiche toujours. Sans effet quand la sortie ne va pas vers le terminal                                                                                                                                                                                         |
 | `-v`                    |            | Afficher tout ce qu'une sonde HTTP(S) a recueilli : la version de HTTP, la version de TLS et la suite de chiffrement, l'expiration du certificat et les temps de connexion, de TLS et du premier octet. Pour une cible UDP, affiche le numéro de la sonde et si la réponse l'a renvoyé, pour distinguer une sonde perdue des autres. Sans effet sur les cibles TCP |
 
 ### Sortie fichier et lisible par machine
 
-| Option             | Par défaut | Description                                                                                                                                                                                                                      |
-| ------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-j`               |            | Sortie au format `JSON`                                                                                                                                                                                                          |
-| `--pretty`         |            | Embellir la sortie `JSON`. Sans effet sans `-j`                                                                                                                                                                                  |
-| `--json-url <URL>` |            | Envoyer la sortie `JSON` à un serveur HTTP au lieu de l'afficher, un `POST` par événement, par ex. `--json-url http://localhost:8000/tcping`. Active la sortie `JSON` d'elle-même, donc `-j` n'est pas nécessaire                 |
+| Option             | Par défaut | Description                                                                                                                                                                                                                                          |
+| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-j`               |            | Sortie au format `JSON`                                                                                                                                                                                                                              |
+| `--pretty`         |            | Embellir la sortie `JSON`. Sans effet sans `-j`                                                                                                                                                                                                      |
+| `--json-url <URL>` |            | Envoyer la sortie `JSON` à un serveur HTTP au lieu de l'afficher, un `POST` par événement, par ex. `--json-url http://localhost:8000/tcping`. Active la sortie `JSON` d'elle-même, donc `-j` n'est pas nécessaire                                    |
 | `--json-server`    |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et afficher chaque événement `JSON` qui lui est envoyé, pour qu'un tcping qui utilise `--json-url` ailleurs ait un endroit où envoyer son exécution, par ex. `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>`     |            | Enregistrer la sortie dans un fichier `CSV`. Les statistiques vont dans le même nom avec le suffixe `_stats`                                                                                                                     |
-| `--csv-fixed-name` |            | Utiliser le nom de fichier de `--csv` tel quel, sans suffixe de date/heure, de sorte que des exécutions répétées écrasent le même fichier                                                                                        |
-| `--sqlite <file>`  |            | Enregistrer la sortie dans une base de données sqlite3, par ex. `--sqlite /tmp/tcping.db`. Indisponible sous Windows                                                                                                             |
+| `--csv <file>`     |            | Enregistrer la sortie dans un fichier `CSV`. Les statistiques vont dans le même nom avec le suffixe `_stats`                                                                                                                                         |
+| `--csv-fixed-name` |            | Utiliser le nom de fichier de `--csv` tel quel, sans suffixe de date/heure, de sorte que des exécutions répétées écrasent le même fichier                                                                                                            |
+| `--sqlite <file>`  |            | Enregistrer la sortie dans une base de données sqlite3, par ex. `--sqlite /tmp/tcping.db`. Indisponible sous Windows                                                                                                                                 |
 
 ### Métriques
 
-| Option                       | Par défaut   | Description                                                                                                                                                                                                                                                                                   |
-| ---------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--otlp <URL>`               |              | Envoyer les résultats comme métriques vers un point de terminaison OTLP HTTP, comme [Grafana Alloy](https://grafana.com/docs/alloy/latest/) ou OpenTelemetry Collector, au lieu de les afficher, par ex. `--otlp http://localhost:4318`                                                        |
-| `--otlp-header <header>`     |              | En-tête HTTP supplémentaire à envoyer au point de terminaison `--otlp`, sous la forme `"Name: value"`, par ex. `"Authorization: Bearer <token>"`. Peut aussi être donné dans la variable d'environnement `OTLP_HEADER`, ce qui le garde hors de l'historique de votre shell                     |
-| `--influxdb <URL>`           |              | Écrire les résultats vers un serveur [InfluxDB](https://www.influxdata.com/) v2 ou v3 au format line protocol au lieu de les afficher, par ex. `--influxdb http://localhost:8086`                                                                                                              |
-| `--influxdb-org <org>`       |              | Organisation InfluxDB dans laquelle écrire. Obligatoire avec `--influxdb`                                                                                                                                                                                                                     |
-| `--influxdb-bucket <bucket>` |              | Bucket InfluxDB dans lequel écrire. Obligatoire avec `--influxdb`                                                                                                                                                                                                                             |
-| `--influxdb-token <token>`   |              | Jeton d'API InfluxDB. Obligatoire avec `--influxdb`. Peut aussi être donné dans la variable d'environnement `INFLUXDB_TOKEN`, ce qui le garde hors de l'historique de votre shell                                                                                                              |
-| `--stats-interval <seconds>` | `10`         | Fréquence d'envoi des statistiques au point de terminaison OTLP ou à InfluxDB. Sans effet sans `--otlp` ou `--influxdb`                                                                                                                                                                       |
-| `--source-label <name>`      | nom d'hôte   | Nommer cette machine dans les événements `JSON` et dans les métriques envoyées par OTLP ou vers InfluxDB, pour distinguer plusieurs machines qui sondent la même cible. Les résultats envoyés ailleurs portent le nom d'hôte quand ce n'est pas indiqué ; la sortie qui reste sur la machine ne porte rien |
+| Option                       | Par défaut | Description                                                                                                                                                                                                                                                                                                |
+| ---------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--otlp <URL>`               |            | Envoyer les résultats comme métriques vers un point de terminaison OTLP HTTP, comme [Grafana Alloy](https://grafana.com/docs/alloy/latest/) ou OpenTelemetry Collector, au lieu de les afficher, par ex. `--otlp http://localhost:4318`                                                                    |
+| `--otlp-header <header>`     |            | En-tête HTTP supplémentaire à envoyer au point de terminaison `--otlp`, sous la forme `"Name: value"`, par ex. `"Authorization: Bearer <token>"`. Peut aussi être donné dans la variable d'environnement `OTLP_HEADER`, ce qui le garde hors de l'historique de votre shell                                |
+| `--influxdb <URL>`           |            | Écrire les résultats vers un serveur [InfluxDB](https://www.influxdata.com/) v2 ou v3 au format line protocol au lieu de les afficher, par ex. `--influxdb http://localhost:8086`                                                                                                                          |
+| `--influxdb-org <org>`       |            | Organisation InfluxDB dans laquelle écrire. Obligatoire avec `--influxdb`                                                                                                                                                                                                                                  |
+| `--influxdb-bucket <bucket>` |            | Bucket InfluxDB dans lequel écrire. Obligatoire avec `--influxdb`                                                                                                                                                                                                                                          |
+| `--influxdb-token <token>`   |            | Jeton d'API InfluxDB. Obligatoire avec `--influxdb`. Peut aussi être donné dans la variable d'environnement `INFLUXDB_TOKEN`, ce qui le garde hors de l'historique de votre shell                                                                                                                          |
+| `--stats-interval <seconds>` | `10`       | Fréquence d'envoi des statistiques au point de terminaison OTLP ou à InfluxDB. Sans effet sans `--otlp` ou `--influxdb`                                                                                                                                                                                    |
+| `--source-label <name>`      | nom d'hôte | Nommer cette machine dans les événements `JSON` et dans les métriques envoyées par OTLP ou vers InfluxDB, pour distinguer plusieurs machines qui sondent la même cible. Les résultats envoyés ailleurs portent le nom d'hôte quand ce n'est pas indiqué ; la sortie qui reste sur la machine ne porte rien |
 
 ### HTTP(S) et UDP
 
-| Option         | Par défaut | Description                                                                                                                                                      |
-| -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                       |
+| Option         | Par défaut | Description                                                                                                                                                                  |
+| -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`   |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                   |
 | `--udp-server` |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse |
 
 ---

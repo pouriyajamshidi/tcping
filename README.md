@@ -13,9 +13,6 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
-> [!CAUTION]
-> This is a work in progress branch, not the main one.
-
 A cross-platform ping program using `TCP`, `UDP` or `HTTP(S)` instead of `ICMP`, inspired by Linux's ping utility.
 
 > [!TIP]

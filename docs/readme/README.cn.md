@@ -13,9 +13,6 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
-> [!CAUTION]
-> 这是一个开发中的分支，不是主分支。
-
 一个跨平台的 ping 程序，使用 `TCP`、`UDP` 或 `HTTP(S)` 代替 `ICMP`，灵感来自 Linux 的 ping 工具。
 
 > [!TIP]
@@ -133,19 +130,19 @@
 
 ## 下载与安装
 
-| 平台                                                  | 安装方式                                                                                      |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [Windows](#windows)                                   | `winget install pj.tcping`                                                                    |
-| [macOS](#macos)                                       | `brew install pouriyajamshidi/tap/tcping`                                                     |
-| [Debian、Ubuntu](#linux---软件源)                     | 添加软件源后执行 `sudo apt install tcping`                                                    |
-| [Fedora、RHEL、CentOS](#linux---软件源)               | 添加软件源后执行 `sudo dnf install tcping`                                                    |
-| [Alpine](#linux---软件源)                             | 添加软件源后执行 `sudo apk add tcping`                                                        |
-| [Arch、Manjaro](#linux---软件源)                      | `yay -S tcping-bin`                                                                           |
-| [任意 Linux](#linux---一键安装)                       | [一键安装](#linux---一键安装)或[软件包文件](#linux---软件包文件)                              |
-| [BSD](#bsd-和-linux---手动安装)                       | [预编译的可执行文件](#bsd-和-linux---手动安装)                                                |
-| [Nix](#nix)                                           | `nix profile install github:pouriyajamshidi/tcping`                                           |
-| [Docker](#其他方式)                                   | `docker run -it pouriyajamshidi/tcping example.com 443`                                       |
-| [Go](#其他方式)                                       | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                      |
+| 平台                                    | 安装方式                                                         |
+| --------------------------------------- | ---------------------------------------------------------------- |
+| [Windows](#windows)                     | `winget install pj.tcping`                                       |
+| [macOS](#macos)                         | `brew install pouriyajamshidi/tap/tcping`                        |
+| [Debian、Ubuntu](#linux---软件源)       | 添加软件源后执行 `sudo apt install tcping`                       |
+| [Fedora、RHEL、CentOS](#linux---软件源) | 添加软件源后执行 `sudo dnf install tcping`                       |
+| [Alpine](#linux---软件源)               | 添加软件源后执行 `sudo apk add tcping`                           |
+| [Arch、Manjaro](#linux---软件源)        | `yay -S tcping-bin`                                              |
+| [任意 Linux](#linux---一键安装)         | [一键安装](#linux---一键安装)或[软件包文件](#linux---软件包文件) |
+| [BSD](#bsd-和-linux---手动安装)         | [预编译的可执行文件](#bsd-和-linux---手动安装)                   |
+| [Nix](#nix)                             | `nix profile install github:pouriyajamshidi/tcping`              |
+| [Docker](#其他方式)                     | `docker run -it pouriyajamshidi/tcping example.com 443`          |
+| [Go](#其他方式)                         | `go install github.com/pouriyajamshidi/tcping/v3@latest`         |
 
 这些可执行文件是静态的，也就是说它们把所需的一切都放在一个文件里，不依赖您机器上是否存在任何库。它们位于
 [发布页面](https://github.com/pouriyajamshidi/tcping/releases/latest/)，提供 _amd64_ 和 _arm64_ 版本。
@@ -583,70 +580,70 @@ OpenTelemetry Collector 和 InfluxDB 环境（包含 Grafana 和 tcping，一条
 
 ### 通用
 
-| 标志        | 默认值 | 描述                     |
-| ----------- | ------ | ------------------------ |
-| `-h`        |        | 显示可用标志并退出       |
-| `--version` |        | 显示版本并退出           |
-| `-u`        |        | 检查更新并退出           |
+| 标志        | 默认值 | 描述               |
+| ----------- | ------ | ------------------ |
+| `-h`        |        | 显示可用标志并退出 |
+| `--version` |        | 显示版本并退出     |
+| `-u`        |        | 检查更新并退出     |
 
 ### 探测
 
-| 标志            | 默认值 | 描述                                                                    |
-| --------------- | ------ | ----------------------------------------------------------------------- |
-| `-c <n>`        | 无限制 | 在 `<n>` 次探测后停止，无论结果如何                                     |
-| `-i <seconds>`  | `1`    | 探测之间的间隔。允许使用实数，例如 `-i 0.5`                             |
-| `-t <seconds>`  | `1`    | 等待响应的时间（以秒为单位）。允许使用实数。`0` 表示无限超时            |
-| `-4`            |        | 仅使用 IPv4 地址                                                        |
-| `-6`            |        | 仅使用 IPv6 地址                                                        |
-| `-I <name\|IP>` |        | 用于发送探测和 DNS 查询的接口名称或 IP 地址                             |
+| 标志            | 默认值 | 描述                                                         |
+| --------------- | ------ | ------------------------------------------------------------ |
+| `-c <n>`        | 无限制 | 在 `<n>` 次探测后停止，无论结果如何                          |
+| `-i <seconds>`  | `1`    | 探测之间的间隔。允许使用实数，例如 `-i 0.5`                  |
+| `-t <seconds>`  | `1`    | 等待响应的时间（以秒为单位）。允许使用实数。`0` 表示无限超时 |
+| `-4`            |        | 仅使用 IPv4 地址                                             |
+| `-6`            |        | 仅使用 IPv6 地址                                             |
+| `-I <name\|IP>` |        | 用于发送探测和 DNS 查询的接口名称或 IP 地址                  |
 
 > [!TIP]
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。
 
 ### 名称解析
 
-| 标志                      | 默认值   | 描述                                                                                                                       |
-| ------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `-r <n>`                  | 从不     | 在 `<n>` 次探测失败后重新解析目标主机名，例如 `-r 10`                                                                      |
-| `--resolve-every-probe`   |          | 在每一次探测前都解析目标主机名，而不是只在启动时解析。优先于 `-r`，当目标是 IP 地址时无效                                  |
-| `--dns-server <IP>`       | 系统默认 | 使用自定义 DNS 服务器。允许使用 IP 和端口的组合，例如 `--dns-server 1.1.1.1:53`                                            |
-| `--dns-timeout <seconds>` | `2`      | 等待 DNS 响应的时间（以秒为单位）。允许使用实数。`0` 表示无限超时                                                          |
+| 标志                      | 默认值   | 描述                                                                                      |
+| ------------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `-r <n>`                  | 从不     | 在 `<n>` 次探测失败后重新解析目标主机名，例如 `-r 10`                                     |
+| `--resolve-every-probe`   |          | 在每一次探测前都解析目标主机名，而不是只在启动时解析。优先于 `-r`，当目标是 IP 地址时无效 |
+| `--dns-server <IP>`       | 系统默认 | 使用自定义 DNS 服务器。允许使用 IP 和端口的组合，例如 `--dns-server 1.1.1.1:53`           |
+| `--dns-timeout <seconds>` | `2`      | 等待 DNS 响应的时间（以秒为单位）。允许使用实数。`0` 表示无限超时                         |
 
 ### 终端输出
 
-| 标志                    | 默认值 | 描述                                                                                                                                                                                                      |
-| ----------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-D`                    |        | 为每次探测显示时间戳                                                                                                                                                                                      |
-| `--no-color`            |        | 输出不带颜色                                                                                                                                                                                              |
-| `--show-source-address` |        | 显示探测所用的来源 IP 地址及端口                                                                                                                                                                          |
-| `--failures-only`       |        | 仅显示失败的探测。成功的探测仍会被计数                                                                                                                                                                    |
-| `--no-stats`            |        | 程序退出时不显示统计信息。按 **Enter** 键仍会显示。当输出不是到终端时无效                                                                                                                                 |
+| 标志                    | 默认值 | 描述                                                                                                                                                                                               |
+| ----------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-D`                    |        | 为每次探测显示时间戳                                                                                                                                                                               |
+| `--no-color`            |        | 输出不带颜色                                                                                                                                                                                       |
+| `--show-source-address` |        | 显示探测所用的来源 IP 地址及端口                                                                                                                                                                   |
+| `--failures-only`       |        | 仅显示失败的探测。成功的探测仍会被计数                                                                                                                                                             |
+| `--no-stats`            |        | 程序退出时不显示统计信息。按 **Enter** 键仍会显示。当输出不是到终端时无效                                                                                                                          |
 | `-v`                    |        | 显示 HTTP(S) 探测收集到的所有信息：HTTP 版本、TLS 版本和加密套件、证书到期时间，以及连接、TLS 和首字节耗时。对于 UDP 目标，显示探测的编号以及回复是否带回了它，以便区分丢失的探测。对 TCP 目标无效 |
 
 ### 文件和机器可读输出
 
-| 标志               | 默认值 | 描述                                                                                                                                                                  |
-| ------------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-j`               |        | 以 `JSON` 格式输出                                                                                                                                                    |
-| `--pretty`         |        | 美化 `JSON` 输出。没有 `-j` 时无效                                                                                                                                    |
-| `--json-url <URL>` |        | 将 `JSON` 输出发送到 HTTP 服务器而不是打印，每个事件一次 `POST`，例如 `--json-url http://localhost:8000/tcping`。会自动开启 `JSON` 输出，因此不需要 `-j`               |
+| 标志               | 默认值 | 描述                                                                                                                                                                           |
+| ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-j`               |        | 以 `JSON` 格式输出                                                                                                                                                             |
+| `--pretty`         |        | 美化 `JSON` 输出。没有 `-j` 时无效                                                                                                                                             |
+| `--json-url <URL>` |        | 将 `JSON` 输出发送到 HTTP 服务器而不是打印，每个事件一次 `POST`，例如 `--json-url http://localhost:8000/tcping`。会自动开启 `JSON` 输出，因此不需要 `-j`                       |
 | `--json-server`    |        | 不进行探测。监听给定的主机和端口，并打印发送给它的每个 `JSON` 事件，这样其他地方使用 `--json-url` 的 tcping 就有地方发送它的运行结果，例如 `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>`     |        | 将输出存储到 `CSV` 文件中。统计信息会存到同名并加上 `_stats` 后缀的文件中                                                                                             |
-| `--csv-fixed-name` |        | 按原样使用 `--csv` 的文件名，不加日期/时间后缀，因此重复运行会覆盖同一个文件                                                                                          |
-| `--sqlite <file>`  |        | 将输出存储到 sqlite3 数据库中，例如 `--sqlite /tmp/tcping.db`。Windows 上不可用                                                                                       |
+| `--csv <file>`     |        | 将输出存储到 `CSV` 文件中。统计信息会存到同名并加上 `_stats` 后缀的文件中                                                                                                      |
+| `--csv-fixed-name` |        | 按原样使用 `--csv` 的文件名，不加日期/时间后缀，因此重复运行会覆盖同一个文件                                                                                                   |
+| `--sqlite <file>`  |        | 将输出存储到 sqlite3 数据库中，例如 `--sqlite /tmp/tcping.db`。Windows 上不可用                                                                                                |
 
 ### 指标
 
-| 标志                         | 默认值 | 描述                                                                                                                                                                                                                        |
-| ---------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--otlp <URL>`               |        | 将结果作为指标发送到 OTLP HTTP 端点（例如 [Grafana Alloy](https://grafana.com/docs/alloy/latest/) 或 OpenTelemetry Collector）而不是打印，例如 `--otlp http://localhost:4318`                                               |
-| `--otlp-header <header>`     |        | 发送到 `--otlp` 端点的额外 HTTP 请求头，格式为 `"Name: value"`，例如 `"Authorization: Bearer <token>"`。也可以放在 `OTLP_HEADER` 环境变量中，避免它出现在 shell 历史记录里                                                  |
-| `--influxdb <URL>`           |        | 以行协议将结果写入 [InfluxDB](https://www.influxdata.com/) v2 或 v3 服务器而不是打印，例如 `--influxdb http://localhost:8086`                                                                                               |
-| `--influxdb-org <org>`       |        | 要写入的 InfluxDB 组织。使用 `--influxdb` 时必需                                                                                                                                                                            |
-| `--influxdb-bucket <bucket>` |        | 要写入的 InfluxDB 存储桶。使用 `--influxdb` 时必需                                                                                                                                                                          |
-| `--influxdb-token <token>`   |        | InfluxDB API 令牌。使用 `--influxdb` 时必需。也可以放在 `INFLUXDB_TOKEN` 环境变量中，避免它出现在 shell 历史记录里                                                                                                          |
-| `--stats-interval <seconds>` | `10`   | 向 OTLP 端点或 InfluxDB 发送统计信息的频率。没有 `--otlp` 或 `--influxdb` 时无效                                                                                                                                            |
-| `--source-label <name>`      | 主机名 | 在 `JSON` 事件以及通过 OTLP 或发送到 InfluxDB 的指标中为这台机器命名，以便区分探测同一目标的多台机器。发送到其他地方的结果在未指定时带有主机名；留在本机的输出则不带任何标识                                                |
+| 标志                         | 默认值 | 描述                                                                                                                                                                          |
+| ---------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--otlp <URL>`               |        | 将结果作为指标发送到 OTLP HTTP 端点（例如 [Grafana Alloy](https://grafana.com/docs/alloy/latest/) 或 OpenTelemetry Collector）而不是打印，例如 `--otlp http://localhost:4318` |
+| `--otlp-header <header>`     |        | 发送到 `--otlp` 端点的额外 HTTP 请求头，格式为 `"Name: value"`，例如 `"Authorization: Bearer <token>"`。也可以放在 `OTLP_HEADER` 环境变量中，避免它出现在 shell 历史记录里    |
+| `--influxdb <URL>`           |        | 以行协议将结果写入 [InfluxDB](https://www.influxdata.com/) v2 或 v3 服务器而不是打印，例如 `--influxdb http://localhost:8086`                                                 |
+| `--influxdb-org <org>`       |        | 要写入的 InfluxDB 组织。使用 `--influxdb` 时必需                                                                                                                              |
+| `--influxdb-bucket <bucket>` |        | 要写入的 InfluxDB 存储桶。使用 `--influxdb` 时必需                                                                                                                            |
+| `--influxdb-token <token>`   |        | InfluxDB API 令牌。使用 `--influxdb` 时必需。也可以放在 `INFLUXDB_TOKEN` 环境变量中，避免它出现在 shell 历史记录里                                                            |
+| `--stats-interval <seconds>` | `10`   | 向 OTLP 端点或 InfluxDB 发送统计信息的频率。没有 `--otlp` 或 `--influxdb` 时无效                                                                                              |
+| `--source-label <name>`      | 主机名 | 在 `JSON` 事件以及通过 OTLP 或发送到 InfluxDB 的指标中为这台机器命名，以便区分探测同一目标的多台机器。发送到其他地方的结果在未指定时带有主机名；留在本机的输出则不带任何标识  |
 
 ### HTTP(S) 和 UDP
 

@@ -13,9 +13,6 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pouriyajamshidi/tcping)
 ![Latest release](https://img.shields.io/github/v/release/pouriyajamshidi/tcping)
 
-> [!CAUTION]
-> Dies ist ein Branch in Entwicklung, nicht der Hauptbranch.
-
 Ein plattformübergreifendes Ping-Programm, das `TCP`, `UDP` oder `HTTP(S)` statt `ICMP` verwendet und vom Ping-Werkzeug von Linux inspiriert ist.
 
 > [!TIP]
@@ -133,19 +130,19 @@ In den [Demos](#demos) bekommen Sie einen Eindruck vom Aussehen und der Bedienun
 
 ## Download und Installation
 
-| Plattform                                          | Installation mit                                                                           |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [Windows](#windows)                                | `winget install pj.tcping`                                                                 |
-| [macOS](#macos)                                    | `brew install pouriyajamshidi/tap/tcping`                                                  |
-| [Debian, Ubuntu](#linux---paketquellen)            | `sudo apt install tcping`, nachdem die Paketquelle hinzugefügt wurde                       |
-| [Fedora, RHEL, CentOS](#linux---paketquellen)      | `sudo dnf install tcping`, nachdem die Paketquelle hinzugefügt wurde                       |
-| [Alpine](#linux---paketquellen)                    | `sudo apk add tcping`, nachdem die Paketquelle hinzugefügt wurde                           |
-| [Arch, Manjaro](#linux---paketquellen)             | `yay -S tcping-bin`                                                                        |
-| [Jedes Linux](#linux---ein-zeilen-installation)    | einer [Ein-Zeilen-Installation](#linux---ein-zeilen-installation) oder einer [Paketdatei](#linux---paketdateien) |
-| [BSD](#bsd-und-linux---manuell)                    | der [vorkompilierten Binärdatei](#bsd-und-linux---manuell)                                 |
-| [Nix](#nix)                                        | `nix profile install github:pouriyajamshidi/tcping`                                        |
-| [Docker](#weitere-möglichkeiten)                   | `docker run -it pouriyajamshidi/tcping example.com 443`                                    |
-| [Go](#weitere-möglichkeiten)                       | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                   |
+| Plattform                                       | Installation mit                                                                                                 |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [Windows](#windows)                             | `winget install pj.tcping`                                                                                       |
+| [macOS](#macos)                                 | `brew install pouriyajamshidi/tap/tcping`                                                                        |
+| [Debian, Ubuntu](#linux---paketquellen)         | `sudo apt install tcping`, nachdem die Paketquelle hinzugefügt wurde                                             |
+| [Fedora, RHEL, CentOS](#linux---paketquellen)   | `sudo dnf install tcping`, nachdem die Paketquelle hinzugefügt wurde                                             |
+| [Alpine](#linux---paketquellen)                 | `sudo apk add tcping`, nachdem die Paketquelle hinzugefügt wurde                                                 |
+| [Arch, Manjaro](#linux---paketquellen)          | `yay -S tcping-bin`                                                                                              |
+| [Jedes Linux](#linux---ein-zeilen-installation) | einer [Ein-Zeilen-Installation](#linux---ein-zeilen-installation) oder einer [Paketdatei](#linux---paketdateien) |
+| [BSD](#bsd-und-linux---manuell)                 | der [vorkompilierten Binärdatei](#bsd-und-linux---manuell)                                                       |
+| [Nix](#nix)                                     | `nix profile install github:pouriyajamshidi/tcping`                                                              |
+| [Docker](#weitere-möglichkeiten)                | `docker run -it pouriyajamshidi/tcping example.com 443`                                                          |
+| [Go](#weitere-möglichkeiten)                    | `go install github.com/pouriyajamshidi/tcping/v3@latest`                                                         |
 
 Die Binärdateien sind statisch. Das heißt, sie bringen alles Nötige in einer einzigen Datei mit
 und hängen nicht davon ab, dass eine Bibliothek auf Ihrem Rechner vorhanden ist. Sie liegen auf der
@@ -601,76 +598,76 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 
 ### Allgemein
 
-| Flag        | Standard | Beschreibung                          |
-| ----------- | -------- | ------------------------------------- |
+| Flag        | Standard | Beschreibung                            |
+| ----------- | -------- | --------------------------------------- |
 | `-h`        |          | Zeigt die verfügbaren Flags und beendet |
-| `--version` |          | Zeigt die Version und beendet         |
-| `-u`        |          | Sucht nach Updates und beendet        |
+| `--version` |          | Zeigt die Version und beendet           |
+| `-u`        |          | Sucht nach Updates und beendet          |
 
 ### Probes
 
-| Flag            | Standard    | Beschreibung                                                                                        |
-| --------------- | ----------- | --------------------------------------------------------------------------------------------------- |
-| `-c <n>`        | unbegrenzt  | Nach `<n>` Probes anhalten, unabhängig vom Ergebnis                                                 |
-| `-i <seconds>`  | `1`         | Intervall zwischen den Probes. Dezimalzahl erlaubt, z. B. `-i 0.5`                                  |
-| `-t <seconds>`  | `1`         | Wartezeit auf eine Antwort in Sekunden. Dezimalzahl erlaubt. `0` bedeutet unendliches Timeout       |
-| `-4`            |             | Nur IPv4-Adressen verwenden                                                                         |
-| `-6`            |             | Nur IPv6-Adressen verwenden                                                                         |
-| `-I <name\|IP>` |             | Schnittstellenname oder IP-Adresse, von der die Probes und die DNS-Abfragen gesendet werden        |
+| Flag            | Standard   | Beschreibung                                                                                  |
+| --------------- | ---------- | --------------------------------------------------------------------------------------------- |
+| `-c <n>`        | unbegrenzt | Nach `<n>` Probes anhalten, unabhängig vom Ergebnis                                           |
+| `-i <seconds>`  | `1`        | Intervall zwischen den Probes. Dezimalzahl erlaubt, z. B. `-i 0.5`                            |
+| `-t <seconds>`  | `1`        | Wartezeit auf eine Antwort in Sekunden. Dezimalzahl erlaubt. `0` bedeutet unendliches Timeout |
+| `-4`            |            | Nur IPv4-Adressen verwenden                                                                   |
+| `-6`            |            | Nur IPv6-Adressen verwenden                                                                   |
+| `-I <name\|IP>` |            | Schnittstellenname oder IP-Adresse, von der die Probes und die DNS-Abfragen gesendet werden   |
 
 > [!TIP]
 > Ohne die Flags `-4` und `-6` wählt tcping anhand der DNS-Abfragen zufällig eine IP-Adresse aus.
 
 ### Namensauflösung
 
-| Flag                      | Standard    | Beschreibung                                                                                                                                                              |
-| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-r <n>`                  | nie         | Den Hostnamen des Ziels nach `<n>` fehlgeschlagenen Probes erneut auflösen, z. B. `-r 10`                                                                                 |
-| `--resolve-every-probe`   |             | Den Hostnamen des Ziels vor jeder einzelnen Probe statt nur beim Start auflösen. Hat Vorrang vor `-r` und wirkt nicht, wenn das Ziel eine IP-Adresse ist                   |
-| `--dns-server <IP>`       | systemweit  | Zu verwendender eigener DNS-Server. Eine Kombination aus IP und Port ist erlaubt, z. B. `--dns-server 1.1.1.1:53`                                                         |
-| `--dns-timeout <seconds>` | `2`         | Wartezeit auf eine DNS-Antwort in Sekunden. Dezimalzahl erlaubt. `0` bedeutet unendliches Timeout                                                                         |
+| Flag                      | Standard   | Beschreibung                                                                                                                                             |
+| ------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-r <n>`                  | nie        | Den Hostnamen des Ziels nach `<n>` fehlgeschlagenen Probes erneut auflösen, z. B. `-r 10`                                                                |
+| `--resolve-every-probe`   |            | Den Hostnamen des Ziels vor jeder einzelnen Probe statt nur beim Start auflösen. Hat Vorrang vor `-r` und wirkt nicht, wenn das Ziel eine IP-Adresse ist |
+| `--dns-server <IP>`       | systemweit | Zu verwendender eigener DNS-Server. Eine Kombination aus IP und Port ist erlaubt, z. B. `--dns-server 1.1.1.1:53`                                        |
+| `--dns-timeout <seconds>` | `2`        | Wartezeit auf eine DNS-Antwort in Sekunden. Dezimalzahl erlaubt. `0` bedeutet unendliches Timeout                                                        |
 
 ### Terminalausgabe
 
-| Flag                    | Standard | Beschreibung                                                                                                                                                                                                                                                                                                                  |
-| ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-D`                    |          | Für jede Probe einen Zeitstempel zeigen                                                                                                                                                                                                                                                                                      |
-| `--no-color`            |          | Die Ausgabe nicht einfärben                                                                                                                                                                                                                                                                                                   |
-| `--show-source-address` |          | Die für die Probes verwendete Quell-IP-Adresse und den Port zeigen                                                                                                                                                                                                                                                            |
-| `--failures-only`       |          | Nur die fehlgeschlagenen Probes zeigen. Die erfolgreichen werden weiterhin gezählt                                                                                                                                                                                                                                            |
-| `--no-stats`            |          | Die Statistik beim Beenden des Programms nicht zeigen. Ein Druck auf **Enter** zeigt sie weiterhin. Wirkt nicht, wenn die Ausgabe nicht ins Terminal geht                                                                                                                                                                    |
+| Flag                    | Standard | Beschreibung                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-D`                    |          | Für jede Probe einen Zeitstempel zeigen                                                                                                                                                                                                                                                                                                         |
+| `--no-color`            |          | Die Ausgabe nicht einfärben                                                                                                                                                                                                                                                                                                                     |
+| `--show-source-address` |          | Die für die Probes verwendete Quell-IP-Adresse und den Port zeigen                                                                                                                                                                                                                                                                              |
+| `--failures-only`       |          | Nur die fehlgeschlagenen Probes zeigen. Die erfolgreichen werden weiterhin gezählt                                                                                                                                                                                                                                                              |
+| `--no-stats`            |          | Die Statistik beim Beenden des Programms nicht zeigen. Ein Druck auf **Enter** zeigt sie weiterhin. Wirkt nicht, wenn die Ausgabe nicht ins Terminal geht                                                                                                                                                                                       |
 | `-v`                    |          | Alles zeigen, was eine HTTP(S)-Probe gesammelt hat: die HTTP-Version, die TLS-Version und Cipher Suite, den Ablauf des Zertifikats und die Zeiten für Verbindung, TLS und erstes Byte. Bei einem UDP-Ziel die Nummer der Probe und ob die Antwort sie zurückgebracht hat, sodass eine verlorene Probe erkennbar ist. Wirkt nicht bei TCP-Zielen |
 
 ### Datei- und maschinenlesbare Ausgabe
 
-| Flag               | Standard | Beschreibung                                                                                                                                                                                                              |
-| ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-j`               |          | Im `JSON`-Format ausgeben                                                                                                                                                                                                 |
-| `--pretty`         |          | Die `JSON`-Ausgabe lesbarer formatieren. Wirkt nicht ohne `-j`                                                                                                                                                            |
-| `--json-url <URL>` |          | Die `JSON`-Ausgabe an einen HTTP-Server senden statt auszugeben, ein `POST` pro Ereignis, z. B. `--json-url http://localhost:8000/tcping`. Schaltet die `JSON`-Ausgabe von selbst ein, `-j` ist also nicht nötig           |
+| Flag               | Standard | Beschreibung                                                                                                                                                                                                                      |
+| ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-j`               |          | Im `JSON`-Format ausgeben                                                                                                                                                                                                         |
+| `--pretty`         |          | Die `JSON`-Ausgabe lesbarer formatieren. Wirkt nicht ohne `-j`                                                                                                                                                                    |
+| `--json-url <URL>` |          | Die `JSON`-Ausgabe an einen HTTP-Server senden statt auszugeben, ein `POST` pro Ereignis, z. B. `--json-url http://localhost:8000/tcping`. Schaltet die `JSON`-Ausgabe von selbst ein, `-j` ist also nicht nötig                  |
 | `--json-server`    |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes dorthin gesendete `JSON`-Ereignis ausgeben, damit ein tcping mit `--json-url` anderswo ein Ziel für seinen Lauf hat, z. B. `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>`     |          | Die Ausgabe in einer `CSV`-Datei speichern. Die Statistik geht in denselben Namen mit der Endung `_stats`                                                                                                                 |
-| `--csv-fixed-name` |          | Den `--csv`-Dateinamen unverändert ohne Datums-/Zeitsuffix verwenden, sodass wiederholte Läufe dieselbe Datei überschreiben                                                                                                |
-| `--sqlite <file>`  |          | Die Ausgabe in einer sqlite3-Datenbank speichern, z. B. `--sqlite /tmp/tcping.db`. Unter Windows nicht verfügbar                                                                                                          |
+| `--csv <file>`     |          | Die Ausgabe in einer `CSV`-Datei speichern. Die Statistik geht in denselben Namen mit der Endung `_stats`                                                                                                                         |
+| `--csv-fixed-name` |          | Den `--csv`-Dateinamen unverändert ohne Datums-/Zeitsuffix verwenden, sodass wiederholte Läufe dieselbe Datei überschreiben                                                                                                       |
+| `--sqlite <file>`  |          | Die Ausgabe in einer sqlite3-Datenbank speichern, z. B. `--sqlite /tmp/tcping.db`. Unter Windows nicht verfügbar                                                                                                                  |
 
 ### Metriken
 
-| Flag                         | Standard | Beschreibung                                                                                                                                                                                                                                                                               |
-| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--otlp <URL>`               |          | Die Ergebnisse als Metriken an einen OTLP-HTTP-Endpunkt senden, etwa [Grafana Alloy](https://grafana.com/docs/alloy/latest/) oder den OpenTelemetry Collector, statt sie auszugeben, z. B. `--otlp http://localhost:4318`                                                                    |
-| `--otlp-header <header>`     |          | Zusätzlicher HTTP-Header für den `--otlp`-Endpunkt als `"Name: value"`, z. B. `"Authorization: Bearer <token>"`. Kann auch in der Umgebungsvariable `OTLP_HEADER` angegeben werden, damit er nicht in Ihrer Shell-Historie landet                                                          |
-| `--influxdb <URL>`           |          | Die Ergebnisse als Line Protocol auf einen [InfluxDB](https://www.influxdata.com/)-v2- oder -v3-Server schreiben statt sie auszugeben, z. B. `--influxdb http://localhost:8086`                                                                                                            |
-| `--influxdb-org <org>`       |          | InfluxDB-Organisation, in die geschrieben wird. Erforderlich mit `--influxdb`                                                                                                                                                                                                              |
-| `--influxdb-bucket <bucket>` |          | InfluxDB-Bucket, in den geschrieben wird. Erforderlich mit `--influxdb`                                                                                                                                                                                                                    |
-| `--influxdb-token <token>`   |          | InfluxDB-API-Token. Erforderlich mit `--influxdb`. Kann auch in der Umgebungsvariable `INFLUXDB_TOKEN` angegeben werden, damit es nicht in Ihrer Shell-Historie landet                                                                                                                      |
-| `--stats-interval <seconds>` | `10`     | Wie oft die Statistik an den OTLP-Endpunkt oder InfluxDB gesendet wird. Wirkt nicht ohne `--otlp` oder `--influxdb`                                                                                                                                                                        |
+| Flag                         | Standard | Beschreibung                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--otlp <URL>`               |          | Die Ergebnisse als Metriken an einen OTLP-HTTP-Endpunkt senden, etwa [Grafana Alloy](https://grafana.com/docs/alloy/latest/) oder den OpenTelemetry Collector, statt sie auszugeben, z. B. `--otlp http://localhost:4318`                                                                                                                |
+| `--otlp-header <header>`     |          | Zusätzlicher HTTP-Header für den `--otlp`-Endpunkt als `"Name: value"`, z. B. `"Authorization: Bearer <token>"`. Kann auch in der Umgebungsvariable `OTLP_HEADER` angegeben werden, damit er nicht in Ihrer Shell-Historie landet                                                                                                        |
+| `--influxdb <URL>`           |          | Die Ergebnisse als Line Protocol auf einen [InfluxDB](https://www.influxdata.com/)-v2- oder -v3-Server schreiben statt sie auszugeben, z. B. `--influxdb http://localhost:8086`                                                                                                                                                          |
+| `--influxdb-org <org>`       |          | InfluxDB-Organisation, in die geschrieben wird. Erforderlich mit `--influxdb`                                                                                                                                                                                                                                                            |
+| `--influxdb-bucket <bucket>` |          | InfluxDB-Bucket, in den geschrieben wird. Erforderlich mit `--influxdb`                                                                                                                                                                                                                                                                  |
+| `--influxdb-token <token>`   |          | InfluxDB-API-Token. Erforderlich mit `--influxdb`. Kann auch in der Umgebungsvariable `INFLUXDB_TOKEN` angegeben werden, damit es nicht in Ihrer Shell-Historie landet                                                                                                                                                                   |
+| `--stats-interval <seconds>` | `10`     | Wie oft die Statistik an den OTLP-Endpunkt oder InfluxDB gesendet wird. Wirkt nicht ohne `--otlp` oder `--influxdb`                                                                                                                                                                                                                      |
 | `--source-label <name>`      | Hostname | Diesen Rechner in den `JSON`-Ereignissen und in den per OTLP oder an InfluxDB gesendeten Metriken benennen, damit mehrere Rechner, die dasselbe Ziel prüfen, unterscheidbar sind. Ergebnisse, die anderswohin gesendet werden, tragen den Hostnamen, wenn dies nicht angegeben ist; Ausgaben, die auf dem Rechner bleiben, tragen nichts |
 
 ### HTTP(S) und UDP
 
-| Flag           | Standard | Beschreibung                                                                                                                                                           |
-| -------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                |
+| Flag           | Standard | Beschreibung                                                                                                                                                                              |
+| -------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`   |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                  |
 | `--udp-server` |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt |
 
 ---
