@@ -63,7 +63,7 @@ Register-ArgumentCompleter -Native -CommandName tcping, tcping.exe -ScriptBlock 
 	}
 
 	$script:TcpingFlags.GetEnumerator() |
-		Where-Object { $_.Key -like "$wordToComplete*" } |
+		Where-Object { $_.Key -clike "$wordToComplete*" } |
 		ForEach-Object {
 			[System.Management.Automation.CompletionResult]::new(
 				$_.Key, $_.Key, 'ParameterName', $_.Value)
