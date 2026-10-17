@@ -331,7 +331,7 @@ which you get with `nix develop`.
   make build
   ```
 
-  This will place the executables in the `output` folder.
+  This will place the executable in the `target` folder.
 
 ### Shell Completions
 
