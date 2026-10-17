@@ -159,9 +159,12 @@ jobs:
         if: ${{ steps.key.outputs.set == 'true' }}
         working-directory: aur
         # makepkg refuses to run as root, which is what the container is, so it
-        # runs as a user made for it. It only reads the PKGBUILD here.
+        # runs as a user made for it. It only reads the PKGBUILD here. The
+        # redirect stays with root on purpose, so the build user does not need
+        # write access to the checkout.
         run: |
           useradd --create-home build
+          # shellcheck disable=SC2024
           sudo --user=build makepkg --printsrcinfo >.SRCINFO
 
       - name: Push the package
