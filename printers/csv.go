@@ -3,6 +3,7 @@ package printers
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -439,6 +440,21 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		statistics = append(statistics, []string{"End Timestamp", s.EndTimeFormatted()})
 	} else {
 		statistics = append(statistics, []string{"End Timestamp", ""})
+	}
+
+	// Pressing Enter mid-run asks for the statistics too, so the file is
+	// started over every time and only ever holds the newest block.
+	if _, err := p.statsFile.Seek(0, io.SeekStart); err != nil {
+		p.PrintError("failed to rewind %s: %v", p.statsFile.Name(), err)
+		return
+	}
+	if err := p.statsFile.Truncate(0); err != nil {
+		p.PrintError("failed to empty %s: %v", p.statsFile.Name(), err)
+		return
+	}
+	if err := p.writeStatsHeader(); err != nil {
+		p.PrintError("%v", err)
+		return
 	}
 
 	for _, record := range statistics {

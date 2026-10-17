@@ -636,6 +636,41 @@ func TestCSVStatisticsReportHostnameChanges(t *testing.T) {
 	}
 }
 
+// Pressing Enter prints the statistics mid-run. The file must still end up
+// with a single block, the final one, not one block per Enter press.
+func TestCSVStatisticsFileHoldsOnlyTheNewestBlock(t *testing.T) {
+	p := csvTestPrinter(t, Config{})
+
+	probeStats := csvTestStats()
+	p.PrintStart(probeStats)
+
+	probeStats.TotalSuccessfulProbes = 1
+	captureStdout(t, func() { p.PrintStatistics(probeStats) })
+
+	probeStats.TotalSuccessfulProbes = 5
+	captureStdout(t, func() { p.Shutdown(probeStats) })
+
+	records := readCSV(t, p, p.statsFile.Name())
+
+	headers, blocks := 0, 0
+	for _, record := range records {
+		if record[0] == "Statistic" {
+			headers++
+		}
+		if record[0] == "IP Address" {
+			blocks++
+		}
+	}
+	if headers != 1 || blocks != 1 {
+		t.Errorf("the statistics file has %d headers and %d blocks, want 1 of each: %q", headers, blocks, records)
+	}
+
+	rows := statsRows(t, p)
+	if rows["Total Successful Packets"] != "5" {
+		t.Errorf("Total Successful Packets = %q, want the final 5", rows["Total Successful Packets"])
+	}
+}
+
 func TestCSVShutdownWritesTheStatisticsFile(t *testing.T) {
 	p := csvTestPrinter(t, Config{})
 
