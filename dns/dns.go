@@ -43,29 +43,6 @@ type Resolver struct {
 	useIPv6  bool
 }
 
-// NewResolver creates a Resolver that queries dnsServer (or the system
-// default, if empty), giving up after timeout (0 means no timeout). When
-// networkInterface.Use is set, lookups are performed from its source
-// address, matching the -I flag's interface for probes - using whichever
-// of its addresses matches the DNS server's own address family.
-//
-// dnsServer must be an IP address, optionally with a port. Anything else,
-// such as a hostname, is refused instead of quietly falling back to the
-// system default.
-func NewResolver(dnsServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) (*Resolver, error) {
-	dialAddress, err := getDialAddress(dnsServer)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Resolver{
-		resolver: createDNSResolver(dialAddress, timeout, networkInterface),
-		timeout:  timeout,
-		useIPv4:  useIPv4,
-		useIPv6:  useIPv6,
-	}, nil
-}
-
 // getDialAddress computes the override address for the resolver's Dial func.
 // Returns "" if no override should happen, and an error if dnsServer is not
 // an IP address with an optional port.
@@ -85,31 +62,6 @@ func getDialAddress(dnsServer string) (string, error) {
 	}
 
 	return net.JoinHostPort(ip.String(), port), nil
-}
-
-// createDNSResolver creates a new net.Resolver that sends every lookup to
-// dialAddress, or to what is configured on the device if dialAddress is
-// empty. It helps bypass incorrect OS DNS cache entries.
-// See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
-// When networkInterface.Use is set, lookups are dialed from whichever of
-// its addresses matches the DNS server's address family. dialTimeout of 0
-// means no timeout, matching net.Dialer's own zero-value semantics.
-func createDNSResolver(dialAddress string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
-	return &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			if dialAddress != "" {
-				address = dialAddress
-			}
-
-			d := net.Dialer{Timeout: dialTimeout}
-			if networkInterface.Use {
-				d.LocalAddr = localAddrForDial(network, address, networkInterface)
-			}
-
-			return d.DialContext(ctx, network, address)
-		},
-	}
 }
 
 // localAddrForDial returns the net.Addr net.Dialer.LocalAddr should use to
@@ -148,6 +100,54 @@ func localAddrForDial(network, address string, networkInterface nic.NetworkInter
 		return &net.TCPAddr{IP: localIP}
 	}
 	return &net.UDPAddr{IP: localIP}
+}
+
+// createDNSResolver creates a new net.Resolver that sends every lookup to
+// dialAddress, or to what is configured on the device if dialAddress is
+// empty. It helps bypass incorrect OS DNS cache entries.
+// See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
+// When networkInterface.Use is set, lookups are dialed from whichever of
+// its addresses matches the DNS server's address family. dialTimeout of 0
+// means no timeout, matching net.Dialer's own zero-value semantics.
+func createDNSResolver(dialAddress string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
+	return &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			if dialAddress != "" {
+				address = dialAddress
+			}
+
+			d := net.Dialer{Timeout: dialTimeout}
+			if networkInterface.Use {
+				d.LocalAddr = localAddrForDial(network, address, networkInterface)
+			}
+
+			return d.DialContext(ctx, network, address)
+		},
+	}
+}
+
+// NewResolver creates a Resolver that queries dnsServer (or the system
+// default, if empty), giving up after timeout (0 means no timeout). When
+// networkInterface.Use is set, lookups are performed from its source
+// address, matching the -I flag's interface for probes - using whichever
+// of its addresses matches the DNS server's own address family.
+//
+// dnsServer must be an IP address, optionally with a port. Anything else,
+// such as a hostname, is refused instead of quietly falling back to the
+// system default.
+func NewResolver(dnsServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) (*Resolver, error) {
+	dialAddress, err := getDialAddress(dnsServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Resolver{
+		resolver: createDNSResolver(dialAddress, timeout, networkInterface),
+		timeout:  timeout,
+		useIPv4:  useIPv4,
+		useIPv6:  useIPv6,
+	}, nil
 }
 
 // selectRandomIP returns an IPv4, IPv6 or a random resolved address,
