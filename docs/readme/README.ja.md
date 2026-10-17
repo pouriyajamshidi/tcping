@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 `ICMP` の代わりに `TCP`、`UDP`、`HTTP(S)` を使う、Linux の ping ツールにヒントを得たクロスプラットフォームの ping プログラムです。
 
 > [!TIP]
-> このドキュメントは [English](README.md)、[中文](README.cn.md)、[한국어](README.ko.md)、[فارسی](README.fa.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md) でも読めます。
+> このドキュメントは [English](../../README.md)、[中文](README.cn.md)、[한국어](README.ko.md)、[فارسی](README.fa.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md) でも読めます。
 
 - `ICMP` がブロックされている環境で `ping` の代わりになり、`TCP`、`HTTP(S)`、`UDP` で疎通を確認します。
 - `ping` と同じように、パケットロス率と、遅延の最小値、平均値、最大値、標準偏差を報告します。さらに、最も長い稼働時間とダウンタイム、そしてそれらがいつ起きたかも報告します。
@@ -53,79 +53,79 @@
 
 ### 基本的な使い方
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### タイムスタンプ付きの IPv4 プローブ（`-D -4`）フラグ
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### プレーンテキスト出力で、Enter を押したときだけ統計情報を表示（`--no-color --no-stats`）フラグ
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### ホスト名の再解決（`-r`）フラグ
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON 出力（`-j --pretty`）フラグ
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### JSON 出力をコレクターへストリーミング（`--json-url --json-server`）フラグ
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### ホスト名の解決にかかった時間（`--resolve-every-probe`）フラグ
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### 送信元インターフェース（`-I`）フラグ
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### HTTP(S) プローブ
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### HTTP(S) プローブの詳細（`-v`）フラグ
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### 証明書の検証をスキップ（`--insecure`）フラグ
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### UDP サーバーへの UDP プローブ（`--udp-server`）フラグ
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### 失敗したプローブだけを表示（`--failures-only`）フラグ
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -577,7 +577,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 送られるすべての内容、その問い合わせ方、そして Grafana と tcping を含み 1 つのコマンドで起動できる、
 すぐ使える Prometheus、Alloy、OpenTelemetry Collector、InfluxDB の環境
 （先にサーバーを用意しなくても試せます）は、
-[docs/observability](docs/observability/README.md) にあります。
+[docs/observability](../observability/README.md) にあります。
 
 ---
 

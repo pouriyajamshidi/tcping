@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 Un programme ping multiplateforme qui utilise `TCP`, `UDP` ou `HTTP(S)` à la place d'`ICMP`, inspiré de l'utilitaire ping de Linux.
 
 > [!TIP]
-> Ce document est aussi disponible en [English](README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md) et [Nederlands](README.nl.md).
+> Ce document est aussi disponible en [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md) et [Nederlands](README.nl.md).
 
 - Une alternative à `ping` là où `ICMP` est bloqué, qui sonde en `TCP`, `HTTP(S)` ou `UDP`.
 - Indique la perte de paquets ainsi que le minimum, la moyenne, le maximum et l'écart type de la latence, comme le fait `ping`, plus la plus longue durée de disponibilité et d'indisponibilité et le moment où elles ont eu lieu.
@@ -53,79 +53,79 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 
 ### Utilisation de base
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### Sondes horodatées en IPv4 (options `-D -4`)
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### Sortie brute, statistiques seulement quand on appuie sur Entrée (options `--no-color --no-stats`)
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### Nouvelle tentative de résolution du nom d'hôte (option `-r`)
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### Sortie JSON (options `-j --pretty`)
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### Diffuser la sortie JSON vers un collecteur (options `--json-url --json-server`)
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### Durée de la résolution du nom d'hôte (option `--resolve-every-probe`)
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### Interface source (option `-I`)
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### Sondes HTTP(S)
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### Détails des sondes HTTP(S) (option `-v`)
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### Ignorer la vérification du certificat (option `--insecure`)
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### Sondes UDP vers un serveur UDP (option `--udp-server`)
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### Uniquement les sondes échouées (option `--failures-only`)
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -590,7 +590,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 Tout ce qui est envoyé, comment l'interroger, et des environnements Prometheus, Alloy,
 OpenTelemetry Collector et InfluxDB prêts à l'emploi, avec Grafana et tcping, que vous
 pouvez lancer en une commande pour essayer sans installer de serveur d'abord, se trouvent dans
-[docs/observability](docs/observability/README.md).
+[docs/observability](../observability/README.md).
 
 ---
 

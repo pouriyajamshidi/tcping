@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 Een platformonafhankelijk ping-programma dat `TCP`, `UDP` of `HTTP(S)` gebruikt in plaats van `ICMP`, geïnspireerd door het ping-hulpprogramma van Linux.
 
 > [!TIP]
-> Dit document is ook beschikbaar in het [English](README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md) en [Français](README.fr.md).
+> Dit document is ook beschikbaar in het [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md) en [Français](README.fr.md).
 
 - Een alternatief voor `ping` waar `ICMP` geblokkeerd is: het test via `TCP`, `HTTP(S)` of `UDP`.
 - Meldt het pakketverlies en het minimum, het gemiddelde, het maximum en de standaardafwijking van de latentie, zoals `ping` dat doet, plus de langste uptime en downtime en wanneer die optraden.
@@ -53,79 +53,79 @@ Bekijk de [demo's](#demos) voor een indruk van het uiterlijk en het gebruik van 
 
 ### Basisgebruik
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### Probes met tijdstempel via IPv4 (`-D -4`) flags
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### Platte uitvoer, statistieken alleen bij Enter (`--no-color --no-stats`) flags
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### Hostnaam opnieuw opzoeken (`-r`) flag
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON-uitvoer (`-j --pretty`) flag
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### De JSON-uitvoer naar een collector streamen (`--json-url --json-server`) flags
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### Tijd voor het opzoeken van de hostnaam (`--resolve-every-probe`) flag
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### Bronnetwerkinterface (`-I`) flag
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### HTTP(S)-probes
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### Details van HTTP(S)-probes (`-v`) flag
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### Certificaatcontrole overslaan (`--insecure`) flag
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### UDP-probes tegen een UDP-server (`--udp-server`) flag
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### Alleen de mislukte probes (`--failures-only`) flag
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -590,7 +590,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 Alles wat wordt verstuurd, hoe u het opvraagt, en kant-en-klare Prometheus-, Alloy-,
 OpenTelemetry-Collector- en InfluxDB-omgevingen, met Grafana en tcping, die u
 met één commando kunt starten om dit uit te proberen zonder eerst een server op te zetten, staan in
-[docs/observability](docs/observability/README.md).
+[docs/observability](../observability/README.md).
 
 ---
 

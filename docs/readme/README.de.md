@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 Ein plattformübergreifendes Ping-Programm, das `TCP`, `UDP` oder `HTTP(S)` statt `ICMP` verwendet und vom Ping-Werkzeug von Linux inspiriert ist.
 
 > [!TIP]
-> Dieses Dokument gibt es auch auf [English](README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Français](README.fr.md) und [Nederlands](README.nl.md).
+> Dieses Dokument gibt es auch auf [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Français](README.fr.md) und [Nederlands](README.nl.md).
 
 - Eine Alternative zu `ping`, wo `ICMP` blockiert ist: Es prüft die Erreichbarkeit über `TCP`, `HTTP(S)` oder `UDP`.
 - Meldet den Paketverlust sowie Minimum, Durchschnitt, Maximum und Standardabweichung der Latenz, genau wie `ping`, dazu die längste Betriebs- und Ausfallzeit und wann sie aufgetreten sind.
@@ -53,79 +53,79 @@ In den [Demos](#demos) bekommen Sie einen Eindruck vom Aussehen und der Bedienun
 
 ### Grundlegende Verwendung
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### Probes mit Zeitstempel über IPv4 (`-D -4`) Flags
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### Einfache Ausgabe, Statistik nur bei Druck auf Enter (`--no-color --no-stats`) Flags
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### Hostnamen-Abfrage wiederholen (`-r`) Flag
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON-Ausgabe (`-j --pretty`) Flag
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### Die JSON-Ausgabe an einen Collector streamen (`--json-url --json-server`) Flags
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### Dauer der Hostnamen-Auflösung (`--resolve-every-probe`) Flag
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### Quellschnittstelle (`-I`) Flag
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### HTTP(S)-Probes
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### Details der HTTP(S)-Probes (`-v`) Flag
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### Zertifikatsprüfung überspringen (`--insecure`) Flag
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### UDP-Probes gegen einen UDP-Server (`--udp-server`) Flag
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### Nur die fehlgeschlagenen Probes (`--failures-only`) Flag
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -590,7 +590,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 Alles, was gesendet wird, wie man es abfragt, und fertige Prometheus-, Alloy-,
 OpenTelemetry-Collector- und InfluxDB-Stacks mit Grafana und tcping, die Sie
 mit einem Befehl starten können, um das auszuprobieren, ohne zuerst einen Server aufzusetzen, stehen in
-[docs/observability](docs/observability/README.md).
+[docs/observability](../observability/README.md).
 
 ---
 

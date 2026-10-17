@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 一个跨平台的 ping 程序，使用 `TCP`、`UDP` 或 `HTTP(S)` 代替 `ICMP`，灵感来自 Linux 的 ping 工具。
 
 > [!TIP]
-> 本文档也提供 [English](README.md)、[日本語](README.ja.md)、[한국어](README.ko.md)、[فارسی](README.fa.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md) 版本。
+> 本文档也提供 [English](../../README.md)、[日本語](README.ja.md)、[한국어](README.ko.md)、[فارسی](README.fa.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md) 版本。
 
 - 在 `ICMP` 被阻止的环境中替代 `ping`，通过 `TCP`、`HTTP(S)` 或 `UDP` 进行探测。
 - 和 `ping` 一样报告丢包率，以及延迟的最小值、平均值、最大值和标准差，另外还有最长的正常运行时间和停机时间以及它们发生的时间。
@@ -53,79 +53,79 @@
 
 ### 基本用法
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### 带时间戳的 IPv4 探测（`-D -4`）标志
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### 纯文本输出，仅在按下 Enter 时显示统计信息（`--no-color --no-stats`）标志
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### 重试主机名查找（`-r`）标志
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON 输出（`-j --pretty`）标志
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### 将 JSON 输出流式发送到收集器（`--json-url --json-server`）标志
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### 主机名解析耗时（`--resolve-every-probe`）标志
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### 来源接口（`-I`）标志
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### HTTP(S) 探测
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### HTTP(S) 探测详情（`-v`）标志
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### 跳过证书验证（`--insecure`）标志
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### 对 UDP 服务器进行 UDP 探测（`--udp-server`）标志
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### 仅显示失败的探测（`--failures-only`）标志
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -572,7 +572,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 所有会被发送的内容、如何查询它们，以及现成的 Prometheus、Alloy、
 OpenTelemetry Collector 和 InfluxDB 环境（包含 Grafana 和 tcping，一条命令即可启动，
 无需先搭建服务器就能试用），都在
-[docs/observability](docs/observability/README.md) 中。
+[docs/observability](../observability/README.md) 中。
 
 ---
 

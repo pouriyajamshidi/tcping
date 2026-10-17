@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 یک برنامه‌ی ping چندسکویی که به جای `ICMP` از `TCP`، `UDP` یا `HTTP(S)` استفاده می‌کند و از ابزار ping در لینوکس الهام گرفته است.
 
 > [!TIP]
-> این سند به زبان‌های [English](README.md)، [中文](README.cn.md)، [日本語](README.ja.md)، [한국어](README.ko.md)، [Deutsch](README.de.md)، [Français](README.fr.md) و [Nederlands](README.nl.md) هم موجود است.
+> این سند به زبان‌های [English](../../README.md)، [中文](README.cn.md)، [日本語](README.ja.md)، [한국어](README.ko.md)، [Deutsch](README.de.md)، [Français](README.fr.md) و [Nederlands](README.nl.md) هم موجود است.
 
 - جایگزینی برای `ping` در جاهایی که `ICMP` مسدود است و از طریق `TCP`، `HTTP(S)` یا `UDP` بررسی می‌کند.
 - مانند `ping` درصد از دست رفتن بسته‌ها و کمینه، میانگین، بیشینه و انحراف معیار تأخیر را گزارش می‌دهد، به‌علاوه‌ی طولانی‌ترین زمان فعال بودن و قطعی و اینکه چه زمانی رخ داده‌اند.
@@ -53,79 +53,79 @@
 
 ### استفاده‌ی پایه
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### probeهای زمان‌دار روی IPv4 (پارامترهای `-D -4`)
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### خروجی ساده، آمار فقط با فشردن Enter (پارامترهای `--no-color --no-stats`)
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### تلاش دوباره برای resolve کردن نام میزبان (پارامتر `-r`)
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### خروجی JSON (پارامترهای `-j --pretty`)
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### ارسال زنده‌ی خروجی JSON به یک collector (پارامترهای `--json-url --json-server`)
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### زمان resolve کردن نام میزبان (پارامتر `--resolve-every-probe`)
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### رابط مبدأ (پارامتر `-I`)
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### probeهای HTTP(S)
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### جزئیات probeهای HTTP(S) (پارامتر `-v`)
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### نادیده گرفتن بررسی گواهی (پارامتر `--insecure`)
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### probeهای UDP به یک سرور UDP (پارامتر `--udp-server`)
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### فقط probeهای ناموفق (پارامتر `--failures-only`)
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -590,7 +590,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 هر آنچه فرستاده می‌شود، روش پرس‌وجو از آن، و محیط‌های آماده‌ی Prometheus، Alloy،
 OpenTelemetry Collector و InfluxDB با Grafana و tcping که می‌توانید
 با یک دستور راه بیندازید تا بدون راه‌اندازی سرور از قبل این را امتحان کنید، در
-[docs/observability](docs/observability/README.md) هستند.
+[docs/observability](../observability/README.md) هستند.
 
 ---
 

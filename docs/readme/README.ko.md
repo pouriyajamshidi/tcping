@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="../Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -19,7 +19,7 @@
 `ICMP` 대신 `TCP`, `UDP`, `HTTP(S)`를 사용하는 크로스 플랫폼 ping 프로그램으로, Linux의 ping 유틸리티에서 영감을 받았습니다.
 
 > [!TIP]
-> 이 문서는 [English](README.md), [中文](README.cn.md), [日本語](README.ja.md), [فارسی](README.fa.md), [Deutsch](README.de.md), [Français](README.fr.md), [Nederlands](README.nl.md)로도 볼 수 있습니다.
+> 이 문서는 [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [فارسی](README.fa.md), [Deutsch](README.de.md), [Français](README.fr.md), [Nederlands](README.nl.md)로도 볼 수 있습니다.
 
 - `ICMP`가 차단된 환경에서 `ping`을 대신해 `TCP`, `HTTP(S)`, `UDP`로 연결을 확인합니다.
 - `ping`과 같은 방식으로 패킷 손실률과 지연 시간의 최솟값, 평균값, 최댓값, 표준 편차를 보고하며, 가장 긴 가동 시간과 중단 시간, 그리고 그것이 언제 일어났는지도 알려 줍니다.
@@ -53,79 +53,79 @@
 
 ### 기본 사용법
 
-![tcping](docs/Images/gifs/tcping.gif)
+![tcping](../Images/gifs/tcping.gif)
 
 ---
 
 ### 타임스탬프가 있는 IPv4 프로브(`-D -4`) 플래그
 
-![tcping timestamp example](docs/Images/gifs/tcping_timestamp.gif)
+![tcping timestamp example](../Images/gifs/tcping_timestamp.gif)
 
 ---
 
 ### 일반 텍스트 출력, Enter를 누를 때만 통계 표시(`--no-color --no-stats`) 플래그
 
-![tcping plain output example](docs/Images/gifs/tcping_plain.gif)
+![tcping plain output example](../Images/gifs/tcping_plain.gif)
 
 ---
 
 ### 호스트 이름 조회 재시도(`-r`) 플래그
 
-![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
+![tcping resolve example](../Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON 출력(`-j --pretty`) 플래그
 
-![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
+![tcping json example](../Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ### JSON 출력을 수집기로 스트리밍(`--json-url --json-server`) 플래그
 
-![tcping JSON streaming example](docs/Images/gifs/tcping_json_stream.gif)
+![tcping JSON streaming example](../Images/gifs/tcping_json_stream.gif)
 
 ---
 
 ### 호스트 이름 해석 시간(`--resolve-every-probe`) 플래그
 
-![tcping resolution timing example](docs/Images/gifs/tcping_dns_timing.gif)
+![tcping resolution timing example](../Images/gifs/tcping_dns_timing.gif)
 
 ---
 
 ### 출발 인터페이스(`-I`) 플래그
 
-![tcping interface example](docs/Images/gifs/tcping_interface.gif)
+![tcping interface example](../Images/gifs/tcping_interface.gif)
 
 ---
 
 ### HTTP(S) 프로브
 
-![tcping HTTP example](docs/Images/gifs/tcping_http.gif)
+![tcping HTTP example](../Images/gifs/tcping_http.gif)
 
 ---
 
 ### HTTP(S) 프로브 상세 정보(`-v`) 플래그
 
-![tcping HTTP verbose example](docs/Images/gifs/tcping_http_verbose.gif)
+![tcping HTTP verbose example](../Images/gifs/tcping_http_verbose.gif)
 
 ---
 
 ### 인증서 검증 건너뛰기(`--insecure`) 플래그
 
-![tcping skip TLS example](docs/Images/gifs/tcping_skip_tls.gif)
+![tcping skip TLS example](../Images/gifs/tcping_skip_tls.gif)
 
 ---
 
 ### UDP 서버에 대한 UDP 프로브(`--udp-server`) 플래그
 
-![tcping UDP example](docs/Images/gifs/tcping_udp.gif)
+![tcping UDP example](../Images/gifs/tcping_udp.gif)
 
 ---
 
 ### 실패한 프로브만 표시(`--failures-only`) 플래그
 
-![tcping failures only example](docs/Images/gifs/tcping_failures_only.gif)
+![tcping failures only example](../Images/gifs/tcping_failures_only.gif)
 
 </details>
 
@@ -579,7 +579,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 전송되는 모든 내용, 조회하는 방법, 그리고 서버를 먼저 준비하지 않고도 한 번의 명령으로 시작해
 써 볼 수 있는, Grafana와 tcping이 포함된 미리 만들어진 Prometheus, Alloy,
 OpenTelemetry Collector, InfluxDB 환경은
-[docs/observability](docs/observability/README.md)에 있습니다.
+[docs/observability](../observability/README.md)에 있습니다.
 
 ---
 
