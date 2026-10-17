@@ -50,7 +50,7 @@ $script:TcpingFlags['--stats-interval'] = 'How often to send the statistics to O
 $script:TcpingFlags['--source-label'] = 'Name this machine in the metrics sent to OTLP or InfluxDB'
 
 $script:TcpingFlags['--insecure'] = 'Do not verify the server certificate of an https:// target'
-$script:TcpingFlags['--proxy'] = 'Send HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128'
+$script:TcpingFlags['--proxy'] = 'Send TCP and HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128'
 $script:TcpingFlags['--udp-server'] = 'Do not probe. Echo every received UDP datagram back to its sender'
 
 Register-ArgumentCompleter -Native -CommandName tcping, tcping.exe -ScriptBlock {

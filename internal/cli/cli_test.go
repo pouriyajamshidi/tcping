@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pouriyajamshidi/tcping/v3/config"
 	"github.com/pouriyajamshidi/tcping/v3/dns"
 	"github.com/pouriyajamshidi/tcping/v3/nic"
 )
@@ -52,23 +53,26 @@ func TestProxyForFlag(t *testing.T) {
 	tests := []struct {
 		name      string
 		proxyFlag string
-		targetURL string
+		protocol  config.Protocol
 		want      string
 		wantErr   bool
 	}{
-		{name: "HTTP proxy", proxyFlag: "http://proxy.example.com:3128", targetURL: "https://example.com/", want: "http://proxy.example.com:3128"},
-		{name: "SOCKS proxy", proxyFlag: "socks5://127.0.0.1:1080", targetURL: "http://example.com/", want: "socks5://127.0.0.1:1080"},
-		{name: "no scheme", proxyFlag: "proxy.example.com:3128", targetURL: "https://example.com/", wantErr: true},
-		{name: "unsupported scheme", proxyFlag: "ftp://proxy.example.com", targetURL: "https://example.com/", wantErr: true},
-		{name: "TCP target", proxyFlag: "http://proxy.example.com:3128", targetURL: "", wantErr: true},
-		{name: "no proxy for a TCP target", proxyFlag: "", targetURL: "", want: ""},
+		{name: "HTTP proxy", proxyFlag: "http://proxy.example.com:3128", protocol: config.HTTPS, want: "http://proxy.example.com:3128"},
+		{name: "SOCKS proxy", proxyFlag: "socks5://127.0.0.1:1080", protocol: config.HTTP, want: "socks5://127.0.0.1:1080"},
+		{name: "HTTP proxy for a TCP target", proxyFlag: "http://proxy.example.com:3128", protocol: config.TCP, want: "http://proxy.example.com:3128"},
+		{name: "HTTPS proxy for a TCP target", proxyFlag: "https://proxy.example.com", protocol: config.TCP, want: "https://proxy.example.com"},
+		{name: "SOCKS proxy for a TCP target", proxyFlag: "socks5://127.0.0.1:1080", protocol: config.TCP, wantErr: true},
+		{name: "UDP target", proxyFlag: "http://proxy.example.com:3128", protocol: config.UDP, wantErr: true},
+		{name: "no scheme", proxyFlag: "proxy.example.com:3128", protocol: config.HTTPS, wantErr: true},
+		{name: "unsupported scheme", proxyFlag: "ftp://proxy.example.com", protocol: config.HTTPS, wantErr: true},
+		{name: "no proxy", proxyFlag: "", protocol: config.UDP, want: ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			proxy, err := proxyFor(tt.proxyFlag, tt.targetURL)
+			proxy, err := proxyFor(tt.proxyFlag, tt.protocol)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("proxyFor(%q, %q) error = %v, wantErr %v", tt.proxyFlag, tt.targetURL, err, tt.wantErr)
+				t.Fatalf("proxyFor(%q, %s) error = %v, wantErr %v", tt.proxyFlag, tt.protocol, err, tt.wantErr)
 			}
 
 			got := ""
@@ -76,7 +80,7 @@ func TestProxyForFlag(t *testing.T) {
 				got = proxy.String()
 			}
 			if got != tt.want {
-				t.Errorf("proxyFor(%q, %q) = %q, want %q", tt.proxyFlag, tt.targetURL, got, tt.want)
+				t.Errorf("proxyFor(%q, %s) = %q, want %q", tt.proxyFlag, tt.protocol, got, tt.want)
 			}
 		})
 	}
@@ -124,10 +128,10 @@ func TestProxyForIgnoresEnvironment(t *testing.T) {
 		t.Setenv(key, "http://proxy.example.com:3128")
 	}
 
-	for _, targetURL := range []string{"https://example.com/", "http://example.com/"} {
-		proxy, err := proxyFor("", targetURL)
+	for _, protocol := range []config.Protocol{config.TCP, config.HTTP, config.HTTPS} {
+		proxy, err := proxyFor("", protocol)
 		if err != nil || proxy != nil {
-			t.Errorf("proxyFor(\"\", %q) = %v, %v, want no proxy", targetURL, proxy, err)
+			t.Errorf("proxyFor(\"\", %s) = %v, %v, want no proxy", protocol, proxy, err)
 		}
 	}
 }

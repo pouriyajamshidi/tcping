@@ -1,9 +1,18 @@
 package probe
 
 import (
+	"bufio"
 	"context"
+	"crypto/tls"
+	"encoding/base64"
+	"errors"
+	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/netip"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -231,5 +240,195 @@ func TestPing_SucceedsWithMatchingInterfaceFamily(t *testing.T) {
 	localIP := result.LocalAddr.(*net.TCPAddr).IP
 	if !localIP.Equal(net.ParseIP("127.0.0.1")) {
 		t.Errorf("LocalAddr IP = %v, want 127.0.0.1", localIP)
+	}
+}
+
+// --- Ping through a proxy ----------------------------------------------
+
+// fakeHTTPProxy answers every CONNECT request with status and hands the
+// request over, so a test can see what the probe asked the proxy for.
+func fakeHTTPProxy(t *testing.T, status string) (netip.AddrPort, <-chan *http.Request) {
+	t.Helper()
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("fake proxy: %v", err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+
+	requests := make(chan *http.Request, 1)
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+
+			req, err := http.ReadRequest(bufio.NewReader(conn))
+			if err == nil {
+				requests <- req
+				_, _ = conn.Write([]byte("HTTP/1.1 " + status + "\r\n\r\n"))
+			}
+			_ = conn.Close()
+		}
+	}()
+
+	return netip.MustParseAddrPort(l.Addr().String()), requests
+}
+
+// silentProxy accepts connections and never says a word, like a proxy that
+// hangs while it tries to reach the target.
+func silentProxy(t *testing.T) netip.AddrPort {
+	t.Helper()
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("silent proxy: %v", err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+
+			// Read until the probe hangs up, then hang up too.
+			go func() {
+				_, _ = io.Copy(io.Discard, conn)
+				_ = conn.Close()
+			}()
+		}
+	}()
+
+	return netip.MustParseAddrPort(l.Addr().String())
+}
+
+// The probe asks the proxy for the hostname, not an IP, and dials the proxy
+// address looked up at startup: neither the target nor the proxy's hostname
+// resolves, so that is the only way it can succeed.
+func TestPing_ThroughHTTPProxy(t *testing.T) {
+	proxyAddr, requests := fakeHTTPProxy(t, "200 Connection established")
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "does-not-resolve.invalid",
+		port:      22,
+		proxy:     &url.URL{Scheme: "http", User: url.UserPassword("user", "secret"), Host: "proxy.does-not-resolve.invalid:3128"},
+		proxyAddr: proxyAddr,
+	}
+
+	result, err := tp.Ping(context.Background(), netip.Addr{})
+	if err != nil {
+		t.Fatalf("Ping() error = %v, want the probe to go through the proxy", err)
+	}
+
+	req := <-requests
+	if req.Method != http.MethodConnect || req.Host != "does-not-resolve.invalid:22" {
+		t.Errorf("the proxy was asked for %s %s, want CONNECT does-not-resolve.invalid:22", req.Method, req.Host)
+	}
+
+	wantLogin := "Basic " + base64.StdEncoding.EncodeToString([]byte("user:secret"))
+	if got := req.Header.Get("Proxy-Authorization"); got != wantLogin {
+		t.Errorf("Proxy-Authorization = %q, want %q", got, wantLogin)
+	}
+
+	if result.LocalAddr == nil {
+		t.Error("LocalAddr is nil, want the address the connection to the proxy came from")
+	}
+}
+
+// A proxy that will not connect is a failed probe, whatever the reason it
+// gives.
+func TestPing_ThroughHTTPProxyThatRefuses(t *testing.T) {
+	proxyAddr, _ := fakeHTTPProxy(t, "403 Forbidden")
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "http", Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	_, err := tp.Ping(context.Background(), netip.Addr{})
+	if err == nil || !strings.Contains(err.Error(), "403") {
+		t.Errorf("Ping() error = %v, want the proxy's 403", err)
+	}
+}
+
+// An https:// proxy is spoken to over TLS, and its certificate is checked
+// like any other: this one is self-signed, so the probe must not get through.
+func TestPing_ThroughHTTPSProxyChecksItsCertificate(t *testing.T) {
+	proxy := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	t.Cleanup(proxy.Close)
+
+	proxyAddr := netip.MustParseAddrPort(proxy.Listener.Addr().String())
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "https", Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	_, err := tp.Ping(context.Background(), netip.Addr{})
+
+	var certErr *tls.CertificateVerificationError
+	if !errors.As(err, &certErr) {
+		t.Errorf("Ping() error = %v, want the proxy's certificate to be refused", err)
+	}
+}
+
+// The timeout covers the whole talk with the proxy, not only reaching it, so
+// a proxy that never answers cannot hold a probe up for longer.
+func TestPing_ThroughProxyThatNeverAnswersTimesOut(t *testing.T) {
+	proxyAddr := silentProxy(t)
+
+	tp := Tcping{
+		timeout:   200 * time.Millisecond,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "http", Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	start := time.Now()
+	_, err := tp.Ping(context.Background(), netip.Addr{})
+
+	if err == nil {
+		t.Fatal("Ping() error = nil, want a timeout")
+	}
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Errorf("Ping() took %v, want it to give up after the 200ms timeout", elapsed)
+	}
+}
+
+// Ctrl+C has to stop a probe stuck on a silent proxy right away, even with
+// no timeout at all.
+func TestPing_ThroughProxyStopsWhenCancelled(t *testing.T) {
+	proxyAddr := silentProxy(t)
+
+	tp := Tcping{
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "http", Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, err := tp.Ping(ctx, netip.Addr{})
+
+	if err == nil {
+		t.Fatal("Ping() error = nil, want the cancelled probe to fail")
+	}
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Errorf("Ping() took %v, want it to stop when the context was cancelled", elapsed)
 	}
 }

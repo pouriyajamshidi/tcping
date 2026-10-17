@@ -46,7 +46,7 @@ type Statistics struct {
 	Protocol           config.Protocol
 	LastProbeHadFailed bool
 	DestIsIP           bool
-	Proxy              string // Proxy the HTTP(S) probes go through, e.g. http://proxy.example.com:3128. Empty when they connect directly.
+	Proxy              string // Proxy the TCP and HTTP(S) probes go through, e.g. http://proxy.example.com:3128. Empty when they connect directly.
 	LocalAddr          net.Addr
 	StartTime          time.Time
 	EndTime            time.Time

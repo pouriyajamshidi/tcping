@@ -232,10 +232,10 @@ func registerFlags() *flags {
 	flag.StringVar(&f.proxy,
 		"proxy",
 		"",
-		`Send HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128
-		or socks5://127.0.0.1:1080. The proxy connects to the target's
-		hostname on its own. The HTTPS_PROXY, HTTP_PROXY and NO_PROXY
-		environment variables are not used.`)
+		`Send TCP and HTTP(S) probes through a proxy, e.g.
+		http://proxy.example.com:3128 or socks5://127.0.0.1:1080. The proxy
+		connects to the target's hostname on its own. The HTTPS_PROXY,
+		HTTP_PROXY and NO_PROXY environment variables are not used.`)
 
 	flag.BoolVar(&f.udpServer,
 		"udp-server",
@@ -399,6 +399,12 @@ func (f *flags) validate() {
 	// only one of them can have it.
 	if f.udpServer && f.jsonServer {
 		fmt.Fprintln(os.Stderr, "Only one of --udp-server and --json-server can be used")
+		usage()
+	}
+
+	// Neither of them probes, so there is nothing to send through a proxy.
+	if f.proxy != "" && (f.udpServer || f.jsonServer) {
+		fmt.Fprintln(os.Stderr, "--proxy has no effect with --udp-server or --json-server")
 		usage()
 	}
 

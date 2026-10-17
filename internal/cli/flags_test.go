@@ -342,6 +342,16 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			want:  "Only one of -j/--json-url, --sqlite, --csv, --otlp and --influxdb can be used",
 		},
 		{
+			name:  "a UDP echo server behind a proxy",
+			flags: flags{proxy: "http://proxy.example.com:3128", udpServer: true, intervalBetweenProbes: 1},
+			want:  "--proxy has no effect with --udp-server or --json-server",
+		},
+		{
+			name:  "a JSON server behind a proxy",
+			flags: flags{proxy: "http://proxy.example.com:3128", jsonServer: true, intervalBetweenProbes: 1},
+			want:  "--proxy has no effect with --udp-server or --json-server",
+		},
+		{
 			name:  "retrying the lookup through a proxy",
 			flags: flags{proxy: "http://proxy.example.com:3128", retryHostnameResolveAfterNFailures: 3, intervalBetweenProbes: 1},
 			want:  "-r does not work with --proxy",

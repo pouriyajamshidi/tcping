@@ -65,7 +65,7 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		os.Exit(1)
 	}
 
-	proxy, err := proxyFor(f.proxy, target.url)
+	proxy, err := proxyFor(f.proxy, target.protocol)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -156,18 +156,18 @@ func ProcessUserInput() (config.Config, printers.Config) {
 	return cfg, f.newPrinterConfig(target.hostname, validatedPort)
 }
 
-// proxyFor parses the -proxy flag an HTTP(S) target is probed through. It
-// returns nil when the probes connect directly. The proxy environment
-// variables are left alone, so a proxy is only ever used when asked for.
-func proxyFor(proxyFlag, targetURL string) (*url.URL, error) {
+// proxyFor parses the -proxy flag the probes go through. It returns nil
+// when the probes connect directly. The proxy environment variables are left
+// alone, so a proxy is only ever used when asked for.
+func proxyFor(proxyFlag string, protocol config.Protocol) (*url.URL, error) {
 	if proxyFlag == "" {
 		return nil, nil
 	}
 
-	// Only an HTTP(S) target has a URL. A TCP or UDP probe cannot go through
-	// the proxy, and quietly probing directly would hide that.
-	if targetURL == "" {
-		return nil, errors.New("--proxy only works with http:// and https:// targets")
+	// A UDP probe cannot go through the proxy, and quietly probing directly
+	// would hide that.
+	if protocol == config.UDP {
+		return nil, errors.New("--proxy only works with TCP and HTTP(S) targets")
 	}
 
 	proxy, err := url.Parse(proxyFlag)
@@ -176,7 +176,12 @@ func proxyFor(proxyFlag, targetURL string) (*url.URL, error) {
 	}
 
 	switch proxy.Scheme {
-	case "http", "https", "socks5", "socks5h":
+	case "http", "https":
+		return proxy, nil
+	case "socks5", "socks5h":
+		if protocol == config.TCP {
+			return nil, fmt.Errorf("unsupported proxy %q for a TCP target, use an http:// or https:// URL", proxyFlag)
+		}
 		return proxy, nil
 	default:
 		return nil, fmt.Errorf("unsupported proxy %q, use an http://, https://, socks5:// or socks5h:// URL", proxyFlag)

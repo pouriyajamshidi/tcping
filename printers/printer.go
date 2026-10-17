@@ -48,9 +48,9 @@ func writerOrStdout(cfg Config) io.Writer {
 	return cfg.Writer
 }
 
-// viaProxy is the part of the start line that names the proxy the HTTP(S)
-// probes go through, e.g. " via proxy http://proxy.example.com:3128". It is
-// empty when they connect directly.
+// viaProxy is the part of the start line that names the proxy the probes go
+// through, e.g. " via proxy http://proxy.example.com:3128". It is empty when
+// they connect directly.
 func viaProxy(s *stats.Statistics) string {
 	if s.Proxy == "" {
 		return ""
