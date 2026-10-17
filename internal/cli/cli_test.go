@@ -61,7 +61,7 @@ func TestProxyForFlag(t *testing.T) {
 		{name: "SOCKS proxy", proxyFlag: "socks5://127.0.0.1:1080", protocol: config.HTTP, want: "socks5://127.0.0.1:1080"},
 		{name: "HTTP proxy for a TCP target", proxyFlag: "http://proxy.example.com:3128", protocol: config.TCP, want: "http://proxy.example.com:3128"},
 		{name: "HTTPS proxy for a TCP target", proxyFlag: "https://proxy.example.com", protocol: config.TCP, want: "https://proxy.example.com"},
-		{name: "SOCKS proxy for a TCP target", proxyFlag: "socks5://127.0.0.1:1080", protocol: config.TCP, wantErr: true},
+		{name: "SOCKS proxy for a TCP target", proxyFlag: "socks5://127.0.0.1:1080", protocol: config.TCP, want: "socks5://127.0.0.1:1080"},
 		{name: "UDP target", proxyFlag: "http://proxy.example.com:3128", protocol: config.UDP, wantErr: true},
 		{name: "no scheme", proxyFlag: "proxy.example.com:3128", protocol: config.HTTPS, wantErr: true},
 		{name: "unsupported scheme", proxyFlag: "ftp://proxy.example.com", protocol: config.HTTPS, wantErr: true},

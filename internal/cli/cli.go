@@ -176,12 +176,7 @@ func proxyFor(proxyFlag string, protocol config.Protocol) (*url.URL, error) {
 	}
 
 	switch proxy.Scheme {
-	case "http", "https":
-		return proxy, nil
-	case "socks5", "socks5h":
-		if protocol == config.TCP {
-			return nil, fmt.Errorf("unsupported proxy %q for a TCP target, use an http:// or https:// URL", proxyFlag)
-		}
+	case "http", "https", "socks5", "socks5h":
 		return proxy, nil
 	default:
 		return nil, fmt.Errorf("unsupported proxy %q, use an http://, https://, socks5:// or socks5h:// URL", proxyFlag)

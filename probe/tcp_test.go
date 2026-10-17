@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"io"
 	"net"
@@ -430,5 +431,188 @@ func TestPing_ThroughProxyStopsWhenCancelled(t *testing.T) {
 	}
 	if elapsed := time.Since(start); elapsed > 2*time.Second {
 		t.Errorf("Ping() took %v, want it to stop when the context was cancelled", elapsed)
+	}
+}
+
+// socks5Request is what the probe asked a SOCKS5 proxy for.
+type socks5Request struct {
+	user, password string
+	addressType    byte // 1 for IPv4, 4 for IPv6, 3 for a hostname
+	host           string
+	port           uint16
+}
+
+// fakeSOCKS5Proxy plays the proxy's side of every SOCKS5 handshake, answers
+// the request with replyCode, and hands the request over, so a test can see
+// what the probe asked for. A reply code of 0 means the proxy connected.
+func fakeSOCKS5Proxy(t *testing.T, replyCode byte) (netip.AddrPort, <-chan socks5Request) {
+	t.Helper()
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("fake SOCKS5 proxy: %v", err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+
+	requests := make(chan socks5Request, 1)
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+
+			requests <- serveSOCKS5(conn, replyCode)
+			_ = conn.Close()
+		}
+	}()
+
+	return netip.MustParseAddrPort(l.Addr().String()), requests
+}
+
+// serveSOCKS5 reads one SOCKS5 handshake off conn. A short read leaves the
+// rest of the request empty, which the test then reports.
+func serveSOCKS5(conn net.Conn, replyCode byte) socks5Request {
+	read := func(n int) []byte {
+		b := make([]byte, n)
+		_, _ = io.ReadFull(conn, b)
+		return b
+	}
+
+	var req socks5Request
+
+	// The version, the number of login methods, and the one the probe offers.
+	method := read(3)[2]
+	_, _ = conn.Write([]byte{5, method})
+
+	if method == 2 {
+		// The login version, then the username and the password, each with
+		// its length in front.
+		req.user = string(read(int(read(2)[1])))
+		req.password = string(read(int(read(1)[0])))
+		_, _ = conn.Write([]byte{1, 0})
+	}
+
+	// The version, CONNECT, a reserved byte and the address type.
+	req.addressType = read(4)[3]
+	switch req.addressType {
+	case 1:
+		req.host = netip.AddrFrom4([4]byte(read(4))).String()
+	case 4:
+		req.host = netip.AddrFrom16([16]byte(read(16))).String()
+	default: // 3, a hostname
+		req.host = string(read(int(read(1)[0])))
+	}
+	req.port = binary.BigEndian.Uint16(read(2))
+
+	_, _ = conn.Write([]byte{5, replyCode, 0, 1, 0, 0, 0, 0, 0, 0})
+
+	return req
+}
+
+// The proxy gets the hostname as it is and looks it up on its own: neither
+// the target nor the proxy's hostname resolves here, so the probe can only
+// succeed by dialing the proxy address looked up at startup.
+func TestPing_ThroughSOCKS5Proxy(t *testing.T) {
+	for _, scheme := range []string{"socks5", "socks5h"} {
+		t.Run(scheme, func(t *testing.T) {
+			proxyAddr, requests := fakeSOCKS5Proxy(t, 0)
+
+			tp := Tcping{
+				timeout:   2 * time.Second,
+				hostname:  "does-not-resolve.invalid",
+				port:      22,
+				proxy:     &url.URL{Scheme: scheme, Host: "proxy.does-not-resolve.invalid:1080"},
+				proxyAddr: proxyAddr,
+			}
+
+			result, err := tp.Ping(context.Background(), netip.Addr{})
+			if err != nil {
+				t.Fatalf("Ping() error = %v, want the probe to go through the proxy", err)
+			}
+
+			want := socks5Request{addressType: 3, host: "does-not-resolve.invalid", port: 22}
+			if got := <-requests; got != want {
+				t.Errorf("the proxy was asked for %+v, want %+v", got, want)
+			}
+
+			if result.LocalAddr == nil {
+				t.Error("LocalAddr is nil, want the address the connection to the proxy came from")
+			}
+		})
+	}
+}
+
+func TestPing_ThroughSOCKS5ProxyWithALogin(t *testing.T) {
+	proxyAddr, requests := fakeSOCKS5Proxy(t, 0)
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "socks5", User: url.UserPassword("user", "secret"), Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	if _, err := tp.Ping(context.Background(), netip.Addr{}); err != nil {
+		t.Fatalf("Ping() error = %v, want the probe to log in and go through", err)
+	}
+
+	if got := <-requests; got.user != "user" || got.password != "secret" {
+		t.Errorf("the proxy got the login %q:%q, want user:secret", got.user, got.password)
+	}
+}
+
+// An IP target goes to the proxy as an IP, not as a name the proxy would
+// have to look up.
+func TestPing_ThroughSOCKS5ProxyGivesAnIPAsAnIP(t *testing.T) {
+	tests := []struct {
+		target      string
+		addressType byte
+	}{
+		{target: "192.0.2.1", addressType: 1},
+		{target: "2001:db8::1", addressType: 4},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.target, func(t *testing.T) {
+			proxyAddr, requests := fakeSOCKS5Proxy(t, 0)
+
+			tp := Tcping{
+				timeout:   2 * time.Second,
+				hostname:  tt.target,
+				port:      22,
+				proxy:     &url.URL{Scheme: "socks5", Host: proxyAddr.String()},
+				proxyAddr: proxyAddr,
+			}
+
+			if _, err := tp.Ping(context.Background(), netip.Addr{}); err != nil {
+				t.Fatalf("Ping() error = %v, want the probe to go through the proxy", err)
+			}
+
+			want := socks5Request{addressType: tt.addressType, host: tt.target, port: 22}
+			if got := <-requests; got != want {
+				t.Errorf("the proxy was asked for %+v, want %+v", got, want)
+			}
+		})
+	}
+}
+
+// A proxy that could not connect is a failed probe, whatever the reason it
+// gives. Reply code 5 is "connection refused".
+func TestPing_ThroughSOCKS5ProxyThatRefuses(t *testing.T) {
+	proxyAddr, _ := fakeSOCKS5Proxy(t, 5)
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "socks5", Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	if _, err := tp.Ping(context.Background(), netip.Addr{}); err == nil {
+		t.Error("Ping() error = nil, want the refused connection to fail the probe")
 	}
 }

@@ -88,6 +88,10 @@ func (t Tcping) pingThroughProxy(ctx context.Context) (Result, error) {
 
 	result := Result{LocalAddr: conn.LocalAddr()}
 
+	if t.proxy.Scheme == "socks5" || t.proxy.Scheme == "socks5h" {
+		return result, socks5Connect(conn, t.hostname, t.port, t.proxy.User)
+	}
+
 	if t.proxy.Scheme == "https" {
 		conn = tls.Client(conn, &tls.Config{ServerName: t.proxy.Hostname()})
 	}
