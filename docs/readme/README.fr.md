@@ -386,6 +386,7 @@ tcping 192.168.1.1:80
 tcping '[2001:db8::1]:443'          # entre guillemets, pour que le shell n'y touche pas
 tcping https://www.example.com      # sondé en HTTP(S)
 tcping udp://127.0.0.1 53           # sondé en UDP
+tcping tcp://www.example.com 443    # tcp:// fonctionne aussi
 ```
 
 Quelques exemples de ce que vous pouvez demander à une exécution :

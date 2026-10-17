@@ -380,6 +380,7 @@ tcping 192.168.1.1:80
 tcping '[2001:db8::1]:443'          # 使用引号，避免被 shell 解析
 tcping https://www.example.com      # 通过 HTTP(S) 探测
 tcping udp://127.0.0.1 53           # 通过 UDP 探测
+tcping tcp://www.example.com 443    # tcp:// 也可以
 ```
 
 您可以对一次运行提出的一些要求：

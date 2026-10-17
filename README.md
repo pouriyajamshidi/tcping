@@ -386,6 +386,7 @@ tcping 192.168.1.1:80
 tcping '[2001:db8::1]:443'          # quoted, so the shell leaves it alone
 tcping https://www.example.com      # probed over HTTP(S)
 tcping udp://127.0.0.1 53           # probed over UDP
+tcping tcp://www.example.com 443    # tcp:// works too
 ```
 
 Some of the things you can ask of a run:

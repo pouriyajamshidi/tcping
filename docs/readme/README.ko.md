@@ -383,6 +383,7 @@ tcping 192.168.1.1:80
 tcping '[2001:db8::1]:443'          # shell이 건드리지 않도록 따옴표로 감쌉니다
 tcping https://www.example.com      # HTTP(S)로 프로브합니다
 tcping udp://127.0.0.1 53           # UDP로 프로브합니다
+tcping tcp://www.example.com 443    # tcp://도 사용할 수 있습니다
 ```
 
 한 번의 실행에 요청할 수 있는 몇 가지 예입니다.

@@ -386,6 +386,7 @@ tcping 192.168.1.1:80
 tcping '[2001:db8::1]:443'          # in Anführungszeichen, damit die Shell es in Ruhe lässt
 tcping https://www.example.com      # über HTTP(S) geprüft
 tcping udp://127.0.0.1 53           # über UDP geprüft
+tcping tcp://www.example.com 443    # tcp:// funktioniert auch
 ```
 
 Einiges, was Sie von einem Lauf verlangen können:
