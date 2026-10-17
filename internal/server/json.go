@@ -29,6 +29,31 @@ const (
 	idleTimeout  = 60 * time.Second
 )
 
+// printEvent prints one event and answers the sender. What is not JSON is
+// refused rather than printed, so whatever reads our stdout can count on
+// getting only events.
+func printEvent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "only POST is accepted", http.StatusMethodNotAllowed)
+		return
+	}
+
+	event, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxEventSize))
+	if err != nil {
+		http.Error(w, "could not read the event", http.StatusBadRequest)
+		return
+	}
+
+	if !json.Valid(event) {
+		http.Error(w, "the body is not JSON", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("%s\n", bytes.TrimSpace(event))
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // ListenJSON prints every JSON event POSTed to address, so that a
 // `tcping --json-url` on the other end has somewhere to send its run without
 // a server having to be written first. It returns when ctx is cancelled.
@@ -64,29 +89,4 @@ func ListenJSON(ctx context.Context, address string) error {
 	}
 
 	return nil
-}
-
-// printEvent prints one event and answers the sender. What is not JSON is
-// refused rather than printed, so whatever reads our stdout can count on
-// getting only events.
-func printEvent(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "only POST is accepted", http.StatusMethodNotAllowed)
-		return
-	}
-
-	event, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxEventSize))
-	if err != nil {
-		http.Error(w, "could not read the event", http.StatusBadRequest)
-		return
-	}
-
-	if !json.Valid(event) {
-		http.Error(w, "the body is not JSON", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("%s\n", bytes.TrimSpace(event))
-
-	w.WriteHeader(http.StatusNoContent)
 }
