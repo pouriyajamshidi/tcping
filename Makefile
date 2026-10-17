@@ -56,7 +56,7 @@ NIX := nix
 endif
 
 # IO directories
-TARGET_DIR := target
+BUILD_DIR := build
 RELEASE_DIR := release
 TAPES_DIR := docs/Images/tapes
 GIFS_DIR := docs/Images/gifs
@@ -130,7 +130,7 @@ endif
 all: build
 
 # Build for current platform
-build: $(TARGET_DIR)/$(BIN_NAME)
+build: $(BUILD_DIR)/$(BIN_NAME)
 
 # Build all release artifacts
 release: $(RELEASE_ARTIFACTS)
@@ -168,7 +168,7 @@ check: check-format check-fix vet lint staticcheck test
 
 # Remove all build artifacts
 clean:
-	rm -rf $(TARGET_DIR)/ $(RELEASE_DIR)/
+	rm -rf $(BUILD_DIR)/ $(RELEASE_DIR)/
 
 update:
 	@echo "[+] Updating Go dependencies"
@@ -249,32 +249,32 @@ gifs: $(GIF_ARTIFACTS)
 # ==================================================
 
 # Release directory
-.PRECIOUS: $(TARGET_DIR)/
-$(TARGET_DIR)/:
+.PRECIOUS: $(BUILD_DIR)/
+$(BUILD_DIR)/:
 	@mkdir -p $@
 
 # Binary for current platform
-.PRECIOUS: $(TARGET_DIR)/$(BIN_NAME)
-$(TARGET_DIR)/$(BIN_NAME): $(TARGET_DIR)/
+.PRECIOUS: $(BUILD_DIR)/$(BIN_NAME)
+$(BUILD_DIR)/$(BIN_NAME): $(BUILD_DIR)/
 	@echo "[+] Building binary for current platform: $@"
 	@go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
-# Per-target output directory
-.PRECIOUS: $(TARGET_DIR)/%/
-$(TARGET_DIR)/%/:
+# Per-platform build directory
+.PRECIOUS: $(BUILD_DIR)/%/
+$(BUILD_DIR)/%/:
 	@mkdir -p $@
 
-# Per-target tcping binary
-.PRECIOUS: $(TARGET_DIR)/%/tcping
-$(TARGET_DIR)/%/tcping: $(TARGET_DIR)/%/
+# Per-platform tcping binary
+.PRECIOUS: $(BUILD_DIR)/%/tcping
+$(BUILD_DIR)/%/tcping: $(BUILD_DIR)/%/
 	@echo "[+] Building binary: $@"
 	@export GOOS=$(word 1, $(subst -, ,$*)); \
 	export GOARCH=$(word 2, $(subst -, ,$*)); \
 	go build $(GO_LDFLAGS) -o $@ $(GO_MAIN_PATH);
 
-# Per-target tcping.exe binary (Windows)
-.PRECIOUS: $(TARGET_DIR)/windows-%/tcping.exe
-$(TARGET_DIR)/windows-%/tcping.exe: $(TARGET_DIR)/windows-%/
+# Per-platform tcping.exe binary (Windows)
+.PRECIOUS: $(BUILD_DIR)/windows-%/tcping.exe
+$(BUILD_DIR)/windows-%/tcping.exe: $(BUILD_DIR)/windows-%/
 	@echo "[+] Building binary: $@"
 	@export GOOS=windows; \
 	export GOARCH=$*; \
@@ -289,14 +289,14 @@ $(RELEASE_DIR)/:
 	@mkdir -p $@
 
 # .tar.gz archive
-$(RELEASE_DIR)/tcping-%.tar.gz: $(TARGET_DIR)/%/tcping $(RELEASE_DIR)/
+$(RELEASE_DIR)/tcping-%.tar.gz: $(BUILD_DIR)/%/tcping $(RELEASE_DIR)/
 	@echo "[+] Compressing binary: $@"
 	@tar -C $$(dirname $<) -czvf $@ tcping >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
 # .zip archive (Windows)
-$(RELEASE_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(RELEASE_DIR)/
+$(RELEASE_DIR)/tcping-windows-%.zip: $(BUILD_DIR)/windows-%/tcping.exe $(RELEASE_DIR)/
 	@echo "[+] Compressing binary: $@"
 	@zip -j $@ $< >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
@@ -306,21 +306,21 @@ $(RELEASE_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(RELEAS
 #
 # All four formats are built from nfpm.yaml, which is where the file list and
 # the package metadata live. The rules only differ in the format they ask for.
-$(RELEASE_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
+$(RELEASE_DIR)/tcping-%.deb: $(BUILD_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
 	@echo "[+] Creating Debian package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager deb --target $@ >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
-$(RELEASE_DIR)/tcping-%.rpm: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
+$(RELEASE_DIR)/tcping-%.rpm: $(BUILD_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
 	@echo "[+] Creating RPM package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager rpm --target $@ >/dev/null
 	@sha256sum $@ | awk '{print "    sha256: " $$1}'
 	@echo
 
-$(RELEASE_DIR)/tcping-%.apk: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
+$(RELEASE_DIR)/tcping-%.apk: $(BUILD_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
 	@echo "[+] Creating Alpine package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(VERSION) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager apk --target $@ >/dev/null
@@ -330,7 +330,7 @@ $(RELEASE_DIR)/tcping-%.apk: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LI
 # Arch reserves the hyphen for the package release number, so a version like
 # 3.0.0-rc1 has to be spelled 3.0.0_rc1 here. nfpm drops the "rc1" instead of
 # converting it, which would leave a release candidate claiming to be 3.0.0.
-$(RELEASE_DIR)/tcping-%.pkg.tar.zst: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
+$(RELEASE_DIR)/tcping-%.pkg.tar.zst: $(BUILD_DIR)/linux-%/tcping $(UNIX_COMPLETIONS) LICENSE nfpm.yaml $(RELEASE_DIR)/
 	@echo "[+] Creating Arch Linux package: $@"
 	@TCPING_ARCH=$* TCPING_VERSION=$(subst -,_,$(VERSION)) TCPING_BIN=$< \
 		go run github.com/goreleaser/nfpm/v2/cmd/nfpm@$(NFPM_VERSION) package --packager archlinux --target $@ >/dev/null
@@ -348,7 +348,7 @@ $(RELEASE_DIR)/tcping-%.pkg.tar.zst: $(TARGET_DIR)/linux-%/tcping $(UNIX_COMPLET
 # system-installed build). The binary is still named "tcping" and its
 # directory is only prepended to PATH for the vhs invocation, so the
 # recorded command and its output are unaffected.
-GIF_BIN_DIR := $(TARGET_DIR)/gif
+GIF_BIN_DIR := $(BUILD_DIR)/gif
 GIF_BIN := $(GIF_BIN_DIR)/tcping
 
 .PHONY: gif-binary

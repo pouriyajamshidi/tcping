@@ -30,6 +30,6 @@ LABEL maintainer="Pouriya Jamshidi"
 # certificates to check it against, so without this every HTTPS probe fails.
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-COPY --from=build /build/target/tcping /usr/bin/
+COPY --from=build /build/build/tcping /usr/bin/
 
 ENTRYPOINT ["tcping"]

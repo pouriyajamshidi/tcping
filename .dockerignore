@@ -10,7 +10,7 @@ tcping.exe
 patches/
 *.db
 .tool-versions
-/target/
+/build/
 /release/
 /result
 tmp/
