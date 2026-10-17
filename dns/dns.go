@@ -48,20 +48,30 @@ type Resolver struct {
 // networkInterface.Use is set, lookups are performed from its source
 // address, matching the -I flag's interface for probes - using whichever
 // of its addresses matches the DNS server's own address family.
-func NewResolver(dnsServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) *Resolver {
+//
+// dnsServer must be an IP address, optionally with a port. Anything else,
+// such as a hostname, is refused instead of quietly falling back to the
+// system default.
+func NewResolver(dnsServer string, timeout time.Duration, useIPv4, useIPv6 bool, networkInterface nic.NetworkInterface) (*Resolver, error) {
+	dialAddress, err := getDialAddress(dnsServer)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Resolver{
-		resolver: createDNSResolver(dnsServer, timeout, networkInterface),
+		resolver: createDNSResolver(dialAddress, timeout, networkInterface),
 		timeout:  timeout,
 		useIPv4:  useIPv4,
 		useIPv6:  useIPv6,
-	}
+	}, nil
 }
 
 // getDialAddress computes the override address for the resolver's Dial func.
-// Returns "" if no override should happen.
-func getDialAddress(dnsServer string) string {
+// Returns "" if no override should happen, and an error if dnsServer is not
+// an IP address with an optional port.
+func getDialAddress(dnsServer string) (string, error) {
 	if dnsServer == "" {
-		return ""
+		return "", nil
 	}
 
 	host, port := dnsServer, DefaultPort
@@ -69,24 +79,22 @@ func getDialAddress(dnsServer string) string {
 		host, port = h, p
 	}
 
-	if ip, err := netip.ParseAddr(host); err == nil {
-		return net.JoinHostPort(ip.String(), port)
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return "", fmt.Errorf("invalid DNS server %q: want an IP address with an optional port, like 1.1.1.1, 1.1.1.1:53, 2606:4700:4700::1111 or [2606:4700:4700::1111]:53", dnsServer)
 	}
 
-	return ""
+	return net.JoinHostPort(ip.String(), port), nil
 }
 
-// createDNSResolver creates a new net.Resolver and uses dnsServer as the DNS server IP
-// or falls back to what is configured on the device if dnsServer is empty.
-// It helps bypass incorrect OS DNS cache entries.
-// dnsServer can be in 1.2.3.4 or 1.2.3.4:53 format.
+// createDNSResolver creates a new net.Resolver that sends every lookup to
+// dialAddress, or to what is configured on the device if dialAddress is
+// empty. It helps bypass incorrect OS DNS cache entries.
 // See https://github.com/pouriyajamshidi/tcping/issues/416 for more info.
 // When networkInterface.Use is set, lookups are dialed from whichever of
 // its addresses matches the DNS server's address family. dialTimeout of 0
 // means no timeout, matching net.Dialer's own zero-value semantics.
-func createDNSResolver(dnsServer string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
-	dialAddress := getDialAddress(dnsServer)
-
+func createDNSResolver(dialAddress string, dialTimeout time.Duration, networkInterface nic.NetworkInterface) *net.Resolver {
 	return &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {

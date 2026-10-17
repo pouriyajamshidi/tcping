@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/netip"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,15 +24,38 @@ func TestDNSDialAddress(t *testing.T) {
 		{"ipv4 without port uses default", "8.8.8.8", "8.8.8.8:" + DefaultPort},
 		{"ipv6 without port uses default", "2001:4860:4860::8888", "[2001:4860:4860::8888]:" + DefaultPort},
 		{"ipv6 with port", "[2001:4860:4860::8888]:53", "[2001:4860:4860::8888]:53"},
-		{"hostname is ignored (not an IP)", "dns.google:53", ""},
-		{"garbage input is ignored", "not-an-address", ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getDialAddress(tt.dnsServer)
+			got, err := getDialAddress(tt.dnsServer)
+			if err != nil {
+				t.Fatalf("getDialAddress(%q) error = %v", tt.dnsServer, err)
+			}
 			if got != tt.want {
-				t.Errorf("dnsDialAddress(%q) = %q, want %q", tt.dnsServer, got, tt.want)
+				t.Errorf("getDialAddress(%q) = %q, want %q", tt.dnsServer, got, tt.want)
+			}
+		})
+	}
+}
+
+// A DNS server that is not an IP address used to be dropped without a word,
+// so the lookups quietly went to the system DNS instead.
+func TestNewResolver_RefusesServerThatIsNotAnIP(t *testing.T) {
+	for _, dnsServer := range []string{
+		"dns.google",
+		"dns.google:53",
+		"no.such.server.invalid",
+		"[2606:4700:4700::1111]",
+		"not-an-address",
+	} {
+		t.Run(dnsServer, func(t *testing.T) {
+			_, err := NewResolver(dnsServer, time.Second, false, false, nic.NetworkInterface{})
+			if err == nil {
+				t.Fatalf("NewResolver(%q) error = nil, want it refused", dnsServer)
+			}
+			if !strings.Contains(err.Error(), dnsServer) {
+				t.Errorf("NewResolver(%q) error = %q, want it to name the server", dnsServer, err)
 			}
 		})
 	}
@@ -268,10 +292,13 @@ func blackholeListener(t *testing.T) net.Addr {
 func TestNewResolver_TimeoutIsConfigurable(t *testing.T) {
 	addr := blackholeListener(t)
 
-	r := NewResolver(addr.String(), 150*time.Millisecond, false, false, nic.NetworkInterface{})
+	r, err := NewResolver(addr.String(), 150*time.Millisecond, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("NewResolver() error = %v", err)
+	}
 
 	start := time.Now()
-	_, err := r.ResolveHostname("example.com")
+	_, err = r.ResolveHostname("example.com")
 	elapsed := time.Since(start)
 
 	if err == nil {
@@ -288,7 +315,10 @@ func TestNewResolver_TimeoutIsConfigurable(t *testing.T) {
 func TestNewResolver_ZeroTimeoutMeansNoDeadline(t *testing.T) {
 	addr := blackholeListener(t)
 
-	r := NewResolver(addr.String(), 0, false, false, nic.NetworkInterface{})
+	r, err := NewResolver(addr.String(), 0, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("NewResolver() error = %v", err)
+	}
 
 	done := make(chan struct{})
 	go func() {

@@ -77,13 +77,17 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		}
 	}
 
-	resolver := dns.NewResolver(
+	resolver, err := dns.NewResolver(
 		f.customDNSServer,
 		secondsToDuration(f.dnsTimeout),
 		f.useIPv4,
 		f.useIPv6,
 		networkInterface,
 	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 
 	resolveStart := time.Now()
 	resolvedIP, err := resolver.ResolveHostname(target.hostname)

@@ -176,6 +176,19 @@ func newTestProber(pinger Pinger, cfg config.Config) (*Prober, *fakePrinter) {
 	return p, printer
 }
 
+// newTestResolver builds a dns.Resolver for tests, failing the test if the
+// DNS server is refused.
+func newTestResolver(t *testing.T, dnsServer string, timeout time.Duration) *dns.Resolver {
+	t.Helper()
+
+	r, err := dns.NewResolver(dnsServer, timeout, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("dns.NewResolver(%q) error = %v", dnsServer, err)
+	}
+
+	return r
+}
+
 // --- handleProbeFailure -------------------------------------------------
 
 func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
@@ -479,7 +492,7 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 1,
 		// A literal IP resolves without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver: newTestResolver(t, "", time.Second),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
@@ -522,7 +535,7 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 		ProbesBeforeQuit:           1,
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 1,
-		Resolver:                   dns.NewResolver(blackhole.LocalAddr().String(), 200*time.Millisecond, false, false, nic.NetworkInterface{}),
+		Resolver:                   newTestResolver(t, blackhole.LocalAddr().String(), 200*time.Millisecond),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "example.com"
@@ -621,7 +634,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 2,
 		// A literal IP resolves without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver: newTestResolver(t, "", time.Second),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
@@ -660,7 +673,7 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 		ProbesBeforeQuit:      3,
 		ResolveEveryProbe:     true,
 		// A literal IP resolves without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver: newTestResolver(t, "", time.Second),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
@@ -695,7 +708,7 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		ProbesBeforeQuit:      2,
 		ResolveEveryProbe:     true,
-		Resolver:              dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver:              newTestResolver(t, "", time.Second),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.DestIsIP = true
@@ -724,7 +737,7 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 		ResolveEveryProbe:          true,
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 1,
-		Resolver:                   dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver:                   newTestResolver(t, "", time.Second),
 	}
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
@@ -755,7 +768,7 @@ func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 1,
 		// Literal IPs resolve without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver: newTestResolver(t, "", time.Second),
 	}
 	p, _ := newTestProber(pinger, cfg)
 	p.statistics.IP = netip.MustParseAddr("192.0.2.1")
@@ -951,7 +964,7 @@ func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
 func TestResolveHostname_RecordsDuration(t *testing.T) {
 	cfg := config.Config{
 		// A literal IP resolves without touching the network.
-		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver: newTestResolver(t, "", time.Second),
 	}
 	p, _ := newTestProber(nil, cfg)
 	p.statistics.Hostname = "127.0.0.1"
@@ -977,7 +990,7 @@ func TestResolveHostname_RecordsDuration(t *testing.T) {
 // NameResolutionDuration, without appending a redundant HostnameChange.
 func TestResolveHostname_SameAddressUpdatesDurationOnly(t *testing.T) {
 	cfg := config.Config{
-		Resolver: dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{}),
+		Resolver: newTestResolver(t, "", time.Second),
 	}
 	p, _ := newTestProber(nil, cfg)
 	p.statistics.Hostname = "127.0.0.1"
