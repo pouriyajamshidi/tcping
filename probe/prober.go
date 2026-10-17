@@ -96,119 +96,6 @@ type Pinger interface {
 	Ping(ctx context.Context, ip netip.Addr) (Result, error)
 }
 
-// Probe runs the probe loop until ctx is cancelled or the configured
-// number of probes is reached.
-func (p *Prober) Probe(ctx context.Context) error {
-	ticker := time.NewTicker(p.config.IntervalBetweenProbes)
-	defer ticker.Stop()
-
-	p.statistics.StartTime = time.Now()
-	p.printer.PrintStart(p.statistics)
-
-	var probeCount uint
-
-	// runProbe performs a single probe, prints its result, retries hostname
-	// resolution if configured to, and reports whether that was the last
-	// probe to run (ProbesBeforeQuit reached).
-	runProbe := func() (done bool) {
-		p.statistics.ResolvedThisProbe = false
-
-		// Only the probe that ends an uptime or a downtime reports it, so
-		// clear them here and let this probe set its own.
-		p.statistics.EndedUptime = 0
-		p.statistics.EndedDowntime = 0
-
-		// Resolve the hostname fresh before this probe when requested,
-		// so it always dials whatever the hostname currently points to
-		// (e.g. DNS round-robin or a frequently-changing record) rather
-		// than waiting for a failure streak to trigger a retry.
-		if p.config.ResolveEveryProbe && !p.statistics.DestIsIP {
-			p.statistics.RetriedHostnameLookups++
-			p.resolveHostname(true)
-		}
-
-		pingTime := time.Now()
-
-		// Read the target IP fresh on every probe (not just once at
-		// startup), so a hostname-retry-resolve that changes it - possibly
-		// even to a different address family - actually takes effect on
-		// the next probe instead of being silently ignored.
-		probeResult, err := p.pinger.Ping(ctx, p.statistics.IP)
-		rtt := time.Since(pingTime)
-
-		// A probe that only failed because we cancelled it ourselves, when
-		// the user hits Ctrl+C while it is in flight, is not a failed probe.
-		// Counting it would report a failure, a packet loss and a downtime
-		// that never happened.
-		if err != nil && ctx.Err() != nil {
-			return true
-		}
-
-		if err != nil {
-			p.handleProbeFailure(pingTime, probeResult)
-			p.printer.PrintProbeFailure(p.statistics)
-		} else {
-			p.handleProbeSuccess(pingTime, rtt, probeResult)
-
-			// The probe is still counted, we just do not report it.
-			if !p.config.ShowFailuresOnly {
-				p.printer.PrintProbeSuccess(p.statistics)
-			}
-		}
-
-		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&
-			p.statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
-			p.statistics.RetriedHostnameLookups++
-
-			p.printer.PrintRetryingToResolve(p.statistics.Hostname)
-
-			p.resolveHostname(false)
-		}
-
-		if p.config.ProbesBeforeQuit > 0 {
-			probeCount++
-
-			if probeCount >= p.config.ProbesBeforeQuit {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	// Probe immediately instead of waiting for the ticker's first tick.
-	if runProbe() {
-		p.finalizeStatistics()
-		return nil
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			p.finalizeStatistics()
-			return nil
-
-		case _, ok := <-p.summaryRequests:
-			if !ok {
-				// stdin is gone, so stop waiting on it. A nil channel
-				// never fires again, unlike a closed one.
-				p.summaryRequests = nil
-				continue
-			}
-
-			// The run is still going, so the uptime or downtime it is in
-			// the middle of has not been added to the totals yet.
-			p.printer.PrintStatistics(p.statistics.SummaryNow())
-
-		case <-ticker.C:
-			if runProbe() {
-				p.finalizeStatistics()
-				return nil
-			}
-		}
-	}
-}
-
 // resolveHostname resolves the target's hostname again, recording how long
 // it took and appending a HostnameChange when the address actually changed.
 // It prints the resulting duration on success or the error on failure. When
@@ -354,4 +241,117 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 func (p *Prober) finalizeStatistics() {
 	p.statistics.EndTime = time.Now()
 	p.statistics.CloseOpenPeriod(p.statistics.EndTime)
+}
+
+// Probe runs the probe loop until ctx is cancelled or the configured
+// number of probes is reached.
+func (p *Prober) Probe(ctx context.Context) error {
+	ticker := time.NewTicker(p.config.IntervalBetweenProbes)
+	defer ticker.Stop()
+
+	p.statistics.StartTime = time.Now()
+	p.printer.PrintStart(p.statistics)
+
+	var probeCount uint
+
+	// runProbe performs a single probe, prints its result, retries hostname
+	// resolution if configured to, and reports whether that was the last
+	// probe to run (ProbesBeforeQuit reached).
+	runProbe := func() (done bool) {
+		p.statistics.ResolvedThisProbe = false
+
+		// Only the probe that ends an uptime or a downtime reports it, so
+		// clear them here and let this probe set its own.
+		p.statistics.EndedUptime = 0
+		p.statistics.EndedDowntime = 0
+
+		// Resolve the hostname fresh before this probe when requested,
+		// so it always dials whatever the hostname currently points to
+		// (e.g. DNS round-robin or a frequently-changing record) rather
+		// than waiting for a failure streak to trigger a retry.
+		if p.config.ResolveEveryProbe && !p.statistics.DestIsIP {
+			p.statistics.RetriedHostnameLookups++
+			p.resolveHostname(true)
+		}
+
+		pingTime := time.Now()
+
+		// Read the target IP fresh on every probe (not just once at
+		// startup), so a hostname-retry-resolve that changes it - possibly
+		// even to a different address family - actually takes effect on
+		// the next probe instead of being silently ignored.
+		probeResult, err := p.pinger.Ping(ctx, p.statistics.IP)
+		rtt := time.Since(pingTime)
+
+		// A probe that only failed because we cancelled it ourselves, when
+		// the user hits Ctrl+C while it is in flight, is not a failed probe.
+		// Counting it would report a failure, a packet loss and a downtime
+		// that never happened.
+		if err != nil && ctx.Err() != nil {
+			return true
+		}
+
+		if err != nil {
+			p.handleProbeFailure(pingTime, probeResult)
+			p.printer.PrintProbeFailure(p.statistics)
+		} else {
+			p.handleProbeSuccess(pingTime, rtt, probeResult)
+
+			// The probe is still counted, we just do not report it.
+			if !p.config.ShowFailuresOnly {
+				p.printer.PrintProbeSuccess(p.statistics)
+			}
+		}
+
+		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&
+			p.statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
+			p.statistics.RetriedHostnameLookups++
+
+			p.printer.PrintRetryingToResolve(p.statistics.Hostname)
+
+			p.resolveHostname(false)
+		}
+
+		if p.config.ProbesBeforeQuit > 0 {
+			probeCount++
+
+			if probeCount >= p.config.ProbesBeforeQuit {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	// Probe immediately instead of waiting for the ticker's first tick.
+	if runProbe() {
+		p.finalizeStatistics()
+		return nil
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			p.finalizeStatistics()
+			return nil
+
+		case _, ok := <-p.summaryRequests:
+			if !ok {
+				// stdin is gone, so stop waiting on it. A nil channel
+				// never fires again, unlike a closed one.
+				p.summaryRequests = nil
+				continue
+			}
+
+			// The run is still going, so the uptime or downtime it is in
+			// the middle of has not been added to the totals yet.
+			p.printer.PrintStatistics(p.statistics.SummaryNow())
+
+		case <-ticker.C:
+			if runProbe() {
+				p.finalizeStatistics()
+				return nil
+			}
+		}
+	}
 }
