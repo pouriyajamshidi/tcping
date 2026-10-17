@@ -146,8 +146,10 @@ func (s *Statistics) RuntimeDuration() string {
 	// Round instead of truncating so this agrees with the uptime and
 	// downtime totals, which durationToString also rounds. Truncating here
 	// is what made a 6.6 second run report "00:00:06" next to "7 seconds".
+	// The hours are not wrapped at 24, so a 25 hour run says 25:00:00, not
+	// 01:00:00 as formatting it as a time of day would.
 	d := s.endOrNow().Sub(s.StartTime).Round(time.Second)
-	return time.Time{}.Add(d).Format(time.TimeOnly)
+	return fmt.Sprintf("%02d:%02d:%02d", int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60)
 }
 
 // endOrNow is when the run stopped, or now while it is still going. A summary

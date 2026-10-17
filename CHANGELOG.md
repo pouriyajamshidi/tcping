@@ -93,6 +93,7 @@
 - improvement: `-i`, `-t` and `--dns-timeout` are no longer floored to whole milliseconds, so sub-millisecond values work as given
 - fix: hostname retry-resolve (`-r`) now actually changes the address being probed instead of only updating what's displayed
 - fix: the summary's `duration (HH:MM:SS)` now always matches the `started at`/`ended at` timestamps instead of silently drifting from them
+- fix: the run duration no longer starts over after 24 hours. A 25 hour run used to report `01:00:00` and now reports `25:00:00`, in the terminal, JSON, CSV and SQLite outputs alike
 - feat: add `--no-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
 - refactor: simplify RTT min/avg/max tracking into a running calculation instead of storing every sample
 - refactor: consolidate uptime/downtime tracking and remove duplicated/unused `Statistics` fields

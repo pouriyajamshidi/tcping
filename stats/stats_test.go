@@ -143,6 +143,7 @@ func TestRuntimeDuration_AgreesWithUptime(t *testing.T) {
 		{"half rounds up", 6500 * time.Millisecond, "00:00:07", "7 seconds"},
 		{"rounds up", 6600 * time.Millisecond, "00:00:07", "7 seconds"},
 		{"just under a minute", 59700 * time.Millisecond, "00:01:00", "1 minute"},
+		{"past a day", 25*time.Hour + 2*time.Minute + 3*time.Second, "25:02:03", "25 hours 2 minutes 3 seconds"},
 	}
 
 	start := time.Date(2026, 9, 2, 10, 48, 20, 0, time.UTC)

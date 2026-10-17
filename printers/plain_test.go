@@ -322,6 +322,20 @@ func TestPlainPrintStatistics(t *testing.T) {
 	)
 }
 
+// A run longer than a day keeps counting the hours instead of starting
+// over at 00:00:00.
+func TestPlainStatisticsDurationPastADay(t *testing.T) {
+	s := plainTestStats()
+	s.TotalSuccessfulProbes = 1
+	s.EndTime = s.StartTime.Add(25 * time.Hour)
+
+	out := captureStdout(t, func() {
+		NewPlainPrinter(Config{}).PrintStatistics(s)
+	})
+
+	wantLines(t, out, "duration (HH:MM:SS): 25:00:00\n")
+}
+
 // A run that never succeeded, against an IP, has nothing to say about
 // latency, hostname lookups or an end time.
 func TestPlainStatisticsLeavesOutWhatDidNotHappen(t *testing.T) {
