@@ -59,6 +59,7 @@
 - fix: fix a data race between the probe loop and the **Enter** key handler
 - fix: `-I` no longer binds name resolution to the interface's address when the DNS server is a loopback address, e.g. systemd-resolved's `127.0.0.53`. The kernel cannot route such a packet, so every lookup used to time out
 - feat: add HTTP(S) probing by giving a URL as the target, e.g. `tcping https://example.com/health`, with `-v` to show the HTTP and TLS details of every probe and `--insecure` to skip certificate verification
+- feat: HTTP(S) probes can go through a proxy, given with the new `--proxy` flag or the usual `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables. `http://`, `https://` and `socks5://` proxies work. The proxy connects to the target's hostname on its own, and the first line of the run names the proxy, since the connect time and the source address are then those of the connection to the proxy
 - feat: add UDP probing by giving a `udp://` target, e.g. `tcping udp://example.com 53`. UDP has no handshake, so a probe only counts as successful when the other end answers it. Every probe carries its own number as the payload and `-v` shows whether the reply carried it back, which tells a lost probe apart from a silent port
 - feat: add `--udp-server` flag to listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at that machine has something to answer it
 - feat: CSV output filenames now get a date/time suffix by default; add `--csv-fixed-name` to reuse the same file across runs instead

@@ -8,6 +8,7 @@ import (
 	"math"
 	"net"
 	"net/netip"
+	"net/url"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
@@ -45,6 +46,7 @@ type Statistics struct {
 	Protocol           config.Protocol
 	LastProbeHadFailed bool
 	DestIsIP           bool
+	Proxy              string // Proxy the HTTP(S) probes go through, e.g. http://proxy.example.com:3128. Empty when they connect directly.
 	LocalAddr          net.Addr
 	StartTime          time.Time
 	EndTime            time.Time
@@ -88,11 +90,19 @@ func NewStatistics(cfg config.Config) *Statistics {
 		}
 	}
 
+	// Only the scheme and the address, so a password in the proxy URL
+	// never reaches the output.
+	var proxy string
+	if cfg.Proxy != nil {
+		proxy = (&url.URL{Scheme: cfg.Proxy.Scheme, Host: cfg.Proxy.Host}).String()
+	}
+
 	return &Statistics{
 		Hostname:               cfg.Hostname,
 		IP:                     cfg.IP,
 		Port:                   cfg.Port,
 		DestIsIP:               cfg.TargetIsIP,
+		Proxy:                  proxy,
 		LocalAddr:              localAddr,
 		Protocol:               cfg.Protocol,
 		NameResolutionDuration: cfg.NameResolutionDuration,

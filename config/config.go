@@ -4,6 +4,7 @@ package config
 
 import (
 	"net/netip"
+	"net/url"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/dns"
@@ -25,11 +26,12 @@ type Config struct {
 	TargetIsIP                 bool          // Flag indicating whether the destination is an IP address (not a hostname).
 	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
 	ShouldRetryResolve         bool
-	ResolveEveryProbe          bool // Resolve the hostname before every probe, superseding ShouldRetryResolve.
-	ShowFailuresOnly           bool // Only print probe failures.
-	SkipTLSVerify              bool // Do not check the server certificate. HTTPS targets only.
-	UDPServer                  bool // Listen on the given address and echo datagrams back instead of probing.
-	JSONServer                 bool // Listen on the given address and print the JSON events posted to it instead of probing.
+	ResolveEveryProbe          bool     // Resolve the hostname before every probe, superseding ShouldRetryResolve.
+	ShowFailuresOnly           bool     // Only print probe failures.
+	SkipTLSVerify              bool     // Do not check the server certificate. HTTPS targets only.
+	Proxy                      *url.URL // Proxy the HTTP(S) probes go through. Nil when they connect directly.
+	UDPServer                  bool     // Listen on the given address and echo datagrams back instead of probing.
+	JSONServer                 bool     // Listen on the given address and print the JSON events posted to it instead of probing.
 	Resolver                   *dns.Resolver
 }
 

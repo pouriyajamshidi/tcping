@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net/netip"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -55,6 +56,8 @@ type scriptedRun struct {
 	outcomes         []bool
 	showFailuresOnly bool
 	enterAfter       int
+	protocol         config.Protocol // TCP when not given.
+	proxy            *url.URL
 }
 
 // run probes once per entry in outcomes and returns everything that reached
@@ -62,11 +65,17 @@ type scriptedRun struct {
 func (r scriptedRun) run(t *testing.T) string {
 	t.Helper()
 
+	protocol := r.protocol
+	if protocol == "" {
+		protocol = config.TCP
+	}
+
 	cfg := config.Config{
 		Hostname:               "example.com",
 		IP:                     netip.MustParseAddr("93.184.216.34"),
 		Port:                   443,
-		Protocol:               config.TCP,
+		Protocol:               protocol,
+		Proxy:                  r.proxy,
 		NameResolutionDuration: 12 * time.Millisecond,
 		IntervalBetweenProbes:  20 * time.Millisecond,
 		ProbesBeforeQuit:       uint(len(r.outcomes)),
@@ -255,6 +264,42 @@ func TestRunTranscript_ShowFailuresOnly(t *testing.T) {
 	if got := probeLines(out); got != want {
 		t.Errorf("transcript =\n%s\nwant =\n%s", got, want)
 	}
+}
+
+// Through a proxy, the connect time and the source address are those of the
+// connection to the proxy, so the run has to say which proxy that was. The
+// proxy URL can carry a password, which must never reach the output.
+func TestRunTranscript_StartLineNamesTheProxy(t *testing.T) {
+	proxy, _ := url.Parse("http://user:secret@proxy.example.com:3128")
+
+	plain := scriptedRun{
+		printer:  NewPlainPrinter(Config{}),
+		outcomes: []bool{true},
+		protocol: config.HTTPS,
+		proxy:    proxy,
+	}.run(t)
+
+	want := strings.Join([]string{
+		"Probing example.com on port 443 over HTTPS via proxy http://proxy.example.com:3128 (resolved in <duration>)",
+		"Reply from example.com (93.184.216.34) on port 443 HTTPS_conn=1 time=<duration>",
+	}, "\n") + "\n"
+
+	if got := probeLines(plain); got != want {
+		t.Errorf("transcript =\n%s\nwant =\n%s", got, want)
+	}
+
+	color := scriptedRun{
+		printer:  NewColorPrinter(Config{}),
+		outcomes: []bool{true},
+		protocol: config.HTTPS,
+		proxy:    proxy,
+	}.run(t)
+
+	if mask(plain) != mask(color) {
+		t.Errorf("the plain and colored output differ.\nplain =\n%s\ncolor =\n%s", mask(plain), mask(color))
+	}
+
+	wantNoLines(t, plain, "user", "secret")
 }
 
 // The JSON output is read by other programs, so the run has to come through

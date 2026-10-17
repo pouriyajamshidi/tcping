@@ -48,6 +48,17 @@ func writerOrStdout(cfg Config) io.Writer {
 	return cfg.Writer
 }
 
+// viaProxy is the part of the start line that names the proxy the HTTP(S)
+// probes go through, e.g. " via proxy http://proxy.example.com:3128". It is
+// empty when they connect directly.
+func viaProxy(s *stats.Statistics) string {
+	if s.Proxy == "" {
+		return ""
+	}
+
+	return " via proxy " + s.Proxy
+}
+
 // httpProbeSummary is the short HTTP part of a probe line, e.g. " status=200".
 // It is empty for TCP probes and for HTTP probes that never got a response.
 func httpProbeSummary(s *stats.Statistics) string {

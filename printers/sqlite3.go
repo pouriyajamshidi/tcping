@@ -346,11 +346,11 @@ func endedPeriodArgs(s *stats.Statistics) []any {
 // PrintStart prints a message indicating that TCPing has started.
 func (p *SQLitePrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
-		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.filePath)
+		fmt.Printf("Probing %s on port %d over %s%s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.filePath)
 		return
 	}
-	fmt.Printf("Probing %s (%s) on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
-		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.filePath)
+	fmt.Printf("Probing %s (%s) on port %d over %s%s (resolved in %s ms) - saving the results to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), viaProxy(s), s.NameResolutionDurationStr(), p.filePath)
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.

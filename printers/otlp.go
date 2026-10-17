@@ -384,13 +384,13 @@ func rttOf(rtt float32) float64 {
 // alone for the rest of the run.
 func (p *OTLPPrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
-		fmt.Printf("Probing %s on port %d over %s - sending metrics to: %s\n",
-			s.Hostname, s.Port, s.ProtocolStr(), p.endpoint)
+		fmt.Printf("Probing %s on port %d over %s%s - sending metrics to: %s\n",
+			s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.endpoint)
 		return
 	}
 
-	fmt.Printf("Probing %s (%s) on port %d over %s (resolved in %s ms) - sending metrics to: %s\n",
-		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.endpoint)
+	fmt.Printf("Probing %s (%s) on port %d over %s%s (resolved in %s ms) - sending metrics to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), viaProxy(s), s.NameResolutionDurationStr(), p.endpoint)
 }
 
 // PrintNameResolutionDuration sends how long the hostname resolution took.

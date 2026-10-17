@@ -4,9 +4,12 @@
 package cli
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"net/netip"
+	"net/url"
 	"os"
 	"time"
 
@@ -57,6 +60,12 @@ func ProcessUserInput() (config.Config, printers.Config) {
 	}
 
 	validatedPort, err := convertAndValidatePort(target.port)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	proxy, err := proxyFor(f.proxy, target.url)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -120,6 +129,7 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		IntervalBetweenProbes:      secondsToDuration(f.intervalBetweenProbes),
 		ShowFailuresOnly:           f.showFailuresOnly,
 		SkipTLSVerify:              f.skipTLSVerify,
+		Proxy:                      proxy,
 		UDPServer:                  f.udpServer,
 		JSONServer:                 f.jsonServer,
 		Resolver:                   resolver,
@@ -130,4 +140,43 @@ func ProcessUserInput() (config.Config, printers.Config) {
 	}
 
 	return cfg, f.newPrinterConfig(target.hostname, validatedPort)
+}
+
+// proxyFor picks the proxy an HTTP(S) target is probed through: the -proxy
+// flag when it is given, the HTTPS_PROXY, HTTP_PROXY and NO_PROXY environment
+// variables otherwise. It returns nil when the probes connect directly.
+func proxyFor(proxyFlag, targetURL string) (*url.URL, error) {
+	// Only an HTTP(S) target has a URL. A TCP or UDP probe cannot go through
+	// the proxy, and quietly probing directly would hide that.
+	if targetURL == "" {
+		if proxyFlag != "" {
+			return nil, errors.New("--proxy only works with http:// and https:// targets")
+		}
+		return nil, nil
+	}
+
+	if proxyFlag == "" {
+		req, err := http.NewRequest(http.MethodGet, targetURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		proxy, err := http.ProxyFromEnvironment(req)
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxy in the environment: %w", err)
+		}
+		return proxy, nil
+	}
+
+	proxy, err := url.Parse(proxyFlag)
+	if err != nil || proxy.Host == "" {
+		return nil, fmt.Errorf("invalid proxy %q, use a URL such as http://proxy.example.com:3128", proxyFlag)
+	}
+
+	switch proxy.Scheme {
+	case "http", "https", "socks5", "socks5h":
+		return proxy, nil
+	default:
+		return nil, fmt.Errorf("unsupported proxy %q, use an http://, https://, socks5:// or socks5h:// URL", proxyFlag)
+	}
 }

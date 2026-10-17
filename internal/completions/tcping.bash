@@ -34,7 +34,7 @@ _tcping() {
 		return
 		;;
 	c | i | t | r | dns-server | dns-timeout | stats-interval | source-label | \
-		json-url | otlp | otlp-header | influxdb | influxdb-org | influxdb-bucket | influxdb-token)
+		json-url | proxy | otlp | otlp-header | influxdb | influxdb-org | influxdb-bucket | influxdb-token)
 		# These need a value we cannot guess. Complete nothing rather
 		# than offering flags where a value belongs.
 		return
@@ -48,7 +48,7 @@ _tcping() {
 		-j --pretty --json-url --csv --csv-fixed-name --sqlite
 		--otlp --otlp-header --influxdb --influxdb-org --influxdb-bucket --influxdb-token
 		--stats-interval --source-label
-		--insecure --udp-server --json-server"
+		--insecure --proxy --udp-server --json-server"
 
 	if [[ $cur == -* ]]; then
 		mapfile -t COMPREPLY < <(compgen -W "$flags" -- "$cur")

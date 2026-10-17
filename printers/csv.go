@@ -238,11 +238,11 @@ func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 	}
 
 	if s.DestIsIP {
-		fmt.Printf("Probing %s on port %d over %s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), p.probeFile.Name())
+		fmt.Printf("Probing %s on port %d over %s%s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.probeFile.Name())
 		return
 	}
-	fmt.Printf("Probing %s (%s) on port %d over %s (resolved in %s ms) - saving the results to: %s\n",
-		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), s.NameResolutionDurationStr(), p.probeFile.Name())
+	fmt.Printf("Probing %s (%s) on port %d over %s%s (resolved in %s ms) - saving the results to: %s\n",
+		s.Hostname, s.IPStr(), s.Port, s.ProtocolStr(), viaProxy(s), s.NameResolutionDurationStr(), p.probeFile.Name())
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.

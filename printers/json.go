@@ -52,6 +52,7 @@ type jsonStart struct {
 	Hostname               string `json:"hostname"`
 	Port                   uint16 `json:"port"`
 	Protocol               string `json:"protocol"`
+	Proxy                  string `json:"proxy,omitempty"`
 	NameResolutionDuration string `json:"nameResolutionDurationMs,omitempty"`
 }
 
@@ -191,6 +192,7 @@ func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 		Hostname: s.Hostname,
 		Port:     s.Port,
 		Protocol: s.ProtocolStr(),
+		Proxy:    s.Proxy,
 	}
 	if !s.DestIsIP {
 		start.NameResolutionDuration = s.NameResolutionDurationStr()

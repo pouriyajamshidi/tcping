@@ -20,10 +20,10 @@ func NewColorPrinter(cfg Config) *ColorPrinter {
 // PrintStart prints the first message to indicate the target's address and port.
 func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
 	if s.DestIsIP {
-		printLightCyan("Probing %s on port %d over %s\n", s.Hostname, s.Port, s.ProtocolStr())
+		printLightCyan("Probing %s on port %d over %s%s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s))
 		return
 	}
-	printLightCyan("Probing %s on port %d over %s (resolved in %s ms)\n", s.Hostname, s.Port, s.ProtocolStr(), s.NameResolutionDurationStr())
+	printLightCyan("Probing %s on port %d over %s%s (resolved in %s ms)\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), s.NameResolutionDurationStr())
 }
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.

@@ -2,6 +2,8 @@ package probe
 
 import (
 	"context"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -44,6 +46,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 		Port:          8443,
 		Timeout:       3 * time.Second,
 		SkipTLSVerify: true,
+		Proxy:         &url.URL{Scheme: "http", Host: "proxy.example.com:3128"},
 		NetworkInterface: nic.NetworkInterface{
 			Use: true,
 		},
@@ -52,7 +55,8 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 	h := NewHTTPing(cfg)
 
 	if h.url != cfg.URL || h.hostname != cfg.Hostname || h.port != cfg.Port ||
-		h.timeout != cfg.Timeout || !h.skipTLSVerify || !h.networkInterface.Use {
+		h.timeout != cfg.Timeout || !h.skipTLSVerify || !h.networkInterface.Use ||
+		h.proxy != cfg.Proxy {
 		t.Errorf("NewHTTPing(%+v) did not carry the config over: %+v", cfg, h)
 	}
 }
@@ -282,6 +286,108 @@ func TestHTTPing_DialsTheGivenIP(t *testing.T) {
 
 	if gotHost != "does-not-resolve.invalid" {
 		t.Errorf("the server saw Host %q, want the URL's hostname to be kept", gotHost)
+	}
+}
+
+// TestHTTPing_ThroughProxy covers a plain http:// target behind a proxy. The
+// request goes to the proxy with the hostname in it, and the proxy is what
+// gets dialed: nothing listens on the IP handed to the probe, so the probe
+// can only succeed if that IP is left alone.
+func TestHTTPing_ThroughProxy(t *testing.T) {
+	requests := make(chan string, 1)
+
+	proxy := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		requests <- r.RequestURI
+	}))
+	t.Cleanup(proxy.Close)
+
+	proxyURL, _ := url.Parse(proxy.URL)
+
+	h := HTTPing{
+		timeout:  5 * time.Second,
+		port:     reservedButClosedPort(t),
+		url:      "http://does-not-resolve.invalid/health",
+		hostname: "does-not-resolve.invalid",
+		proxy:    proxyURL,
+	}
+
+	result, err := h.Ping(context.Background(), netip.MustParseAddr("127.0.0.1"))
+	if err != nil {
+		t.Fatalf("Ping() error = %v, want the probe to go through the proxy", err)
+	}
+
+	if got := <-requests; got != "http://does-not-resolve.invalid/health" {
+		t.Errorf("the proxy was asked for %q, want the target URL with its hostname", got)
+	}
+
+	if result.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", result.StatusCode, http.StatusOK)
+	}
+
+	if result.LocalAddr == nil {
+		t.Error("LocalAddr is nil, want the address the connection to the proxy came from")
+	}
+}
+
+// TestHTTPing_ThroughProxyTLS covers an https:// target behind a proxy. The
+// proxy is asked to CONNECT to the hostname, not to an IP, and the TLS
+// handshake runs with the target through the tunnel it opens.
+func TestHTTPing_ThroughProxyTLS(t *testing.T) {
+	target := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	t.Cleanup(target.Close)
+
+	connects := make(chan string, 1)
+
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		connects <- r.Host
+
+		// The hostname does not resolve, so the tunnel goes to the test
+		// server whatever it was asked for.
+		upstream, err := net.Dial("tcp", target.Listener.Addr().String())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+
+		client, _, err := http.NewResponseController(w).Hijack()
+		if err != nil {
+			_ = upstream.Close()
+			return
+		}
+
+		_, _ = client.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
+
+		go func() {
+			_, _ = io.Copy(upstream, client)
+			_ = upstream.Close()
+		}()
+		_, _ = io.Copy(client, upstream)
+		_ = client.Close()
+	}))
+	t.Cleanup(proxy.Close)
+
+	proxyURL, _ := url.Parse(proxy.URL)
+
+	h := HTTPing{
+		timeout:       5 * time.Second,
+		port:          443,
+		url:           "https://does-not-resolve.invalid/",
+		hostname:      "does-not-resolve.invalid",
+		skipTLSVerify: true,
+		proxy:         proxyURL,
+	}
+
+	result, err := h.Ping(context.Background(), netip.MustParseAddr("127.0.0.1"))
+	if err != nil {
+		t.Fatalf("Ping() error = %v, want the probe to go through the proxy", err)
+	}
+
+	if got := <-connects; got != "does-not-resolve.invalid:443" {
+		t.Errorf("the proxy was asked to CONNECT to %q, want the target's hostname and port", got)
+	}
+
+	if result.TLSVersion == "" {
+		t.Error("TLSVersion is empty, want the TLS details of the target behind the proxy")
 	}
 }
 

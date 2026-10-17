@@ -154,6 +154,23 @@ func TestJSONPrintStart(t *testing.T) {
 
 		wantNoFields(t, data, "nameResolutionDurationMs")
 	})
+
+	t.Run("names the proxy only when there is one", func(t *testing.T) {
+		_, data := printOneJSONEvent(t, Config{}, func(p *JSONPrinter) {
+			p.PrintStart(jsonTestStats())
+		})
+
+		wantNoFields(t, data, "proxy")
+
+		s := jsonTestStats()
+		s.Proxy = "http://proxy.example.com:3128"
+
+		_, data = printOneJSONEvent(t, Config{}, func(p *JSONPrinter) {
+			p.PrintStart(s)
+		})
+
+		wantFields(t, data, map[string]any{"proxy": "http://proxy.example.com:3128"})
+	})
 }
 
 func TestJSONPrintProbeSuccess(t *testing.T) {

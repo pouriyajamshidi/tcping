@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
+	"net/url"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/internal/version"
@@ -23,9 +24,10 @@ type HTTPing struct {
 	networkInterface nic.NetworkInterface
 	timeout          time.Duration
 	port             uint16
-	url              string // full target URL, e.g. https://example.com/health
-	hostname         string // used for the Host header and the TLS SNI
-	skipTLSVerify    bool   // do not check the server certificate
+	url              string   // full target URL, e.g. https://example.com/health
+	hostname         string   // used for the Host header and the TLS SNI
+	skipTLSVerify    bool     // do not check the server certificate
+	proxy            *url.URL // nil when the probe connects directly
 }
 
 // NewHTTPing creates an HTTP(S) prober for the target in cfg.
@@ -37,21 +39,27 @@ func NewHTTPing(cfg config.Config) HTTPing {
 		url:              cfg.URL,
 		hostname:         cfg.Hostname,
 		skipTLSVerify:    cfg.SkipTLSVerify,
+		proxy:            cfg.Proxy,
 	}
 }
 
-// transport always dials ip:port instead of letting the HTTP client resolve
-// the URL's hostname again, so the prober decides which address we probe and
-// -r and -resolve-every-probe keep working. Keep-alives are off so every
-// probe opens a real connection, which is what we are timing.
+// transport dials ip:port instead of letting the HTTP client resolve the
+// URL's hostname again, so the prober decides which address we probe and -r
+// and -resolve-every-probe keep working. Through a proxy it dials the proxy
+// instead, and the proxy connects to the hostname on its own. Keep-alives are
+// off so every probe opens a real connection, which is what we are timing.
 func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 	return &http.Transport{
+		Proxy:             http.ProxyURL(h.proxy),
 		DisableKeepAlives: true,
 		// Go only tries HTTP/2 on its own when the transport is left alone,
 		// and ours is not, so ask for it. Otherwise we would always report
 		// HTTP/1.1 even where the server speaks HTTP/2.
 		ForceAttemptHTTP2: true,
-		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if h.proxy != nil {
+				return d.DialContext(ctx, network, addr)
+			}
 			return d.DialContext(ctx, network, address(ip, h.port))
 		},
 		TLSClientConfig: &tls.Config{
