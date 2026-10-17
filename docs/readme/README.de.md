@@ -445,6 +445,23 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+Hinter einem Proxy geben Sie ihn mit `--proxy` an, oder Sie setzen die
+Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY`, die die meisten
+Programme ohnehin lesen. `http://`-, `https://`- und `socks5://`-Proxys funktionieren:
+
+```bash
+tcping https://www.example.com --proxy http://proxy.example.com:3128
+export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
+```
+
+Der Proxy verbindet sich selbst mit dem Hostnamen des Ziels. Verbindungszeit und
+Quelladresse sind daher die der Verbindung zum Proxy, und die erste Zeile des
+Laufs nennt ihn. tcping löst den Hostnamen trotzdem selbst auf: Ihr DNS muss also
+antworten, und die angezeigte Adresse ist die, die Ihr DNS geliefert hat, nicht
+unbedingt die, die der Proxy gewählt hat. TCP- und UDP-Probes laufen nicht über
+einen Proxy. Ein Proxy aus einer PAC-Datei muss von Hand angegeben werden, da
+tcping keine PAC-Dateien liest.
+
 ### Probes über UDP
 
 ```bash
@@ -665,10 +682,11 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 
 ### HTTP(S) und UDP
 
-| Flag           | Standard | Beschreibung                                                                                                                                                                              |
-| -------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                  |
-| `--udp-server` |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt |
+| Flag            | Standard | Beschreibung                                                                                                                                                                                 |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`    |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                     |
+| `--proxy <URL>` |          | `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128`. Ohne dieses Flag werden die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` verwendet |
+| `--udp-server`  |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt    |
 
 ---
 

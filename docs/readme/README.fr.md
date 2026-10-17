@@ -445,6 +445,23 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+Derrière un proxy, donnez-le avec `--proxy`, ou définissez les variables
+d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` que la plupart des outils
+lisent déjà. Les proxys `http://`, `https://` et `socks5://` fonctionnent :
+
+```bash
+tcping https://www.example.com --proxy http://proxy.example.com:3128
+export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
+```
+
+Le proxy se connecte lui-même au nom d'hôte de la cible. Le temps de connexion et
+l'adresse source sont donc ceux de la connexion au proxy, et la première ligne de
+l'exécution le nomme. tcping résout quand même le nom d'hôte lui-même : votre DNS
+doit donc répondre, et l'adresse affichée est celle donnée par votre DNS, pas
+forcément celle choisie par le proxy. Les sondes TCP et UDP ne passent pas par un
+proxy. Un proxy défini dans un fichier PAC doit être donné à la main, car tcping
+ne lit pas les fichiers PAC.
+
 ### Sonder en UDP
 
 ```bash
@@ -665,10 +682,11 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 
 ### HTTP(S) et UDP
 
-| Option         | Par défaut | Description                                                                                                                                                                  |
-| -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                   |
-| `--udp-server` |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse |
+| Option          | Par défaut | Description                                                                                                                                                                                                 |
+| --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`    |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                                                  |
+| `--proxy <URL>` |            | Envoyer les sondes `HTTP(S)` à travers un proxy, par ex. `--proxy http://proxy.example.com:3128`. Sans cette option, les variables d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` sont utilisées |
+| `--udp-server`  |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse                                |
 
 ---
 

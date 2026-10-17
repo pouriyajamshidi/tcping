@@ -445,6 +445,22 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+Achter een proxy geeft u die op met `--proxy`, of u zet de omgevingsvariabelen
+`HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` die de meeste programma's al lezen.
+`http://`-, `https://`- en `socks5://`-proxy's werken:
+
+```bash
+tcping https://www.example.com --proxy http://proxy.example.com:3128
+export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
+```
+
+De proxy maakt zelf verbinding met de hostnaam van het doel. De verbindingstijd
+en het bronadres zijn dus die van de verbinding met de proxy, en de eerste regel
+van de run noemt hem. tcping zoekt de hostnaam toch zelf op: uw DNS moet dus
+antwoorden, en het getoonde adres is wat uw DNS gaf, niet per se het adres dat de
+proxy koos. TCP- en UDP-probes gaan niet via een proxy. Een proxy uit een
+PAC-bestand moet u zelf opgeven, want tcping leest geen PAC-bestanden.
+
 ### Testen via UDP
 
 ```bash
@@ -665,10 +681,11 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 
 ### HTTP(S) en UDP
 
-| Flag           | Standaard | Beschrijving                                                                                                                                                      |
-| -------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                               |
-| `--udp-server` |           | Niet testen. Luisteren op de opgegeven host en poort en elk UDP-datagram terugsturen naar de afzender, zodat een UDP-probe naar deze computer een antwoord krijgt |
+| Flag            | Standaard | Beschrijving                                                                                                                                                                            |
+| --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`    |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                                                     |
+| `--proxy <URL>` |           | `HTTP(S)`-probes via een proxy sturen, bijv. `--proxy http://proxy.example.com:3128`. Zonder deze flag worden de omgevingsvariabelen `HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` gebruikt |
+| `--udp-server`  |           | Niet testen. Luisteren op de opgegeven host en poort en elk UDP-datagram terugsturen naar de afzender, zodat een UDP-probe naar deze computer een antwoord krijgt                       |
 
 ---
 

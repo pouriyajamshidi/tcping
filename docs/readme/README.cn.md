@@ -437,6 +437,21 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+在代理后面时，用 `--proxy` 指定代理，或者设置大多数工具都会读取的
+`HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量。支持 `http://`、`https://`
+和 `socks5://` 代理：
+
+```bash
+tcping https://www.example.com --proxy http://proxy.example.com:3128
+export HTTPS_PROXY=http://proxy.example.com:3128 && tcping https://www.example.com
+```
+
+代理会自己连接目标的主机名，所以连接耗时和源地址都是到代理的那段连接的，
+运行的第一行也会写明所用的代理。tcping 仍然会自己解析主机名，所以你的 DNS
+必须能应答，而它显示的地址是你的 DNS 给出的，不一定是代理选用的那个。
+TCP 和 UDP 探测不会经过代理。PAC 文件里设置的代理需要手动指定，因为 tcping
+不读取 PAC 文件。
+
 ### 通过 UDP 探测
 
 ```bash
@@ -647,10 +662,11 @@ OpenTelemetry Collector 和 InfluxDB 环境（包含 Grafana 和 tcping，一条
 
 ### HTTP(S) 和 UDP
 
-| 标志           | 默认值 | 描述                                                                                                       |
-| -------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |        | 探测 `https://` 目标时不验证服务器证书。适用于自签名或已过期的证书                                         |
-| `--udp-server` |        | 不进行探测。监听给定的主机和端口，并把每个 UDP 数据报回送给发送者，这样指向这台机器的 UDP 探测就能得到回复 |
+| 标志            | 默认值 | 描述                                                                                                                                       |
+| --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--insecure`    |        | 探测 `https://` 目标时不验证服务器证书。适用于自签名或已过期的证书                                                                         |
+| `--proxy <URL>` |        | 通过代理发送 `HTTP(S)` 探测，例如 `--proxy http://proxy.example.com:3128`。不指定时使用 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量 |
+| `--udp-server`  |        | 不进行探测。监听给定的主机和端口，并把每个 UDP 数据报回送给发送者，这样指向这台机器的 UDP 探测就能得到回复                                 |
 
 ---
 
