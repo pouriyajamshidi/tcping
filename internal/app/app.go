@@ -22,7 +22,9 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
-// setupSignalHandler catches SIGINT and SIGTERM
+// setupSignalHandler catches SIGINT and SIGTERM. The first one stops the run
+// so the statistics can be printed or sent, and a second one quits right
+// away instead of waiting for that to finish.
 func setupSignalHandler(ctx context.Context) context.Context {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -32,6 +34,9 @@ func setupSignalHandler(ctx context.Context) context.Context {
 	go func() {
 		<-sigChan
 		cancel()
+
+		<-sigChan
+		os.Exit(1)
 	}()
 
 	return ctx
