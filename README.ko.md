@@ -19,7 +19,7 @@
 `ICMP` 대신 `TCP`, `UDP`, `HTTP(S)`를 사용하는 크로스 플랫폼 ping 프로그램으로, Linux의 ping 유틸리티에서 영감을 받았습니다.
 
 > [!TIP]
-> 이 문서는 [English](README.md), [中文](README.cn.md), [日本語](README.ja.md)로도 볼 수 있습니다.
+> 이 문서는 [English](README.md), [中文](README.cn.md), [日本語](README.ja.md), [فارسی](README.fa.md), [Deutsch](README.de.md), [Français](README.fr.md), [Nederlands](README.nl.md)로도 볼 수 있습니다.
 
 - `ICMP`가 차단된 환경에서 `ping`을 대신해 `TCP`, `HTTP(S)`, `UDP`로 연결을 확인합니다.
 - `ping`과 같은 방식으로 패킷 손실률과 지연 시간의 최솟값, 평균값, 최댓값, 표준 편차를 보고하며, 가장 긴 가동 시간과 중단 시간, 그리고 그것이 언제 일어났는지도 알려 줍니다.
