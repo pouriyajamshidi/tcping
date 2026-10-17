@@ -25,7 +25,6 @@ type HTTPing struct {
 	timeout          time.Duration
 	port             uint16
 	url              string         // full target URL, e.g. https://example.com/health
-	hostname         string         // used for the Host header and the TLS SNI
 	skipTLSVerify    bool           // do not check the server certificate
 	proxy            *url.URL       // nil when the probe connects directly
 	proxyAddr        netip.AddrPort // where the proxy is, zero without one
@@ -38,7 +37,6 @@ func NewHTTPing(cfg config.Config) HTTPing {
 		timeout:          cfg.Timeout,
 		port:             cfg.Port,
 		url:              cfg.URL,
-		hostname:         cfg.Hostname,
 		skipTLSVerify:    cfg.SkipTLSVerify,
 		proxy:            cfg.Proxy,
 		proxyAddr:        cfg.ProxyAddr,
@@ -65,8 +63,11 @@ func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 			}
 			return d.DialContext(ctx, network, address(ip, h.port))
 		},
+		// No ServerName: Go takes it from the URL for the target, and from
+		// the proxy URL for an https:// proxy. Setting one here would be
+		// used for both, and check the proxy's certificate against the
+		// target's hostname.
 		TLSClientConfig: &tls.Config{
-			ServerName:         h.hostname,
 			InsecureSkipVerify: h.skipTLSVerify,
 		},
 		TLSHandshakeTimeout: h.timeout,

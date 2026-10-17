@@ -2,12 +2,14 @@ package probe
 
 import (
 	"context"
+	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -34,7 +36,6 @@ func httpingFor(t *testing.T, srv *httptest.Server, path string) (HTTPing, netip
 		timeout:       5 * time.Second,
 		port:          addrPort.Port(),
 		url:           srv.URL + path,
-		hostname:      u.Hostname(),
 		skipTLSVerify: true,
 	}, addrPort.Addr()
 }
@@ -55,7 +56,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 
 	h := NewHTTPing(cfg)
 
-	if h.url != cfg.URL || h.hostname != cfg.Hostname || h.port != cfg.Port ||
+	if h.url != cfg.URL || h.port != cfg.Port ||
 		h.timeout != cfg.Timeout || !h.skipTLSVerify || !h.networkInterface.Use ||
 		h.proxy != cfg.Proxy || h.proxyAddr != cfg.ProxyAddr {
 		t.Errorf("NewHTTPing(%+v) did not carry the config over: %+v", cfg, h)
@@ -270,10 +271,9 @@ func TestHTTPing_DialsTheGivenIP(t *testing.T) {
 	addrPort, _ := netip.ParseAddrPort(u.Host)
 
 	h := HTTPing{
-		timeout:  5 * time.Second,
-		port:     addrPort.Port(),
-		url:      "http://does-not-resolve.invalid/",
-		hostname: "does-not-resolve.invalid",
+		timeout: 5 * time.Second,
+		port:    addrPort.Port(),
+		url:     "http://does-not-resolve.invalid/",
 	}
 
 	result, err := h.Ping(context.Background(), ip)
@@ -307,7 +307,6 @@ func TestHTTPing_ThroughProxy(t *testing.T) {
 		timeout:   5 * time.Second,
 		port:      reservedButClosedPort(t),
 		url:       "http://does-not-resolve.invalid/health",
-		hostname:  "does-not-resolve.invalid",
 		proxy:     &url.URL{Scheme: "http", Host: "proxy.does-not-resolve.invalid:3128"},
 		proxyAddr: netip.MustParseAddrPort(proxy.Listener.Addr().String()),
 	}
@@ -373,7 +372,6 @@ func TestHTTPing_ThroughProxyTLS(t *testing.T) {
 		timeout:       5 * time.Second,
 		port:          443,
 		url:           "https://does-not-resolve.invalid/",
-		hostname:      "does-not-resolve.invalid",
 		skipTLSVerify: true,
 		proxy:         proxyURL,
 		proxyAddr:     netip.MustParseAddrPort(proxy.Listener.Addr().String()),
@@ -393,14 +391,53 @@ func TestHTTPing_ThroughProxyTLS(t *testing.T) {
 	}
 }
 
+// The TLS session with an https:// proxy asks for the proxy by name, so its
+// certificate is checked against the proxy's hostname rather than the
+// target's.
+func TestHTTPing_ThroughHTTPSProxyAsksForTheProxyByName(t *testing.T) {
+	serverNames := make(chan string, 1)
+
+	proxy := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	proxy.TLS = &tls.Config{
+		GetConfigForClient: func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
+			serverNames <- hello.ServerName
+			return nil, nil
+		},
+	}
+	proxy.StartTLS()
+	t.Cleanup(proxy.Close)
+
+	proxyAddr := netip.MustParseAddrPort(proxy.Listener.Addr().String())
+
+	h := HTTPing{
+		timeout:   5 * time.Second,
+		port:      443,
+		url:       "https://example.com/",
+		proxy:     &url.URL{Scheme: "https", Host: net.JoinHostPort("localhost", strconv.Itoa(int(proxyAddr.Port())))},
+		proxyAddr: proxyAddr,
+	}
+
+	// The test certificate is not trusted, so the probe itself fails. What
+	// matters is the name it asked for on the way.
+	_, _ = h.Ping(context.Background(), netip.Addr{})
+
+	select {
+	case got := <-serverNames:
+		if got != "localhost" {
+			t.Errorf("the proxy was asked for %q, want localhost", got)
+		}
+	default:
+		t.Fatal("the probe never started a TLS session with the proxy")
+	}
+}
+
 func TestHTTPing_ConnectionRefused(t *testing.T) {
 	port := reservedButClosedPort(t)
 
 	h := HTTPing{
-		timeout:  2 * time.Second,
-		port:     port,
-		url:      "http://127.0.0.1/",
-		hostname: "127.0.0.1",
+		timeout: 2 * time.Second,
+		port:    port,
+		url:     "http://127.0.0.1/",
 	}
 
 	result, err := h.Ping(context.Background(), netip.MustParseAddr("127.0.0.1"))
