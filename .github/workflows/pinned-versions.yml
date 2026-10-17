@@ -81,13 +81,21 @@ jobs:
                 "$name" "${current##*:}" "${latest##*:}" "$note")"
           }
 
+          # Each version is saved in a variable before bump sees it. set -e
+          # does not catch a failing "$(...)" passed straight to a function,
+          # so a failed gh api call would otherwise open a pull request
+          # setting the pin to an empty value.
+          revive_latest=$(latest_release mgechev/revive)
+          staticcheck_latest=$(latest_release dominikh/go-tools)
+          nfpm_latest=$(latest_release goreleaser/nfpm)
+
           bump revive REVIVE_VERSION \
-            "$(pinned REVIVE_VERSION)" "$(latest_release mgechev/revive)" \
+            "$(pinned REVIVE_VERSION)" "$revive_latest" \
             "A revive bump can pull in newly added rules, so read the test run before merging."
           bump staticcheck STATICCHECK_VERSION \
-            "$(pinned STATICCHECK_VERSION)" "$(latest_release dominikh/go-tools)" ""
+            "$(pinned STATICCHECK_VERSION)" "$staticcheck_latest" ""
           bump nfpm NFPM_VERSION \
-            "$(pinned NFPM_VERSION)" "$(latest_release goreleaser/nfpm)" \
+            "$(pinned NFPM_VERSION)" "$nfpm_latest" \
             "nfpm only runs during a release, so the test run here does not exercise it. \`make linux\` does."
 
           # The Nix image is not a GitHub release, so its tags come from Docker
