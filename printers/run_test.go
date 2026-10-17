@@ -378,6 +378,24 @@ func TestRunTranscript_JSONThroughAProxy(t *testing.T) {
 	wantNoLines(t, out, "ipAddress", "nameResolution", "hostnameResolveRetries")
 }
 
+// columnOf is one named column of a CSV, header row included, so a test can
+// name a column instead of counting to it.
+func columnOf(t *testing.T, rows [][]string, name string) []string {
+	t.Helper()
+
+	index := slices.Index(rows[0], name)
+	if index < 0 {
+		t.Fatalf("no %q column in %v", name, rows[0])
+	}
+
+	values := make([]string, len(rows))
+	for i, row := range rows {
+		values[i] = row[index]
+	}
+
+	return values
+}
+
 // The CSV rows are what a run leaves behind for later, so they have to add up
 // the same way the summary does.
 func TestRunTranscript_CSVRows(t *testing.T) {
@@ -441,22 +459,4 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 	if statistics["Outages"] != "1" {
 		t.Errorf("stats file reports %q outages on a run with one: %v", statistics["Outages"], statistics)
 	}
-}
-
-// columnOf is one named column of a CSV, header row included, so a test can
-// name a column instead of counting to it.
-func columnOf(t *testing.T, rows [][]string, name string) []string {
-	t.Helper()
-
-	index := slices.Index(rows[0], name)
-	if index < 0 {
-		t.Fatalf("no %q column in %v", name, rows[0])
-	}
-
-	values := make([]string, len(rows))
-	for i, row := range rows {
-		values[i] = row[index]
-	}
-
-	return values
 }

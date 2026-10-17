@@ -40,6 +40,20 @@ func TestOTLPEndpoint(t *testing.T) {
 	}
 }
 
+// otlpTestStats is a probe that succeeded in 3.5ms, which is enough to
+// check what a successful probe sends.
+func otlpTestStats() *stats.Statistics {
+	return &stats.Statistics{
+		Hostname:              "example.com",
+		IP:                    netip.MustParseAddr("93.184.216.34"),
+		Port:                  443,
+		Protocol:              config.TCP,
+		LatestRTT:             3.5,
+		TotalSuccessfulProbes: 2,
+		StartTime:             time.Now(),
+	}
+}
+
 // Hosted backends each want their token in a header of their own choosing,
 // so the header given has to arrive as it was written.
 func TestOTLPSendsTheGivenHeader(t *testing.T) {
@@ -135,20 +149,6 @@ func TestOTLPRejectsABadHeader(t *testing.T) {
 		if _, err := NewOTLPPrinter(Config{OTLPURL: "http://localhost:4318", OTLPHeader: header}); err == nil {
 			t.Errorf("expected an error for the header %q", header)
 		}
-	}
-}
-
-// otlpTestStats is a probe that succeeded in 3.5ms, which is enough to
-// check what a successful probe sends.
-func otlpTestStats() *stats.Statistics {
-	return &stats.Statistics{
-		Hostname:              "example.com",
-		IP:                    netip.MustParseAddr("93.184.216.34"),
-		Port:                  443,
-		Protocol:              config.TCP,
-		LatestRTT:             3.5,
-		TotalSuccessfulProbes: 2,
-		StartTime:             time.Now(),
 	}
 }
 

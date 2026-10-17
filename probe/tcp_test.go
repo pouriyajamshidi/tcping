@@ -442,35 +442,6 @@ type socks5Request struct {
 	port           uint16
 }
 
-// fakeSOCKS5Proxy plays the proxy's side of every SOCKS5 handshake, answers
-// the request with replyCode, and hands the request over, so a test can see
-// what the probe asked for. A reply code of 0 means the proxy connected.
-func fakeSOCKS5Proxy(t *testing.T, replyCode byte) (netip.AddrPort, <-chan socks5Request) {
-	t.Helper()
-
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("fake SOCKS5 proxy: %v", err)
-	}
-	t.Cleanup(func() { _ = l.Close() })
-
-	requests := make(chan socks5Request, 1)
-
-	go func() {
-		for {
-			conn, err := l.Accept()
-			if err != nil {
-				return
-			}
-
-			requests <- serveSOCKS5(conn, replyCode)
-			_ = conn.Close()
-		}
-	}()
-
-	return netip.MustParseAddrPort(l.Addr().String()), requests
-}
-
 // serveSOCKS5 reads one SOCKS5 handshake off conn. A short read leaves the
 // rest of the request empty, which the test then reports.
 func serveSOCKS5(conn net.Conn, replyCode byte) socks5Request {
@@ -509,6 +480,35 @@ func serveSOCKS5(conn net.Conn, replyCode byte) socks5Request {
 	_, _ = conn.Write([]byte{5, replyCode, 0, 1, 0, 0, 0, 0, 0, 0})
 
 	return req
+}
+
+// fakeSOCKS5Proxy plays the proxy's side of every SOCKS5 handshake, answers
+// the request with replyCode, and hands the request over, so a test can see
+// what the probe asked for. A reply code of 0 means the proxy connected.
+func fakeSOCKS5Proxy(t *testing.T, replyCode byte) (netip.AddrPort, <-chan socks5Request) {
+	t.Helper()
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("fake SOCKS5 proxy: %v", err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+
+	requests := make(chan socks5Request, 1)
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+
+			requests <- serveSOCKS5(conn, replyCode)
+			_ = conn.Close()
+		}
+	}()
+
+	return netip.MustParseAddrPort(l.Addr().String()), requests
 }
 
 // The proxy gets the hostname as it is and looks it up on its own: neither

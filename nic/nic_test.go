@@ -20,6 +20,15 @@ func TestNewNetworkInterface_IPNotAssignedToAnyInterface(t *testing.T) {
 	}
 }
 
+func mustParseIP(t *testing.T, s string) net.IP {
+	t.Helper()
+	ip := net.ParseIP(s)
+	if ip == nil {
+		t.Fatalf("net.ParseIP(%q) returned nil", s)
+	}
+	return ip
+}
+
 func TestNewNetworkInterface_Loopback(t *testing.T) {
 	ni, err := NewNetworkInterface("127.0.0.1", false, false)
 	if err != nil {
@@ -58,13 +67,4 @@ func TestNetworkInterface_LocalIPFor_MissingFamilyReturnsNil(t *testing.T) {
 	if got := ni.LocalIPFor(netip.MustParseAddr("2606:2800:220:1:248:1893:25c8:1946")); got != nil {
 		t.Errorf("LocalIPFor(v6 target) = %v, want nil (interface has no IPv6 address)", got)
 	}
-}
-
-func mustParseIP(t *testing.T, s string) net.IP {
-	t.Helper()
-	ip := net.ParseIP(s)
-	if ip == nil {
-		t.Fatalf("net.ParseIP(%q) returned nil", s)
-	}
-	return ip
 }
