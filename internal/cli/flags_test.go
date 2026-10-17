@@ -342,6 +342,16 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			want:  "Only one of -j/--json-url, --sqlite, --csv, --otlp and --influxdb can be used",
 		},
 		{
+			name:  "retrying the lookup through a proxy",
+			flags: flags{proxy: "http://proxy.example.com:3128", retryHostnameResolveAfterNFailures: 3, intervalBetweenProbes: 1},
+			want:  "-r does not work with --proxy",
+		},
+		{
+			name:  "a lookup before every probe through a proxy",
+			flags: flags{proxy: "http://proxy.example.com:3128", resolveEveryProbe: true, intervalBetweenProbes: 1},
+			want:  "--resolve-every-probe does not work with --proxy",
+		},
+		{
 			name:  "a zero probe interval, which would panic the ticker",
 			flags: flags{intervalBetweenProbes: 0},
 			want:  "Interval between probes should be more than 0 seconds",

@@ -462,10 +462,11 @@ tcping https://www.example.com --proxy http://proxy.example.com:3128
 
 Le proxy se connecte lui-même au nom d'hôte de la cible. Le temps de connexion et
 l'adresse source sont donc ceux de la connexion au proxy, et la première ligne de
-l'exécution le nomme. tcping résout quand même le nom d'hôte lui-même : votre DNS
-doit donc répondre, et l'adresse affichée est celle donnée par votre DNS, pas
-forcément celle choisie par le proxy. Les sondes TCP et UDP ne passent pas par un
-proxy. Un proxy défini dans un fichier PAC doit être donné à la main, car tcping
+l'exécution le nomme. tcping ne résout pas le nom d'hôte lui-même : la sortie
+n'affiche donc aucune adresse pour lui, et `-r` et `--resolve-every-probe` ne
+fonctionnent pas avec un proxy. `-4`, `-6` et `--dns-server` s'appliquent à la
+place au nom d'hôte du proxy lui-même. Les sondes TCP et UDP ne passent pas par
+un proxy. Un proxy défini dans un fichier PAC doit être donné à la main, car tcping
 ne lit pas les fichiers PAC.
 
 ### Sonder en UDP

@@ -24,10 +24,11 @@ type HTTPing struct {
 	networkInterface nic.NetworkInterface
 	timeout          time.Duration
 	port             uint16
-	url              string   // full target URL, e.g. https://example.com/health
-	hostname         string   // used for the Host header and the TLS SNI
-	skipTLSVerify    bool     // do not check the server certificate
-	proxy            *url.URL // nil when the probe connects directly
+	url              string         // full target URL, e.g. https://example.com/health
+	hostname         string         // used for the Host header and the TLS SNI
+	skipTLSVerify    bool           // do not check the server certificate
+	proxy            *url.URL       // nil when the probe connects directly
+	proxyAddr        netip.AddrPort // where the proxy is, zero without one
 }
 
 // NewHTTPing creates an HTTP(S) prober for the target in cfg.
@@ -40,14 +41,16 @@ func NewHTTPing(cfg config.Config) HTTPing {
 		hostname:         cfg.Hostname,
 		skipTLSVerify:    cfg.SkipTLSVerify,
 		proxy:            cfg.Proxy,
+		proxyAddr:        cfg.ProxyAddr,
 	}
 }
 
 // transport dials ip:port instead of letting the HTTP client resolve the
 // URL's hostname again, so the prober decides which address we probe and -r
-// and -resolve-every-probe keep working. Through a proxy it dials the proxy
-// instead, and the proxy connects to the hostname on its own. Keep-alives are
-// off so every probe opens a real connection, which is what we are timing.
+// and -resolve-every-probe keep working. Through a proxy it dials the
+// proxy's address instead, and the proxy connects to the hostname on its own.
+// Keep-alives are off so every probe opens a real connection, which is what
+// we are timing.
 func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 	return &http.Transport{
 		Proxy:             http.ProxyURL(h.proxy),
@@ -56,9 +59,9 @@ func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 		// and ours is not, so ask for it. Otherwise we would always report
 		// HTTP/1.1 even where the server speaks HTTP/2.
 		ForceAttemptHTTP2: true,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
 			if h.proxy != nil {
-				return d.DialContext(ctx, network, addr)
+				return d.DialContext(ctx, network, h.proxyAddr.String())
 			}
 			return d.DialContext(ctx, network, address(ip, h.port))
 		},
@@ -73,7 +76,14 @@ func (h HTTPing) transport(d net.Dialer, ip netip.Addr) *http.Transport {
 // Ping sends one GET to the target URL, sourcing the connection from the
 // configured network interface when there is one.
 func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
-	d, err := dialer(tcp, h.networkInterface, h.timeout, ip)
+	// Through a proxy, the connection goes to the proxy, so -I has to pick a
+	// source address that can reach the proxy rather than the target.
+	connectIP := ip
+	if h.proxy != nil {
+		connectIP = h.proxyAddr.Addr()
+	}
+
+	d, err := dialer(tcp, h.networkInterface, h.timeout, connectIP)
 	if err != nil {
 		return Result{}, err
 	}

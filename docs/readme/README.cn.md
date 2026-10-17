@@ -452,9 +452,9 @@ tcping https://www.example.com --proxy http://proxy.example.com:3128
 ```
 
 代理会自己连接目标的主机名，所以连接耗时和源地址都是到代理的那段连接的，
-运行的第一行也会写明所用的代理。tcping 仍然会自己解析主机名，所以你的 DNS
-必须能应答，而它显示的地址是你的 DNS 给出的，不一定是代理选用的那个。
-TCP 和 UDP 探测不会经过代理。PAC 文件里设置的代理需要手动指定，因为 tcping
+运行的第一行也会写明所用的代理。tcping 不会自己解析主机名，所以输出中不显示
+它的地址，`-r` 和 `--resolve-every-probe` 也不能和代理一起使用。`-4`、`-6` 和
+`--dns-server` 改为作用于代理自己的主机名。TCP 和 UDP 探测不会经过代理。PAC 文件里设置的代理需要手动指定，因为 tcping
 不读取 PAC 文件。
 
 ### 通过 UDP 探测

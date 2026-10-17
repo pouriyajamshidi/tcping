@@ -19,7 +19,7 @@ func NewColorPrinter(cfg Config) *ColorPrinter {
 
 // PrintStart prints the first message to indicate the target's address and port.
 func (p *ColorPrinter) PrintStart(s *stats.Statistics) {
-	if s.DestIsIP {
+	if !s.HostnameResolved() {
 		printLightCyan("Probing %s on port %d over %s%s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s))
 		return
 	}
@@ -43,8 +43,8 @@ func (p *ColorPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
-	target := s.IPStr()
-	if s.Hostname != target {
+	target := s.Hostname
+	if s.HostnameResolved() {
 		target = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
@@ -80,8 +80,8 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
-	target := s.IPStr()
-	if s.Hostname != target {
+	target := s.Hostname
+	if s.HostnameResolved() {
 		target = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
@@ -112,7 +112,7 @@ func (p *ColorPrinter) PrintProbeFailure(s *stats.Statistics) {
 // PrintStatistics prints the summary of all probe statistics.
 func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow("\n--- %s ", s.Hostname)
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		printYellow("(%s) ", s.IPStr())
 	}
 	printYellow("TCPing statistics ---\n")
@@ -184,7 +184,7 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 		printLightBlue("%s\n", s.LongestDowntimeEndTime())
 	}
 
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		timeNoun := "time"
 		if s.RetriedHostnameLookups != 1 {
 			timeNoun = "times"

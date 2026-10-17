@@ -58,7 +58,7 @@ type jsonStart struct {
 
 type jsonProbe struct {
 	Hostname    string  `json:"hostname,omitempty"`
-	IP          string  `json:"ipAddress"`
+	IP          string  `json:"ipAddress,omitempty"`
 	Port        uint16  `json:"port"`
 	Success     bool    `json:"success"`
 	Latency     float32 `json:"latency,omitempty"`
@@ -153,7 +153,7 @@ type jsonHostnameChange struct {
 
 type jsonStatistics struct {
 	Hostname               string               `json:"hostname,omitempty"`
-	IP                     string               `json:"ipAddress"`
+	IP                     string               `json:"ipAddress,omitempty"`
 	Port                   uint16               `json:"port"`
 	Protocol               string               `json:"protocol"`
 	TotalProbes            uint                 `json:"totalProbes"`
@@ -194,7 +194,7 @@ func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 		Protocol: s.ProtocolStr(),
 		Proxy:    s.Proxy,
 	}
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		start.NameResolutionDuration = s.NameResolutionDurationStr()
 	}
 	p.encode("start", start)
@@ -313,7 +313,7 @@ func (p *JSONPrinter) PrintStatistics(s *stats.Statistics) {
 		data.LongestDowntime = s.LongestDowntimeDuration()
 	}
 
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		data.HostnameResolveRetries = s.RetriedHostnameLookups
 
 		if len(s.HostnameChanges) > 1 {

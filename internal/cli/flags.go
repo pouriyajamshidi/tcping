@@ -402,6 +402,18 @@ func (f *flags) validate() {
 		usage()
 	}
 
+	// The proxy looks the hostname up, so there is nothing for us to look up
+	// again.
+	if f.proxy != "" && f.retryHostnameResolveAfterNFailures > 0 {
+		fmt.Fprintln(os.Stderr, "-r does not work with --proxy, as the proxy looks the hostname up")
+		usage()
+	}
+
+	if f.proxy != "" && f.resolveEveryProbe {
+		fmt.Fprintln(os.Stderr, "--resolve-every-probe does not work with --proxy, as the proxy looks the hostname up")
+		usage()
+	}
+
 	// Probing is driven by a time.Ticker, which panics on a zero or
 	// negative interval.
 	if secondsToDuration(f.intervalBetweenProbes) <= 0 {

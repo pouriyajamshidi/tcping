@@ -82,6 +82,13 @@ func (r scriptedRun) run(t *testing.T) string {
 		ShowFailuresOnly:       r.showFailuresOnly,
 	}
 
+	// Through a proxy, the proxy looks the hostname up, so there is no
+	// address and no lookup time, the same as internal/cli leaves them.
+	if r.proxy != nil {
+		cfg.IP = netip.Addr{}
+		cfg.NameResolutionDuration = 0
+	}
+
 	requests := make(chan struct{}, 1)
 
 	pinger := &scriptedPinger{outcomes: r.outcomes}
@@ -268,8 +275,10 @@ func TestRunTranscript_ShowFailuresOnly(t *testing.T) {
 
 // Through a proxy, the connect time and the source address are those of the
 // connection to the proxy, so the run has to say which proxy that was. The
-// proxy URL can carry a password, which must never reach the output.
-func TestRunTranscript_StartLineNamesTheProxy(t *testing.T) {
+// proxy URL can carry a password, which must never reach the output. The
+// proxy looks the hostname up, so no address or lookup time of our own shows
+// up anywhere, not even as an empty pair of brackets.
+func TestRunTranscript_ThroughAProxy(t *testing.T) {
 	proxy, _ := url.Parse("http://user:secret@proxy.example.com:3128")
 
 	plain := scriptedRun{
@@ -280,13 +289,16 @@ func TestRunTranscript_StartLineNamesTheProxy(t *testing.T) {
 	}.run(t)
 
 	want := strings.Join([]string{
-		"Probing example.com on port 443 over HTTPS via proxy http://proxy.example.com:3128 (resolved in <duration>)",
-		"Reply from example.com (93.184.216.34) on port 443 HTTPS_conn=1 time=<duration>",
+		"Probing example.com on port 443 over HTTPS via proxy http://proxy.example.com:3128",
+		"Reply from example.com on port 443 HTTPS_conn=1 time=<duration>",
 	}, "\n") + "\n"
 
 	if got := probeLines(plain); got != want {
 		t.Errorf("transcript =\n%s\nwant =\n%s", got, want)
 	}
+
+	wantLines(t, plain, "\n--- example.com TCPing statistics ---\n")
+	wantNoLines(t, plain, "()", "resolve", "IP address changes")
 
 	color := scriptedRun{
 		printer:  NewColorPrinter(Config{}),
@@ -345,6 +357,25 @@ func TestRunTranscript_JSONEvents(t *testing.T) {
 	if strings.Contains(out, `"totalUptime":"0 seconds"`) {
 		t.Errorf("a summary reports no uptime on a run that was up:\n%s", out)
 	}
+}
+
+// Through a proxy there is no address of our own to report, so the JSON
+// leaves the field out rather than sending an empty one.
+func TestRunTranscript_JSONThroughAProxy(t *testing.T) {
+	var events bytes.Buffer
+	proxy, _ := url.Parse("http://proxy.example.com:3128")
+
+	scriptedRun{
+		printer:  jsonTestPrinter(t, Config{Writer: &events}),
+		outcomes: []bool{true, false},
+		protocol: config.HTTPS,
+		proxy:    proxy,
+	}.run(t)
+
+	out := events.String()
+
+	wantLines(t, out, `"hostname":"example.com"`, `"proxy":"http://proxy.example.com:3128"`)
+	wantNoLines(t, out, "ipAddress", "nameResolution", "hostnameResolveRetries")
 }
 
 // The CSV rows are what a run leaves behind for later, so they have to add up

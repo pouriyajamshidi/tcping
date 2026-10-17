@@ -47,6 +47,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 		Timeout:       3 * time.Second,
 		SkipTLSVerify: true,
 		Proxy:         &url.URL{Scheme: "http", Host: "proxy.example.com:3128"},
+		ProxyAddr:     netip.MustParseAddrPort("192.0.2.1:3128"),
 		NetworkInterface: nic.NetworkInterface{
 			Use: true,
 		},
@@ -56,7 +57,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 
 	if h.url != cfg.URL || h.hostname != cfg.Hostname || h.port != cfg.Port ||
 		h.timeout != cfg.Timeout || !h.skipTLSVerify || !h.networkInterface.Use ||
-		h.proxy != cfg.Proxy {
+		h.proxy != cfg.Proxy || h.proxyAddr != cfg.ProxyAddr {
 		t.Errorf("NewHTTPing(%+v) did not carry the config over: %+v", cfg, h)
 	}
 }
@@ -291,8 +292,9 @@ func TestHTTPing_DialsTheGivenIP(t *testing.T) {
 
 // TestHTTPing_ThroughProxy covers a plain http:// target behind a proxy. The
 // request goes to the proxy with the hostname in it, and the proxy is what
-// gets dialed: nothing listens on the IP handed to the probe, so the probe
-// can only succeed if that IP is left alone.
+// gets dialed: nothing listens on the IP handed to the probe, and the proxy's
+// hostname does not resolve, so the probe can only succeed by dialing the
+// proxy address looked up at startup.
 func TestHTTPing_ThroughProxy(t *testing.T) {
 	requests := make(chan string, 1)
 
@@ -301,14 +303,13 @@ func TestHTTPing_ThroughProxy(t *testing.T) {
 	}))
 	t.Cleanup(proxy.Close)
 
-	proxyURL, _ := url.Parse(proxy.URL)
-
 	h := HTTPing{
-		timeout:  5 * time.Second,
-		port:     reservedButClosedPort(t),
-		url:      "http://does-not-resolve.invalid/health",
-		hostname: "does-not-resolve.invalid",
-		proxy:    proxyURL,
+		timeout:   5 * time.Second,
+		port:      reservedButClosedPort(t),
+		url:       "http://does-not-resolve.invalid/health",
+		hostname:  "does-not-resolve.invalid",
+		proxy:     &url.URL{Scheme: "http", Host: "proxy.does-not-resolve.invalid:3128"},
+		proxyAddr: netip.MustParseAddrPort(proxy.Listener.Addr().String()),
 	}
 
 	result, err := h.Ping(context.Background(), netip.MustParseAddr("127.0.0.1"))
@@ -375,6 +376,7 @@ func TestHTTPing_ThroughProxyTLS(t *testing.T) {
 		hostname:      "does-not-resolve.invalid",
 		skipTLSVerify: true,
 		proxy:         proxyURL,
+		proxyAddr:     netip.MustParseAddrPort(proxy.Listener.Addr().String()),
 	}
 
 	result, err := h.Ping(context.Background(), netip.MustParseAddr("127.0.0.1"))

@@ -15,7 +15,7 @@ import (
 type Config struct {
 	URL                        string // Full target URL. HTTP(S) targets only, empty otherwise.
 	Hostname                   string
-	IP                         netip.Addr
+	IP                         netip.Addr // Zero when Proxy is set, as the proxy looks the hostname up.
 	Port                       uint16
 	Protocol                   Protocol
 	RetryResolveAfterNFailures uint
@@ -26,12 +26,13 @@ type Config struct {
 	TargetIsIP                 bool          // Flag indicating whether the destination is an IP address (not a hostname).
 	NameResolutionDuration     time.Duration // How long the initial hostname resolution took. Meaningless (and unset) when TargetIsIP.
 	ShouldRetryResolve         bool
-	ResolveEveryProbe          bool     // Resolve the hostname before every probe, superseding ShouldRetryResolve.
-	ShowFailuresOnly           bool     // Only print probe failures.
-	SkipTLSVerify              bool     // Do not check the server certificate. HTTPS targets only.
-	Proxy                      *url.URL // Proxy the HTTP(S) probes go through. Nil when they connect directly.
-	UDPServer                  bool     // Listen on the given address and echo datagrams back instead of probing.
-	JSONServer                 bool     // Listen on the given address and print the JSON events posted to it instead of probing.
+	ResolveEveryProbe          bool           // Resolve the hostname before every probe, superseding ShouldRetryResolve.
+	ShowFailuresOnly           bool           // Only print probe failures.
+	SkipTLSVerify              bool           // Do not check the server certificate. HTTPS targets only.
+	Proxy                      *url.URL       // Proxy the HTTP(S) probes go through. Nil when they connect directly.
+	ProxyAddr                  netip.AddrPort // Where the proxy is, looked up once at startup. Zero when Proxy is nil.
+	UDPServer                  bool           // Listen on the given address and echo datagrams back instead of probing.
+	JSONServer                 bool           // Listen on the given address and print the JSON events posted to it instead of probing.
 	Resolver                   *dns.Resolver
 }
 

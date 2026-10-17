@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
@@ -97,12 +98,25 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		os.Exit(1)
 	}
 
-	resolveStart := time.Now()
-	resolvedIP, err := resolver.ResolveHostname(target.hostname)
-	nameResolutionDuration := time.Since(resolveStart)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target.hostname, err)
-		os.Exit(1)
+	// Through a proxy, the proxy looks the target's hostname up, so we look
+	// up the proxy's instead.
+	var resolvedIP netip.Addr
+	var nameResolutionDuration time.Duration
+	var proxyAddr netip.AddrPort
+	if proxy == nil {
+		resolveStart := time.Now()
+		resolvedIP, err = resolver.ResolveHostname(target.hostname)
+		nameResolutionDuration = time.Since(resolveStart)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not resolve %s: %v\n", target.hostname, err)
+			os.Exit(1)
+		}
+	} else {
+		proxyAddr, err = proxyAddress(resolver, proxy)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
 	_, err = netip.ParseAddr(target.hostname)
@@ -129,6 +143,7 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		ShowFailuresOnly:           f.showFailuresOnly,
 		SkipTLSVerify:              f.skipTLSVerify,
 		Proxy:                      proxy,
+		ProxyAddr:                  proxyAddr,
 		UDPServer:                  f.udpServer,
 		JSONServer:                 f.jsonServer,
 		Resolver:                   resolver,
@@ -166,4 +181,26 @@ func proxyFor(proxyFlag, targetURL string) (*url.URL, error) {
 	default:
 		return nil, fmt.Errorf("unsupported proxy %q, use an http://, https://, socks5:// or socks5h:// URL", proxyFlag)
 	}
+}
+
+// proxyAddress looks the proxy's hostname up, so -4, -6 and --dns-server
+// decide which address of the proxy the probes connect to. A proxy URL
+// without a port gets the usual one for its scheme.
+func proxyAddress(resolver *dns.Resolver, proxy *url.URL) (netip.AddrPort, error) {
+	ip, err := resolver.ResolveHostname(proxy.Hostname())
+	if err != nil {
+		return netip.AddrPort{}, fmt.Errorf("could not resolve the proxy %s: %w", proxy.Hostname(), err)
+	}
+
+	port := proxy.Port()
+	if port == "" {
+		port = map[string]string{"http": "80", "https": "443", "socks5": "1080", "socks5h": "1080"}[proxy.Scheme]
+	}
+
+	portNumber, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return netip.AddrPort{}, fmt.Errorf("invalid proxy port %q", port)
+	}
+
+	return netip.AddrPortFrom(ip, uint16(portNumber)), nil
 }

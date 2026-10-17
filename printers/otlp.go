@@ -383,7 +383,7 @@ func rttOf(rtt float32) float64 {
 // PrintStart says where the metrics are going, then leaves the terminal
 // alone for the rest of the run.
 func (p *OTLPPrinter) PrintStart(s *stats.Statistics) {
-	if s.DestIsIP {
+	if !s.HostnameResolved() {
 		fmt.Printf("Probing %s on port %d over %s%s - sending metrics to: %s\n",
 			s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.endpoint)
 		return

@@ -462,9 +462,10 @@ tcping https://www.example.com --proxy http://proxy.example.com:3128
 
 De proxy maakt zelf verbinding met de hostnaam van het doel. De verbindingstijd
 en het bronadres zijn dus die van de verbinding met de proxy, en de eerste regel
-van de run noemt hem. tcping zoekt de hostnaam toch zelf op: uw DNS moet dus
-antwoorden, en het getoonde adres is wat uw DNS gaf, niet per se het adres dat de
-proxy koos. TCP- en UDP-probes gaan niet via een proxy. Een proxy uit een
+van de run noemt hem. tcping zoekt de hostnaam niet zelf op: de uitvoer toont er
+dus geen adres voor, en `-r` en `--resolve-every-probe` werken niet met een
+proxy. `-4`, `-6` en `--dns-server` gelden in plaats daarvan voor de hostnaam van
+de proxy zelf. TCP- en UDP-probes gaan niet via een proxy. Een proxy uit een
 PAC-bestand moet u zelf opgeven, want tcping leest geen PAC-bestanden.
 
 ### Testen via UDP

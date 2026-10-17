@@ -345,7 +345,7 @@ func endedPeriodArgs(s *stats.Statistics) []any {
 
 // PrintStart prints a message indicating that TCPing has started.
 func (p *SQLitePrinter) PrintStart(s *stats.Statistics) {
-	if s.DestIsIP {
+	if !s.HostnameResolved() {
 		fmt.Printf("Probing %s on port %d over %s%s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.filePath)
 		return
 	}
@@ -415,7 +415,7 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	retries := uint(0)
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		retries = s.RetriedHostnameLookups
 	}
 

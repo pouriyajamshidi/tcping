@@ -270,7 +270,14 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result) {
 	// -I we still know which address it went out from.
 	s.LocalAddr = probeResult.LocalAddr
 	if s.LocalAddr == nil && p.config.NetworkInterface.Use {
-		localIP := p.config.NetworkInterface.LocalIPFor(s.IP)
+		// Through a proxy, the probes connect to the proxy rather than the
+		// target.
+		connectIP := s.IP
+		if p.config.Proxy != nil {
+			connectIP = p.config.ProxyAddr.Addr()
+		}
+
+		localIP := p.config.NetworkInterface.LocalIPFor(connectIP)
 		if localIP != nil {
 			s.LocalAddr = &net.TCPAddr{IP: localIP}
 		}

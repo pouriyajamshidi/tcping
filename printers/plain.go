@@ -19,7 +19,7 @@ func NewPlainPrinter(cfg Config) *PlainPrinter {
 
 // PrintStart prints the first message to indicate the target's address and port.
 func (p *PlainPrinter) PrintStart(s *stats.Statistics) {
-	if s.DestIsIP {
+	if !s.HostnameResolved() {
 		fmt.Printf("Probing %s on port %d over %s%s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s))
 		return
 	}
@@ -43,8 +43,8 @@ func (p *PlainPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
-	target := s.IPStr()
-	if s.Hostname != target {
+	target := s.Hostname
+	if s.HostnameResolved() {
 		target = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
@@ -80,8 +80,8 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 		msg = fmt.Sprintf("%s %s", s.CurrentTimestamp(), msg)
 	}
 
-	target := s.IPStr()
-	if s.Hostname != target {
+	target := s.Hostname
+	if s.HostnameResolved() {
 		target = fmt.Sprintf("%s (%s)", s.Hostname, s.IPStr())
 	}
 
@@ -113,7 +113,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 	var msg strings.Builder
 	fmt.Fprintf(&msg, "\n--- %s ", s.Hostname)
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		fmt.Fprintf(&msg, "(%s) ", s.IP)
 	}
 	msg.WriteString("TCPing statistics ---\n")
@@ -162,7 +162,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 		fmt.Fprintf(&msg, "to %s\n", s.LongestDowntimeEndTime())
 	}
 
-	if !s.DestIsIP {
+	if s.HostnameResolved() {
 		timeNoun := "time"
 		if s.RetriedHostnameLookups != 1 {
 			timeNoun = "times"

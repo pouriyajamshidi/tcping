@@ -462,10 +462,10 @@ tcping https://www.example.com --proxy http://proxy.example.com:3128
 
 Der Proxy verbindet sich selbst mit dem Hostnamen des Ziels. Verbindungszeit und
 Quelladresse sind daher die der Verbindung zum Proxy, und die erste Zeile des
-Laufs nennt ihn. tcping löst den Hostnamen trotzdem selbst auf: Ihr DNS muss also
-antworten, und die angezeigte Adresse ist die, die Ihr DNS geliefert hat, nicht
-unbedingt die, die der Proxy gewählt hat. TCP- und UDP-Probes laufen nicht über
-einen Proxy. Ein Proxy aus einer PAC-Datei muss von Hand angegeben werden, da
+Laufs nennt ihn. tcping löst den Hostnamen nicht selbst auf, die Ausgabe zeigt
+also keine Adresse dafür, und `-r` und `--resolve-every-probe` funktionieren
+nicht mit einem Proxy. `-4`, `-6` und `--dns-server` gelten stattdessen für den
+Hostnamen des Proxys selbst. TCP- und UDP-Probes laufen nicht über einen Proxy. Ein Proxy aus einer PAC-Datei muss von Hand angegeben werden, da
 tcping keine PAC-Dateien liest.
 
 ### Probes über UDP

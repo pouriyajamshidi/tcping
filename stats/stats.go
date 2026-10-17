@@ -83,9 +83,15 @@ type Statistics struct {
 
 // NewStatistics starts the statistics for a run against the target in cfg.
 func NewStatistics(cfg config.Config) *Statistics {
+	// Through a proxy, the probes connect to the proxy rather than the target.
+	connectIP := cfg.IP
+	if cfg.Proxy != nil {
+		connectIP = cfg.ProxyAddr.Addr()
+	}
+
 	var localAddr net.Addr
 	if cfg.NetworkInterface.Use {
-		if localIP := cfg.NetworkInterface.LocalIPFor(cfg.IP); localIP != nil {
+		if localIP := cfg.NetworkInterface.LocalIPFor(connectIP); localIP != nil {
 			localAddr = &net.TCPAddr{IP: localIP}
 		}
 	}
@@ -114,9 +120,20 @@ func NewStatistics(cfg config.Config) *Statistics {
 	}
 }
 
-// IPStr is the target address as a string.
+// IPStr is the target address as a string, or an empty string when there is
+// none because a proxy looks the hostname up for us.
 func (s *Statistics) IPStr() string {
+	if !s.IP.IsValid() {
+		return ""
+	}
 	return s.IP.String()
+}
+
+// HostnameResolved reports whether tcping looked the hostname up itself, so
+// there is an address and a lookup time to show. It did not when the target
+// is already an IP, or when a proxy looks the hostname up for us.
+func (s *Statistics) HostnameResolved() bool {
+	return !s.DestIsIP && s.Proxy == ""
 }
 
 // PortStr is the target port as a string.

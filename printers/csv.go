@@ -237,7 +237,7 @@ func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 		p.PrintError("%v", err)
 	}
 
-	if s.DestIsIP {
+	if !s.HostnameResolved() {
 		fmt.Printf("Probing %s on port %d over %s%s - saving the results to: %s\n", s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.probeFile.Name())
 		return
 	}

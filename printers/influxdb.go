@@ -357,7 +357,7 @@ func (p *InfluxDBPrinter) dueStatistics(s *stats.Statistics) []string {
 // line: no probe lines follow it, so this is the only place to see which
 // address is being probed.
 func (p *InfluxDBPrinter) PrintStart(s *stats.Statistics) {
-	if s.DestIsIP {
+	if !s.HostnameResolved() {
 		fmt.Printf("Probing %s on port %d over %s%s - sending metrics to: %s\n",
 			s.Hostname, s.Port, s.ProtocolStr(), viaProxy(s), p.endpoint)
 		return

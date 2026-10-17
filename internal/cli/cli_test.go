@@ -2,9 +2,14 @@ package cli
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/pouriyajamshidi/tcping/v3/dns"
+	"github.com/pouriyajamshidi/tcping/v3/nic"
 )
 
 func TestProcessUserInputSpotsIPLiterals(t *testing.T) {
@@ -72,6 +77,41 @@ func TestProxyForFlag(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("proxyFor(%q, %q) = %q, want %q", tt.proxyFlag, tt.targetURL, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProxyAddress(t *testing.T) {
+	resolver, err := dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("NewResolver() failed: %v", err)
+	}
+
+	tests := []struct {
+		proxy   string
+		want    string
+		wantErr bool
+	}{
+		{proxy: "http://127.0.0.1:3128", want: "127.0.0.1:3128"},
+		{proxy: "http://127.0.0.1", want: "127.0.0.1:80"},
+		{proxy: "https://127.0.0.1", want: "127.0.0.1:443"},
+		{proxy: "socks5://[::1]", want: "[::1]:1080"},
+		{proxy: "socks5h://[::1]", want: "[::1]:1080"},
+		{proxy: "http://127.0.0.1:99999", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.proxy, func(t *testing.T) {
+			proxy, _ := url.Parse(tt.proxy)
+
+			got, err := proxyAddress(resolver, proxy)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("proxyAddress(%q) error = %v, wantErr %v", tt.proxy, err, tt.wantErr)
+			}
+
+			if !tt.wantErr && got.String() != tt.want {
+				t.Errorf("proxyAddress(%q) = %s, want %s", tt.proxy, got, tt.want)
 			}
 		})
 	}
