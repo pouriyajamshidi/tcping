@@ -469,6 +469,9 @@ tcping udp://127.0.0.1 9999
 > something is blocking us. A probe that gets no answer at all is reported as
 > a failure too, but it cannot tell an open port that stays quiet from a
 > packet that was dropped on the way.
+>
+> On Windows a refused probe always shows as no answer. Go turns off the
+> "port unreachable" errors on Windows UDP sockets, so tcping never sees them.
 
 Every UDP probe sends its own number as the payload, which the server echoes
 back. Adding `-v` shows that number on each line, so a lost probe can be named:
