@@ -1,5 +1,5 @@
 <div align="center" style="width: 100%;">
- <img alt="tcping" src="Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
+ <img alt="tcping" src="docs/Artwork/tcping_avatar_v3.jpeg" style="width:70%;">
 </div>
 
 # TCPING
@@ -63,33 +63,33 @@
 
 ### 基本用法
 
-![tcping](Images/gifs/tcping.gif)
+![tcping](docs/Images/gifs/tcping.gif)
 
 ---
 
 ### 重试主机名查找 (`-r`)
 
-![tcping resolve example](Images/gifs/tcping_resolve.gif)
+![tcping resolve example](docs/Images/gifs/tcping_resolve.gif)
 
 ---
 
 ### JSON 格式输出 (`-j --pretty`)
 
-![tcping json example](Images/gifs/tcping_json_pretty.gif)
+![tcping json example](docs/Images/gifs/tcping_json_pretty.gif)
 
 ---
 
 ## 下载
 
-- ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Windows.zip)
+- ### [Windows](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-windows-amd64.zip)
 
-- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_Linux.tar.gz) - 也可通过 `brew` 和 [.deb 软件包](#linux---debian-和-ubuntu) 获得
+- ### [Linux](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-amd64.tar.gz) - 也可通过 `brew` 和 [.deb 软件包](#linux---debian-和-ubuntu) 获得
 
-- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS.tar.gz) - 也可通过 `brew` 获得
+- ### [macOS](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-darwin-amd64.tar.gz) - 也可通过 `brew` 获得
 
-- ### [macOS M1 - ARM](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_MacOS_ARM.tar.gz) - 也可通过 `brew` 获得
+- ### [macOS M1 - ARM](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-darwin-arm64.tar.gz) - 也可通过 `brew` 获得
 
-- ### [FreeBSD](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_FreeBSD.tar.gz)
+- ### [FreeBSD](https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-freebsd-amd64.tar.gz)
 
 下载完成后，请转到[用法](#用法)部分。
 
@@ -109,10 +109,10 @@
 
 - 使用 `go install` 安装：
 
-  Go 版本最低要求为 `1.24.10`
+  Go 版本最低要求为 `1.26.8`
 
   ```bash
-  go install github.com/pouriyajamshidi/tcping/v2@latest
+  go install github.com/pouriyajamshidi/tcping/v3@latest
   ```
 
 - 使用 `brew` 安装：
@@ -143,7 +143,7 @@
   make build
   ```
 
-  这将在 `executables` 文件夹中为您提供一个压缩文件，其中包含所有受支持操作系统的可执行文件。
+  这将在 `target` 文件夹中生成可执行文件。
 
 ---
 
@@ -195,19 +195,19 @@ sudo apt install -y /tmp/tcping.deb
 解压缩文件：
 
 ```bash
-tar -xvf tcping_Linux.tar.gz
+tar -xvf tcping-linux-amd64.tar.gz
 #
 # 或在 Mac OS 上
 #
-tar -xvf tcping_MacOS.tar.gz
+tar -xvf tcping-darwin-amd64.tar.gz
 #
 # 在 Mac OS ARM 上
 #
-tar -xvf tcping_MacOS_ARM.tar.gz
+tar -xvf tcping-darwin-arm64.tar.gz
 #
 # 在 BSD 上
 #
-tar -xvf tcping_FreeBSD.tar.gz
+tar -xvf tcping-freebsd-amd64.tar.gz
 ```
 
 设置文件为可执行：
