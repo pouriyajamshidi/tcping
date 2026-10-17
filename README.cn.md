@@ -19,7 +19,7 @@
 一个跨平台的 ping 程序，使用 `TCP`、`UDP` 或 `HTTP(S)` 代替 `ICMP`，灵感来自 Linux 的 ping 工具。
 
 > [!TIP]
-> 本文档也提供 [English](README.md) 版本。
+> 本文档也提供 [English](README.md) 和 [日本語](README.ja.md) 版本。
 
 - 在 `ICMP` 被阻止的环境中替代 `ping`，通过 `TCP`、`HTTP(S)` 或 `UDP` 进行探测。
 - 和 `ping` 一样报告丢包率，以及延迟的最小值、平均值、最大值和标准差，另外还有最长的正常运行时间和停机时间以及它们发生的时间。
