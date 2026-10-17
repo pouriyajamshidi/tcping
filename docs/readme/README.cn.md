@@ -114,7 +114,7 @@
 
 ---
 
-### 通过代理进行 HTTP(S) 探测（`--proxy`）标志
+### 通过代理探测（`--proxy`）标志
 
 ![tcping proxy example](../Images/gifs/tcping_proxy.gif)
 
@@ -443,19 +443,28 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-在代理后面时，用 `--proxy` 指定代理。支持 `http://`、`https://` 和 `socks5://`
-代理。tcping 不读取 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量，所以
-只有在你要求时，探测才会经过代理：
+### 通过代理探测
+
+`--proxy` 让 TCP 和 HTTP(S) 探测经过代理。支持 `http://`、`https://` 和
+`socks5://` 代理，登录信息写在 URL 里，例如
+`socks5://user:password@127.0.0.1:1080`。tcping 不读取 `HTTPS_PROXY`、
+`HTTP_PROXY` 和 `NO_PROXY` 环境变量，所以只有在你要求时，探测才会经过代理：
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
 ```
 
-代理会自己连接目标的主机名，所以连接耗时和源地址都是到代理的那段连接的，
-运行的第一行也会写明所用的代理。tcping 不会自己解析主机名，所以输出中不显示
-它的地址，`-r` 和 `--resolve-every-probe` 也不能和代理一起使用。`-4`、`-6` 和
-`--dns-server` 改为作用于代理自己的主机名。TCP 和 UDP 探测不会经过代理。PAC 文件里设置的代理需要手动指定，因为 tcping
-不读取 PAC 文件。
+TCP 探测会请求代理连接目标，代理回复已连接时探测即成功。它的耗时包括到代理的
+那段路和代理自己到目标的那段路。很多 HTTP 代理只允许连接 `443` 端口，所以即使
+目标在线，探测其他端口也可能失败。如果你能通过 SSH 进入某个网络，
+`ssh -D 1080 bastion.example.com` 会在 `127.0.0.1:1080` 上开一个 SOCKS5 代理。
+
+代理会自己连接目标的主机名，所以源地址以及 HTTP(S) 探测的连接耗时都是到代理的
+那段连接的，运行的第一行也会写明所用的代理。tcping 不会自己解析主机名，所以输出
+中不显示它的地址，`-r` 和 `--resolve-every-probe` 也不能和代理一起使用。`-4`、
+`-6` 和 `--dns-server` 改为作用于代理自己的主机名。UDP 探测不会经过代理。PAC
+文件里设置的代理需要手动指定，因为 tcping 不读取 PAC 文件。
 
 ### 通过 UDP 探测
 
@@ -616,6 +625,7 @@ OpenTelemetry Collector 和 InfluxDB 环境（包含 Grafana 和 tcping，一条
 | `-4`            |        | 仅使用 IPv4 地址                                             |
 | `-6`            |        | 仅使用 IPv6 地址                                             |
 | `-I <name\|IP>` |        | 用于发送探测和 DNS 查询的接口名称或 IP 地址                  |
+| `--proxy <URL>` |        | 通过代理发送 TCP 和 `HTTP(S)` 探测，例如 `--proxy http://proxy.example.com:3128`。不使用 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量 |
 
 > [!TIP]
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。
@@ -670,7 +680,6 @@ OpenTelemetry Collector 和 InfluxDB 环境（包含 Grafana 和 tcping，一条
 | 标志            | 默认值 | 描述                                                                                                                                       |
 | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `--insecure`    |        | 探测 `https://` 目标时不验证服务器证书。适用于自签名或已过期的证书                                                                         |
-| `--proxy <URL>` |        | 通过代理发送 `HTTP(S)` 探测，例如 `--proxy http://proxy.example.com:3128`。不使用 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量 |
 | `--udp-server`  |        | 不进行探测。监听给定的主机和端口，并把每个 UDP 数据报回送给发送者，这样指向这台机器的 UDP 探测就能得到回复                                 |
 
 ---

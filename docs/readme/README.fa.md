@@ -114,7 +114,7 @@
 
 ---
 
-### probeهای HTTP(S) از طریق proxy (پارامتر `--proxy`)
+### probeها از طریق proxy (پارامتر `--proxy`)
 
 ![tcping proxy example](../Images/gifs/tcping_proxy.gif)
 
@@ -451,21 +451,32 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-اگر پشت یک proxy هستید، آن را با `--proxy` بدهید. proxyهای `http://`،
-`https://` و `socks5://` کار می‌کنند. tcping متغیرهای محیطی `HTTPS_PROXY`،
-`HTTP_PROXY` و `NO_PROXY` را نمی‌خواند، پس یک probe فقط وقتی از proxy عبور
-می‌کند که خودتان بخواهید:
+### بررسی از طریق proxy
+
+`--proxy` probeهای TCP و HTTP(S) را از طریق یک proxy می‌فرستد. proxyهای
+`http://`، `https://` و `socks5://` کار می‌کنند، و نام کاربری و رمز در خود URL
+می‌آیند، مثلاً `socks5://user:password@127.0.0.1:1080`. tcping متغیرهای محیطی
+`HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` را نمی‌خواند، پس یک probe فقط وقتی از
+proxy عبور می‌کند که خودتان بخواهید:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
 ```
 
-خود proxy به نام میزبان هدف وصل می‌شود، پس زمان اتصال و آدرس مبدأ مربوط به
-اتصال تا proxy هستند، و خط اول اجرا نام آن را می‌آورد. tcping نام میزبان را
-خودش resolve نمی‌کند، پس خروجی آدرسی برای آن نشان نمی‌دهد، و `-r` و
-`--resolve-every-probe` با proxy کار نمی‌کنند. `-4`، `-6` و `--dns-server`
-به جای آن روی نام میزبان خود proxy اعمال می‌شوند. probeهای TCP و UDP از proxy
-عبور نمی‌کنند. proxyای که در یک فایل PAC تنظیم شده باید دستی داده شود،
+یک probe از نوع TCP از proxy می‌خواهد که به هدف وصل شود، و وقتی موفق است که
+proxy بگوید وصل شده. پس زمان آن هم مسیر تا proxy را در بر می‌گیرد و هم مسیر خود
+proxy تا هدف را. بسیاری از proxyهای HTTP فقط اتصال به پورت `443` را اجازه
+می‌دهند، پس probe به پورتی دیگر ممکن است شکست بخورد در حالی که هدف در دسترس است.
+برای یک proxy از نوع SOCKS5 به شبکه‌ای که با SSH به آن دسترسی دارید،
+`ssh -D 1080 bastion.example.com` یکی روی `127.0.0.1:1080` باز می‌کند.
+
+خود proxy به نام میزبان هدف وصل می‌شود، پس آدرس مبدأ، و زمان اتصال یک probe از
+نوع HTTP(S)، مربوط به اتصال تا proxy هستند، و خط اول اجرا نام آن را می‌آورد.
+tcping نام میزبان را خودش resolve نمی‌کند، پس خروجی آدرسی برای آن نشان نمی‌دهد،
+و `-r` و `--resolve-every-probe` با proxy کار نمی‌کنند. `-4`، `-6` و
+`--dns-server` به جای آن روی نام میزبان خود proxy اعمال می‌شوند. probeهای UDP
+از proxy عبور نمی‌کنند. proxyای که در یک فایل PAC تنظیم شده باید دستی داده شود،
 چون tcping فایل‌های PAC را نمی‌خواند.
 
 ### بررسی از طریق UDP
@@ -637,6 +648,7 @@ OpenTelemetry Collector و InfluxDB با Grafana و tcping که می‌توان�
 | `-4`            |         | فقط از آدرس‌های IPv4 استفاده کن                                                 |
 | `-6`            |         | فقط از آدرس‌های IPv6 استفاده کن                                                 |
 | `-I <name\|IP>` |         | نام رابط یا آدرس IP برای فرستادن probeها و جستجوهای DNS                         |
+| `--proxy <URL>` |         | probeهای TCP و `HTTP(S)` را از طریق یک proxy بفرست، مثلاً `--proxy http://proxy.example.com:3128`. متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` به کار نمی‌روند |
 
 > [!TIP]
 > بدون پارامترهای `-4` و `-6`، tcping بر پایه‌ی جستجوهای DNS یک آدرس IP را تصادفی انتخاب می‌کند.
@@ -691,7 +703,6 @@ OpenTelemetry Collector و InfluxDB با Grafana و tcping که می‌توان�
 | پارامتر         | پیش‌فرض | توضیح                                                                                                                                                                       |
 | --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |         | هنگام بررسی هدف `https://` گواهی سرور را تأیید نکن. برای گواهی‌های خودامضا یا منقضی مفید است                                                                                |
-| `--proxy <URL>` |         | probeهای `HTTP(S)` را از طریق یک proxy بفرست، مثلاً `--proxy http://proxy.example.com:3128`. متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` به کار نمی‌روند |
 | `--udp-server`  |         | بررسی نکن. روی میزبان و پورت داده‌شده گوش بده و هر datagram‌ی UDP را به فرستنده‌اش برگردان، تا probe‌ی UDP که به این دستگاه می‌رسد پاسخ بگیرد                               |
 
 ---

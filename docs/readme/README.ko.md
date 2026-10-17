@@ -114,7 +114,7 @@
 
 ---
 
-### 프록시를 통한 HTTP(S) 프로브(`--proxy`) 플래그
+### 프록시를 통한 프로브(`--proxy`) 플래그
 
 ![tcping proxy example](../Images/gifs/tcping_proxy.gif)
 
@@ -447,21 +447,32 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-프록시 뒤에 있다면 `--proxy`로 지정하세요. `http://`, `https://`, `socks5://`
-프록시를 쓸 수 있습니다. tcping은 `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경
-변수를 읽지 않으므로, 프로브는 직접 지정했을 때만 프록시를 거칩니다.
+### 프록시를 통해 프로브하기
+
+`--proxy`는 TCP와 HTTP(S) 프로브를 프록시를 통해 보냅니다. `http://`, `https://`,
+`socks5://` 프록시를 쓸 수 있고, 로그인 정보는 URL에 넣습니다. 예:
+`socks5://user:password@127.0.0.1:1080`. tcping은 `HTTPS_PROXY`, `HTTP_PROXY`,
+`NO_PROXY` 환경 변수를 읽지 않으므로, 프로브는 직접 지정했을 때만 프록시를 거칩니다.
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
 ```
 
-프록시가 대상의 호스트 이름으로 직접 연결하므로, 연결 시간과 출발지 주소는
-프록시까지의 연결에 대한 것이 되고, 실행의 첫 줄에 그 프록시가 표시됩니다.
-tcping은 호스트 이름을 직접 확인하지 않으므로 출력에 그 주소가 표시되지 않으며,
-`-r`과 `--resolve-every-probe`는 프록시와 함께 쓸 수 없습니다. `-4`, `-6`,
-`--dns-server`는 대신 프록시 자신의 호스트 이름에 적용됩니다. TCP와 UDP 프로브는
-프록시를 거치지 않습니다. PAC 파일로 설정된 프록시는 직접 지정해야 합니다.
-tcping은 PAC 파일을 읽지 않기 때문입니다.
+TCP 프로브는 프록시에게 대상에 연결해 달라고 요청하고, 프록시가 연결했다고 답하면
+성공합니다. 그래서 시간에는 프록시까지 가는 길과 프록시에서 대상까지 가는 길이 모두
+포함됩니다. 많은 HTTP 프록시는 `443` 포트로의 연결만 허용하므로, 대상이 살아 있어도
+다른 포트로의 프로브는 실패할 수 있습니다. SSH로 들어갈 수 있는 네트워크로 가는
+SOCKS5 프록시는 `ssh -D 1080 bastion.example.com`으로 `127.0.0.1:1080`에 열 수
+있습니다.
+
+프록시가 대상의 호스트 이름으로 직접 연결하므로, 출발지 주소와 HTTP(S) 프로브의
+연결 시간은 프록시까지의 연결에 대한 것이 되고, 실행의 첫 줄에 그 프록시가
+표시됩니다. tcping은 호스트 이름을 직접 확인하지 않으므로 출력에 그 주소가 표시되지
+않으며, `-r`과 `--resolve-every-probe`는 프록시와 함께 쓸 수 없습니다. `-4`, `-6`,
+`--dns-server`는 대신 프록시 자신의 호스트 이름에 적용됩니다. UDP 프로브는 프록시를
+거치지 않습니다. PAC 파일로 설정된 프록시는 직접 지정해야 합니다. tcping은 PAC
+파일을 읽지 않기 때문입니다.
 
 ### UDP로 프로브하기
 
@@ -625,6 +636,7 @@ OpenTelemetry Collector, InfluxDB 환경은
 | `-4`            |           | IPv4 주소만 사용                                         |
 | `-6`            |           | IPv6 주소만 사용                                         |
 | `-I <name\|IP>` |           | 프로브와 DNS 조회를 보낼 인터페이스 이름 또는 IP 주소    |
+| `--proxy <URL>` |        | TCP와 `HTTP(S)` 프로브를 프록시를 통해 보냄, 예: `--proxy http://proxy.example.com:3128`. `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수는 사용하지 않음 |
 
 > [!TIP]
 > `-4`와 `-6` 플래그를 지정하지 않으면 tcping은 DNS 조회 결과에서 IP 주소를 무작위로 고릅니다.
@@ -679,7 +691,6 @@ OpenTelemetry Collector, InfluxDB 환경은
 | 플래그          | 기본값 | 설명                                                                                                                                                           |
 | --------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |        | `https://` 대상을 프로브할 때 서버 인증서를 검증하지 않음. 자체 서명 또는 만료된 인증서에 유용                                                                 |
-| `--proxy <URL>` |        | `HTTP(S)` 프로브를 프록시를 통해 보냄, 예: `--proxy http://proxy.example.com:3128`. `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수는 사용하지 않음 |
 | `--udp-server`  |        | 프로브하지 않음. 주어진 호스트와 포트에서 기다리다가 모든 UDP 데이터그램을 보낸 쪽으로 돌려보내, 이 컴퓨터를 향한 UDP 프로브가 응답을 받게 함                  |
 
 ---

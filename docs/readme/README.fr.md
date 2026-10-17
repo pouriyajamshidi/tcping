@@ -114,7 +114,7 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 
 ---
 
-### Sondes HTTP(S) à travers un proxy (option `--proxy`)
+### Sondes à travers un proxy (option `--proxy`)
 
 ![tcping proxy example](../Images/gifs/tcping_proxy.gif)
 
@@ -451,23 +451,34 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Derrière un proxy, donnez-le avec `--proxy`. Les proxys `http://`, `https://` et
-`socks5://` fonctionnent. tcping ne lit pas les variables d'environnement
-`HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY`, une sonde ne passe donc par un proxy
-que si vous le demandez :
+### Sonder à travers un proxy
+
+`--proxy` fait passer les sondes TCP et HTTP(S) par un proxy. Les proxys
+`http://`, `https://` et `socks5://` fonctionnent, et un identifiant se met dans
+l'URL, par ex. `socks5://user:password@127.0.0.1:1080`. tcping ne lit pas les
+variables d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY`, une sonde
+ne passe donc par un proxy que si vous le demandez :
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
 ```
 
-Le proxy se connecte lui-même au nom d'hôte de la cible. Le temps de connexion et
-l'adresse source sont donc ceux de la connexion au proxy, et la première ligne de
-l'exécution le nomme. tcping ne résout pas le nom d'hôte lui-même : la sortie
-n'affiche donc aucune adresse pour lui, et `-r` et `--resolve-every-probe` ne
-fonctionnent pas avec un proxy. `-4`, `-6` et `--dns-server` s'appliquent à la
-place au nom d'hôte du proxy lui-même. Les sondes TCP et UDP ne passent pas par
-un proxy. Un proxy défini dans un fichier PAC doit être donné à la main, car tcping
-ne lit pas les fichiers PAC.
+Une sonde TCP demande au proxy de se connecter à la cible, et réussit quand le
+proxy dit l'avoir fait. Son temps couvre le trajet jusqu'au proxy et celui du
+proxy jusqu'à la cible. Beaucoup de proxys HTTP n'autorisent que les connexions
+vers le port `443` : une sonde vers un autre port peut donc échouer alors que la
+cible répond. Pour un proxy SOCKS5 vers un réseau où vous avez un accès SSH,
+`ssh -D 1080 bastion.example.com` en ouvre un sur `127.0.0.1:1080`.
+
+Le proxy se connecte lui-même au nom d'hôte de la cible. L'adresse source, et le
+temps de connexion d'une sonde HTTP(S), sont donc ceux de la connexion au proxy,
+et la première ligne de l'exécution le nomme. tcping ne résout pas le nom d'hôte
+lui-même : la sortie n'affiche donc aucune adresse pour lui, et `-r` et
+`--resolve-every-probe` ne fonctionnent pas avec un proxy. `-4`, `-6` et
+`--dns-server` s'appliquent à la place au nom d'hôte du proxy lui-même. Les
+sondes UDP ne passent pas par un proxy. Un proxy défini dans un fichier PAC doit
+être donné à la main, car tcping ne lit pas les fichiers PAC.
 
 ### Sonder en UDP
 
@@ -638,6 +649,7 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 | `-4`            |            | N'utiliser que des adresses IPv4                                                                      |
 | `-6`            |            | N'utiliser que des adresses IPv6                                                                      |
 | `-I <name\|IP>` |            | Nom d'interface ou adresse IP depuis laquelle envoyer les sondes et les requêtes DNS                  |
+| `--proxy <URL>` |            | Envoyer les sondes TCP et `HTTP(S)` à travers un proxy, par ex. `--proxy http://proxy.example.com:3128`. Les variables d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` ne sont pas utilisées |
 
 > [!TIP]
 > Sans les options `-4` et `-6`, tcping choisit une adresse IP au hasard parmi les résultats des requêtes DNS.
@@ -692,7 +704,6 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 | Option          | Par défaut | Description                                                                                                                                                                                                 |
 | --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                                                  |
-| `--proxy <URL>` |            | Envoyer les sondes `HTTP(S)` à travers un proxy, par ex. `--proxy http://proxy.example.com:3128`. Les variables d'environnement `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY` ne sont pas utilisées |
 | `--udp-server`  |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse                                |
 
 ---

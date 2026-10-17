@@ -114,7 +114,7 @@ In den [Demos](#demos) bekommen Sie einen Eindruck vom Aussehen und der Bedienun
 
 ---
 
-### HTTP(S)-Probes über einen Proxy (`--proxy`) Flag
+### Probes über einen Proxy (`--proxy`) Flag
 
 ![tcping proxy example](../Images/gifs/tcping_proxy.gif)
 
@@ -451,22 +451,35 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Hinter einem Proxy geben Sie ihn mit `--proxy` an. `http://`-, `https://`- und
-`socks5://`-Proxys funktionieren. tcping liest die Umgebungsvariablen
-`HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` nicht, eine Probe läuft also nur über
-einen Proxy, wenn Sie es verlangen:
+### Probes über einen Proxy
+
+`--proxy` schickt TCP- und HTTP(S)-Probes über einen Proxy. `http://`-,
+`https://`- und `socks5://`-Proxys funktionieren, und eine Anmeldung gehört in
+die URL, z. B. `socks5://user:password@127.0.0.1:1080`. tcping liest die
+Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` nicht, eine Probe
+läuft also nur über einen Proxy, wenn Sie es verlangen:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
 ```
 
-Der Proxy verbindet sich selbst mit dem Hostnamen des Ziels. Verbindungszeit und
-Quelladresse sind daher die der Verbindung zum Proxy, und die erste Zeile des
-Laufs nennt ihn. tcping löst den Hostnamen nicht selbst auf, die Ausgabe zeigt
-also keine Adresse dafür, und `-r` und `--resolve-every-probe` funktionieren
-nicht mit einem Proxy. `-4`, `-6` und `--dns-server` gelten stattdessen für den
-Hostnamen des Proxys selbst. TCP- und UDP-Probes laufen nicht über einen Proxy. Ein Proxy aus einer PAC-Datei muss von Hand angegeben werden, da
-tcping keine PAC-Dateien liest.
+Eine TCP-Probe bittet den Proxy, sich mit dem Ziel zu verbinden, und ist
+erfolgreich, wenn der Proxy meldet, dass es geklappt hat. Ihre Zeit umfasst den
+Weg zum Proxy und den Weg des Proxys zum Ziel. Viele HTTP-Proxys erlauben nur
+Verbindungen zu Port `443`, eine Probe auf einen anderen Port kann also
+fehlschlagen, obwohl das Ziel erreichbar ist. Für einen SOCKS5-Proxy in ein Netz,
+in das Sie per SSH kommen, öffnet `ssh -D 1080 bastion.example.com` einen auf
+`127.0.0.1:1080`.
+
+Der Proxy verbindet sich selbst mit dem Hostnamen des Ziels. Die Quelladresse und
+die Verbindungszeit einer HTTP(S)-Probe sind daher die der Verbindung zum Proxy,
+und die erste Zeile des Laufs nennt ihn. tcping löst den Hostnamen nicht selbst
+auf, die Ausgabe zeigt also keine Adresse dafür, und `-r` und
+`--resolve-every-probe` funktionieren nicht mit einem Proxy. `-4`, `-6` und
+`--dns-server` gelten stattdessen für den Hostnamen des Proxys selbst.
+UDP-Probes laufen nicht über einen Proxy. Ein Proxy aus einer PAC-Datei muss von
+Hand angegeben werden, da tcping keine PAC-Dateien liest.
 
 ### Probes über UDP
 
@@ -637,6 +650,7 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 | `-4`            |            | Nur IPv4-Adressen verwenden                                                                   |
 | `-6`            |            | Nur IPv6-Adressen verwenden                                                                   |
 | `-I <name\|IP>` |            | Schnittstellenname oder IP-Adresse, von der die Probes und die DNS-Abfragen gesendet werden   |
+| `--proxy <URL>` |          | TCP- und `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128`. Die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` werden nicht verwendet |
 
 > [!TIP]
 > Ohne die Flags `-4` und `-6` wählt tcping anhand der DNS-Abfragen zufällig eine IP-Adresse aus.
@@ -691,7 +705,6 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 | Flag            | Standard | Beschreibung                                                                                                                                                                                 |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                     |
-| `--proxy <URL>` |          | `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128`. Die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` werden nicht verwendet |
 | `--udp-server`  |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt    |
 
 ---

@@ -114,7 +114,7 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ---
 
-### HTTP(S) probes through a proxy (`--proxy`) flag
+### Probes through a proxy (`--proxy`) flag
 
 ![tcping proxy example](docs/Images/gifs/tcping_proxy.gif)
 
@@ -451,22 +451,34 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
-Behind a proxy, give it with `--proxy`. `http://`, `https://` and `socks5://`
-proxies work. tcping does not read the `HTTPS_PROXY`, `HTTP_PROXY` and
-`NO_PROXY` environment variables, so a probe only goes through a proxy when you
-ask for one:
+### Probing through a proxy
+
+`--proxy` sends TCP and HTTP(S) probes through a proxy. `http://`, `https://`
+and `socks5://` proxies work, and a login goes in the URL, e.g.
+`socks5://user:password@127.0.0.1:1080`. tcping does not read the
+`HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables, so a probe
+only goes through a proxy when you ask for one:
 
 ```bash
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
 ```
 
-The proxy connects to the target's hostname on its own, so the connect time
-and the source address are those of the connection to the proxy, and the first
-line of the run names it. tcping does not look the hostname up itself, so the
-output shows no address for it, and `-r` and `--resolve-every-probe` do not
-work with a proxy. `-4`, `-6` and `--dns-server` apply to the proxy's own
-hostname instead. TCP and UDP probes do not go through a proxy. A proxy
-set in a PAC file has to be given by hand, as tcping does not read PAC files.
+A TCP probe asks the proxy to connect to the target, and succeeds when the
+proxy says it did. Its time covers the way to the proxy and the proxy's own way
+to the target. Many HTTP proxies only allow connections to port `443`, so a
+probe to another port can fail while the target is up. For a SOCKS5 proxy into
+a network you can SSH into, `ssh -D 1080 bastion.example.com` opens one on
+`127.0.0.1:1080`.
+
+The proxy connects to the target's hostname on its own, so the source address,
+and the connect time of an HTTP(S) probe, are those of the connection to the
+proxy, and the first line of the run names it. tcping does not look the
+hostname up itself, so the output shows no address for it, and `-r` and
+`--resolve-every-probe` do not work with a proxy. `-4`, `-6` and
+`--dns-server` apply to the proxy's own hostname instead. UDP probes do not go
+through a proxy. A proxy set in a PAC file has to be given by hand, as tcping
+does not read PAC files.
 
 ### Probing over UDP
 
@@ -629,14 +641,15 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 ### Probing
 
-| Flag            | Default  | Description                                                                              |
-| --------------- | -------- | ---------------------------------------------------------------------------------------- |
-| `-c <n>`        | no limit | Stop after `<n>` probes, regardless of the result                                        |
-| `-i <seconds>`  | `1`      | Interval between probes. Real number allowed, e.g. `-i 0.5`                              |
-| `-t <seconds>`  | `1`      | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout |
-| `-4`            |          | Only use IPv4 addresses                                                                  |
-| `-6`            |          | Only use IPv6 addresses                                                                  |
-| `-I <name\|IP>` |          | Interface name or IP address to send the probes and the DNS lookups from                 |
+| Flag            | Default  | Description                                                                                                                                                                    |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-c <n>`        | no limit | Stop after `<n>` probes, regardless of the result                                                                                                                              |
+| `-i <seconds>`  | `1`      | Interval between probes. Real number allowed, e.g. `-i 0.5`                                                                                                                    |
+| `-t <seconds>`  | `1`      | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout                                                                                       |
+| `-4`            |          | Only use IPv4 addresses                                                                                                                                                        |
+| `-6`            |          | Only use IPv6 addresses                                                                                                                                                        |
+| `-I <name\|IP>` |          | Interface name or IP address to send the probes and the DNS lookups from                                                                                                       |
+| `--proxy <URL>` |          | Send TCP and `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128`. The `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are not used |
 
 > [!TIP]
 > Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
@@ -688,11 +701,10 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 ### HTTP(S) and UDP
 
-| Flag            | Default | Description                                                                                                                                                            |
-| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`    |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                                                 |
-| `--proxy <URL>` |         | Send `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128`. The `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are not used |
-| `--udp-server`  |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply                    |
+| Flag           | Default | Description                                                                                                                                         |
+| -------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--insecure`   |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                              |
+| `--udp-server` |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 
 ---
 
