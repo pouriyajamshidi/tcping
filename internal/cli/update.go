@@ -20,8 +20,12 @@ const (
 	repo  = "tcping"
 )
 
-// compareVersions is used to compare tcping versions
+// compareVersions is used to compare tcping versions. A pre-release such
+// as 3.0.0-rc1 is older than the 3.0.0 it leads up to.
 func compareVersions(v1, v2 string) int {
+	v1, pre1, _ := strings.Cut(v1, "-")
+	v2, pre2, _ := strings.Cut(v2, "-")
+
 	parts1 := strings.Split(v1, ".")
 	parts2 := strings.Split(v2, ".")
 
@@ -44,6 +48,14 @@ func compareVersions(v1, v2 string) int {
 	}
 
 	if len(parts1) > len(parts2) {
+		return 1
+	}
+
+	if pre1 != "" && pre2 == "" {
+		return -1
+	}
+
+	if pre1 == "" && pre2 != "" {
 		return 1
 	}
 

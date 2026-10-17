@@ -88,6 +88,24 @@ func TestCompareVersions(t *testing.T) {
 			want: 0,
 		},
 		{
+			name: "release candidate is older than its release",
+			v1:   "3.0.0-rc1",
+			v2:   "3.0.0",
+			want: -1,
+		},
+		{
+			name: "release is newer than its release candidate",
+			v1:   "3.0.0",
+			v2:   "3.0.0-rc1",
+			want: 1,
+		},
+		{
+			name: "release candidate is newer than the release before it",
+			v1:   "3.0.0-rc1",
+			v2:   "2.7.0",
+			want: 1,
+		},
+		{
 			name: "both empty strings",
 			v1:   "",
 			v2:   "",
