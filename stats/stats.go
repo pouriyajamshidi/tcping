@@ -168,6 +168,17 @@ func (s *Statistics) EndTimeFormatted() string {
 	return s.EndTime.Format(time.DateTime)
 }
 
+// endOrNow is when the run stopped, or now while it is still going. A summary
+// asked for mid-run has no end time yet, and subtracting the zero time from
+// the start time gives a duration so large it wraps around.
+func (s *Statistics) endOrNow() time.Time {
+	if s.EndTime.IsZero() {
+		return time.Now()
+	}
+
+	return s.EndTime
+}
+
 // RuntimeDuration is how long the run has been going, as HH:MM:SS.
 func (s *Statistics) RuntimeDuration() string {
 	// Round instead of truncating so this agrees with the uptime and
@@ -179,15 +190,26 @@ func (s *Statistics) RuntimeDuration() string {
 	return fmt.Sprintf("%02d:%02d:%02d", int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60)
 }
 
-// endOrNow is when the run stopped, or now while it is still going. A summary
-// asked for mid-run has no end time yet, and subtracting the zero time from
-// the start time gives a duration so large it wraps around.
-func (s *Statistics) endOrNow() time.Time {
-	if s.EndTime.IsZero() {
-		return time.Now()
+// newLongestTime creates and returns a LongestTime instance with the provided start time and duration.
+func newLongestTime(startTime time.Time, duration time.Duration) LongestTime {
+	return LongestTime{
+		Start:    startTime,
+		End:      startTime.Add(duration),
+		Duration: duration,
+	}
+}
+
+// SetLongestDuration updates the longest uptime or downtime based on the given type.
+func SetLongestDuration(start time.Time, duration time.Duration, longest *LongestTime) {
+	if start.IsZero() || duration == 0 {
+		return
 	}
 
-	return s.EndTime
+	newLongest := newLongestTime(start, duration)
+
+	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
+		*longest = newLongest
+	}
 }
 
 // CloseOpenPeriod adds the uptime or downtime that is still running to the
@@ -367,6 +389,65 @@ func (s *Statistics) PacketLoss() float32 {
 	return packetLoss
 }
 
+// durationToString creates a human-readable string for a given duration
+func durationToString(d time.Duration) string {
+	if d == 0 {
+		return "0 seconds"
+	}
+
+	// Anything shorter than a second keeps its real value instead of being
+	// rounded to a whole second, which would report a gap that did happen
+	// as "0 seconds". Tenths keep it in the same unit as the rest of the
+	// summary, and milliseconds take over below the point where a tenth
+	// would itself round down to zero.
+	if d < 50*time.Millisecond {
+		return millisecondsStr(d) + " ms"
+	}
+
+	if d < time.Second {
+		return fmt.Sprintf("%.1f seconds", d.Seconds())
+	}
+
+	// Round up front so the hour, minute and second parts are taken from the
+	// same value. Rounding only the seconds at the end used to let 1m59.7s
+	// print as "1 minute 60 seconds".
+	d = d.Round(time.Second)
+
+	hours := d / time.Hour
+	d %= time.Hour
+
+	minutes := d / time.Minute
+	d %= time.Minute
+
+	seconds := d.Seconds()
+
+	switch {
+	case hours >= 2:
+		return fmt.Sprintf("%d hours %d minutes %.0f seconds", hours, minutes, seconds)
+
+	case hours == 1:
+		if minutes == 0 && seconds == 0 {
+			return "1 hour"
+		}
+		return fmt.Sprintf("1 hour %d minutes %.0f seconds", minutes, seconds)
+
+	case minutes >= 2:
+		return fmt.Sprintf("%d minutes %.0f seconds", minutes, seconds)
+
+	case minutes == 1:
+		if seconds == 0 {
+			return "1 minute"
+		}
+		return fmt.Sprintf("1 minute %.0f seconds", seconds)
+
+	case seconds == 1:
+		return "1 second"
+
+	default:
+		return fmt.Sprintf("%.0f seconds", seconds)
+	}
+}
+
 // EndedDowntimeDuration is the downtime this probe ended, if it ended one.
 func (s *Statistics) EndedDowntimeDuration() string {
 	return durationToString(s.EndedDowntime)
@@ -427,65 +508,6 @@ func (s *Statistics) LongestDowntimeEndTime() string {
 	return s.LongestDowntime.End.Format(time.DateTime)
 }
 
-// durationToString creates a human-readable string for a given duration
-func durationToString(d time.Duration) string {
-	if d == 0 {
-		return "0 seconds"
-	}
-
-	// Anything shorter than a second keeps its real value instead of being
-	// rounded to a whole second, which would report a gap that did happen
-	// as "0 seconds". Tenths keep it in the same unit as the rest of the
-	// summary, and milliseconds take over below the point where a tenth
-	// would itself round down to zero.
-	if d < 50*time.Millisecond {
-		return millisecondsStr(d) + " ms"
-	}
-
-	if d < time.Second {
-		return fmt.Sprintf("%.1f seconds", d.Seconds())
-	}
-
-	// Round up front so the hour, minute and second parts are taken from the
-	// same value. Rounding only the seconds at the end used to let 1m59.7s
-	// print as "1 minute 60 seconds".
-	d = d.Round(time.Second)
-
-	hours := d / time.Hour
-	d %= time.Hour
-
-	minutes := d / time.Minute
-	d %= time.Minute
-
-	seconds := d.Seconds()
-
-	switch {
-	case hours >= 2:
-		return fmt.Sprintf("%d hours %d minutes %.0f seconds", hours, minutes, seconds)
-
-	case hours == 1:
-		if minutes == 0 && seconds == 0 {
-			return "1 hour"
-		}
-		return fmt.Sprintf("1 hour %d minutes %.0f seconds", minutes, seconds)
-
-	case minutes >= 2:
-		return fmt.Sprintf("%d minutes %.0f seconds", minutes, seconds)
-
-	case minutes == 1:
-		if seconds == 0 {
-			return "1 minute"
-		}
-		return fmt.Sprintf("1 minute %.0f seconds", seconds)
-
-	case seconds == 1:
-		return "1 second"
-
-	default:
-		return fmt.Sprintf("%.0f seconds", seconds)
-	}
-}
-
 // RTTResult holds running statistics for round-trip times (RTT) results.
 // Its zero value is valid and represents "no samples yet". Callers should
 // use Statistics.TotalSuccessfulProbes to tell whether any samples have
@@ -541,15 +563,6 @@ type LongestTime struct {
 	Duration time.Duration // Duration of the longest period.
 }
 
-// newLongestTime creates and returns a LongestTime instance with the provided start time and duration.
-func newLongestTime(startTime time.Time, duration time.Duration) LongestTime {
-	return LongestTime{
-		Start:    startTime,
-		End:      startTime.Add(duration),
-		Duration: duration,
-	}
-}
-
 // HostnameChange represents changes in the IP address associated with a hostname.
 type HostnameChange struct {
 	Addr     netip.Addr    // New IP address associated with the hostname.
@@ -566,17 +579,4 @@ func (h *HostnameChange) WhenFormatted() string {
 // milliseconds.
 func (h *HostnameChange) DurationStr() string {
 	return millisecondsStr(h.Duration)
-}
-
-// SetLongestDuration updates the longest uptime or downtime based on the given type.
-func SetLongestDuration(start time.Time, duration time.Duration, longest *LongestTime) {
-	if start.IsZero() || duration == 0 {
-		return
-	}
-
-	newLongest := newLongestTime(start, duration)
-
-	if longest.End.IsZero() || newLongest.Duration >= longest.Duration {
-		*longest = newLongest
-	}
 }
