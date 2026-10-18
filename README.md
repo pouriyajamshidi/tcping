@@ -45,14 +45,12 @@ Check out the [demos](#demos) to get a look and feel of **tcping**.
 
 ## Demos
 
-<details>
-<summary>Click to expand</summary>
-
 ### Basic usage
 
 ![tcping](docs/Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>Click to see more demos</b></summary>
 
 ### Timestamped probes over IPv4 (`-D -4`) flags
 
