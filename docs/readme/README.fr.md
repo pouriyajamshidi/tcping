@@ -45,14 +45,12 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 
 ## Démos
 
-<details>
-<summary>Cliquez pour déplier</summary>
-
 ### Utilisation de base
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>Cliquez pour voir plus de démos</b></summary>
 
 ### Sondes horodatées en IPv4 (options `-D -4`)
 

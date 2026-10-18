@@ -45,14 +45,12 @@
 
 ## 데모
 
-<details>
-<summary>클릭하여 펼치기</summary>
-
 ### 기본 사용법
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>클릭하여 더 많은 데모 보기</b></summary>
 
 ### 타임스탬프가 있는 IPv4 프로브(`-D -4`) 플래그
 

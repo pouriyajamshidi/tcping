@@ -45,14 +45,12 @@ In den [Demos](#demos) bekommen Sie einen Eindruck vom Aussehen und der Bedienun
 
 ## Demos
 
-<details>
-<summary>Zum Aufklappen klicken</summary>
-
 ### Grundlegende Verwendung
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>Klicken für weitere Demos</b></summary>
 
 ### Probes mit Zeitstempel über IPv4 (`-D -4`) Flags
 

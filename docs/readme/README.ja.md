@@ -45,14 +45,12 @@
 
 ## デモ
 
-<details>
-<summary>クリックして開く</summary>
-
 ### 基本的な使い方
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>クリックして他のデモを見る</b></summary>
 
 ### タイムスタンプ付きの IPv4 プローブ（`-D -4`）フラグ
 

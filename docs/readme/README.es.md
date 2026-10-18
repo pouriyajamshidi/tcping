@@ -45,14 +45,12 @@ Echa un vistazo a las [demostraciones](#demostraciones) para hacerte una idea de
 
 ## Demostraciones
 
-<details>
-<summary>Haz clic para desplegar</summary>
-
 ### Uso básico
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>Haz clic para ver más demostraciones</b></summary>
 
 ### Sondeos con marca de tiempo por IPv4 (opciones `-D -4`)
 

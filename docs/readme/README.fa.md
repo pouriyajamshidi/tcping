@@ -45,14 +45,12 @@
 
 ## دموها
 
-<details>
-<summary>برای باز کردن کلیک کنید</summary>
-
 ### استفاده‌ی پایه
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>برای دیدن دموهای بیشتر کلیک کنید</b></summary>
 
 ### probeهای زمان‌دار روی IPv4 (پارامترهای `-D -4`)
 

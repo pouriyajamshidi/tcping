@@ -45,14 +45,12 @@
 
 ## 演示
 
-<details>
-<summary>点击展开</summary>
-
 ### 基本用法
 
 ![tcping](../Images/gifs/tcping.gif)
 
----
+<details>
+<summary><b>点击查看更多演示</b></summary>
 
 ### 带时间戳的 IPv4 探测（`-D -4`）标志
 
