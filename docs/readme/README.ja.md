@@ -367,6 +367,10 @@ Linux のパッケージ、Homebrew、AUR パッケージ、Nix、
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  `-i` のようなハイフン 1 つのフラグには PowerShell 7 が必要です。
+  Windows PowerShell 5.1 は `--` で始まるフラグしか補完しません。
+  PowerShell では `-I` のインターフェース名は補完されません。
+
 その後、新しい Shell を開くと有効になります。
 
 ---

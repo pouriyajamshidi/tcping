@@ -372,6 +372,10 @@ Otherwise, save the one for your shell:
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  Single-dash flags like `-i` need PowerShell 7, since Windows PowerShell 5.1
+  only completes the `--` ones. PowerShell does not complete the interface
+  names for `-I`.
+
 Start a new shell afterwards to pick them up.
 
 ---

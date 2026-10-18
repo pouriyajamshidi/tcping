@@ -372,6 +372,10 @@ Sinon, enregistrez celui de votre shell :
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  Les options à un seul tiret comme `-i` demandent PowerShell 7, car Windows
+  PowerShell 5.1 ne complète que les options en `--`. PowerShell ne complète
+  pas les noms d'interface pour `-I`.
+
 Ouvrez ensuite un nouveau shell pour qu'elles soient prises en compte.
 
 ---

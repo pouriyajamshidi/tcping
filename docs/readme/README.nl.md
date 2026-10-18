@@ -372,6 +372,10 @@ Anders slaat u het script voor uw shell op:
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  Flags met één streepje zoals `-i` hebben PowerShell 7 nodig, omdat Windows
+  PowerShell 5.1 alleen de `--`-flags aanvult. PowerShell vult de
+  interfacenamen voor `-I` niet aan.
+
 Start daarna een nieuwe shell om ze te activeren.
 
 ---

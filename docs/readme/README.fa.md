@@ -372,6 +372,10 @@ flake همچنین یک `devShells.default` دارد که هر آنچه برای
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  پارامترهای تک‌خط‌تیره مثل `-i` به PowerShell 7 نیاز دارند، چون Windows
+  PowerShell 5.1 فقط پارامترهای `--` را تکمیل می‌کند. PowerShell نام رابط‌ها
+  را برای `-I` تکمیل نمی‌کند.
+
 پس از آن یک شل جدید باز کنید تا اعمال شوند.
 
 ---

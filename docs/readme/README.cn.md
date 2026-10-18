@@ -366,6 +366,9 @@ Linux 软件包、Homebrew、AUR 软件包、Nix 和
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  像 `-i` 这样的单横线标志需要 PowerShell 7，因为 Windows PowerShell 5.1
+  只补全 `--` 开头的标志。PowerShell 不补全 `-I` 的接口名称。
+
 之后请打开一个新的 Shell 使其生效。
 
 ---

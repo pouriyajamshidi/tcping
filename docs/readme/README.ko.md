@@ -369,6 +369,10 @@ Linux 패키지, Homebrew, AUR 패키지, Nix,
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  `-i` 같은 대시 하나짜리 플래그는 PowerShell 7이 필요합니다.
+  Windows PowerShell 5.1은 `--` 플래그만 완성합니다. PowerShell에서는
+  `-I`의 인터페이스 이름을 완성하지 않습니다.
+
 적용하려면 그 뒤에 새 shell을 시작하세요.
 
 ---

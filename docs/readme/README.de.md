@@ -372,6 +372,10 @@ Andernfalls speichern Sie das Skript für Ihre Shell:
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
+  Flags mit einem Bindestrich wie `-i` brauchen PowerShell 7, da Windows
+  PowerShell 5.1 nur die `--`-Flags vervollständigt. PowerShell
+  vervollständigt die Schnittstellennamen für `-I` nicht.
+
 Starten Sie danach eine neue Shell, damit sie wirksam werden.
 
 ---
