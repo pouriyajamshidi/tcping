@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/google/go-github/v45 v45.2.0
-	github.com/gookit/color v1.6.1
+	github.com/gookit/color v1.6.3
 	github.com/stretchr/testify v1.11.1
 	zombiezen.com/go/sqlite v1.4.2
 )
