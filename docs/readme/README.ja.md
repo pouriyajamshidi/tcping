@@ -16,7 +16,7 @@
 `ICMP` の代わりに `TCP`、`UDP`、`HTTP(S)` を使う、Linux の ping ツールにヒントを得たクロスプラットフォームの ping プログラムです。
 
 > [!TIP]
-> このドキュメントは [English](../../README.md)、[中文](README.cn.md)、[한국어](README.ko.md)、[فارسی](README.fa.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md) でも読めます。
+> このドキュメントは [English](../../README.md)、[中文](README.cn.md)、[한국어](README.ko.md)、[فارسی](README.fa.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md)、[Español](README.es.md) でも読めます。
 
 - `ICMP` がブロックされている環境で `ping` の代わりになり、`TCP`、`HTTP(S)`、`UDP` で疎通を確認します。
 - `ping` と同じように、パケットロス率と、遅延の最小値、平均値、最大値、標準偏差を報告します。さらに、最も長い稼働時間とダウンタイム、そしてそれらがいつ起きたかも報告します。

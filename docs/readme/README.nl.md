@@ -16,7 +16,7 @@
 Een platformonafhankelijk ping-programma dat `TCP`, `UDP` of `HTTP(S)` gebruikt in plaats van `ICMP`, geïnspireerd door het ping-hulpprogramma van Linux.
 
 > [!TIP]
-> Dit document is ook beschikbaar in het [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md) en [Français](README.fr.md).
+> Dit document is ook beschikbaar in het [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md), [Français](README.fr.md) en [Español](README.es.md).
 
 - Een alternatief voor `ping` waar `ICMP` geblokkeerd is: het test via `TCP`, `HTTP(S)` of `UDP`.
 - Meldt het pakketverlies en het minimum, het gemiddelde, het maximum en de standaardafwijking van de latentie, zoals `ping` dat doet, plus de langste uptime en downtime en wanneer die optraden.

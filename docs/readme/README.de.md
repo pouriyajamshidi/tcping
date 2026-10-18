@@ -16,7 +16,7 @@
 Ein plattformübergreifendes Ping-Programm, das `TCP`, `UDP` oder `HTTP(S)` statt `ICMP` verwendet und vom Ping-Werkzeug von Linux inspiriert ist.
 
 > [!TIP]
-> Dieses Dokument gibt es auch auf [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Français](README.fr.md) und [Nederlands](README.nl.md).
+> Dieses Dokument gibt es auch auf [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Français](README.fr.md), [Nederlands](README.nl.md) und [Español](README.es.md).
 
 - Eine Alternative zu `ping`, wo `ICMP` blockiert ist: Es prüft die Erreichbarkeit über `TCP`, `HTTP(S)` oder `UDP`.
 - Meldet den Paketverlust sowie Minimum, Durchschnitt, Maximum und Standardabweichung der Latenz, genau wie `ping`, dazu die längste Betriebs- und Ausfallzeit und wann sie aufgetreten sind.

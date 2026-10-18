@@ -16,7 +16,7 @@
 A cross-platform ping program using `TCP`, `UDP` or `HTTP(S)` instead of `ICMP`, inspired by Linux's ping utility.
 
 > [!TIP]
-> This document is also available in [中文](docs/readme/README.cn.md), [日本語](docs/readme/README.ja.md), [한국어](docs/readme/README.ko.md), [فارسی](docs/readme/README.fa.md), [Deutsch](docs/readme/README.de.md), [Français](docs/readme/README.fr.md) and [Nederlands](docs/readme/README.nl.md).
+> This document is also available in [中文](docs/readme/README.cn.md), [日本語](docs/readme/README.ja.md), [한국어](docs/readme/README.ko.md), [فارسی](docs/readme/README.fa.md), [Deutsch](docs/readme/README.de.md), [Français](docs/readme/README.fr.md), [Nederlands](docs/readme/README.nl.md) and [Español](docs/readme/README.es.md).
 
 - An alternative to `ping` where `ICMP` is blocked, probing over `TCP`, `HTTP(S)` or `UDP`.
 - Reports the packet loss and the minimum, average, maximum and standard deviation of the latency, the same way `ping` does, plus the longest uptime and downtime and when they happened.

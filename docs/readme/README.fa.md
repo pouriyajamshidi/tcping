@@ -16,7 +16,7 @@
 یک برنامه‌ی ping چندسکویی که به جای `ICMP` از `TCP`، `UDP` یا `HTTP(S)` استفاده می‌کند و از ابزار ping در لینوکس الهام گرفته است.
 
 > [!TIP]
-> این سند به زبان‌های [English](../../README.md)، [中文](README.cn.md)، [日本語](README.ja.md)، [한국어](README.ko.md)، [Deutsch](README.de.md)، [Français](README.fr.md) و [Nederlands](README.nl.md) هم موجود است.
+> این سند به زبان‌های [English](../../README.md)، [中文](README.cn.md)، [日本語](README.ja.md)، [한국어](README.ko.md)، [Deutsch](README.de.md)، [Français](README.fr.md)، [Nederlands](README.nl.md) و [Español](README.es.md) هم موجود است.
 
 - جایگزینی برای `ping` در جاهایی که `ICMP` مسدود است و از طریق `TCP`، `HTTP(S)` یا `UDP` بررسی می‌کند.
 - مانند `ping` درصد از دست رفتن بسته‌ها و کمینه، میانگین، بیشینه و انحراف معیار تأخیر را گزارش می‌دهد، به‌علاوه‌ی طولانی‌ترین زمان فعال بودن و قطعی و اینکه چه زمانی رخ داده‌اند.

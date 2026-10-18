@@ -16,7 +16,7 @@
 Un programme ping multiplateforme qui utilise `TCP`, `UDP` ou `HTTP(S)` à la place d'`ICMP`, inspiré de l'utilitaire ping de Linux.
 
 > [!TIP]
-> Ce document est aussi disponible en [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md) et [Nederlands](README.nl.md).
+> Ce document est aussi disponible en [English](../../README.md), [中文](README.cn.md), [日本語](README.ja.md), [한국어](README.ko.md), [فارسی](README.fa.md), [Deutsch](README.de.md), [Nederlands](README.nl.md) et [Español](README.es.md).
 
 - Une alternative à `ping` là où `ICMP` est bloqué, qui sonde en `TCP`, `HTTP(S)` ou `UDP`.
 - Indique la perte de paquets ainsi que le minimum, la moyenne, le maximum et l'écart type de la latence, comme le fait `ping`, plus la plus longue durée de disponibilité et d'indisponibilité et le moment où elles ont eu lieu.
