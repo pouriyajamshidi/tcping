@@ -368,6 +368,7 @@ Sinon, enregistrez celui de votre shell :
 - `PowerShell`, en le chargeant depuis votre profil :
 
   ```powershell
+  New-Item -ItemType Directory -Force (Split-Path $PROFILE) | Out-Null
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 

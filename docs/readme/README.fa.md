@@ -368,6 +368,7 @@ flake همچنین یک `devShells.default` دارد که هر آنچه برای
 - `PowerShell`، با بارگذاری از پروفایل خود:
 
   ```powershell
+  New-Item -ItemType Directory -Force (Split-Path $PROFILE) | Out-Null
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 

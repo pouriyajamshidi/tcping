@@ -368,6 +368,7 @@ Anders slaat u het script voor uw shell op:
 - `PowerShell`, door het te laden vanuit uw profiel:
 
   ```powershell
+  New-Item -ItemType Directory -Force (Split-Path $PROFILE) | Out-Null
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 

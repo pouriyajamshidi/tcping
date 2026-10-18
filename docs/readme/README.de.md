@@ -368,6 +368,7 @@ Andernfalls speichern Sie das Skript für Ihre Shell:
 - `PowerShell`, indem Sie es aus Ihrem Profil laden:
 
   ```powershell
+  New-Item -ItemType Directory -Force (Split-Path $PROFILE) | Out-Null
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 

@@ -363,6 +363,7 @@ Linux のパッケージ、Homebrew、AUR パッケージ、Nix、
 - `PowerShell`（プロファイルから読み込む）:
 
   ```powershell
+  New-Item -ItemType Directory -Force (Split-Path $PROFILE) | Out-Null
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 

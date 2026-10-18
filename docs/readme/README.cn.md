@@ -362,6 +362,7 @@ Linux 软件包、Homebrew、AUR 软件包、Nix 和
 - `PowerShell`，从您的配置文件中加载：
 
   ```powershell
+  New-Item -ItemType Directory -Force (Split-Path $PROFILE) | Out-Null
   Add-Content $PROFILE "tcping --completions powershell | Out-String | Invoke-Expression"
   ```
 
