@@ -156,6 +156,7 @@ $(OUTPUT_DIR)/tcping-windows-%.zip: $(TARGET_DIR)/windows-%/tcping.exe $(OUTPUT_
 $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
 	@echo "[+] Creating debian package: $@"
 	@PKG_DIR=$$(mktemp -dt make-tcping.XXXXX); \
+	chmod 755 $$PKG_DIR; \
 	\
 	install -Dm 755 -t $$PKG_DIR/usr/bin/ $<; \
 	\
@@ -170,7 +171,8 @@ $(OUTPUT_DIR)/tcping-%.deb: $(TARGET_DIR)/linux-%-static/tcping $(OUTPUT_DIR)/
 	echo "Description: $(DESCRIPTION)" >>control; \
 	popd >/dev/null; \
 	\
-	dpkg-deb --build $$PKG_DIR $@
+	dpkg-deb --root-owner-group --build $$PKG_DIR $@; \
+	rm -rf $$PKG_DIR
 
 # ==================================================
 # Miscellaneous outputs
