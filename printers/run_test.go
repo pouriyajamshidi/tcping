@@ -173,7 +173,7 @@ func TestRunTranscript_OutageCount(t *testing.T) {
 	}.run(t)
 
 	wantLines(t, out,
-		"outages: 2\n",
+		"outages:             2\n",
 	)
 }
 

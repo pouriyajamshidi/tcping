@@ -130,6 +130,7 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 
 	fmt.Fprintf(&msg, "successful probes:   %d\n", s.TotalSuccessfulProbes)
 	fmt.Fprintf(&msg, "unsuccessful probes: %d\n", s.TotalUnsuccessfulProbes)
+	fmt.Fprintf(&msg, "outages:             %d\n", s.TotalOutages)
 
 	msg.WriteString("last successful probe:   ")
 	if s.LastSuccessfulProbe.IsZero() {
@@ -147,7 +148,6 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 
 	fmt.Fprintf(&msg, "total uptime:   %s\n", s.TotalUptimeDuration())
 	fmt.Fprintf(&msg, "total downtime: %s\n", s.TotalDowntimeDuration())
-	fmt.Fprintf(&msg, "outages: %d\n", s.TotalOutages)
 
 	if s.LongestUptime.Duration != 0 {
 		msg.WriteString("longest consecutive uptime:   ")

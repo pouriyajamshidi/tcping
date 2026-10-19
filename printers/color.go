@@ -144,6 +144,9 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printYellow("unsuccessful probes: ")
 	printRed("%d\n", s.TotalUnsuccessfulProbes)
 
+	printYellow("outages:             ")
+	printRed("%d\n", s.TotalOutages)
+
 	printYellow("last successful probe:   ")
 	if s.LastSuccessfulProbe.IsZero() {
 		printRed("Never succeeded\n")
@@ -162,9 +165,6 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 	printGreen("%s\n", s.TotalUptimeDuration())
 	printYellow("total downtime: ")
 	printRed("%s\n", s.TotalDowntimeDuration())
-
-	printYellow("outages: ")
-	printRed("%d\n", s.TotalOutages)
 
 	if s.LongestUptime.Duration != 0 {
 		printYellow("longest consecutive uptime:   ")
