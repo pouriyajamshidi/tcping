@@ -359,7 +359,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	} else {
 		statistics = append(statistics,
-			[]string{"Longest Uptime", "0"},
+			[]string{"Longest Uptime", s.LongestUptimeDuration()},
 			[]string{"Longest Consecutive Uptime Start", ""},
 			[]string{"Longest Consecutive Uptime End", ""},
 		)
@@ -373,7 +373,7 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		)
 	} else {
 		statistics = append(statistics,
-			[]string{"Longest Downtime", "0"},
+			[]string{"Longest Downtime", s.LongestDowntimeDuration()},
 			[]string{"Longest Consecutive Downtime Start", ""},
 			[]string{"Longest Consecutive Downtime End", ""},
 		)

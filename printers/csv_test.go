@@ -571,8 +571,9 @@ func TestCSVStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 		}
 	}
 
-	if rows["Longest Uptime"] != "0" {
-		t.Errorf("statistic %q = %q, want 0", "Longest Uptime", rows["Longest Uptime"])
+	// Same wording as the total uptime, so the two rows agree.
+	if rows["Longest Uptime"] != "0 seconds" {
+		t.Errorf("statistic %q = %q, want %q", "Longest Uptime", rows["Longest Uptime"], "0 seconds")
 	}
 	if rows["Hostname Changes"] != "0" {
 		t.Errorf("statistic %q = %q, want 0", "Hostname Changes", rows["Hostname Changes"])
