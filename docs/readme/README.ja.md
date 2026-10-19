@@ -141,7 +141,7 @@
 | [Debian、Ubuntu](#linux---リポジトリ)             | リポジトリを追加してから `sudo apt install tcping`                                                               |
 | [Fedora、RHEL、CentOS](#linux---リポジトリ)       | リポジトリを追加してから `sudo dnf install tcping`                                                               |
 | [Alpine](#linux---リポジトリ)                     | リポジトリを追加してから `sudo apk add tcping`                                                                   |
-| [Arch、Manjaro](#linux---リポジトリ)              | `yay -S tcping-bin`                                                                                              |
+| [Arch、Manjaro](#linux---リポジトリ)              | `yay -S pj.tcping`                                                                                               |
 | [任意の Linux](#linux---ワンコマンドインストール) | [ワンコマンドインストール](#linux---ワンコマンドインストール)か[パッケージファイル](#linux---パッケージファイル) |
 | [BSD](#bsd-と-linux---手動インストール)           | [ビルド済みバイナリ](#bsd-と-linux---手動インストール)                                                           |
 | [Nix](#nix)                                       | `nix profile install github:pouriyajamshidi/tcping`                                                              |
@@ -227,10 +227,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**、**Manjaro**、**EndeavourOS** とその派生ディストリビューションでは、
-[AUR](https://aur.archlinux.org/packages/tcping-bin) からお好みのヘルパーで入れられます。
+[AUR](https://aur.archlinux.org/packages/pj.tcping) からお好みのヘルパーで入れられます。
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - パッケージファイル

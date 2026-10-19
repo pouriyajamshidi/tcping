@@ -141,7 +141,7 @@
 | [Debian、Ubuntu](#linux---软件源)       | 添加软件源后执行 `sudo apt install tcping`                       |
 | [Fedora、RHEL、CentOS](#linux---软件源) | 添加软件源后执行 `sudo dnf install tcping`                       |
 | [Alpine](#linux---软件源)               | 添加软件源后执行 `sudo apk add tcping`                           |
-| [Arch、Manjaro](#linux---软件源)        | `yay -S tcping-bin`                                              |
+| [Arch、Manjaro](#linux---软件源)        | `yay -S pj.tcping`                                               |
 | [任意 Linux](#linux---一键安装)         | [一键安装](#linux---一键安装)或[软件包文件](#linux---软件包文件) |
 | [BSD](#bsd-和-linux---手动安装)         | [预编译的可执行文件](#bsd-和-linux---手动安装)                   |
 | [Nix](#nix)                             | `nix profile install github:pouriyajamshidi/tcping`              |
@@ -227,10 +227,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**、**Manjaro**、**EndeavourOS** 及其衍生版本可以在
-[AUR](https://aur.archlinux.org/packages/tcping-bin) 中找到，请使用您喜欢的辅助工具：
+[AUR](https://aur.archlinux.org/packages/pj.tcping) 中找到，请使用您喜欢的辅助工具：
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - 软件包文件

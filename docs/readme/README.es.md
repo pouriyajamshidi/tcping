@@ -141,7 +141,7 @@ Echa un vistazo a las [demostraciones](#demostraciones) para hacerte una idea de
 | [Debian, Ubuntu](#linux---repositorios-de-paquetes)       | `sudo apt install tcping`, después de añadir el repositorio                                                                |
 | [Fedora, RHEL, CentOS](#linux---repositorios-de-paquetes) | `sudo dnf install tcping`, después de añadir el repositorio                                                                |
 | [Alpine](#linux---repositorios-de-paquetes)               | `sudo apk add tcping`, después de añadir el repositorio                                                                    |
-| [Arch, Manjaro](#linux---repositorios-de-paquetes)        | `yay -S tcping-bin`                                                                                                        |
+| [Arch, Manjaro](#linux---repositorios-de-paquetes)        | `yay -S pj.tcping`                                                                                                         |
 | [Cualquier Linux](#linux---instalación-en-una-línea)      | una [instalación en una línea](#linux---instalación-en-una-línea) o un [archivo de paquete](#linux---archivos-de-paquetes) |
 | [BSD](#bsd-y-linux---instalación-manual)                  | el [binario precompilado](#bsd-y-linux---instalación-manual)                                                               |
 | [Nix](#nix)                                               | `nix profile install github:pouriyajamshidi/tcping`                                                                        |
@@ -230,10 +230,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**, **Manjaro**, **EndeavourOS** y sus derivados lo tienen en el
-[AUR](https://aur.archlinux.org/packages/tcping-bin), así que usa tu asistente favorito:
+[AUR](https://aur.archlinux.org/packages/pj.tcping), así que usa tu asistente favorito:
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - Archivos de paquetes

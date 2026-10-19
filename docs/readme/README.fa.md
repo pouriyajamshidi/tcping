@@ -141,7 +141,7 @@
 | [Debian, Ubuntu](#linux---مخازن-بسته)       | `sudo apt install tcping`، پس از افزودن مخزن                             |
 | [Fedora, RHEL, CentOS](#linux---مخازن-بسته) | `sudo dnf install tcping`، پس از افزودن مخزن                             |
 | [Alpine](#linux---مخازن-بسته)               | `sudo apk add tcping`، پس از افزودن مخزن                                 |
-| [Arch, Manjaro](#linux---مخازن-بسته)        | `yay -S tcping-bin`                                                      |
+| [Arch, Manjaro](#linux---مخازن-بسته)        | `yay -S pj.tcping`                                                       |
 | [هر لینوکسی](#linux---نصب-با-یک-خط)         | [نصب با یک خط](#linux---نصب-با-یک-خط) یا [فایل بسته](#linux---فایل-بسته) |
 | [BSD](#bsd-و-linux---نصب-دستی)              | [فایل اجرایی از پیش ساخته شده](#bsd-و-linux---نصب-دستی)                  |
 | [Nix](#nix)                                 | `nix profile install github:pouriyajamshidi/tcping`                      |
@@ -230,10 +230,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**، **Manjaro**، **EndeavourOS** و مشتقات آن‌ها آن را در
-[AUR](https://aur.archlinux.org/packages/tcping-bin) دارند، پس از ابزار کمکی دلخواه خود استفاده کنید:
+[AUR](https://aur.archlinux.org/packages/pj.tcping) دارند، پس از ابزار کمکی دلخواه خود استفاده کنید:
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - فایل بسته

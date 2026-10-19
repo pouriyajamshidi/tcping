@@ -141,7 +141,7 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 | [Debian, Ubuntu](#linux---dépôts-de-paquets)               | `sudo apt install tcping`, après avoir ajouté le dépôt                                                                      |
 | [Fedora, RHEL, CentOS](#linux---dépôts-de-paquets)         | `sudo dnf install tcping`, après avoir ajouté le dépôt                                                                      |
 | [Alpine](#linux---dépôts-de-paquets)                       | `sudo apk add tcping`, après avoir ajouté le dépôt                                                                          |
-| [Arch, Manjaro](#linux---dépôts-de-paquets)                | `yay -S tcping-bin`                                                                                                         |
+| [Arch, Manjaro](#linux---dépôts-de-paquets)                | `yay -S pj.tcping`                                                                                                          |
 | [N'importe quel Linux](#linux---installation-en-une-ligne) | une [installation en une ligne](#linux---installation-en-une-ligne) ou un [fichier de paquet](#linux---fichiers-de-paquets) |
 | [BSD](#bsd-et-linux---installation-manuelle)               | le [binaire précompilé](#bsd-et-linux---installation-manuelle)                                                              |
 | [Nix](#nix)                                                | `nix profile install github:pouriyajamshidi/tcping`                                                                         |
@@ -230,10 +230,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**, **Manjaro**, **EndeavourOS** et leurs dérivées le trouvent dans l'
-[AUR](https://aur.archlinux.org/packages/tcping-bin), avec votre assistant préféré :
+[AUR](https://aur.archlinux.org/packages/pj.tcping), avec votre assistant préféré :
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - Fichiers de paquets

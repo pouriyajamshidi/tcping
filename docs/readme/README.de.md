@@ -141,7 +141,7 @@ In den [Demos](#demos) bekommen Sie einen Eindruck vom Aussehen und der Bedienun
 | [Debian, Ubuntu](#linux---paketquellen)         | `sudo apt install tcping`, nachdem die Paketquelle hinzugefügt wurde                                             |
 | [Fedora, RHEL, CentOS](#linux---paketquellen)   | `sudo dnf install tcping`, nachdem die Paketquelle hinzugefügt wurde                                             |
 | [Alpine](#linux---paketquellen)                 | `sudo apk add tcping`, nachdem die Paketquelle hinzugefügt wurde                                                 |
-| [Arch, Manjaro](#linux---paketquellen)          | `yay -S tcping-bin`                                                                                              |
+| [Arch, Manjaro](#linux---paketquellen)          | `yay -S pj.tcping`                                                                                               |
 | [Jedes Linux](#linux---ein-zeilen-installation) | einer [Ein-Zeilen-Installation](#linux---ein-zeilen-installation) oder einer [Paketdatei](#linux---paketdateien) |
 | [BSD](#bsd-und-linux---manuell)                 | der [vorkompilierten Binärdatei](#bsd-und-linux---manuell)                                                       |
 | [Nix](#nix)                                     | `nix profile install github:pouriyajamshidi/tcping`                                                              |
@@ -230,10 +230,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**, **Manjaro**, **EndeavourOS** und ihre Ableger finden es im
-[AUR](https://aur.archlinux.org/packages/tcping-bin). Nutzen Sie dafür Ihren bevorzugten Helfer:
+[AUR](https://aur.archlinux.org/packages/pj.tcping). Nutzen Sie dafür Ihren bevorzugten Helfer:
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - Paketdateien

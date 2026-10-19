@@ -141,7 +141,7 @@
 | [Debian, Ubuntu](#linux---패키지-저장소)       | 저장소를 추가한 뒤 `sudo apt install tcping`                               |
 | [Fedora, RHEL, CentOS](#linux---패키지-저장소) | 저장소를 추가한 뒤 `sudo dnf install tcping`                               |
 | [Alpine](#linux---패키지-저장소)               | 저장소를 추가한 뒤 `sudo apk add tcping`                                   |
-| [Arch, Manjaro](#linux---패키지-저장소)        | `yay -S tcping-bin`                                                        |
+| [Arch, Manjaro](#linux---패키지-저장소)        | `yay -S pj.tcping`                                                         |
 | [모든 Linux](#linux---한-줄-설치)              | [한 줄 설치](#linux---한-줄-설치) 또는 [패키지 파일](#linux---패키지-파일) |
 | [BSD](#bsd와-linux---수동-설치)                | [빌드된 바이너리](#bsd와-linux---수동-설치)                                |
 | [Nix](#nix)                                    | `nix profile install github:pouriyajamshidi/tcping`                        |
@@ -227,10 +227,10 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```
 
 **Arch**, **Manjaro**, **EndeavourOS** 및 그 파생 배포판은
-[AUR](https://aur.archlinux.org/packages/tcping-bin)에 있으니 선호하는 헬퍼를 사용하세요.
+[AUR](https://aur.archlinux.org/packages/pj.tcping)에 있으니 선호하는 헬퍼를 사용하세요.
 
 ```bash
-yay -S tcping-bin
+yay -S pj.tcping
 ```
 
 ### Linux - 패키지 파일
