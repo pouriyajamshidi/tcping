@@ -344,10 +344,10 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		[]string{"Total Duration", s.RuntimeDuration()},
 		[]string{"Total Uptime", s.TotalUptimeDuration()},
 		[]string{"Total Downtime", s.TotalDowntimeDuration()},
-		[]string{"Outages", strconv.Itoa(int(s.TotalOutages))},
 		[]string{"Total Packets", strconv.Itoa(int(s.TotalProbes()))},
 		[]string{"Total Successful Packets", strconv.Itoa(int(s.TotalSuccessfulProbes))},
 		[]string{"Total Unsuccessful Packets", strconv.Itoa(int(s.TotalUnsuccessfulProbes))},
+		[]string{"Outages", strconv.Itoa(int(s.TotalOutages))},
 		[]string{"Total Packet Loss Percentage", fmt.Sprintf("%.2f", s.PacketLoss())},
 	)
 
