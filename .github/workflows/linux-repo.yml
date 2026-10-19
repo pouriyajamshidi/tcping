@@ -23,7 +23,8 @@ name: Publish the Linux package repository
 #                   packages repository. The default GITHUB_TOKEN cannot write
 #                   to another repository
 #   GPG_PRIVATE_KEY the armored gpg private key that signs the apt and dnf
-#                   metadata and the rpm packages, with no passphrase
+#                   metadata, with no passphrase. The release workflow signs
+#                   the rpm packages with it too, before uploading them
 #   APK_PRIVATE_KEY the RSA private key that signs the apk index
 on:
   workflow_call:

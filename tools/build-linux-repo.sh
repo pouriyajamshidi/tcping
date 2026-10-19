@@ -24,14 +24,15 @@ usage() {
 Usage: build-linux-repo.sh <package-dir> <repo-dir>
 
   package-dir   holds the <project>-<arch>.deb, .rpm and .apk files of one
-                release
+                release. The rpm ones must already be signed with GPG_KEY, by
+                sign-rpm.sh
   repo-dir      the repository tree to update. It may already hold packages,
                 including other projects, and it may not exist yet
 
 Environment:
   GPG_KEY       path to the armored gpg private key that signs the apt and dnf
-                metadata and the rpm packages, required. It must have no
-                passphrase, since nothing can type one during a release
+                metadata, required. It must have no passphrase, since nothing
+                can type one during a release
   APK_KEY       path to the RSA private key that signs the apk index, required
   PROJECT       the project being published, which is also the prefix of its
                 package files. Defaults to tcping
@@ -88,7 +89,7 @@ cp "$PACKAGE_DIR/$PROJECT-arm64.apk" "$REPO_DIR/apk/aarch64/"
 # ==================================================
 
 # Both are built in one Debian container: it has apt-ftparchive, createrepo_c
-# and rpmsign, and the key only has to be imported once.
+# and rpmkeys, and the key only has to be imported once.
 echo "[+] Building the apt and dnf repositories"
 docker run --rm --interactive \
 	--volume "$REPO_DIR:/repo" \
@@ -130,9 +131,17 @@ gpg --batch --yes --local-user "$key_id" --clearsign --output InRelease Release
 gpg --batch --yes --local-user "$key_id" --detach-sign --armor --output Release.gpg Release
 
 cd /repo/rpm
-# Only this project's packages: another project's are signed by whoever
-# published them.
-rpmsign --define "_gpg_name $key_id" --addsign ./"$PROJECT"-*.rpm >/dev/null
+# The release signs this project's packages with the same key, so the
+# repository serves the very files on the release page. One that is not signed
+# with it would be turned away by dnf, so it is caught here instead. Another
+# project's packages are signed by whoever published them.
+rpmkeys --import "/repo/keys/$REPO_NAME.asc"
+for pkg in ./"$PROJECT"-*.rpm; do
+	if ! rpmkeys --define "_pkgverify_level signature" --checksig "$pkg" >/dev/null; then
+		echo "[-] $pkg is not signed with GPG_KEY, sign it with tools/sign-rpm.sh first" >&2
+		exit 1
+	fi
+done
 createrepo_c --quiet .
 gpg --batch --yes --local-user "$key_id" --detach-sign --armor \
 	--output repodata/repomd.xml.asc repodata/repomd.xml

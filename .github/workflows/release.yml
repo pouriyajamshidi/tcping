@@ -70,6 +70,23 @@ jobs:
       - name: Build the release artifacts
         run: make release
 
+      - name: Sign the rpm packages
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "[-] The GPG_PRIVATE_KEY secret is not set"
+            exit 1
+          fi
+
+          # The key that signs the Linux package repository, which serves these
+          # exact files. Kept out of release/, since all of it is uploaded.
+          key="$RUNNER_TEMP/gpg.asc"
+          printf '%s\n' "$GPG_PRIVATE_KEY" >"$key"
+          chmod 600 "$key"
+
+          GPG_KEY="$key" ./tools/sign-rpm.sh release
+
       - name: Write the release notes
         env:
           TAG: ${{ steps.release.outputs.tag }}
