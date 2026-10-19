@@ -555,8 +555,8 @@ func TestSQLiteStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 
 	got := queryRow(t, printer, fmt.Sprintf(
 		`SELECT latency_min, latency_avg, latency_max, latency_stddev,
-		        longest_uptime, longest_consecutive_uptime_start,
-		        last_successful_probe, end_time
+		        longest_consecutive_uptime_start, last_successful_probe,
+		        end_time, longest_uptime
 		 FROM %s`, printer.statsTableName))
 
 	// The latency columns must be NULL rather than zero, which would read
@@ -567,10 +567,15 @@ func TestSQLiteStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 		}
 	}
 
-	for i := 4; i < len(got); i++ {
+	for i := 4; i < 7; i++ {
 		if got[i] != "" {
 			t.Errorf("column %d = %q, want it empty for something that never happened", i, got[i])
 		}
+	}
+
+	// Same wording as the total uptime, so the two columns agree.
+	if got[7] != "0 seconds" {
+		t.Errorf("longest_uptime = %q, want %q", got[7], "0 seconds")
 	}
 }
 

@@ -415,20 +415,16 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		lastUnsuccessful = s.LastUnsuccessfulProbeFormatted()
 	}
 
-	longestUptime := ""
 	longestUptimeStart := ""
 	longestUptimeEnd := ""
 	if s.LongestUptime.Duration != 0 {
-		longestUptime = s.LongestUptimeDuration()
 		longestUptimeStart = s.LongestUptimeStartTime()
 		longestUptimeEnd = s.LongestUptimeEndTime()
 	}
 
-	longestDowntime := ""
 	longestDowntimeStart := ""
 	longestDowntimeEnd := ""
 	if s.LongestDowntime.Duration != 0 {
-		longestDowntime = s.LongestDowntimeDuration()
 		longestDowntimeStart = s.LongestDowntimeStartTime()
 		longestDowntimeEnd = s.LongestDowntimeEndTime()
 	}
@@ -467,8 +463,8 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		s.TotalSuccessfulProbes,
 		s.TotalUnsuccessfulProbes,
 		s.PacketLoss(),
-		longestUptime,
-		longestDowntime,
+		s.LongestUptimeDuration(),
+		s.LongestDowntimeDuration(),
 		retries,
 		hostnameChanges(s),
 		lastSuccessful,
