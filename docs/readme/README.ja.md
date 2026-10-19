@@ -204,8 +204,8 @@ wget "https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-
 
 ```bash
 sudo install -d /etc/apt/keyrings &&
-  sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.gpg -o /etc/apt/keyrings/pouriyajamshidi.gpg &&
-  echo "deb [signed-by=/etc/apt/keyrings/pouriyajamshidi.gpg] https://pouriyajamshidi.github.io/packages/deb ./" | sudo tee /etc/apt/sources.list.d/pouriyajamshidi.list &&
+  sudo curl -fsSL https://packages.thegraynode.io/keys/pouriyajamshidi.gpg -o /etc/apt/keyrings/pouriyajamshidi.gpg &&
+  echo "deb [signed-by=/etc/apt/keyrings/pouriyajamshidi.gpg] https://packages.thegraynode.io/deb ./" | sudo tee /etc/apt/sources.list.d/pouriyajamshidi.list &&
   sudo apt update &&
   sudo apt install tcping
 ```
@@ -213,15 +213,15 @@ sudo install -d /etc/apt/keyrings &&
 **Fedora**、**RHEL**、**CentOS** とその派生ディストリビューション:
 
 ```bash
-sudo curl -fsSL https://pouriyajamshidi.github.io/packages/rpm/pouriyajamshidi.repo -o /etc/yum.repos.d/pouriyajamshidi.repo &&
+sudo curl -fsSL https://packages.thegraynode.io/rpm/pouriyajamshidi.repo -o /etc/yum.repos.d/pouriyajamshidi.repo &&
   sudo dnf install tcping
 ```
 
 **Alpine**:
 
 ```bash
-sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.rsa.pub -o /etc/apk/keys/pouriyajamshidi.rsa.pub &&
-  echo "https://pouriyajamshidi.github.io/packages/apk" | sudo tee -a /etc/apk/repositories &&
+sudo curl -fsSL https://packages.thegraynode.io/keys/pouriyajamshidi.rsa.pub -o /etc/apk/keys/pouriyajamshidi.rsa.pub &&
+  echo "https://packages.thegraynode.io/apk" | sudo tee -a /etc/apk/repositories &&
   sudo apk update &&
   sudo apk add tcping
 ```

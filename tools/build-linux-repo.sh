@@ -39,7 +39,7 @@ Environment:
                 .repo file for dnf and the repository id. Defaults to
                 pouriyajamshidi
   REPO_URL      where the tree is going to be served from. Defaults to
-                https://pouriyajamshidi.github.io/packages
+                https://packages.thegraynode.io
 EOF
 }
 
@@ -52,7 +52,7 @@ PACKAGE_DIR=$(realpath "$1")
 REPO_DIR=$(realpath -m "$2")
 PROJECT=${PROJECT:-tcping}
 REPO_NAME=${REPO_NAME:-pouriyajamshidi}
-REPO_URL=${REPO_URL:-https://pouriyajamshidi.github.io/packages}
+REPO_URL=${REPO_URL:-https://packages.thegraynode.io}
 
 : "${GPG_KEY:?set GPG_KEY to the armored gpg private key}"
 : "${APK_KEY:?set APK_KEY to the alpine signing key}"

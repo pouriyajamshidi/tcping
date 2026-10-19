@@ -1,7 +1,7 @@
 name: Publish the Linux package repository
 
 # Rebuilds the apt, dnf and apk repository at
-# https://pouriyajamshidi.github.io/packages so that "apt install tcping",
+# https://packages.thegraynode.io so that "apt install tcping",
 # "dnf install tcping" and "apk add tcping" work on a machine that added it
 # once, the way brew and winget work on the other platforms.
 #
@@ -104,7 +104,7 @@ jobs:
         env:
           GPG_KEY: signing/gpg.asc
           APK_KEY: signing/apk.rsa
-          REPO_URL: https://pouriyajamshidi.github.io/packages
+          REPO_URL: https://packages.thegraynode.io
         run: ./tools/build-linux-repo.sh packages site
 
       - name: Publish it
