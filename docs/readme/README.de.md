@@ -141,7 +141,7 @@ In den [Demos](#demos) bekommen Sie einen Eindruck vom Aussehen und der Bedienun
 | [Debian, Ubuntu](#linux---paketquellen)         | `sudo apt install tcping`, nachdem die Paketquelle hinzugefügt wurde                                             |
 | [Fedora, RHEL, CentOS](#linux---paketquellen)   | `sudo dnf install tcping`, nachdem die Paketquelle hinzugefügt wurde                                             |
 | [Alpine](#linux---paketquellen)                 | `sudo apk add tcping`, nachdem die Paketquelle hinzugefügt wurde                                                 |
-| [Arch, Manjaro](#linux---paketquellen)          | `yay -S pj.tcping`                                                                                               |
+| [Arch, Manjaro](#linux---paketquellen)          | `yay -S pj.tcping`, noch nicht verfügbar                                                                         |
 | [Jedes Linux](#linux---ein-zeilen-installation) | einer [Ein-Zeilen-Installation](#linux---ein-zeilen-installation) oder einer [Paketdatei](#linux---paketdateien) |
 | [BSD](#bsd-und-linux---manuell)                 | der [vorkompilierten Binärdatei](#bsd-und-linux---manuell)                                                       |
 | [Nix](#nix)                                     | `nix profile install github:pouriyajamshidi/tcping`                                                              |
@@ -235,6 +235,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> Das AUR-Paket ist noch nicht verfügbar, weil die Registrierung beim AUR derzeit geschlossen ist. Bis dahin nutzen Sie die [Arch-Paketdatei](#linux---paketdateien) oder die [Ein-Zeilen-Installation](#linux---ein-zeilen-installation).
 
 ### Linux - Paketdateien
 

@@ -141,7 +141,7 @@
 | [Debian、Ubuntu](#linux---软件源)       | 添加软件源后执行 `sudo apt install tcping`                       |
 | [Fedora、RHEL、CentOS](#linux---软件源) | 添加软件源后执行 `sudo dnf install tcping`                       |
 | [Alpine](#linux---软件源)               | 添加软件源后执行 `sudo apk add tcping`                           |
-| [Arch、Manjaro](#linux---软件源)        | `yay -S pj.tcping`                                               |
+| [Arch、Manjaro](#linux---软件源)        | `yay -S pj.tcping`，暂不可用                                     |
 | [任意 Linux](#linux---一键安装)         | [一键安装](#linux---一键安装)或[软件包文件](#linux---软件包文件) |
 | [BSD](#bsd-和-linux---手动安装)         | [预编译的可执行文件](#bsd-和-linux---手动安装)                   |
 | [Nix](#nix)                             | `nix profile install github:pouriyajamshidi/tcping`              |
@@ -232,6 +232,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> AUR 软件包暂不可用，因为 AUR 目前已关闭注册。在此之前，请使用 [Arch 软件包文件](#linux---软件包文件)或[一键安装](#linux---一键安装)。
 
 ### Linux - 软件包文件
 

@@ -141,7 +141,7 @@ Bekijk de [demo's](#demos) voor een indruk van het uiterlijk en het gebruik van 
 | [Debian, Ubuntu](#linux---pakketbronnen)        | `sudo apt install tcping`, nadat u de pakketbron hebt toegevoegd                                                   |
 | [Fedora, RHEL, CentOS](#linux---pakketbronnen)  | `sudo dnf install tcping`, nadat u de pakketbron hebt toegevoegd                                                   |
 | [Alpine](#linux---pakketbronnen)                | `sudo apk add tcping`, nadat u de pakketbron hebt toegevoegd                                                       |
-| [Arch, Manjaro](#linux---pakketbronnen)         | `yay -S pj.tcping`                                                                                                 |
+| [Arch, Manjaro](#linux---pakketbronnen)         | `yay -S pj.tcping`, nog niet beschikbaar                                                                           |
 | [Elke Linux](#linux---installatie-in-één-regel) | een [installatie in één regel](#linux---installatie-in-één-regel) of een [pakketbestand](#linux---pakketbestanden) |
 | [BSD](#bsd-en-linux---handmatig)                | het [vooraf gebouwde bestand](#bsd-en-linux---handmatig)                                                           |
 | [Nix](#nix)                                     | `nix profile install github:pouriyajamshidi/tcping`                                                                |
@@ -235,6 +235,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> Het AUR-pakket is nog niet beschikbaar, omdat registratie bij de AUR op dit moment gesloten is. Gebruik tot die tijd het [Arch-pakketbestand](#linux---pakketbestanden) of de [installatie in één regel](#linux---installatie-in-één-regel).
 
 ### Linux - Pakketbestanden
 

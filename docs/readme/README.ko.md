@@ -141,7 +141,7 @@
 | [Debian, Ubuntu](#linux---패키지-저장소)       | 저장소를 추가한 뒤 `sudo apt install tcping`                               |
 | [Fedora, RHEL, CentOS](#linux---패키지-저장소) | 저장소를 추가한 뒤 `sudo dnf install tcping`                               |
 | [Alpine](#linux---패키지-저장소)               | 저장소를 추가한 뒤 `sudo apk add tcping`                                   |
-| [Arch, Manjaro](#linux---패키지-저장소)        | `yay -S pj.tcping`                                                         |
+| [Arch, Manjaro](#linux---패키지-저장소)        | `yay -S pj.tcping`, 아직 사용할 수 없음                                    |
 | [모든 Linux](#linux---한-줄-설치)              | [한 줄 설치](#linux---한-줄-설치) 또는 [패키지 파일](#linux---패키지-파일) |
 | [BSD](#bsd와-linux---수동-설치)                | [빌드된 바이너리](#bsd와-linux---수동-설치)                                |
 | [Nix](#nix)                                    | `nix profile install github:pouriyajamshidi/tcping`                        |
@@ -232,6 +232,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> AUR 패키지는 아직 사용할 수 없습니다. 현재 AUR 가입이 닫혀 있기 때문입니다. 그때까지는 [Arch 패키지 파일](#linux---패키지-파일)이나 [한 줄 설치](#linux---한-줄-설치)를 사용하세요.
 
 ### Linux - 패키지 파일
 

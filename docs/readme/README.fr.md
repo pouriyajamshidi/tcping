@@ -141,7 +141,7 @@ Regardez les [démos](#démos) pour vous faire une idée de l'aspect et de la pr
 | [Debian, Ubuntu](#linux---dépôts-de-paquets)               | `sudo apt install tcping`, après avoir ajouté le dépôt                                                                      |
 | [Fedora, RHEL, CentOS](#linux---dépôts-de-paquets)         | `sudo dnf install tcping`, après avoir ajouté le dépôt                                                                      |
 | [Alpine](#linux---dépôts-de-paquets)                       | `sudo apk add tcping`, après avoir ajouté le dépôt                                                                          |
-| [Arch, Manjaro](#linux---dépôts-de-paquets)                | `yay -S pj.tcping`                                                                                                          |
+| [Arch, Manjaro](#linux---dépôts-de-paquets)                | `yay -S pj.tcping`, pas encore disponible                                                                                   |
 | [N'importe quel Linux](#linux---installation-en-une-ligne) | une [installation en une ligne](#linux---installation-en-une-ligne) ou un [fichier de paquet](#linux---fichiers-de-paquets) |
 | [BSD](#bsd-et-linux---installation-manuelle)               | le [binaire précompilé](#bsd-et-linux---installation-manuelle)                                                              |
 | [Nix](#nix)                                                | `nix profile install github:pouriyajamshidi/tcping`                                                                         |
@@ -235,6 +235,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> Le paquet AUR n'est pas encore disponible, car les inscriptions à l'AUR sont fermées pour le moment. En attendant, utilisez le [fichier de paquet Arch](#linux---fichiers-de-paquets) ou l'[installation en une ligne](#linux---installation-en-une-ligne).
 
 ### Linux - Fichiers de paquets
 

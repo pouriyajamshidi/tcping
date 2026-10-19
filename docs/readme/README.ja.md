@@ -141,7 +141,7 @@
 | [Debian、Ubuntu](#linux---リポジトリ)             | リポジトリを追加してから `sudo apt install tcping`                                                               |
 | [Fedora、RHEL、CentOS](#linux---リポジトリ)       | リポジトリを追加してから `sudo dnf install tcping`                                                               |
 | [Alpine](#linux---リポジトリ)                     | リポジトリを追加してから `sudo apk add tcping`                                                                   |
-| [Arch、Manjaro](#linux---リポジトリ)              | `yay -S pj.tcping`                                                                                               |
+| [Arch、Manjaro](#linux---リポジトリ)              | `yay -S pj.tcping`、まだ利用できません                                                                           |
 | [任意の Linux](#linux---ワンコマンドインストール) | [ワンコマンドインストール](#linux---ワンコマンドインストール)か[パッケージファイル](#linux---パッケージファイル) |
 | [BSD](#bsd-と-linux---手動インストール)           | [ビルド済みバイナリ](#bsd-と-linux---手動インストール)                                                           |
 | [Nix](#nix)                                       | `nix profile install github:pouriyajamshidi/tcping`                                                              |
@@ -232,6 +232,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> AUR パッケージはまだ利用できません。AUR の新規登録が現在停止しているためです。それまでは [Arch のパッケージファイル](#linux---パッケージファイル)か[ワンコマンドインストール](#linux---ワンコマンドインストール)を使ってください。
 
 ### Linux - パッケージファイル
 

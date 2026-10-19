@@ -141,7 +141,7 @@ Echa un vistazo a las [demostraciones](#demostraciones) para hacerte una idea de
 | [Debian, Ubuntu](#linux---repositorios-de-paquetes)       | `sudo apt install tcping`, después de añadir el repositorio                                                                |
 | [Fedora, RHEL, CentOS](#linux---repositorios-de-paquetes) | `sudo dnf install tcping`, después de añadir el repositorio                                                                |
 | [Alpine](#linux---repositorios-de-paquetes)               | `sudo apk add tcping`, después de añadir el repositorio                                                                    |
-| [Arch, Manjaro](#linux---repositorios-de-paquetes)        | `yay -S pj.tcping`                                                                                                         |
+| [Arch, Manjaro](#linux---repositorios-de-paquetes)        | `yay -S pj.tcping`, aún no disponible                                                                                      |
 | [Cualquier Linux](#linux---instalación-en-una-línea)      | una [instalación en una línea](#linux---instalación-en-una-línea) o un [archivo de paquete](#linux---archivos-de-paquetes) |
 | [BSD](#bsd-y-linux---instalación-manual)                  | el [binario precompilado](#bsd-y-linux---instalación-manual)                                                               |
 | [Nix](#nix)                                               | `nix profile install github:pouriyajamshidi/tcping`                                                                        |
@@ -235,6 +235,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> El paquete del AUR aún no está disponible, porque el registro en el AUR está cerrado por ahora. Mientras tanto, usa el [archivo de paquete de Arch](#linux---archivos-de-paquetes) o la [instalación en una línea](#linux---instalación-en-una-línea).
 
 ### Linux - Archivos de paquetes
 

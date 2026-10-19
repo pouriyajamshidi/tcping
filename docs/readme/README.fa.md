@@ -141,7 +141,7 @@
 | [Debian, Ubuntu](#linux---مخازن-بسته)       | `sudo apt install tcping`، پس از افزودن مخزن                             |
 | [Fedora, RHEL, CentOS](#linux---مخازن-بسته) | `sudo dnf install tcping`، پس از افزودن مخزن                             |
 | [Alpine](#linux---مخازن-بسته)               | `sudo apk add tcping`، پس از افزودن مخزن                                 |
-| [Arch, Manjaro](#linux---مخازن-بسته)        | `yay -S pj.tcping`                                                       |
+| [Arch, Manjaro](#linux---مخازن-بسته)        | `yay -S pj.tcping`، هنوز در دسترس نیست                                   |
 | [هر لینوکسی](#linux---نصب-با-یک-خط)         | [نصب با یک خط](#linux---نصب-با-یک-خط) یا [فایل بسته](#linux---فایل-بسته) |
 | [BSD](#bsd-و-linux---نصب-دستی)              | [فایل اجرایی از پیش ساخته شده](#bsd-و-linux---نصب-دستی)                  |
 | [Nix](#nix)                                 | `nix profile install github:pouriyajamshidi/tcping`                      |
@@ -235,6 +235,9 @@ sudo curl -fsSL https://pouriyajamshidi.github.io/packages/keys/pouriyajamshidi.
 ```bash
 yay -S pj.tcping
 ```
+
+> [!NOTE]
+> بسته‌ی AUR هنوز در دسترس نیست، چون ثبت‌نام در AUR فعلا بسته است. تا آن زمان از [فایل بسته‌ی Arch](#linux---فایل-بسته) یا [نصب با یک خط](#linux---نصب-با-یک-خط) استفاده کنید.
 
 ### Linux - فایل بسته
 
