@@ -403,6 +403,11 @@ the whole thing, import it first, then use a panel's menu, **Copy**, and
 - A rejected write does not stop the run. tcping prints an error to stderr
   for every write that fails and keeps probing, so watch stderr rather than
   the probe output. A wrong InfluxDB token shows up this way.
+- InfluxDB only reads its `DOCKER_INFLUXDB_INIT_*` settings the first time it
+  starts, and keeps the token, password and org in its volume after that. If
+  you change any of them in the compose file, start again with
+  `docker compose -f compose.influxdb.yml down -v`, or InfluxDB keeps the old
+  ones and turns away tcping and Grafana with authorization errors.
 - Make sure you are on the dashboard for the way you sent the run. A run using
   `--otlp` leaves **tcping (InfluxDB)** empty, and the other way round.
 - The statistics panels only fill in after the first statistics push, which is
