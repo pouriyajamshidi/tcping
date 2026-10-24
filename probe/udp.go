@@ -81,8 +81,10 @@ func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 
 	// Carried on every result, including the failed ones, so the output can
 	// say which probe was lost.
-	result := Result{LocalAddr: conn.LocalAddr()}
-	result.ProbeNumber = u.probeNumber
+	result := Result{
+		LocalAddr:   conn.LocalAddr(),
+		ProbeNumber: u.probeNumber,
+	}
 
 	if _, err := conn.Write(payload); err != nil {
 		return result, err

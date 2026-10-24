@@ -413,8 +413,8 @@ func TestInfluxDBResolvedIPDoesNotSplitTheSeries(t *testing.T) {
 	s.IP = netip.MustParseAddr("93.184.216.35")
 	printer.PrintProbeSuccess(s)
 
-	first := strings.Split(writes[0][0], " ")[0]
-	second := strings.Split(writes[1][0], " ")[0]
+	first, _, _ := strings.Cut(writes[0][0], " ")
+	second, _, _ := strings.Cut(writes[1][0], " ")
 
 	if first != second {
 		t.Errorf("the address change moved the point to another series:\n%s\n%s", first, second)

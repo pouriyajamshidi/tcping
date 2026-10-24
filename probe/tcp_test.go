@@ -378,8 +378,7 @@ func TestPing_ThroughHTTPSProxyChecksItsCertificate(t *testing.T) {
 
 	_, err := tp.Ping(context.Background(), netip.Addr{})
 
-	var certErr *tls.CertificateVerificationError
-	if !errors.As(err, &certErr) {
+	if _, ok := errors.AsType[*tls.CertificateVerificationError](err); !ok {
 		t.Errorf("Ping() error = %v, want the proxy's certificate to be refused", err)
 	}
 }
