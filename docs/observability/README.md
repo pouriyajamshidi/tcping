@@ -250,6 +250,12 @@ Every panel keys its series on the source, the protocol, the target and the
 port, so a legend entry reads `brussels TCP github.com:443` and the same host
 probed on two ports stays on two lines.
 
+On a long time range the InfluxDB graphs fold many probes into each point, so
+a panel never draws more points than it has room for and a run of days or
+weeks still loads. Timings and reply sizes show the average of the probes in a
+point, the probe result shows no reply if any of them failed, the status code
+and streak lengths show the highest, and the counts and totals show the latest.
+
 `allowUiUpdates` is on, so you can edit panels in Grafana and try things. The
 edits live in Grafana's volume, not in the JSON files here, and `docker compose
 down -v` throws them away. To keep one, export the dashboard JSON and write it

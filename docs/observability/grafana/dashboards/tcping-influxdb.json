@@ -123,7 +123,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -175,7 +175,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: min, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -315,7 +315,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -361,7 +361,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -421,7 +421,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -468,7 +468,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_uptime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"uptime\")"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_uptime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"uptime\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
         },
         {
           "refId": "B",
@@ -476,7 +476,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_downtime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"downtime\")"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_downtime\" and r._field == \"seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> set(key: \"_field\", value: \"downtime\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -1044,7 +1044,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "fieldConfig": {
@@ -1201,7 +1201,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "fieldConfig": {
@@ -1253,7 +1253,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
             }
           ],
           "fieldConfig": {
@@ -1374,7 +1374,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "fieldConfig": {
@@ -1421,7 +1421,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field =~ /^(echoed|rejected)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field =~ /^(echoed|rejected)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toInt()\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
             }
           ],
           "fieldConfig": {
