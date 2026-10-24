@@ -36,7 +36,7 @@
 
           # Hash of the downloaded modules. It changes whenever go.sum does,
           # and "make nix-update" is what refreshes it.
-          vendorHash = "sha256-qd7zu18nc4tXBwoUscgjFlzTL7dft4qxS55rlFCD3ss=";
+          vendorHash = "sha256-6VUKQVnCaWpLC44Q7fQVjM7vWMe5Z/TTJXbBmRZ7BS0=";
 
           # Same flags as the Makefile, so the Nix build produces the same
           # static binary the release archives carry.
