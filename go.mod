@@ -1,6 +1,6 @@
 module github.com/pouriyajamshidi/tcping/v3
 
-go 1.26.9
+go 1.27.3
 
 require (
 	golang.org/x/sys v0.49.0

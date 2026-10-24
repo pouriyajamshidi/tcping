@@ -308,7 +308,7 @@ flake همچنین یک `devShells.default` دارد که هر آنچه برای
 
 - با استفاده از `go install`:
 
-  > این کار دست‌کم به نسخه‌ی `1.26.8` از go نیاز دارد
+  > این کار دست‌کم به نسخه‌ی `1.27.3` از go نیاز دارد
 
   ```bash
   go install github.com/pouriyajamshidi/tcping/v3@latest

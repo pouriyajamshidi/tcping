@@ -303,7 +303,7 @@ tcping の開発に必要なものがすべて入った `devShells.default` も�
 
 - `go install` を使う:
 
-  > go のバージョンが `1.26.8` 以上である必要があります
+  > go のバージョンが `1.27.3` 以上である必要があります
 
   ```bash
   go install github.com/pouriyajamshidi/tcping/v3@latest
