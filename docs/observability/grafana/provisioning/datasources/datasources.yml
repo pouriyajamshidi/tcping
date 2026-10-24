@@ -22,3 +22,7 @@ datasources:
     type: prometheus
     access: proxy
     url: http://prometheus:9090
+    jsonData:
+      # tcping probes once a second, so a graph step can be that short too.
+      # Without this Grafana never steps by less than 15 seconds.
+      timeInterval: 1s
