@@ -485,11 +485,9 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "showPoints": "never",
-            "spanNulls": 300000
+            "drawStyle": "points",
+            "pointSize": 8,
+            "showPoints": "always"
           },
           "unit": "s"
         },

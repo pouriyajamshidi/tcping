@@ -480,10 +480,9 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "showPoints": "never"
+            "drawStyle": "points",
+            "pointSize": 8,
+            "showPoints": "always"
           },
           "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
           "unit": "s"
