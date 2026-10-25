@@ -84,6 +84,14 @@ const (
 	// probing, and an endpoint that takes its time can be given it.
 	otlpTimeout = 15 * time.Second
 
+	// One send every few seconds instead of one per probe is far less work
+	// for the endpoint.
+	otlpSendInterval = 5 * time.Second
+
+	// The most metrics a single send carries, so metrics that piled up while
+	// the endpoint was down go out in sends of a sane size once it is back.
+	otlpBatchSize = 1000
+
 	otlpMetricsPath = "/v1/metrics"
 
 	// Used when the caller did not ask for an interval, so a zero value
@@ -163,7 +171,7 @@ func NewOTLPPrinter(cfg Config) (*OTLPPrinter, error) {
 		headerValue:   headerValue,
 		cfg:           cfg,
 	}
-	p.queue = newSendQueue(p.send, p.PrintError)
+	p.queue = newSendQueue(otlpSendInterval, otlpBatchSize, p.send, p.PrintError)
 
 	return p, nil
 }

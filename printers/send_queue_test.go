@@ -47,12 +47,12 @@ func (r *queueRecorder) sent() []int {
 }
 
 // This is the whole point of the queue: a backend that takes its time must
-// not hold up the probe that hands it the next metrics.
+// not hold up the probe that hands it the next results.
 func TestSendQueueAddDoesNotWaitOnASend(t *testing.T) {
 	entered := make(chan struct{}, 1)
 	release := make(chan struct{})
 
-	q := newSendQueue(func([]int) bool {
+	q := newSendQueue(time.Hour, 1000, func([]int) bool {
 		select {
 		case entered <- struct{}{}:
 		default:
@@ -80,11 +80,35 @@ func TestSendQueueAddDoesNotWaitOnASend(t *testing.T) {
 	close(release)
 }
 
+// With no interval, what is added goes out right away, which is what keeps
+// a JSON stream live.
+func TestSendQueueWithNoIntervalSendsRightAway(t *testing.T) {
+	sent := make(chan []int, 1)
+
+	q := newSendQueue(0, 1, func(batch []int) bool {
+		sent <- slices.Clone(batch)
+		return false
+	}, func(string, ...any) {})
+
+	q.add(7)
+
+	select {
+	case got := <-sent:
+		if !slices.Equal(got, []int{7}) {
+			t.Errorf("sent %v, want [7]", got)
+		}
+	case <-time.After(time.Second):
+		t.Error("nothing was sent without a flush being asked for")
+	}
+
+	q.close()
+}
+
 // A backend that was down for a while gets everything once it is back, in
 // the order it happened.
 func TestSendQueueTriesAgainAfterAFailure(t *testing.T) {
 	r := &queueRecorder{failures: 1}
-	q := newSendQueue(r.send, r.printError)
+	q := newSendQueue(time.Hour, 1000, r.send, r.printError)
 
 	q.add(1, 2)
 	if q.flush() {
@@ -102,10 +126,10 @@ func TestSendQueueTriesAgainAfterAFailure(t *testing.T) {
 }
 
 // A backend that stays down must not make the queue grow forever, and losing
-// metrics is never done quietly.
+// results is never done quietly.
 func TestSendQueueDropsTheOldestWhenFull(t *testing.T) {
 	r := &queueRecorder{}
-	q := newSendQueue(r.send, r.printError)
+	q := newSendQueue(time.Hour, 1000, r.send, r.printError)
 	q.limit = 3
 
 	q.add(1, 2, 3, 4, 5)
@@ -115,7 +139,7 @@ func TestSendQueueDropsTheOldestWhenFull(t *testing.T) {
 		t.Errorf("sent %v, want %v", got, want)
 	}
 
-	want := []string{"the buffer of unsent metrics was full, so the 2 oldest were dropped"}
+	want := []string{"the buffer of unsent results was full, so the 2 oldest were dropped"}
 	if !slices.Equal(r.errors, want) {
 		t.Errorf("errors = %q, want %q", r.errors, want)
 	}
@@ -125,9 +149,9 @@ func TestSendQueueDropsTheOldestWhenFull(t *testing.T) {
 // a sane size, not in one huge one.
 func TestSendQueueSendsInBatches(t *testing.T) {
 	r := &queueRecorder{}
-	q := newSendQueue(r.send, r.printError)
+	q := newSendQueue(time.Hour, 1000, r.send, r.printError)
 
-	for i := range sendQueueBatchSize*2 + 1 {
+	for i := range 2*1000 + 1 {
 		q.add(i)
 	}
 	q.flush()
@@ -137,7 +161,7 @@ func TestSendQueueSendsInBatches(t *testing.T) {
 		sizes = append(sizes, len(batch))
 	}
 
-	if want := []int{sendQueueBatchSize, sendQueueBatchSize, 1}; !slices.Equal(sizes, want) {
+	if want := []int{1000, 1000, 1}; !slices.Equal(sizes, want) {
 		t.Errorf("batch sizes = %v, want %v", sizes, want)
 	}
 }
@@ -146,7 +170,7 @@ func TestSendQueueSendsInBatches(t *testing.T) {
 // so closing has to send them.
 func TestSendQueueCloseSendsWhatIsLeft(t *testing.T) {
 	r := &queueRecorder{}
-	q := newSendQueue(r.send, r.printError)
+	q := newSendQueue(time.Hour, 1000, r.send, r.printError)
 
 	q.add(1, 2)
 	q.close()
@@ -164,12 +188,12 @@ func TestSendQueueCloseSendsWhatIsLeft(t *testing.T) {
 // that has to be said.
 func TestSendQueueCloseReportsWhatIsLost(t *testing.T) {
 	r := &queueRecorder{failures: 1}
-	q := newSendQueue(r.send, r.printError)
+	q := newSendQueue(time.Hour, 1000, r.send, r.printError)
 
 	q.add(1, 2)
 	q.close()
 
-	want := []string{"gave up on 2 metrics that could not be sent"}
+	want := []string{"gave up on 2 results that could not be sent"}
 	if !slices.Equal(r.errors, want) {
 		t.Errorf("errors = %q, want %q", r.errors, want)
 	}

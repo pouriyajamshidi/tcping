@@ -22,6 +22,15 @@ const (
 	// to spare an SD card does.
 	influxDBTimeout = 15 * time.Second
 
+	// One write every few seconds instead of one per probe is far less work
+	// for InfluxDB, and lets it hold a write until its next fsync without
+	// slowing the probing down.
+	influxDBSendInterval = 5 * time.Second
+
+	// The most lines a single write carries, so lines that piled up while
+	// InfluxDB was down go out in writes of a sane size once it is back.
+	influxDBBatchSize = 1000
+
 	influxDBWritePath = "/api/v2/write"
 
 	// Used when the caller did not ask for an interval, so a zero value
@@ -105,7 +114,7 @@ func NewInfluxDBPrinter(cfg Config) (*InfluxDBPrinter, error) {
 		statsInterval: statsInterval,
 		source:        cfg.SourceLabel,
 	}
-	p.queue = newSendQueue(p.send, p.PrintError)
+	p.queue = newSendQueue(influxDBSendInterval, influxDBBatchSize, p.send, p.PrintError)
 
 	return p, nil
 }
