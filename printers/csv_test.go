@@ -350,6 +350,8 @@ func TestCSVHTTPProbeColumns(t *testing.T) {
 		colConnectTime: "12.000",
 		colTLSTime:     "34.000",
 		colTTFB:        "56.000",
+		colDownload:    "",
+		colPageSize:    "",
 	}
 	for name, value := range want {
 		if got[name] != value {
@@ -359,6 +361,43 @@ func TestCSVHTTPProbeColumns(t *testing.T) {
 
 	if got[colCertExpiry] == "" {
 		t.Errorf("column %q is empty, want the certificate expiry", colCertExpiry)
+	}
+}
+
+// With --full-page, the download time and the page size get their own
+// columns. An empty page is still a page, so it says 0 rather than nothing.
+func TestCSVHTTPFullPageColumns(t *testing.T) {
+	for _, size := range []int64{48213, 0} {
+		p := csvTestPrinter(t, Config{})
+
+		probeStats := csvTestStats()
+		probeStats.Protocol = config.HTTP
+		probeStats.HTTP = stats.HTTPInfo{
+			StatusCode:       200,
+			Proto:            "HTTP/1.1",
+			TimeToFirstByte:  56 * time.Millisecond,
+			BodyRead:         true,
+			DownloadDuration: 78 * time.Millisecond,
+			BodySize:         size,
+		}
+
+		p.PrintStart(probeStats)
+		p.PrintProbeSuccess(probeStats)
+
+		records := readCSV(t, p, p.probeFile.Name())
+		headers, row := records[0], records[1]
+
+		got := make(map[string]string, len(headers))
+		for i, name := range headers {
+			got[name] = row[i]
+		}
+
+		if got[colDownload] != "78.000" {
+			t.Errorf("column %q = %q, want %q", colDownload, got[colDownload], "78.000")
+		}
+		if want := strconv.FormatInt(size, 10); got[colPageSize] != want {
+			t.Errorf("column %q = %q, want %q", colPageSize, got[colPageSize], want)
+		}
 	}
 }
 

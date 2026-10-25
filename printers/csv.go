@@ -53,6 +53,8 @@ const (
 	colConnectTime string = "Connect(ms)"
 	colTLSTime     string = "TLS Handshake(ms)"
 	colTTFB        string = "TTFB(ms)"
+	colDownload    string = "Download(ms)"     // Empty without --full-page.
+	colPageSize    string = "Page Size(bytes)" // Empty without --full-page.
 )
 
 // httpColumns are the HTTP(S) header names in the order httpRecord fills them.
@@ -64,6 +66,8 @@ var httpColumns = []string{
 	colConnectTime,
 	colTLSTime,
 	colTTFB,
+	colDownload,
+	colPageSize,
 }
 
 // httpRecord returns the HTTP(S) values for one probe, in httpColumns order.
@@ -71,6 +75,12 @@ var httpColumns = []string{
 func httpRecord(s *stats.Statistics) []string {
 	if !s.HasHTTPResponse() {
 		return make([]string, len(httpColumns))
+	}
+
+	download, pageSize := "", ""
+	if s.HTTP.BodyRead {
+		download = s.DownloadDurationStr()
+		pageSize = strconv.FormatInt(s.HTTP.BodySize, 10)
 	}
 
 	return []string{
@@ -81,6 +91,8 @@ func httpRecord(s *stats.Statistics) []string {
 		s.ConnectDurationStr(),
 		s.TLSDurationStr(),
 		s.TimeToFirstByteStr(),
+		download,
+		pageSize,
 	}
 }
 
