@@ -374,8 +374,7 @@ Otherwise, save the one for your shell:
   ```
 
   Single-dash flags like `-i` need PowerShell 7, since Windows PowerShell 5.1
-  only completes the `--` ones. PowerShell does not complete the interface
-  names for `-I`.
+  only completes the `--` ones.
 
 Start a new shell afterwards to pick them up.
 

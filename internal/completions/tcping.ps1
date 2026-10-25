@@ -9,6 +9,28 @@
 Register-ArgumentCompleter -Native -CommandName tcping, tcping.exe -ScriptBlock {
 	param($wordToComplete, $commandAst, $cursorPosition)
 
+	# The word before the one being completed, to tell which flag a value
+	# belongs to.
+	$previous = $commandAst.CommandElements |
+		Where-Object { $_.Extent.EndOffset -lt $cursorPosition } |
+		Select-Object -Last 1
+
+	if ($previous.Extent.Text -ceq '-I') {
+		# On Windows the names can hold spaces, like "Ethernet 2", so those
+		# are quoted.
+		[System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
+			Where-Object { $_.Name -like "$wordToComplete*" } |
+			ForEach-Object {
+				$text = $_.Name
+				if ($text.Contains(' ')) {
+					$text = "'$text'"
+				}
+				[System.Management.Automation.CompletionResult]::new(
+					$text, $_.Name, 'ParameterValue', $_.Description)
+			}
+		return
+	}
+
 	# Everything that is not a flag is the target or its port, which we
 	# cannot guess.
 	if (-not $wordToComplete.StartsWith('-')) {
