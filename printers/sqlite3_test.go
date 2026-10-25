@@ -315,7 +315,7 @@ func TestSQLiteTCPProbeLeavesHTTPAndUDPColumnsNull(t *testing.T) {
 	got := queryRow(t, printer, fmt.Sprintf(
 		`SELECT status_code, http_version, tls_version, tls_cipher_suite,
 		        certificate_expiry, connect_ms, tls_handshake_ms, ttfb_ms,
-		        udp_probe_number, udp_result
+		        download_ms, page_bytes, udp_probe_number, udp_result
 		 FROM %s`, printer.probeTableName))
 
 	for i, column := range got {
@@ -346,13 +346,45 @@ func TestSQLiteHTTPSProbeColumns(t *testing.T) {
 
 	got := queryRow(t, printer, fmt.Sprintf(
 		`SELECT status_code, http_version, tls_version, tls_cipher_suite,
-		        connect_ms, tls_handshake_ms, ttfb_ms
+		        connect_ms, tls_handshake_ms, ttfb_ms, download_ms, page_bytes
 		 FROM %s`, printer.probeTableName))
 
-	want := []string{"200", "HTTP/2.0", "TLS 1.3", "TLS_AES_128_GCM_SHA256", "12.0", "34.0", "56.0"}
+	// Without --full-page there is no download to report on.
+	want := []string{"200", "HTTP/2.0", "TLS 1.3", "TLS_AES_128_GCM_SHA256", "12.0", "34.0", "56.0", "null", "null"}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Errorf("column %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+// With --full-page, the download time and the page size are stored. An empty
+// page is still a page, so it is stored as 0 rather than NULL.
+func TestSQLiteHTTPFullPageColumns(t *testing.T) {
+	for _, size := range []int64{48213, 0} {
+		printer := sqliteTestPrinter(t, Config{})
+
+		probeStats := dbTestStats()
+		probeStats.Protocol = config.HTTP
+		probeStats.HTTP = stats.HTTPInfo{
+			StatusCode:       200,
+			Proto:            "HTTP/1.1",
+			TimeToFirstByte:  56 * time.Millisecond,
+			BodyRead:         true,
+			DownloadDuration: 78 * time.Millisecond,
+			BodySize:         size,
+		}
+
+		printer.PrintProbeSuccess(probeStats)
+
+		got := queryRow(t, printer, fmt.Sprintf(
+			`SELECT download_ms, page_bytes FROM %s`, printer.probeTableName))
+
+		want := []string{"78.0", fmt.Sprint(size)}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Errorf("column %d = %q, want %q", i, got[i], want[i])
+			}
 		}
 	}
 }
@@ -396,7 +428,8 @@ func TestSQLiteHTTPProbeWithoutAResponseIsAllNull(t *testing.T) {
 	printer.PrintProbeFailure(probeStats)
 
 	got := queryRow(t, printer, fmt.Sprintf(
-		`SELECT status_code, http_version, tls_version, connect_ms, ttfb_ms
+		`SELECT status_code, http_version, tls_version, connect_ms, ttfb_ms,
+		        download_ms, page_bytes
 		 FROM %s`, printer.probeTableName))
 
 	for i, column := range got {

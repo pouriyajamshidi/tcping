@@ -41,6 +41,8 @@ const (
 		connect_ms REAL,
 		tls_handshake_ms REAL,
 		ttfb_ms REAL,
+		download_ms REAL,
+		page_bytes INTEGER,
 		udp_probe_number INTEGER,
 		udp_result TEXT
 	);`
@@ -100,9 +102,11 @@ const (
 		connect_ms,
 		tls_handshake_ms,
 		ttfb_ms,
+		download_ms,
+		page_bytes,
 		udp_probe_number,
 		udp_result
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	statsInsert = `INSERT INTO %s (
 		hostname,
@@ -242,10 +246,17 @@ func millisecondsFloat(d time.Duration) float64 {
 
 // httpArgs returns the HTTP(S) columns for one probe, in the order the probe
 // insert lists them. They are all NULL for TCP targets and for HTTP probes
-// that never got a response.
+// that never got a response. The download time and page size are NULL
+// without --full-page.
 func httpArgs(s *stats.Statistics) []any {
 	if !s.IsHTTP() || !s.HasHTTPResponse() {
-		return make([]any, 8)
+		return make([]any, 10)
+	}
+
+	var download, pageSize any
+	if s.HTTP.BodyRead {
+		download = millisecondsFloat(s.HTTP.DownloadDuration)
+		pageSize = s.HTTP.BodySize
 	}
 
 	return []any{
@@ -257,6 +268,8 @@ func httpArgs(s *stats.Statistics) []any {
 		millisecondsFloat(s.HTTP.ConnectDuration),
 		millisecondsFloat(s.HTTP.TLSDuration),
 		millisecondsFloat(s.HTTP.TimeToFirstByte),
+		download,
+		pageSize,
 	}
 }
 
