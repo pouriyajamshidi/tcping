@@ -1083,7 +1083,7 @@
           "gridPos": {
             "x": 0,
             "y": 56,
-            "w": 12,
+            "w": 24,
             "h": 9
           },
           "targets": [
@@ -1131,10 +1131,10 @@
           "type": "table",
           "title": "Resolved address",
           "gridPos": {
-            "x": 12,
-            "y": 56,
-            "w": 12,
-            "h": 9
+            "x": 0,
+            "y": 65,
+            "w": 24,
+            "h": 8
           },
           "targets": [
             {
@@ -1143,7 +1143,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\", \"_time\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\", _time: \"last seen\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
+              "query": "import \"join\"\n\naddresses = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> group()\n\nlookups = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> group()\n\njoin.left(\n  left: addresses,\n  right: lookups,\n  on: (l, r) => l.source == r.source and l.protocol == r.protocol and l.target == r.target and l.port == r.port,\n  as: (l, r) => ({source: l.source, protocol: l.protocol, target: l.target, port: l.port, ip: l._value, \"last resolved\": r._time, \"resolved in\": r._value}),\n)\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
             }
           ],
           "transformations": [
@@ -1157,7 +1157,8 @@
                   "target": 2,
                   "port": 3,
                   "ip": 4,
-                  "last seen": 5
+                  "last resolved": 5,
+                  "resolved in": 6
                 }
               }
             }
@@ -1213,10 +1214,40 @@
                   }
                 ]
               }
+,
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "last resolved"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+,
+                  {
+                    "id": "custom.align",
+                    "value": "right"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "resolved in"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  }
+                ]
+              }
             ]
           },
           "options": {},
-          "description": "The address each target resolved to, and when a probe last used it. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+          "description": "The address each target resolved to, and when and how fast its hostname was last looked up. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
         }
       ]
     },
@@ -1226,7 +1257,7 @@
       "title": "HTTP",
       "gridPos": {
         "x": 0,
-        "y": 65,
+        "y": 73,
         "w": 24,
         "h": 1
       },
@@ -1238,7 +1269,7 @@
           "title": "HTTP timings",
           "gridPos": {
             "x": 0,
-            "y": 66,
+            "y": 74,
             "w": 12,
             "h": 9
           },
@@ -1288,7 +1319,7 @@
           "title": "HTTP status code",
           "gridPos": {
             "x": 12,
-            "y": 66,
+            "y": 74,
             "w": 6,
             "h": 9
           },
@@ -1335,7 +1366,7 @@
           "title": "Certificate days remaining",
           "gridPos": {
             "x": 18,
-            "y": 66,
+            "y": 74,
             "w": 6,
             "h": 9
           },
@@ -1397,7 +1428,7 @@
       "title": "UDP",
       "gridPos": {
         "x": 0,
-        "y": 75,
+        "y": 83,
         "w": 24,
         "h": 1
       },
@@ -1409,7 +1440,7 @@
           "title": "UDP reply size",
           "gridPos": {
             "x": 0,
-            "y": 76,
+            "y": 84,
             "w": 12,
             "h": 8
           },
@@ -1456,7 +1487,7 @@
           "title": "UDP reply echoed and port unreachable",
           "gridPos": {
             "x": 12,
-            "y": 76,
+            "y": 84,
             "w": 12,
             "h": 8
           },

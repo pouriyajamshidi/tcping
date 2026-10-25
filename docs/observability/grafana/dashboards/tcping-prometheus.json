@@ -1108,7 +1108,7 @@
           "gridPos": {
             "x": 0,
             "y": 56,
-            "w": 12,
+            "w": 24,
             "h": 9
           },
           "targets": [
@@ -1157,10 +1157,10 @@
           "type": "table",
           "title": "Resolved address",
           "gridPos": {
-            "x": 12,
-            "y": 56,
-            "w": 12,
-            "h": 9
+            "x": 0,
+            "y": 65,
+            "w": 24,
+            "h": 8
           },
           "targets": [
             {
@@ -1169,7 +1169,29 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "timestamp(tcping_target_address{source=~\"$source\"}) * 1000",
+              "expr": "group by (source, protocol, target, port, ip) (tcping_target_address{source=~\"$source\"})",
+              "legendFormat": "",
+              "instant": true,
+              "format": "table"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max by (source, protocol, target, port) (timestamp(tcping_name_resolution_milliseconds{source=~\"$source\"}) or max_over_time(timestamp(tcping_name_resolution_milliseconds{source=~\"$source\"})[$__range:])) * 1000",
+              "legendFormat": "",
+              "instant": true,
+              "format": "table"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max by (source, protocol, target, port) (last_over_time(tcping_name_resolution_milliseconds{source=~\"$source\"}[$__range]))",
               "legendFormat": "",
               "instant": true,
               "format": "table"
@@ -1177,11 +1199,15 @@
           ],
           "transformations": [
             {
+              "id": "merge",
+              "options": {}
+            },
+            {
               "id": "organize",
               "options": {
                 "excludeByName": {
                   "Time": true,
-                  "job": true
+                  "Value #A": true
                 },
                 "indexByName": {
                   "source": 0,
@@ -1189,22 +1215,13 @@
                   "target": 2,
                   "port": 3,
                   "ip": 4,
-                  "Value": 5
+                  "Value #B": 5,
+                  "Value #C": 6
                 },
                 "renameByName": {
-                  "Value": "last seen"
+                  "Value #B": "last resolved",
+                  "Value #C": "resolved in"
                 }
-              }
-            },
-            {
-              "id": "convertFieldType",
-              "options": {
-                "conversions": [
-                  {
-                    "targetField": "last seen",
-                    "destinationType": "time"
-                  }
-                ]
               }
             },
             {
@@ -1289,10 +1306,35 @@
                   }
                 ]
               }
+,
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "last resolved"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "time:MMM D HH:mm:ss"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "resolved in"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  }
+                ]
+              }
             ]
           },
           "options": {},
-          "description": "The address each target resolved to, and when a probe last used it. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+          "description": "The address each target resolved to, and when and how fast its hostname was last looked up. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
         }
       ]
     },
@@ -1302,7 +1344,7 @@
       "title": "HTTP",
       "gridPos": {
         "x": 0,
-        "y": 65,
+        "y": 73,
         "w": 24,
         "h": 1
       },
@@ -1314,7 +1356,7 @@
           "title": "HTTP timings",
           "gridPos": {
             "x": 0,
-            "y": 66,
+            "y": 74,
             "w": 12,
             "h": 9
           },
@@ -1383,7 +1425,7 @@
           "title": "HTTP status code",
           "gridPos": {
             "x": 12,
-            "y": 66,
+            "y": 74,
             "w": 6,
             "h": 9
           },
@@ -1431,7 +1473,7 @@
           "title": "Certificate days remaining",
           "gridPos": {
             "x": 18,
-            "y": 66,
+            "y": 74,
             "w": 6,
             "h": 9
           },
@@ -1493,7 +1535,7 @@
       "title": "UDP",
       "gridPos": {
         "x": 0,
-        "y": 75,
+        "y": 83,
         "w": 24,
         "h": 1
       },
@@ -1505,7 +1547,7 @@
           "title": "UDP reply size",
           "gridPos": {
             "x": 0,
-            "y": 76,
+            "y": 84,
             "w": 12,
             "h": 8
           },
@@ -1553,7 +1595,7 @@
           "title": "UDP reply echoed and port unreachable",
           "gridPos": {
             "x": 12,
-            "y": 76,
+            "y": 84,
             "w": 12,
             "h": 8
           },

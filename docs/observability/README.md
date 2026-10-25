@@ -244,7 +244,7 @@ Every panel tcping can fill has a place in both, grouped into rows:
 | **Probes**              | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary                                                       |
 | **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to              |
 | **The run**             | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries and address changes there were |
-| **Name resolution**     | How long each lookup took, and the address every target resolved to with when a probe last used it                                                                                     |
+| **Name resolution**     | How long each lookup took, and the address every target resolved to with when and how fast it was last looked up                                                                       |
 | **HTTP**                | Connect, TLS handshake and first byte timings, the status code, and the days left on the certificate                                                                                   |
 | **UDP**                 | Reply size, whether the reply carried our own payload back, and whether the port was unreachable                                                                                       |
 
@@ -305,9 +305,10 @@ and address changes to report:
 ![The run row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-the-run.png)
 
 **Name resolution** needs `--resolve-every-probe` to have anything in the
-graph, which is why the stack passes it to the `tokyo` runs. The table next to
+graph, which is why the stack passes it to the `tokyo` runs. The table below
 it lists the address each target is currently on, which is how you catch a
-target moving between addresses:
+target moving between addresses, along with when and how fast its hostname was
+last looked up:
 
 ![The name resolution row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-name-resolution.png)
 
@@ -427,8 +428,9 @@ the whole thing, import it first, then use a panel's menu, **Copy**, and
   `--otlp` leaves **tcping (InfluxDB)** empty, and the other way round.
 - The statistics panels only fill in after the first statistics push, which is
   every 10 seconds by default. `--stats-interval` changes that.
-- **Name resolution time** stays empty unless the hostname is looked up more
-  than once, so it needs `--resolve-every-probe` or a target that goes away.
+- **Name resolution time**, and the `last resolved` and `resolved in` columns
+  of **Resolved address**, stay empty unless the hostname is looked up more
+  than once, so they need `--resolve-every-probe` or a target that goes away.
 - **Length of each uptime and downtime streak** only gets a point when a
   streak ends, so a target that never flips leaves it empty.
 - **Total uptime and downtime** are only added up when the target changes
