@@ -458,6 +458,16 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+`--full-page` lädt stattdessen die ganze Seite herunter, sodass die Zeit den
+vollständigen Download umfasst. `-v` zeigt dann auch, wie lange der Download
+gedauert hat und wie groß die Seite war. Nur die Seite selbst wird geladen,
+nicht die Bilder, Skripte und Stylesheets, auf die sie verweist, und eine große
+Seite braucht eventuell ein längeres `-t`:
+
+```bash
+tcping https://www.example.com --full-page -v
+```
+
 ### Probes über einen Proxy
 
 `--proxy` schickt TCP- und HTTP(S)-Probes über einen Proxy. `http://`-,
@@ -712,6 +722,7 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 | Flag            | Standard | Beschreibung                                                                                                                                                                                 |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                     |
+| `--full-page`   |          | Die ganze Seite eines `http(s)://`-Ziels herunterladen, sodass die Zeit den vollständigen Download umfasst. Dateien, auf die die Seite verweist, werden nicht geladen                        |
 | `--udp-server`  |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt    |
 
 ---

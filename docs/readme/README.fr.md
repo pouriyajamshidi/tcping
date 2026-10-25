@@ -458,6 +458,16 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+`--full-page` télécharge plutôt la page entière, pour que le temps couvre tout
+le téléchargement. `-v` affiche alors aussi la durée du téléchargement et la
+taille de la page. Seule la page elle-même est récupérée, pas les images,
+scripts et styles vers lesquels elle pointe, et une grosse page peut demander
+un `-t` plus long :
+
+```bash
+tcping https://www.example.com --full-page -v
+```
+
 ### Sonder à travers un proxy
 
 `--proxy` fait passer les sondes TCP et HTTP(S) par un proxy. Les proxys
@@ -711,6 +721,7 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 | Option          | Par défaut | Description                                                                                                                                                                                                 |
 | --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                                                  |
+| `--full-page`   |            | Télécharger la page entière d'une cible `http(s)://`, pour que le temps couvre tout le téléchargement. Les fichiers vers lesquels la page pointe ne sont pas récupérés                                      |
 | `--udp-server`  |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse                                |
 
 ---

@@ -457,6 +457,15 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+`--full-page` downloads the whole page instead, so the time covers the full
+download. `-v` then also shows how long the download took and how big the page
+was. Only the page itself is fetched, not the images, scripts and styles it
+links to, and a big page may need a longer `-t`:
+
+```bash
+tcping https://www.example.com --full-page -v
+```
+
 ### Probing through a proxy
 
 `--proxy` sends TCP and HTTP(S) probes through a proxy. `http://`, `https://`
@@ -710,6 +719,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | Flag           | Default | Description                                                                                                                                         |
 | -------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`   |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                              |
+| `--full-page`  |         | Download the whole page of an `http(s)://` target, so the time covers the full download. The files the page links to are not fetched                |
 | `--udp-server` |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 
 ---

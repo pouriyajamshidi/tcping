@@ -458,6 +458,16 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+`--full-page` descarga en cambio la página entera, para que el tiempo cubra
+toda la descarga. `-v` muestra entonces también cuánto tardó la descarga y
+cuánto ocupaba la página. Solo se descarga la página en sí, no las imágenes,
+scripts y estilos a los que enlaza, y una página grande puede necesitar un
+`-t` más largo:
+
+```bash
+tcping https://www.example.com --full-page -v
+```
+
 ### Sondear a través de un proxy
 
 `--proxy` envía los sondeos TCP y HTTP(S) a través de un proxy. Funcionan los
@@ -715,6 +725,7 @@ que `-c 5` y `--c 5` son la misma opción.
 | Opción         | Por defecto | Descripción                                                                                                                                                           |
 | -------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`   |             | No verificar el certificado del servidor al sondear un destino `https://`. Útil con certificados autofirmados o caducados                                             |
+| `--full-page`  |             | Descargar la página entera de un destino `http(s)://`, para que el tiempo cubra toda la descarga. Los archivos a los que enlaza la página no se descargan             |
 | `--udp-server` |             | No sondear. Escuchar en el host y el puerto indicados y devolver cada datagrama UDP a quien lo envió, para que un sondeo UDP dirigido a esta máquina reciba respuesta |
 
 ---

@@ -458,6 +458,16 @@ tcping https://www.example.com/health -v
 tcping https://self-signed.example.com --insecure
 ```
 
+`--full-page` downloadt in plaats daarvan de hele pagina, zodat de tijd de
+volledige download omvat. `-v` toont dan ook hoe lang de download duurde en hoe
+groot de pagina was. Alleen de pagina zelf wordt opgehaald, niet de
+afbeeldingen, scripts en stijlen waarnaar ze verwijst, en een grote pagina kan
+een langere `-t` nodig hebben:
+
+```bash
+tcping https://www.example.com --full-page -v
+```
+
 ### Testen via een proxy
 
 `--proxy` stuurt TCP- en HTTP(S)-probes via een proxy. `http://`-, `https://`-
@@ -711,6 +721,7 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 | Flag            | Standaard | Beschrijving                                                                                                                                                                            |
 | --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--insecure`    |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                                                     |
+| `--full-page`   |           | De hele pagina van een `http(s)://`-doel downloaden, zodat de tijd de volledige download omvat. Bestanden waarnaar de pagina verwijst worden niet opgehaald                             |
 | `--udp-server`  |           | Niet testen. Luisteren op de opgegeven host en poort en elk UDP-datagram terugsturen naar de afzender, zodat een UDP-probe naar deze computer een antwoord krijgt                       |
 
 ---
