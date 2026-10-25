@@ -16,9 +16,11 @@ import (
 )
 
 const (
-	// Probes are usually a second apart, so a write that hangs longer than
-	// this would hold up the next probe.
-	influxDBTimeout = 2 * time.Second
+	// Writes go out in the background, so a slow one does not hold up the
+	// probing. This only has to outlast an InfluxDB that holds every write
+	// until its next fsync, as one set up with INFLUXD_STORAGE_WAL_FSYNC_DELAY
+	// to spare an SD card does.
+	influxDBTimeout = 15 * time.Second
 
 	influxDBWritePath = "/api/v2/write"
 
@@ -37,10 +39,14 @@ var influxDBEscaper = strings.NewReplacer(",", `\,`, " ", `\ `, "=", `\=`)
 // of printing them, so a run shows up as a graph rather than as lines of
 // text. Line protocol is plain text and the write API is a plain POST, so
 // there is nothing here that needs a client library.
+//
+// The lines are not written as each probe ends. They wait in a sendQueue,
+// which writes them in batches every few seconds from a goroutine of its own.
 type InfluxDBPrinter struct {
 	client   *http.Client
 	endpoint string
 	token    string
+	queue    *sendQueue[string]
 	// When the run summary was last written. Zero, so the first probe
 	// carries one.
 	lastStats time.Time
@@ -92,13 +98,16 @@ func NewInfluxDBPrinter(cfg Config) (*InfluxDBPrinter, error) {
 		statsInterval = defaultInfluxDBStatsInterval
 	}
 
-	return &InfluxDBPrinter{
+	p := &InfluxDBPrinter{
 		client:        &http.Client{Timeout: influxDBTimeout},
 		endpoint:      endpoint + "?" + query.Encode(),
 		token:         cfg.InfluxDBToken,
 		statsInterval: statsInterval,
 		source:        cfg.SourceLabel,
-	}, nil
+	}
+	p.queue = newSendQueue(p.send, p.PrintError)
+
+	return p, nil
 }
 
 // tags are put on every line, which is what makes them the columns you can
@@ -126,18 +135,14 @@ func (p *InfluxDBPrinter) line(s *stats.Statistics, measurement, fields string) 
 	return fmt.Sprintf("%s,%s %s %d", measurement, p.tags(s), fields, time.Now().UnixNano())
 }
 
-// send POSTs one batch of lines to InfluxDB. A failure does not stop the
-// probing, but every one of them is printed, so an InfluxDB that stays down
-// is never hidden.
-func (p *InfluxDBPrinter) send(lines []string) {
-	if len(lines) == 0 {
-		return
-	}
-
+// send POSTs one batch of lines to InfluxDB and says whether the batch is
+// worth trying again. A failure does not stop the probing, but every one of
+// them is printed, so an InfluxDB that stays down is never hidden.
+func (p *InfluxDBPrinter) send(lines []string) (retry bool) {
 	req, err := http.NewRequest(http.MethodPost, p.endpoint, strings.NewReader(strings.Join(lines, "\n")))
 	if err != nil {
 		p.PrintError("could not build the request: %v", err)
-		return
+		return false
 	}
 
 	req.Header.Set("Authorization", "Token "+p.token)
@@ -147,7 +152,7 @@ func (p *InfluxDBPrinter) send(lines []string) {
 	resp, err := p.client.Do(req)
 	if err != nil {
 		p.PrintError("could not reach InfluxDB at %s: %v", p.endpoint, err)
-		return
+		return true
 	}
 	defer resp.Body.Close()
 
@@ -159,8 +164,12 @@ func (p *InfluxDBPrinter) send(lines []string) {
 	}
 
 	// Reading the body to the end is what lets the connection be reused by
-	// the next probe instead of a new one being opened every second.
+	// the next write instead of a new one being opened every time.
 	_, _ = io.Copy(io.Discard, resp.Body)
+
+	// An InfluxDB that is struggling, or asks us to slow down, may take the
+	// same lines later. Anything else it rejected it would reject again.
+	return resp.StatusCode/100 == 5 || resp.StatusCode == http.StatusTooManyRequests
 }
 
 // probeMeasurement is the name a probe is written under. There is one per
@@ -337,8 +346,8 @@ func (p *InfluxDBPrinter) statisticsLines(s *stats.Statistics) []string {
 
 // dueStatistics returns the run summary when enough time has passed since
 // the last one, and nothing otherwise. Writing it along with a probe means
-// no goroutine and no second request, and it keeps the summary flowing on a
-// run that is never going to be stopped by hand.
+// no timer of its own, and it keeps the summary flowing on a run that is
+// never going to be stopped by hand.
 func (p *InfluxDBPrinter) dueStatistics(s *stats.Statistics) []string {
 	if time.Since(p.lastStats) < p.statsInterval {
 		return nil
@@ -369,27 +378,27 @@ func (p *InfluxDBPrinter) PrintStart(s *stats.Statistics) {
 
 // PrintNameResolutionDuration writes how long the hostname resolution took.
 func (p *InfluxDBPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
-	p.send([]string{
-		p.line(s, "tcping_name_resolution", fmt.Sprintf("duration_ms=%g", msOf(s.NameResolutionDuration))),
-	})
+	p.queue.add(p.line(s, "tcping_name_resolution", fmt.Sprintf("duration_ms=%g", msOf(s.NameResolutionDuration))))
 }
 
 // PrintProbeSuccess writes the metrics of a successful probe.
 func (p *InfluxDBPrinter) PrintProbeSuccess(s *stats.Statistics) {
-	lines := append([]string{p.probeLine(s, true)}, p.endedPeriodLines(s)...)
-	p.send(append(lines, p.dueStatistics(s)...))
+	p.queue.add(p.probeLine(s, true))
+	p.queue.add(p.endedPeriodLines(s)...)
+	p.queue.add(p.dueStatistics(s)...)
 }
 
 // PrintProbeFailure writes the metrics of a failed probe.
 func (p *InfluxDBPrinter) PrintProbeFailure(s *stats.Statistics) {
-	lines := append([]string{p.probeLine(s, false)}, p.endedPeriodLines(s)...)
-	p.send(append(lines, p.dueStatistics(s)...))
+	p.queue.add(p.probeLine(s, false))
+	p.queue.add(p.endedPeriodLines(s)...)
+	p.queue.add(p.dueStatistics(s)...)
 }
 
 // PrintStatistics writes the summary of the run so far.
 func (p *InfluxDBPrinter) PrintStatistics(s *stats.Statistics) {
 	p.lastStats = time.Now()
-	p.send(p.statisticsLines(s))
+	p.queue.add(p.statisticsLines(s)...)
 }
 
 // PrintRetryingToResolve has no number behind it, so it goes to the terminal.
@@ -403,11 +412,13 @@ func (p *InfluxDBPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "InfluxDB Error: "+format+"\n", args...)
 }
 
-// Shutdown writes the final statistics and closes the connection to
-// InfluxDB. Statistics are already finalized by finalizeStatistics by the
-// time this runs. It does not exit the program - that decision belongs to
-// the caller, not the printer.
+// Shutdown writes the final statistics, along with every line still
+// waiting to be written, and closes the connection to InfluxDB. Statistics
+// are already finalized by finalizeStatistics by the time this runs. It does
+// not exit the program - that decision belongs to the caller, not the
+// printer.
 func (p *InfluxDBPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
+	p.queue.close()
 	p.client.CloseIdleConnections()
 }

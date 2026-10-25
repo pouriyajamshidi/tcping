@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -108,8 +110,8 @@ func influxDBServer(t *testing.T, writes *[][]string) *httptest.Server {
 	}))
 }
 
-// Probes are a second apart, so every one of them opening a new connection
-// would be a lot of wasted handshakes on a long run. A rejection is the case
+// Writes go out every few seconds, so every one of them opening a new
+// connection would be a lot of wasted handshakes on a long run. A rejection is the case
 // to check, because only part of its body is read for the error message.
 func TestInfluxDBReusesTheConnection(t *testing.T) {
 	var connections atomic.Int32
@@ -134,6 +136,7 @@ func TestInfluxDBReusesTheConnection(t *testing.T) {
 	captureStderr(t, func() {
 		for range 3 {
 			printer.PrintProbeSuccess(influxDBTestStats())
+			printer.queue.flush()
 		}
 	})
 
@@ -154,6 +157,7 @@ func TestInfluxDBPrintProbeSuccess(t *testing.T) {
 	}
 
 	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.queue.flush()
 
 	probe := writes[0][0]
 
@@ -189,6 +193,7 @@ func TestInfluxDBPrintProbeFailureHasNoRTT(t *testing.T) {
 	}
 
 	printer.PrintProbeFailure(influxDBTestStats())
+	printer.queue.flush()
 
 	if strings.Contains(writes[0][0], "rtt_ms") {
 		t.Errorf("a failed probe should not write an RTT: %q", writes[0][0])
@@ -218,6 +223,7 @@ func TestInfluxDBHTTPProbeWritesItsOwnMeasurement(t *testing.T) {
 	s.HTTP.TLSDuration = 20 * time.Millisecond
 
 	printer.PrintProbeSuccess(s)
+	printer.queue.flush()
 
 	line := writes[0][0]
 
@@ -256,6 +262,7 @@ func TestInfluxDBUDPProbeWritesWhatItLearned(t *testing.T) {
 	s.UDP.ReplySize = 4
 
 	printer.PrintProbeSuccess(s)
+	printer.queue.flush()
 
 	line := writes[0][0]
 
@@ -289,6 +296,7 @@ func TestInfluxDBEscapesTags(t *testing.T) {
 	s.Hostname = "we ird,host=name"
 
 	printer.PrintProbeSuccess(s)
+	printer.queue.flush()
 
 	if !strings.Contains(writes[0][0], `target=we\ ird\,host\=name`) {
 		t.Errorf("tags were not escaped: %q", writes[0][0])
@@ -306,11 +314,206 @@ func TestInfluxDBKeepsGoingWhenUnreachable(t *testing.T) {
 	stderr := captureStderr(t, func() {
 		for range 3 {
 			printer.PrintProbeSuccess(influxDBTestStats())
+			printer.queue.flush()
 		}
 	})
 
 	if errors := strings.Count(stderr, "InfluxDB Error:"); errors != 3 {
 		t.Errorf("3 failed writes printed %d errors, want 3:\n%s", errors, stderr)
+	}
+}
+
+// A slow InfluxDB is what used to slow the probing down: every probe waited
+// for its own write to be answered. Now a probe only puts its lines in line,
+// so it is done even while a write is still waiting for an answer.
+func TestInfluxDBProbesDoNotWaitOnASlowWrite(t *testing.T) {
+	var (
+		mu    sync.Mutex
+		lines []string
+	)
+
+	entered := make(chan struct{}, 1)
+	release := make(chan struct{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
+		<-release
+
+		body, _ := io.ReadAll(r.Body)
+
+		mu.Lock()
+		lines = append(lines, strings.Split(strings.TrimSpace(string(body)), "\n")...)
+		mu.Unlock()
+
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	printer.PrintProbeSuccess(influxDBTestStats())
+	go printer.queue.flush()
+	<-entered
+
+	probed := make(chan struct{})
+	go func() {
+		printer.PrintProbeSuccess(influxDBTestStats())
+		close(probed)
+	}()
+
+	select {
+	case <-probed:
+	case <-time.After(time.Second):
+		t.Error("a probe waited on a write that InfluxDB had not answered yet")
+	}
+
+	close(release)
+	<-probed
+	printer.Shutdown(influxDBTestStats())
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	var probes int
+	for _, line := range lines {
+		if strings.HasPrefix(line, "tcping_tcp,") {
+			probes++
+		}
+	}
+
+	if probes != 2 {
+		t.Errorf("InfluxDB got %d probe lines, want 2:\n%s", probes, strings.Join(lines, "\n"))
+	}
+}
+
+// statusServer answers every write with the next status in the list, and
+// with 204 once the list runs out. It records the lines of the writes it
+// accepted.
+func statusServer(t *testing.T, statuses []int, writes *[][]string) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+
+		status := http.StatusNoContent
+		if len(statuses) > 0 {
+			status, statuses = statuses[0], statuses[1:]
+		}
+
+		if status/100 == 2 {
+			*writes = append(*writes, strings.Split(strings.TrimSpace(string(body)), "\n"))
+		}
+
+		w.WriteHeader(status)
+	}))
+}
+
+// An InfluxDB that is restarting, or too busy to answer, gets the lines it
+// missed once it is back, so the graph has no hole in it.
+func TestInfluxDBWritesWhatItMissedOnceBack(t *testing.T) {
+	var writes [][]string
+
+	server := statusServer(t, []int{http.StatusServiceUnavailable}, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stderr := captureStderr(t, func() {
+		printer.PrintProbeFailure(influxDBTestStats())
+		printer.queue.flush()
+	})
+
+	if !strings.Contains(stderr, "InfluxDB Error: InfluxDB rejected the write with 503 Service Unavailable") {
+		t.Errorf("the failed write was not reported:\n%s", stderr)
+	}
+
+	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.queue.flush()
+
+	if len(writes) != 1 {
+		t.Fatalf("got %d writes, want 1", len(writes))
+	}
+
+	var probes []string
+	for _, line := range writes[0] {
+		if strings.HasPrefix(line, "tcping_tcp,") {
+			probes = append(probes, line)
+		}
+	}
+
+	if len(probes) != 2 || !strings.Contains(probes[0], "success=0i") || !strings.Contains(probes[1], "success=1i") {
+		t.Errorf("the write should hold the missed probe and then the new one:\n%s", strings.Join(writes[0], "\n"))
+	}
+}
+
+// A write InfluxDB rejected for what it holds, such as a wrong bucket, would
+// be rejected again, so it is reported and not sent a second time.
+func TestInfluxDBDoesNotRetryARejectedWrite(t *testing.T) {
+	var writes [][]string
+
+	server := statusServer(t, []int{http.StatusBadRequest}, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	captureStderr(t, func() {
+		printer.PrintProbeFailure(influxDBTestStats())
+		printer.queue.flush()
+	})
+
+	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.queue.flush()
+
+	if len(writes) != 1 || len(writes[0]) != 1 || !strings.Contains(writes[0][0], "success=1i") {
+		t.Errorf("only the second probe should have been written, got %q", writes)
+	}
+}
+
+// Lines wait a few seconds before they are written, so the last probes of a
+// run are still waiting when it ends, and Shutdown has to write them along
+// with the final summary.
+func TestInfluxDBShutdownWritesWhatIsWaiting(t *testing.T) {
+	var writes [][]string
+
+	server := influxDBServer(t, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.PrintProbeFailure(influxDBTestStats())
+	printer.Shutdown(influxDBTestStats())
+
+	if len(writes) != 1 {
+		t.Fatalf("got %d writes, want 1", len(writes))
+	}
+
+	var got []string
+	for _, line := range writes[0] {
+		measurement, _, _ := strings.Cut(line, ",")
+		got = append(got, measurement)
+	}
+
+	// The first probe carries a summary of its own, see
+	// TestInfluxDBStatisticsRideAlongWithProbes.
+	want := []string{"tcping_tcp", "tcping_statistics", "tcping_tcp", "tcping_statistics"}
+	if !slices.Equal(got, want) {
+		t.Errorf("wrote %v, want %v", got, want)
 	}
 }
 
@@ -341,12 +544,14 @@ func TestInfluxDBStatisticsRideAlongWithProbes(t *testing.T) {
 
 	// The first probe carries a summary, so the metrics show up right away.
 	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.queue.flush()
 	if !hasSummary(writes[0]) {
 		t.Error("the first probe should carry the run summary")
 	}
 
 	// The next one does not, since the interval has not passed.
 	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.queue.flush()
 	if hasSummary(writes[1]) {
 		t.Error("the summary should not be written with every probe")
 	}
@@ -354,6 +559,7 @@ func TestInfluxDBStatisticsRideAlongWithProbes(t *testing.T) {
 	// Once it has, it comes along again.
 	printer.lastStats = time.Now().Add(-printer.statsInterval)
 	printer.PrintProbeSuccess(influxDBTestStats())
+	printer.queue.flush()
 	if !hasSummary(writes[2]) {
 		t.Error("the summary should be written again once the interval passed")
 	}
@@ -409,9 +615,11 @@ func TestInfluxDBResolvedIPDoesNotSplitTheSeries(t *testing.T) {
 
 	s := influxDBTestStats()
 	printer.PrintProbeSuccess(s)
+	printer.queue.flush()
 
 	s.IP = netip.MustParseAddr("93.184.216.35")
 	printer.PrintProbeSuccess(s)
+	printer.queue.flush()
 
 	first, _, _ := strings.Cut(writes[0][0], " ")
 	second, _, _ := strings.Cut(writes[1][0], " ")
@@ -479,6 +687,7 @@ func TestInfluxDBStatisticsCarryTheWholeSummary(t *testing.T) {
 	}
 
 	printer.PrintStatistics(statisticsTestStats())
+	printer.queue.flush()
 
 	line := writes[0][0]
 
@@ -523,6 +732,7 @@ func TestInfluxDBStatisticsOmitWhatHasNotHappened(t *testing.T) {
 	}
 
 	printer.PrintStatistics(influxDBTestStats())
+	printer.queue.flush()
 
 	line := writes[0][0]
 
