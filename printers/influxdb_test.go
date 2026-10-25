@@ -239,6 +239,46 @@ func TestInfluxDBHTTPProbeWritesItsOwnMeasurement(t *testing.T) {
 			t.Errorf("HTTP line = %q, want it to contain %q", line, want)
 		}
 	}
+
+	for _, unwanted := range []string{"download_ms", "page_bytes"} {
+		if strings.Contains(line, unwanted) {
+			t.Errorf("HTTP line = %q, want no %q without --full-page", line, unwanted)
+		}
+	}
+}
+
+// With --full-page, the download time and the page size go along with the
+// other timings. An empty page is still a page, so it is written as 0.
+func TestInfluxDBHTTPFullPageWritesTheDownload(t *testing.T) {
+	for _, size := range []int64{48213, 0} {
+		var writes [][]string
+
+		server := influxDBServer(t, &writes)
+
+		printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		s := influxDBTestStats()
+		s.Protocol = config.HTTP
+		s.HTTP.StatusCode = 200
+		s.HTTP.BodyRead = true
+		s.HTTP.DownloadDuration = 30 * time.Millisecond
+		s.HTTP.BodySize = size
+
+		printer.PrintProbeSuccess(s)
+		printer.queue.flush()
+		server.Close()
+
+		line := writes[0][0]
+
+		for _, want := range []string{"download_ms=30", fmt.Sprintf("page_bytes=%di", size)} {
+			if !strings.Contains(line, want) {
+				t.Errorf("HTTP line = %q, want it to contain %q", line, want)
+			}
+		}
+	}
 }
 
 // A UDP probe cannot say much, so the little it does learn has to be kept:

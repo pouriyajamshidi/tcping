@@ -226,6 +226,15 @@ func (p *InfluxDBPrinter) httpFields(s *stats.Statistics) string {
 		)
 	}
 
+	// Only --full-page downloads the page, so there is nothing to report
+	// without it.
+	if s.HTTP.BodyRead {
+		fields += fmt.Sprintf(",download_ms=%g,page_bytes=%di",
+			msOf(s.HTTP.DownloadDuration),
+			s.HTTP.BodySize,
+		)
+	}
+
 	return fields
 }
 
