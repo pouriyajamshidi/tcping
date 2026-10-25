@@ -103,6 +103,7 @@ type CSVPrinter struct {
 	probeFile   *os.File
 	statsFile   *os.File
 	cfg         Config
+	closed      bool // Set by done, so a second call does not close the files again.
 }
 
 // addDateAndCSVExtension builds the name of a CSV file from what the user
@@ -166,7 +167,14 @@ func NewCSVPrinter(cfg Config) (*CSVPrinter, error) {
 }
 
 // done flushes the buffer of writers and closes the probe and stats files.
+// Calling it again does nothing, instead of failing on files that are
+// already closed.
 func (p *CSVPrinter) done() {
+	if p.closed {
+		return
+	}
+	p.closed = true
+
 	if p.probeWriter != nil {
 		p.probeWriter.Flush()
 	}
