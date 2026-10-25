@@ -162,6 +162,7 @@ services:
       - --otlp=http://alloy:4318
       - --source-label=alloy-brussels
       - "-4"
+      - --full-page
       - https://cloudflare.com
 
   tcping-alloy-udp:

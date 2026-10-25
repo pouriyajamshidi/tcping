@@ -138,6 +138,7 @@ services:
       - --otlp=http://prometheus:9090/api/v1/otlp
       - --source-label=prom-brussels
       - "-4"
+      - --full-page
       - https://cloudflare.com
 
   tcping-prometheus-udp:

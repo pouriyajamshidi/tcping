@@ -77,7 +77,7 @@ Every file starts the same four tcping runs, pointed at its own backend:
 | ------------------------------- | ------------------------------------------------------------- | ------------------- |
 | `tcping-<backend>-tcp-brussels` | `github.com:443` over TCP                                     | `<prefix>-brussels` |
 | `tcping-<backend>-tcp-tokyo`    | the same, resolving every probe                               | `<prefix>-tokyo`    |
-| `tcping-<backend>-https`        | `https://cloudflare.com`                                      | `<prefix>-brussels` |
+| `tcping-<backend>-https`        | `https://cloudflare.com`, downloading the whole page          | `<prefix>-brussels` |
 | `tcping-<backend>-udp`          | `udp-echo:9999` over UDP                                      | `<prefix>-brussels` |
 | `udp-echo`                      | nothing, it is `tcping --udp-server` answering the UDP probes |                     |
 
@@ -89,8 +89,10 @@ the only ones in their own database, so they have nothing to be told apart
 from.
 
 The `--resolve-every-probe` on the `tokyo` runs is what puts anything in the
-**Name resolution** row, and `udp-echo` is tcping listening instead of
-probing, so the UDP probes get a real reply from inside the stack.
+**Name resolution** row, the `--full-page` on the `https` runs fills in the
+download time and the page size in the **HTTP** row, and `udp-echo` is tcping
+listening instead of probing, so the UDP probes get a real reply from inside
+the stack. `cloudflare.com` answers with a short redirect, so the page is small.
 
 Stop one of them if you want to watch a target go down:
 

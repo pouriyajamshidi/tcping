@@ -159,6 +159,7 @@ services:
       - --otlp=http://otelcol:4318
       - --source-label=otelcol-brussels
       - "-4"
+      - --full-page
       - https://cloudflare.com
 
   tcping-otelcol-udp:

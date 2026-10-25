@@ -157,6 +157,7 @@ services:
       - --influxdb-bucket=tcping
       - --source-label=brussels
       - "-4"
+      - --full-page
       - https://cloudflare.com
 
   tcping-influxdb-udp:
