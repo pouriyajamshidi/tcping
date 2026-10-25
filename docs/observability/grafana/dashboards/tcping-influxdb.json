@@ -1143,7 +1143,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"ip\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"_value\", \"_time\"])\n  |> group()\n  |> rename(columns: {_value: \"ip\", _time: \"last seen\"})\n  |> sort(columns: [\"source\", \"target\", \"port\"])"
             }
           ],
           "transformations": [
@@ -1156,7 +1156,8 @@
                   "protocol": 1,
                   "target": 2,
                   "port": 3,
-                  "ip": 4
+                  "ip": 4,
+                  "last seen": 5
                 }
               }
             }
@@ -1215,7 +1216,7 @@
             ]
           },
           "options": {},
-          "description": "The address each target resolved to. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+          "description": "The address each target resolved to, and when a probe last used it. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
         }
       ]
     },

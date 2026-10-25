@@ -1169,7 +1169,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "tcping_target_address{source=~\"$source\"}",
+              "expr": "timestamp(tcping_target_address{source=~\"$source\"}) * 1000",
               "legendFormat": "",
               "instant": true,
               "format": "table"
@@ -1181,8 +1181,6 @@
               "options": {
                 "excludeByName": {
                   "Time": true,
-                  "Value": true,
-                  "__name__": true,
                   "job": true
                 },
                 "indexByName": {
@@ -1190,8 +1188,23 @@
                   "protocol": 1,
                   "target": 2,
                   "port": 3,
-                  "ip": 4
+                  "ip": 4,
+                  "Value": 5
+                },
+                "renameByName": {
+                  "Value": "last seen"
                 }
+              }
+            },
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "targetField": "last seen",
+                    "destinationType": "time"
+                  }
+                ]
               }
             }
           ],
@@ -1249,7 +1262,7 @@
             ]
           },
           "options": {},
-          "description": "The address each target resolved to. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+          "description": "The address each target resolved to, and when a probe last used it. It is kept out of the probe metrics on purpose: as a label it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
         }
       ]
     },
