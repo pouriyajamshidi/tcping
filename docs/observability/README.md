@@ -64,7 +64,8 @@ it with the published one and nothing in the compose files has to change.
 
 Depending on the files you started, that gives you:
 
-- Grafana on <http://localhost:3000>, no login needed, with both dashboards
+- Grafana on <http://localhost:3000>, no login needed to look at both
+  dashboards. Sign in as `admin`, password `admin`, to edit them
 - Prometheus on <http://localhost:9090>, taking OTLP on `/api/v1/otlp`
 - Alloy on <http://localhost:4318>, with its UI on <http://localhost:12346> to check it is receiving anything
 - The collector on <http://localhost:4319>, since Alloy has 4318 when both are started
@@ -264,10 +265,10 @@ reply sizes show the average of the probes in a point, the probe result shows
 no reply if any of them failed, the status code and streak lengths show the
 highest, and the counts and totals show the latest.
 
-`allowUiUpdates` is on, so you can edit panels in Grafana and try things. The
-edits live in Grafana's volume, not in the JSON files here, and `docker compose
-down -v` throws them away. To keep one, export the dashboard JSON and write it
-over the file in `grafana/dashboards/`.
+`allowUiUpdates` is on, so once signed in as `admin` you can edit panels in
+Grafana and try things. The edits live in Grafana's volume, not in the JSON
+files here, and `docker compose down -v` throws them away. To keep one, export
+the dashboard JSON and write it over the file in `grafana/dashboards/`.
 
 ## What it looks like
 

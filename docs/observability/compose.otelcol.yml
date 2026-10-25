@@ -82,9 +82,11 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
-      # No login screen between you and the graphs.
+      # No login screen between you and the graphs. Visitors who skip it can
+      # only look, since Grafana 13 only supports Viewer here, so sign in as
+      # admin to edit a panel.
       GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_USERS_DEFAULT_THEME: dark
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
