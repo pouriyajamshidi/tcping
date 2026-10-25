@@ -133,9 +133,15 @@ target going to both.
 
 ## What tcping sends
 
-Every probe is sent as it happens, and the whole statistics block you would
-normally see on exit is sent every 10 seconds on top of that, so a run that
-nobody is watching still reports it. `--stats-interval` changes that interval.
+Every probe is sent, and the whole statistics block you would normally see on
+exit is sent every 10 seconds on top of that, so a run that nobody is watching
+still reports it. `--stats-interval` changes that interval.
+
+They go out in batches every 5 seconds, in the background, so a slow backend
+never slows the probing down. When the backend cannot be reached, or answers
+with a 5xx or a 429, tcping keeps up to 10,000 metrics and sends them once it
+is back, dropping the oldest past that and saying so. Whatever is still
+waiting when tcping exits is sent before it quits.
 
 The statistics carry the packet loss, the minimum, average, maximum and mean
 deviation of the latency, the total uptime and downtime, the longest streak of
