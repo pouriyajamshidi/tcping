@@ -48,7 +48,7 @@ _tcping() {
 		-j --pretty --json-url --csv --csv-fixed-name --sqlite
 		--otlp --otlp-header --influxdb --influxdb-org --influxdb-bucket --influxdb-token
 		--stats-interval --source-label
-		--insecure --proxy --udp-server --json-server"
+		--insecure --full-page --proxy --udp-server --json-server"
 
 	if [[ $cur == -* ]]; then
 		mapfile -t COMPREPLY < <(compgen -W "$flags" -- "$cur")

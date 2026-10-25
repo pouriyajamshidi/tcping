@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -555,4 +556,90 @@ func TestRunTranscript_LookupErrorIsNotBlamedOnTheOutput(t *testing.T) {
 			}
 		})
 	}
+}
+
+// With --full-page, the time on the probe line has to cover the whole
+// download, and -v has to say how long the download took and how big it was.
+// Without it, the time stops at the server's answer. This runs the real HTTP
+// probe against a server whose body takes 300ms to finish.
+func TestRunTranscript_FullPage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(strings.Repeat("a", 1000)))
+		w.(http.Flusher).Flush()
+
+		time.Sleep(300 * time.Millisecond)
+		_, _ = w.Write([]byte(strings.Repeat("b", 1000)))
+	}))
+	t.Cleanup(srv.Close)
+
+	u, _ := url.Parse(srv.URL)
+	addrPort := netip.MustParseAddrPort(u.Host)
+
+	run := func(fullPage bool) string {
+		cfg := config.Config{
+			URL:                   srv.URL,
+			Hostname:              addrPort.Addr().String(),
+			IP:                    addrPort.Addr(),
+			TargetIsIP:            true,
+			Port:                  addrPort.Port(),
+			Protocol:              config.HTTP,
+			Timeout:               5 * time.Second,
+			FullPage:              fullPage,
+			IntervalBetweenProbes: 20 * time.Millisecond,
+			ProbesBeforeQuit:      1,
+		}
+
+		printer := NewPlainPrinter(Config{Verbose: true})
+		s := stats.NewStatistics(cfg)
+		prober := probe.NewProber(probe.NewHTTPing(cfg), printer, cfg, s, nil)
+
+		return captureStdout(t, func() {
+			if err := prober.Probe(context.Background()); err != nil {
+				t.Errorf("Probe() failed: %v", err)
+			}
+		})
+	}
+
+	msOf := func(t *testing.T, out, pattern string) float64 {
+		t.Helper()
+
+		m := regexp.MustCompile(pattern + `=([\d.]+) ms`).FindStringSubmatch(out)
+		if m == nil {
+			t.Fatalf("no %s= in the output:\n%s", pattern, out)
+		}
+
+		ms, err := strconv.ParseFloat(m[1], 64)
+		if err != nil {
+			t.Fatalf("could not read %s= from %q: %v", pattern, m[0], err)
+		}
+
+		return ms
+	}
+
+	t.Run("full page", func(t *testing.T) {
+		out := run(true)
+
+		wantLines(t, out,
+			"HTTP_conn=1 status=200 time=",
+			"    HTTP/1.1 200 OK\n",
+			" ms size=2000 bytes\n",
+		)
+
+		if ms := msOf(t, out, "time"); ms < 300 {
+			t.Errorf("time=%v ms, want it to cover the 300ms the body took:\n%s", ms, out)
+		}
+		if ms := msOf(t, out, "download"); ms < 300 {
+			t.Errorf("download=%v ms, want it to cover the 300ms the body took:\n%s", ms, out)
+		}
+	})
+
+	t.Run("first byte only", func(t *testing.T) {
+		out := run(false)
+
+		wantNoLines(t, out, "download=", "size=")
+
+		if ms := msOf(t, out, "time"); ms >= 300 {
+			t.Errorf("time=%v ms, want it to stop at the server's answer:\n%s", ms, out)
+		}
+	})
 }

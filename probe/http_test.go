@@ -47,6 +47,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 		Port:          8443,
 		Timeout:       3 * time.Second,
 		SkipTLSVerify: true,
+		FullPage:      true,
 		Proxy:         &url.URL{Scheme: "http", Host: "proxy.example.com:3128"},
 		ProxyAddr:     netip.MustParseAddrPort("192.0.2.1:3128"),
 		NetworkInterface: nic.NetworkInterface{
@@ -57,7 +58,7 @@ func TestNewHTTPing_UsesConfig(t *testing.T) {
 	h := NewHTTPing(cfg)
 
 	if h.url != cfg.URL || h.port != cfg.Port ||
-		h.timeout != cfg.Timeout || !h.skipTLSVerify || !h.networkInterface.Use ||
+		h.timeout != cfg.Timeout || !h.skipTLSVerify || !h.fullPage || !h.networkInterface.Use ||
 		h.proxy != cfg.Proxy || h.proxyAddr != cfg.ProxyAddr {
 		t.Errorf("NewHTTPing(%+v) did not carry the config over: %+v", cfg, h)
 	}
@@ -131,6 +132,75 @@ func TestHTTPing_DoesNotWaitForTheBody(t *testing.T) {
 	}
 	if elapsed > time.Second {
 		t.Errorf("Ping() took %v, want it to return once the headers are in", elapsed)
+	}
+}
+
+// With --full-page the probe reads the whole body, so a slow body is part of
+// the time, and the download is timed and counted on its own.
+func TestHTTPing_FullPageWaitsForTheBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("start of a big page, "))
+		w.(http.Flusher).Flush()
+
+		time.Sleep(300 * time.Millisecond)
+		_, _ = w.Write([]byte("and the rest of it"))
+	}))
+	t.Cleanup(srv.Close)
+
+	h, ip := httpingFor(t, srv, "/")
+	h.fullPage = true
+
+	start := time.Now()
+	result, err := h.Ping(context.Background(), ip)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("Ping() error = %v, want no error", err)
+	}
+	if elapsed < 300*time.Millisecond {
+		t.Errorf("Ping() took %v, want it to wait for the whole body", elapsed)
+	}
+	if !result.BodyRead {
+		t.Error("BodyRead = false, want true")
+	}
+	if want := int64(len("start of a big page, and the rest of it")); result.BodySize != want {
+		t.Errorf("BodySize = %d, want %d", result.BodySize, want)
+	}
+	if result.DownloadDuration < 300*time.Millisecond {
+		t.Errorf("DownloadDuration = %v, want at least the 300ms the body took", result.DownloadDuration)
+	}
+}
+
+// A page that does not finish within the timeout is a failed probe, and
+// says nothing about a download that never ended.
+func TestHTTPing_FullPageTimesOut(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("start of a big page"))
+		w.(http.Flusher).Flush()
+
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(release) })
+
+	h, ip := httpingFor(t, srv, "/")
+	h.fullPage = true
+	h.timeout = 300 * time.Millisecond
+
+	result, err := h.Ping(context.Background(), ip)
+	if err == nil {
+		t.Fatal("Ping() error = nil, want the timeout to fail the probe")
+	}
+	if result.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d even though the body never finished", result.StatusCode, http.StatusOK)
+	}
+	if result.BodyRead || result.BodySize != 0 || result.DownloadDuration != 0 {
+		t.Errorf("BodyRead = %v, BodySize = %d, DownloadDuration = %v, want them all zero",
+			result.BodyRead, result.BodySize, result.DownloadDuration)
 	}
 }
 

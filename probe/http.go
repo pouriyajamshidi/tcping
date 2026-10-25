@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -26,6 +27,7 @@ type HTTPing struct {
 	port             uint16
 	url              string         // full target URL, e.g. https://example.com/health
 	skipTLSVerify    bool           // do not check the server certificate
+	fullPage         bool           // read the whole body, so the probe times the download too
 	proxy            *url.URL       // nil when the probe connects directly
 	proxyAddr        netip.AddrPort // where the proxy is, zero without one
 }
@@ -38,6 +40,7 @@ func NewHTTPing(cfg config.Config) HTTPing {
 		port:             cfg.Port,
 		url:              cfg.URL,
 		skipTLSVerify:    cfg.SkipTLSVerify,
+		fullPage:         cfg.FullPage,
 		proxy:            cfg.Proxy,
 		proxyAddr:        cfg.ProxyAddr,
 	}
@@ -95,7 +98,7 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	}
 
 	var result Result
-	var connectStart, tlsStart time.Time
+	var connectStart, tlsStart, firstByte time.Time
 	start := time.Now()
 
 	// These timings are what an HTTP probe can tell us that a plain TCP
@@ -114,7 +117,10 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 				result.TLSDuration = time.Since(tlsStart)
 			}
 		},
-		GotFirstResponseByte: func() { result.TimeToFirstByte = time.Since(start) },
+		GotFirstResponseByte: func() {
+			firstByte = time.Now()
+			result.TimeToFirstByte = firstByte.Sub(start)
+		},
 	}
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	req.Header.Set("User-Agent", version.UserAgent)
@@ -133,10 +139,10 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	// The body is left unread. On a big page the probe would otherwise time
-	// the download, or run into the timeout, instead of how long the server
-	// took to answer. Keep-alives are off, so there is no connection to save
-	// by draining it.
+	// Without --full-page the body is left unread. On a big page the probe
+	// would otherwise time the download, or run into the timeout, instead of
+	// how long the server took to answer. Keep-alives are off, so there is
+	// no connection to save by draining it.
 	defer resp.Body.Close()
 
 	result.StatusCode = resp.StatusCode
@@ -156,6 +162,19 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	// The result is still returned so callers can report which status it was.
 	if resp.StatusCode >= http.StatusBadRequest {
 		return result, fmt.Errorf("%s", resp.Status)
+	}
+
+	// The client timeout covers reading the body too, so a page that is too
+	// slow to download fails the probe.
+	if h.fullPage {
+		size, err := io.Copy(io.Discard, resp.Body)
+		if err != nil {
+			return result, fmt.Errorf("could not download the page: %w", err)
+		}
+
+		result.BodyRead = true
+		result.BodySize = size
+		result.DownloadDuration = time.Since(firstByte)
 	}
 
 	return result, nil

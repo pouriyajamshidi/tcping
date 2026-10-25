@@ -88,7 +88,11 @@ func httpProbeDetails(s *stats.Statistics, verbose bool) string {
 	if s.HTTP.TLSVersion != "" {
 		msg += fmt.Sprintf(" tls=%s ms", s.TLSDurationStr())
 	}
-	msg += fmt.Sprintf(" ttfb=%s ms\n", s.TimeToFirstByteStr())
+	msg += fmt.Sprintf(" ttfb=%s ms", s.TimeToFirstByteStr())
+	if s.HTTP.BodyRead {
+		msg += fmt.Sprintf(" download=%s ms size=%d bytes", s.DownloadDurationStr(), s.HTTP.BodySize)
+	}
+	msg += "\n"
 
 	return msg
 }

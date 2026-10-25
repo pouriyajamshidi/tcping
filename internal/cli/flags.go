@@ -104,6 +104,7 @@ type flags struct {
 	noColor           bool
 
 	skipTLSVerify bool
+	fullPage      bool
 	proxy         string
 	udpServer     bool
 	jsonServer    bool
@@ -220,7 +221,8 @@ func registerFlags() *flags {
 		false,
 		`Show all the details an HTTP(S) probe collects: the HTTP version,
 		the TLS version and cipher, the certificate expiry and the
-		connect/TLS/first-byte timings. For a UDP target, shows the number of
+		connect/TLS/first-byte timings, plus the download time and size
+		with -full-page. For a UDP target, shows the number of
 		the probe and whether the reply carried it back, so a lost probe can
 		be told apart from the rest. No effect on other targets.`)
 
@@ -229,6 +231,14 @@ func registerFlags() *flags {
 		false,
 		`Do not check the server certificate when probing an https:// target.
 		Useful for self-signed or expired certificates.`)
+
+	flag.BoolVar(&f.fullPage,
+		"full-page",
+		false,
+		`Download the whole page of an http(s):// target, so the time covers
+		the full download and not only the server's answer. The images,
+		scripts and other files the page links to are not fetched. A big
+		page may need a longer -t.`)
 
 	flag.StringVar(&f.proxy,
 		"proxy",

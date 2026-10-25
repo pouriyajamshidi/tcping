@@ -26,6 +26,12 @@ type HTTPInfo struct {
 	ConnectDuration time.Duration // TCP connect only.
 	TLSDuration     time.Duration // TLS handshake only.
 	TimeToFirstByte time.Duration // Request sent until the first response byte.
+
+	// Set by --full-page only, which reads the whole body. Left zero
+	// otherwise, and when the probe failed.
+	BodyRead         bool
+	DownloadDuration time.Duration // First response byte until the end of the body.
+	BodySize         int64         // Bytes of the body, after Go undoes any gzip.
 }
 
 // UDPInfo is what the most recent UDP probe learned. Every field stays zero
@@ -354,6 +360,12 @@ func (s *Statistics) TLSDurationStr() string {
 // byte of the response, in milliseconds.
 func (s *Statistics) TimeToFirstByteStr() string {
 	return millisecondsStr(s.HTTP.TimeToFirstByte)
+}
+
+// DownloadDurationStr is how long the last HTTP probe took to read the body
+// after its first byte, in milliseconds. Only measured with --full-page.
+func (s *Statistics) DownloadDurationStr() string {
+	return millisecondsStr(s.HTTP.DownloadDuration)
 }
 
 // CertExpiryStr is the day the server certificate expires, or an empty

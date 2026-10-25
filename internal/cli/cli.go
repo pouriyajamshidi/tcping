@@ -202,6 +202,7 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		IntervalBetweenProbes:      secondsToDuration(f.intervalBetweenProbes),
 		ShowFailuresOnly:           f.showFailuresOnly,
 		SkipTLSVerify:              f.skipTLSVerify,
+		FullPage:                   f.fullPage,
 		Proxy:                      proxy,
 		ProxyAddr:                  proxyAddr,
 		UDPServer:                  f.udpServer,

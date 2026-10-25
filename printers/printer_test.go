@@ -207,6 +207,28 @@ func TestHTTPProbeDetails(t *testing.T) {
 		}
 	})
 
+	t.Run("full page adds the download time and size", func(t *testing.T) {
+		s := https()
+		s.HTTP.BodyRead = true
+		s.HTTP.DownloadDuration = 30 * time.Millisecond
+		s.HTTP.BodySize = 48213
+
+		got := httpProbeDetails(s, true)
+		want := "ttfb=20.000 ms download=30.000 ms size=48213 bytes\n"
+
+		if !strings.HasSuffix(got, want) {
+			t.Errorf("httpProbeDetails() = %q, want it to end with %q", got, want)
+		}
+	})
+
+	t.Run("no download without full page", func(t *testing.T) {
+		got := httpProbeDetails(https(), true)
+
+		if strings.Contains(got, "download=") || strings.Contains(got, "size=") {
+			t.Errorf("httpProbeDetails() = %q, want no download time or size", got)
+		}
+	})
+
 	t.Run("plain http leaves the TLS parts out", func(t *testing.T) {
 		s := https()
 		s.Protocol = config.HTTP
