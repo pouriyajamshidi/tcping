@@ -123,7 +123,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -145,8 +145,6 @@
           "displayMode": "table",
           "placement": "bottom",
           "calcs": [
-            "min",
-            "mean",
             "max",
             "lastNotNull"
           ]
@@ -156,7 +154,7 @@
           "sort": "desc"
         }
       },
-      "description": "How long each probe took."
+      "description": "How long each probe took. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
     },
     {
       "id": 3,

@@ -116,7 +116,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "avg_over_time(tcping_probe_rtt_milliseconds{source=~\"$source\"}[$__interval])",
+          "expr": "max_over_time(tcping_probe_rtt_milliseconds{source=~\"$source\"}[$__interval])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
         }
       ],
@@ -139,8 +139,6 @@
           "displayMode": "table",
           "placement": "bottom",
           "calcs": [
-            "min",
-            "mean",
             "max",
             "lastNotNull"
           ]
@@ -150,7 +148,7 @@
           "sort": "desc"
         }
       },
-      "description": "The same probes taking the --otlp route into Prometheus."
+      "description": "The same probes taking the --otlp route into Prometheus. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
     },
     {
       "id": 3,
