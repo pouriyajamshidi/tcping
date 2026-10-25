@@ -27,7 +27,7 @@
 - improvement: the summary now has an `outages` line counting the separate down periods of the run, so a total downtime larger than the longest outage explains itself. The JSON, CSV, SQLite, InfluxDB and OTLP outputs carry it too
 - improvement: refuse more than one output destination (`-j`/`--json-url`, `--sqlite`, `--csv`, `--otlp`, `--influxdb`) instead of silently using only one of them
 - improvement: a second **Ctrl+C** quits right away instead of waiting for the final statistics to be printed or sent
-- improvement: the OTLP and InfluxDB outputs send in batches every 5 seconds from the background, so a slow endpoint no longer slows the probing down. A send that could not reach the endpoint, or got a 5xx or 429 back, is tried again with the next batch. Up to 10,000 metrics are kept meanwhile, the oldest are dropped past that and the drop is reported, and whatever is still waiting is sent on exit
+- improvement: the OTLP, InfluxDB and `--json-url` outputs send from the background, so a slow endpoint no longer slows the probing down. OTLP and InfluxDB send in batches every 5 seconds, while `--json-url` still sends each event as it happens, one per request. A send that could not reach the endpoint, or got a 5xx or 429 back, is tried again with the next one. Up to 10,000 results are kept meanwhile, the oldest are dropped past that and the drop is reported, and whatever is still waiting is sent on exit
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
