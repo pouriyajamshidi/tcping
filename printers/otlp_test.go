@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -70,6 +72,7 @@ func TestOTLPSendsTheGivenHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 
 	if got != "secret: with colon" {
 		t.Errorf("X-Honeycomb-Team = %q, want %q", got, "secret: with colon")
@@ -104,6 +107,7 @@ func TestOTLPAcceptsAny2xx(t *testing.T) {
 
 			stderr := captureStderr(t, func() {
 				printer.PrintProbeSuccess(otlpTestStats())
+				printer.queue.flush()
 			})
 
 			if warnings := strings.Count(stderr, "OTLP Error:"); warnings != tt.warnings {
@@ -113,8 +117,8 @@ func TestOTLPAcceptsAny2xx(t *testing.T) {
 	}
 }
 
-// Probes are a second apart, so every one of them opening a new connection
-// would be a lot of wasted handshakes on a long run.
+// Sends go out every few seconds, so every one of them opening a new
+// connection would be a lot of wasted handshakes on a long run.
 func TestOTLPReusesTheConnection(t *testing.T) {
 	var connections atomic.Int32
 
@@ -137,6 +141,7 @@ func TestOTLPReusesTheConnection(t *testing.T) {
 
 	for range 3 {
 		printer.PrintProbeSuccess(otlpTestStats())
+		printer.queue.flush()
 	}
 
 	if got := connections.Load(); got != 1 {
@@ -171,6 +176,7 @@ func TestOTLPPrintProbeSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 
 	if len(got.ResourceMetrics) != 1 {
 		t.Fatalf("expected 1 resourceMetrics, got %d", len(got.ResourceMetrics))
@@ -212,6 +218,7 @@ func TestOTLPPrintProbeFailureHasNoRTT(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintProbeFailure(otlpTestStats())
+	printer.queue.flush()
 
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
 		if m.Name == "tcping_probe_rtt_milliseconds" {
@@ -246,6 +253,7 @@ func TestOTLPUDPProbeSendsWhatItLearned(t *testing.T) {
 	s.UDP.ReplySize = 4
 
 	printer.PrintProbeSuccess(s)
+	printer.queue.flush()
 
 	found := map[string]float64{}
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
@@ -278,11 +286,219 @@ func TestOTLPKeepsGoingWhenUnreachable(t *testing.T) {
 	stderr := captureStderr(t, func() {
 		for range 3 {
 			printer.PrintProbeSuccess(otlpTestStats())
+			printer.queue.flush()
 		}
 	})
 
 	if errors := strings.Count(stderr, "OTLP Error:"); errors != 3 {
 		t.Errorf("3 failed sends printed %d errors, want 3:\n%s", errors, stderr)
+	}
+}
+
+// A slow endpoint is what used to slow the probing down: every probe waited
+// for its own send to be answered. Now a probe only puts its metrics in
+// line, so it is done even while a send is still waiting for an answer.
+func TestOTLPProbesDoNotWaitOnASlowSend(t *testing.T) {
+	var (
+		mu       sync.Mutex
+		payloads []otlpPayload
+	)
+
+	entered := make(chan struct{}, 1)
+	release := make(chan struct{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
+		<-release
+
+		var got otlpPayload
+		body, _ := io.ReadAll(r.Body)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
+		}
+
+		mu.Lock()
+		payloads = append(payloads, got)
+		mu.Unlock()
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	printer.PrintProbeSuccess(otlpTestStats())
+	go printer.queue.flush()
+	<-entered
+
+	probed := make(chan struct{})
+	go func() {
+		printer.PrintProbeSuccess(otlpTestStats())
+		close(probed)
+	}()
+
+	select {
+	case <-probed:
+	case <-time.After(time.Second):
+		t.Error("a probe waited on a send that the endpoint had not answered yet")
+	}
+
+	close(release)
+	<-probed
+	printer.Shutdown(otlpTestStats())
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if got := otlpProbeResults(payloads...); len(got) != 2 {
+		t.Errorf("the endpoint got %d probes, want 2", len(got))
+	}
+}
+
+// otlpProbeResults is the tcping_probe_success value of every probe in the
+// payloads, in the order they were sent.
+func otlpProbeResults(payloads ...otlpPayload) []float64 {
+	var results []float64
+
+	for _, p := range payloads {
+		for _, m := range p.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+			if m.Name == "tcping_probe_success" {
+				results = append(results, m.Gauge.DataPoints[0].Value)
+			}
+		}
+	}
+
+	return results
+}
+
+// otlpStatusServer answers every send with the next status in the list, and
+// with 200 once the list runs out. It records the payloads it accepted.
+func otlpStatusServer(t *testing.T, statuses []int, payloads *[]otlpPayload) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var got otlpPayload
+		body, _ := io.ReadAll(r.Body)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
+		}
+
+		status := http.StatusOK
+		if len(statuses) > 0 {
+			status, statuses = statuses[0], statuses[1:]
+		}
+
+		if status/100 == 2 {
+			*payloads = append(*payloads, got)
+		}
+
+		w.WriteHeader(status)
+	}))
+}
+
+// An endpoint that is restarting, or too busy to answer, gets the metrics it
+// missed once it is back, so the graph has no hole in it.
+func TestOTLPSendsWhatItMissedOnceBack(t *testing.T) {
+	var payloads []otlpPayload
+
+	server := otlpStatusServer(t, []int{http.StatusServiceUnavailable}, &payloads)
+	defer server.Close()
+
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stderr := captureStderr(t, func() {
+		printer.PrintProbeFailure(otlpTestStats())
+		printer.queue.flush()
+	})
+
+	if !strings.Contains(stderr, "OTLP Error: the OTLP endpoint rejected the metrics with 503 Service Unavailable") {
+		t.Errorf("the failed send was not reported:\n%s", stderr)
+	}
+
+	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
+
+	if len(payloads) != 1 {
+		t.Fatalf("got %d sends, want 1", len(payloads))
+	}
+
+	if got, want := otlpProbeResults(payloads...), []float64{0, 1}; !slices.Equal(got, want) {
+		t.Errorf("the send should hold the missed probe and then the new one, got %v, want %v", got, want)
+	}
+}
+
+// Metrics the endpoint rejected for what they hold would be rejected again,
+// so they are reported and not sent a second time.
+func TestOTLPDoesNotRetryARejectedSend(t *testing.T) {
+	var payloads []otlpPayload
+
+	server := otlpStatusServer(t, []int{http.StatusBadRequest}, &payloads)
+	defer server.Close()
+
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	captureStderr(t, func() {
+		printer.PrintProbeFailure(otlpTestStats())
+		printer.queue.flush()
+	})
+
+	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
+
+	if got, want := otlpProbeResults(payloads...), []float64{1}; !slices.Equal(got, want) {
+		t.Errorf("only the second probe should have been sent, got %v, want %v", got, want)
+	}
+}
+
+// Metrics wait a few seconds before they are sent, so the last probes of a
+// run are still waiting when it ends, and Shutdown has to send them along
+// with the final summary.
+func TestOTLPShutdownSendsWhatIsWaiting(t *testing.T) {
+	var payloads []otlpPayload
+
+	server := otlpStatusServer(t, nil, &payloads)
+	defer server.Close()
+
+	printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	printer.PrintProbeSuccess(otlpTestStats())
+	printer.PrintProbeFailure(otlpTestStats())
+	printer.Shutdown(otlpTestStats())
+
+	if len(payloads) != 1 {
+		t.Fatalf("got %d sends, want 1", len(payloads))
+	}
+
+	if got, want := otlpProbeResults(payloads...), []float64{1, 0}; !slices.Equal(got, want) {
+		t.Errorf("sent the probes %v, want %v", got, want)
+	}
+
+	var summaries int
+	for _, m := range payloads[0].ResourceMetrics[0].ScopeMetrics[0].Metrics {
+		if m.Name == "tcping_packet_loss_percent" {
+			summaries++
+		}
+	}
+
+	// The first probe carries a summary of its own, see
+	// TestOTLPStatisticsRideAlongWithProbes.
+	if summaries != 2 {
+		t.Errorf("sent %d summaries, want 2", summaries)
 	}
 }
 
@@ -323,12 +539,14 @@ func TestOTLPStatisticsRideAlongWithProbes(t *testing.T) {
 
 	// The first probe carries a summary, so the metrics show up right away.
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 	if !hasSummary(payloads[0]) {
 		t.Error("the first probe should carry the run summary")
 	}
 
 	// The next one does not, since the interval has not passed.
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 	if hasSummary(payloads[1]) {
 		t.Error("the summary should not be sent with every probe")
 	}
@@ -336,6 +554,7 @@ func TestOTLPStatisticsRideAlongWithProbes(t *testing.T) {
 	// Once it has, it comes along again.
 	printer.lastStats = time.Now().Add(-printer.statsInterval)
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 	if !hasSummary(payloads[2]) {
 		t.Error("the summary should be sent again once the interval passed")
 	}
@@ -395,6 +614,7 @@ func TestOTLPSourceLabelIsOnEveryDataPoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
 		points := []otlpPoint{}
@@ -441,6 +661,7 @@ func TestOTLPResolvedIPHasItsOwnMetric(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintProbeSuccess(otlpTestStats())
+	printer.queue.flush()
 
 	var address *otlpMetric
 
@@ -494,6 +715,7 @@ func TestOTLPStatisticsCarryTheWholeSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintStatistics(statisticsTestStats())
+	printer.queue.flush()
 
 	values := map[string]float64{}
 
@@ -550,6 +772,7 @@ func TestOTLPStatisticsOmitWhatHasNotHappened(t *testing.T) {
 		t.Fatal(err)
 	}
 	printer.PrintStatistics(otlpTestStats())
+	printer.queue.flush()
 
 	for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
 		switch m.Name {

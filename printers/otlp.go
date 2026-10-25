@@ -80,9 +80,9 @@ const (
 	// StartTime", which is exactly what our counters already hold.
 	otlpCumulative = 2
 
-	// Probes are usually a second apart, so a send that hangs longer than
-	// this would hold up the next probe.
-	otlpTimeout = 2 * time.Second
+	// Sends go out in the background, so a slow one does not hold up the
+	// probing, and an endpoint that takes its time can be given it.
+	otlpTimeout = 15 * time.Second
 
 	otlpMetricsPath = "/v1/metrics"
 
@@ -105,9 +105,13 @@ func unixNano(t time.Time) string {
 // to anything that speaks OTLP over HTTP, such as Grafana Alloy or the
 // OpenTelemetry Collector. Those forward them to a store like Prometheus, so
 // a run shows up as a graph rather than as lines of text.
+//
+// The metrics are not sent as each probe ends. They wait in a sendQueue,
+// which sends them in batches every few seconds from a goroutine of its own.
 type OTLPPrinter struct {
 	client    *http.Client
 	endpoint  string
+	queue     *sendQueue[otlpMetric]
 	startTime time.Time // Beginning of the run, which every counter is measured from.
 	lastStats time.Time // When the run summary was last sent. Zero, so the first probe carries one.
 	// How often the run summary rides along with a probe. Without it the
@@ -150,7 +154,7 @@ func NewOTLPPrinter(cfg Config) (*OTLPPrinter, error) {
 		headerValue = strings.TrimSpace(value)
 	}
 
-	return &OTLPPrinter{
+	p := &OTLPPrinter{
 		client:        &http.Client{Timeout: otlpTimeout},
 		endpoint:      endpoint,
 		startTime:     time.Now(),
@@ -158,7 +162,10 @@ func NewOTLPPrinter(cfg Config) (*OTLPPrinter, error) {
 		headerName:    headerName,
 		headerValue:   headerValue,
 		cfg:           cfg,
-	}, nil
+	}
+	p.queue = newSendQueue(p.send, p.PrintError)
+
+	return p, nil
 }
 
 // labels are the attributes put on every data point, which is what makes
@@ -223,14 +230,11 @@ func (p *OTLPPrinter) counter(name, unit string, points ...otlpPoint) otlpMetric
 	}
 }
 
-// send POSTs one batch of metrics to the endpoint. A failure does not stop
-// the probing, but every one of them is printed, so an endpoint that stays
-// down is never hidden.
-func (p *OTLPPrinter) send(metrics []otlpMetric) {
-	if len(metrics) == 0 {
-		return
-	}
-
+// send POSTs one batch of metrics to the endpoint and says whether the
+// batch is worth trying again. A failure does not stop the probing, but
+// every one of them is printed, so an endpoint that stays down is never
+// hidden.
+func (p *OTLPPrinter) send(metrics []otlpMetric) (retry bool) {
 	payload := otlpPayload{
 		ResourceMetrics: []otlpResourceMetrics{{
 			Resource: otlpResource{
@@ -243,13 +247,13 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		p.PrintError("could not encode metrics: %v", err)
-		return
+		return false
 	}
 
 	req, err := http.NewRequest(http.MethodPost, p.endpoint, bytes.NewReader(body))
 	if err != nil {
 		p.PrintError("could not build the request: %v", err)
-		return
+		return false
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -261,17 +265,21 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) {
 	resp, err := p.client.Do(req)
 	if err != nil {
 		p.PrintError("could not reach %s: %v", p.endpoint, err)
-		return
+		return true
 	}
 	defer resp.Body.Close()
 
 	// Reading the body to the end is what lets the connection be reused by
-	// the next probe instead of a new one being opened every second.
+	// the next send instead of a new one being opened every time.
 	_, _ = io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode/100 != 2 {
 		p.PrintError("the OTLP endpoint rejected the metrics with %s", resp.Status)
 	}
+
+	// An endpoint that is struggling, or asks us to slow down, may take the
+	// same metrics later. Anything else it rejected it would reject again.
+	return resp.StatusCode/100 == 5 || resp.StatusCode == http.StatusTooManyRequests
 }
 
 // msOf turns a duration into milliseconds, the unit the rest of tcping
@@ -467,8 +475,8 @@ func (p *OTLPPrinter) statisticsMetrics(s *stats.Statistics) []otlpMetric {
 
 // dueStatistics returns the run summary when enough time has passed since
 // the last one, and nothing otherwise. Sending it along with a probe means
-// no goroutine and no second request, and it keeps the summary flowing on a
-// run that is never going to be stopped by hand.
+// no timer of its own, and it keeps the summary flowing on a run that is
+// never going to be stopped by hand.
 func (p *OTLPPrinter) dueStatistics(s *stats.Statistics) []otlpMetric {
 	if time.Since(p.lastStats) < p.statsInterval {
 		return nil
@@ -497,25 +505,25 @@ func (p *OTLPPrinter) PrintStart(s *stats.Statistics) {
 
 // PrintNameResolutionDuration sends how long the hostname resolution took.
 func (p *OTLPPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
-	p.send([]otlpMetric{
-		p.gauge("tcping_name_resolution_milliseconds", "ms", msOf(s.NameResolutionDuration), p.labels(s)),
-	})
+	p.queue.add(p.gauge("tcping_name_resolution_milliseconds", "ms", msOf(s.NameResolutionDuration), p.labels(s)))
 }
 
 // PrintProbeSuccess sends the metrics of a successful probe.
 func (p *OTLPPrinter) PrintProbeSuccess(s *stats.Statistics) {
-	p.send(append(p.probeMetrics(s, true), p.dueStatistics(s)...))
+	p.queue.add(p.probeMetrics(s, true)...)
+	p.queue.add(p.dueStatistics(s)...)
 }
 
 // PrintProbeFailure sends the metrics of a failed probe.
 func (p *OTLPPrinter) PrintProbeFailure(s *stats.Statistics) {
-	p.send(append(p.probeMetrics(s, false), p.dueStatistics(s)...))
+	p.queue.add(p.probeMetrics(s, false)...)
+	p.queue.add(p.dueStatistics(s)...)
 }
 
 // PrintStatistics sends the summary of the run so far.
 func (p *OTLPPrinter) PrintStatistics(s *stats.Statistics) {
 	p.lastStats = time.Now()
-	p.send(p.statisticsMetrics(s))
+	p.queue.add(p.statisticsMetrics(s)...)
 }
 
 // PrintRetryingToResolve has no number behind it, so it goes to the terminal.
@@ -529,11 +537,13 @@ func (p *OTLPPrinter) PrintError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "OTLP Error: "+format+"\n", args...)
 }
 
-// Shutdown sends the final statistics and closes the connection to the endpoint.
-// Statistics are already finalized by finalizeStatistics by the time this
-// runs. It does not exit the program - that decision belongs to the caller,
-// not the printer.
+// Shutdown sends the final statistics, along with every metric still
+// waiting to be sent, and closes the connection to the endpoint. Statistics
+// are already finalized by finalizeStatistics by the time this runs. It does
+// not exit the program - that decision belongs to the caller, not the
+// printer.
 func (p *OTLPPrinter) Shutdown(s *stats.Statistics) {
 	p.PrintStatistics(s)
+	p.queue.close()
 	p.client.CloseIdleConnections()
 }
