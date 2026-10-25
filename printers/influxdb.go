@@ -114,7 +114,7 @@ func NewInfluxDBPrinter(cfg Config) (*InfluxDBPrinter, error) {
 		statsInterval: statsInterval,
 		source:        cfg.SourceLabel,
 	}
-	p.queue = newSendQueue(influxDBSendInterval, influxDBBatchSize, p.send, p.PrintError)
+	p.queue = newSendQueue(influxDBSendInterval, influxDBBatchSize, p.send, p.printInfluxDBError)
 
 	return p, nil
 }
@@ -150,7 +150,7 @@ func (p *InfluxDBPrinter) line(s *stats.Statistics, measurement, fields string) 
 func (p *InfluxDBPrinter) send(lines []string) (retry bool) {
 	req, err := http.NewRequest(http.MethodPost, p.endpoint, strings.NewReader(strings.Join(lines, "\n")))
 	if err != nil {
-		p.PrintError("could not build the request: %v", err)
+		p.printInfluxDBError("could not build the request: %v", err)
 		return false
 	}
 
@@ -160,7 +160,7 @@ func (p *InfluxDBPrinter) send(lines []string) (retry bool) {
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.PrintError("could not reach InfluxDB at %s: %v", p.endpoint, err)
+		p.printInfluxDBError("could not reach InfluxDB at %s: %v", p.endpoint, err)
 		return true
 	}
 	defer resp.Body.Close()
@@ -169,7 +169,7 @@ func (p *InfluxDBPrinter) send(lines []string) (retry bool) {
 		// InfluxDB says what it did not like in the body, and that is the
 		// only way to tell a wrong token from a wrong bucket.
 		reason, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		p.PrintError("InfluxDB rejected the write with %s: %s", resp.Status, strings.TrimSpace(string(reason)))
+		p.printInfluxDBError("InfluxDB rejected the write with %s: %s", resp.Status, strings.TrimSpace(string(reason)))
 	}
 
 	// Reading the body to the end is what lets the connection be reused by
@@ -179,6 +179,13 @@ func (p *InfluxDBPrinter) send(lines []string) (retry bool) {
 	// An InfluxDB that is struggling, or asks us to slow down, may take the
 	// same lines later. Anything else it rejected it would reject again.
 	return resp.StatusCode/100 == 5 || resp.StatusCode == http.StatusTooManyRequests
+}
+
+// printInfluxDBError is for the errors that come from talking to InfluxDB.
+// They go to the terminal rather than to InfluxDB, since an error here
+// usually means InfluxDB is the thing that is not working.
+func (p *InfluxDBPrinter) printInfluxDBError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "InfluxDB Error: "+format+"\n", args...)
 }
 
 // probeMeasurement is the name a probe is written under. There is one per
@@ -415,10 +422,10 @@ func (p *InfluxDBPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
 }
 
-// PrintError goes to the terminal rather than to InfluxDB, since an error
-// here usually means InfluxDB is the thing that is not working.
+// PrintError goes to the terminal without the InfluxDB Error prefix, since
+// the errors given to it, such as a failed name lookup, are not InfluxDB's.
 func (p *InfluxDBPrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "InfluxDB Error: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
 }
 
 // Shutdown writes the final statistics, along with every line still

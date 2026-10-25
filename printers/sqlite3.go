@@ -319,7 +319,7 @@ func (p *SQLitePrinter) insertProbe(
 		if err == nil {
 			latencyValue = math.Round(value*1000) / 1000
 		} else {
-			p.PrintError("Failed parsing latency value %q: %v", latency, err)
+			p.printSQLiteError("Failed parsing latency value %q: %v", latency, err)
 		}
 	}
 
@@ -346,7 +346,7 @@ func (p *SQLitePrinter) insertProbe(
 		&sqlitex.ExecOptions{Args: args},
 	)
 	if err != nil {
-		p.PrintError("Failed writing probe data to database: %v", err)
+		p.printSQLiteError("Failed writing probe data to database: %v", err)
 	}
 }
 
@@ -487,7 +487,7 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		&sqlitex.ExecOptions{Args: args},
 	)
 	if err != nil {
-		p.PrintError("Failed writing statistics to database: %v", err)
+		p.printSQLiteError("Failed writing statistics to database: %v", err)
 		return
 	}
 
@@ -503,9 +503,16 @@ func (p *SQLitePrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintError goes to the terminal rather than to database, since an error
-// here usually means database is the thing that is not working.
+// PrintError goes to the terminal without the SQLite Error prefix, since the
+// errors given to it, such as a failed name lookup, are not the database's.
 func (p *SQLitePrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+}
+
+// printSQLiteError is for the errors that come from writing to the
+// database. They go to the terminal rather than to the database, since an
+// error here usually means the database is the thing that is not working.
+func (p *SQLitePrinter) printSQLiteError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "SQLite Error: "+format+"\n", args...)
 }
 

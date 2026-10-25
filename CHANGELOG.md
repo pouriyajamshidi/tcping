@@ -51,6 +51,7 @@
 - refactor (breaking): rename `--db` to `--sqlite`, so the flag names its database like `--csv`, `--otlp` and `--influxdb` do
 - refactor (breaking): rename `printers.DatabasePrinter` to `printers.SQLitePrinter`, so the printer names its database like the CSV, OTLP and InfluxDB ones do. Its errors now start with `SQLite Error:` instead of `Database Error:`
 - refactor (breaking): remove the `--non-interactive` flag. tcping now works out on its own whether it is attached to a terminal and in the foreground, so running it under `nohup` or `disown` needs no flag
+- fix: a failed name lookup is no longer printed as an error of the output it was sent to, such as `InfluxDB Error: lookup example.com: i/o timeout`. The `InfluxDB Error:`, `OTLP Error:`, `CSV Error:` and `SQLite Error:` prefixes are now only put on errors that come from that output itself
 - fix: CSV probe rows no longer duplicate the RTT and connection-count values when `--show-source-address` is used
 - fix: fix a bug that showed downtime as uptime
 - fix: fix incorrect timestamp handling in the JSON printer

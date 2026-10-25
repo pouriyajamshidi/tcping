@@ -171,7 +171,7 @@ func NewOTLPPrinter(cfg Config) (*OTLPPrinter, error) {
 		headerValue:   headerValue,
 		cfg:           cfg,
 	}
-	p.queue = newSendQueue(otlpSendInterval, otlpBatchSize, p.send, p.PrintError)
+	p.queue = newSendQueue(otlpSendInterval, otlpBatchSize, p.send, p.printOTLPError)
 
 	return p, nil
 }
@@ -254,13 +254,13 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) (retry bool) {
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		p.PrintError("could not encode metrics: %v", err)
+		p.printOTLPError("could not encode metrics: %v", err)
 		return false
 	}
 
 	req, err := http.NewRequest(http.MethodPost, p.endpoint, bytes.NewReader(body))
 	if err != nil {
-		p.PrintError("could not build the request: %v", err)
+		p.printOTLPError("could not build the request: %v", err)
 		return false
 	}
 
@@ -272,7 +272,7 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) (retry bool) {
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.PrintError("could not reach %s: %v", p.endpoint, err)
+		p.printOTLPError("could not reach %s: %v", p.endpoint, err)
 		return true
 	}
 	defer resp.Body.Close()
@@ -282,12 +282,19 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) (retry bool) {
 	_, _ = io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode/100 != 2 {
-		p.PrintError("the OTLP endpoint rejected the metrics with %s", resp.Status)
+		p.printOTLPError("the OTLP endpoint rejected the metrics with %s", resp.Status)
 	}
 
 	// An endpoint that is struggling, or asks us to slow down, may take the
 	// same metrics later. Anything else it rejected it would reject again.
 	return resp.StatusCode/100 == 5 || resp.StatusCode == http.StatusTooManyRequests
+}
+
+// printOTLPError is for the errors that come from talking to the endpoint.
+// They go to the terminal rather than to the endpoint, since an error here
+// usually means the endpoint is the thing that is not working.
+func (p *OTLPPrinter) printOTLPError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "OTLP Error: "+format+"\n", args...)
 }
 
 // msOf turns a duration into milliseconds, the unit the rest of tcping
@@ -539,10 +546,10 @@ func (p *OTLPPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Fprintf(os.Stderr, "retrying to resolve %s\n", hostname)
 }
 
-// PrintError goes to the terminal rather than to the endpoint, since an
-// error here usually means the endpoint is the thing that is not working.
+// PrintError goes to the terminal without the OTLP Error prefix, since the
+// errors given to it, such as a failed name lookup, are not the endpoint's.
 func (p *OTLPPrinter) PrintError(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "OTLP Error: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
 }
 
 // Shutdown sends the final statistics, along with every metric still

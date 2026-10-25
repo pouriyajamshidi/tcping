@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/netip"
 	"net/url"
 	"path/filepath"
@@ -14,6 +17,8 @@ import (
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
+	"github.com/pouriyajamshidi/tcping/v3/dns"
+	"github.com/pouriyajamshidi/tcping/v3/nic"
 	"github.com/pouriyajamshidi/tcping/v3/probe"
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
@@ -58,6 +63,7 @@ type scriptedRun struct {
 	enterAfter       int
 	protocol         config.Protocol // TCP when not given.
 	proxy            *url.URL
+	resolver         *dns.Resolver // When given, looks the hostname up before every probe.
 }
 
 // run probes once per entry in outcomes and returns everything that reached
@@ -80,6 +86,8 @@ func (r scriptedRun) run(t *testing.T) string {
 		IntervalBetweenProbes:  20 * time.Millisecond,
 		ProbesBeforeQuit:       uint(len(r.outcomes)),
 		ShowFailuresOnly:       r.showFailuresOnly,
+		Resolver:               r.resolver,
+		ResolveEveryProbe:      r.resolver != nil,
 	}
 
 	// Through a proxy, the proxy looks the hostname up, so there is no
@@ -458,5 +466,93 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 
 	if statistics["Outages"] != "1" {
 		t.Errorf("stats file reports %q outages on a run with one: %v", statistics["Outages"], statistics)
+	}
+}
+
+// failingResolver is a resolver whose lookups always time out, since the
+// DNS server it asks reads every question and never answers.
+func failingResolver(t *testing.T) *dns.Resolver {
+	t.Helper()
+
+	server, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	if err != nil {
+		t.Fatalf("failed to start the DNS server: %v", err)
+	}
+	t.Cleanup(func() { _ = server.Close() })
+
+	go func() {
+		buf := make([]byte, 512)
+		for {
+			if _, _, err := server.ReadFrom(buf); err != nil {
+				return
+			}
+		}
+	}()
+
+	resolver, err := dns.NewResolver(server.LocalAddr().String(), 100*time.Millisecond, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("dns.NewResolver() failed: %v", err)
+	}
+
+	return resolver
+}
+
+// A failed name lookup has nothing to do with where the results go, so it
+// must not show up as "InfluxDB Error: lookup example.com: i/o timeout". The
+// prefix is only for errors from InfluxDB, the OTLP endpoint, the CSV files
+// or the database themselves.
+func TestRunTranscript_LookupErrorIsNotBlamedOnTheOutput(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	tests := []struct {
+		name       string
+		newPrinter func() (probe.Printer, error)
+	}{
+		{"InfluxDB", func() (probe.Printer, error) {
+			return NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+		}},
+		{"OTLP", func() (probe.Printer, error) {
+			return NewOTLPPrinter(Config{OTLPURL: server.URL})
+		}},
+		{"CSV", func() (probe.Printer, error) {
+			return NewCSVPrinter(Config{OutputCSVPath: filepath.Join(t.TempDir(), "run.csv"), CSVNoTimestamp: true})
+		}},
+		{"SQLite", func() (probe.Printer, error) {
+			return NewSQLitePrinter(Config{Target: "example.com", Port: 443, OutputSQLitePath: ":memory:"})
+		}},
+	}
+
+	resolver := failingResolver(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			printer, err := tt.newPrinter()
+			if err != nil {
+				t.Skipf("no %s printer here: %v", tt.name, err)
+			}
+
+			stderr := captureStderr(t, func() {
+				scriptedRun{printer: printer, outcomes: []bool{true}, resolver: resolver}.run(t)
+			})
+
+			lookups := 0
+			for line := range strings.Lines(stderr) {
+				if !strings.Contains(line, "lookup example.com") {
+					continue
+				}
+
+				lookups++
+				if !strings.HasPrefix(line, "lookup example.com") {
+					t.Errorf("the failed lookup was printed as %q", line)
+				}
+			}
+
+			if lookups != 1 {
+				t.Errorf("printed %d failed lookups, want 1:\n%s", lookups, stderr)
+			}
+		})
 	}
 }

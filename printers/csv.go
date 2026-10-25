@@ -180,7 +180,7 @@ func (p *CSVPrinter) done() {
 	}
 	if p.probeFile != nil {
 		if err := p.probeFile.Close(); err != nil {
-			p.PrintError("failed to close %s: %v", p.probeFile.Name(), err)
+			p.printCSVError("failed to close %s: %v", p.probeFile.Name(), err)
 		}
 	}
 
@@ -189,7 +189,7 @@ func (p *CSVPrinter) done() {
 	}
 	if p.statsFile != nil {
 		if err := p.statsFile.Close(); err != nil {
-			p.PrintError("failed to close %s: %v", p.statsFile.Name(), err)
+			p.printCSVError("failed to close %s: %v", p.statsFile.Name(), err)
 		}
 	}
 }
@@ -239,10 +239,10 @@ func (p *CSVPrinter) writeStatsHeader() error {
 // PrintStart logs the beginning of a TCPing session.
 func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 	if err := p.writeProbeHeader(s); err != nil {
-		p.PrintError("%v", err)
+		p.printCSVError("%v", err)
 	}
 	if err := p.writeStatsHeader(); err != nil {
-		p.PrintError("%v", err)
+		p.printCSVError("%v", err)
 	}
 
 	if !s.HostnameResolved() {
@@ -290,7 +290,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 	}
 
 	if err := p.probeWriter.Write(record); err != nil {
-		p.PrintError("failed to write success record: %v", err)
+		p.printCSVError("failed to write success record: %v", err)
 	}
 
 	p.probeWriter.Flush()
@@ -330,7 +330,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 	}
 
 	if err := p.probeWriter.Write(record); err != nil {
-		p.PrintError("failed to write failure record: %v", err)
+		p.printCSVError("failed to write failure record: %v", err)
 	}
 
 	p.probeWriter.Flush()
@@ -453,21 +453,21 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 	// Pressing Enter mid-run asks for the statistics too, so the file is
 	// started over every time and only ever holds the newest block.
 	if _, err := p.statsFile.Seek(0, io.SeekStart); err != nil {
-		p.PrintError("failed to rewind %s: %v", p.statsFile.Name(), err)
+		p.printCSVError("failed to rewind %s: %v", p.statsFile.Name(), err)
 		return
 	}
 	if err := p.statsFile.Truncate(0); err != nil {
-		p.PrintError("failed to empty %s: %v", p.statsFile.Name(), err)
+		p.printCSVError("failed to empty %s: %v", p.statsFile.Name(), err)
 		return
 	}
 	if err := p.writeStatsHeader(); err != nil {
-		p.PrintError("%v", err)
+		p.printCSVError("%v", err)
 		return
 	}
 
 	for _, record := range statistics {
 		if err := p.statsWriter.Write(record); err != nil {
-			p.PrintError("failed to write statistics record: %v", err)
+			p.printCSVError("failed to write statistics record: %v", err)
 			return
 		}
 	}
@@ -482,8 +482,15 @@ func (p *CSVPrinter) PrintRetryingToResolve(hostname string) {
 	fmt.Printf("Retrying to resolve %s\n", hostname)
 }
 
-// PrintError logs an error message to stderr.
+// PrintError logs an error message to stderr, without the CSV Error prefix,
+// since the errors given to it, such as a failed name lookup, are not about
+// the CSV files.
 func (p *CSVPrinter) PrintError(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+}
+
+// printCSVError logs an error from writing the CSV files to stderr.
+func (p *CSVPrinter) printCSVError(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "CSV Error: "+format+"\n", args...)
 }
 
