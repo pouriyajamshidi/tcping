@@ -353,7 +353,16 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "tcping_rtt_milliseconds{source=~\"$source\"}",
+          "expr": "tcping_rtt_milliseconds{source=~\"$source\", stat!=\"max\"}",
+          "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "tcping_rtt_milliseconds{source=~\"$source\", stat=\"max\"}",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
         }
       ],
@@ -363,11 +372,29 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 0,
-            "showPoints": "never"
+            "showPoints": "never",
+            "axisLabel": "min / average / stddev"
           },
           "unit": "ms"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "max"
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -381,7 +408,7 @@
           "sort": "desc"
         }
       },
-      "description": "The running summary tcping sends every --stats-interval."
+      "description": "The running summary tcping sends every --stats-interval. The max covers the whole run, so it has its own scale on the right, and a slow probe long ago does not flatten the other three."
     },
     {
       "id": 7,
@@ -432,11 +459,29 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 0,
-            "showPoints": "never"
+            "showPoints": "never",
+            "axisLabel": "uptime"
           },
           "unit": "s"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "downtime"
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -450,7 +495,7 @@
           "sort": "desc"
         }
       },
-      "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0."
+      "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0. The downtime has its own scale on the right, so a few seconds of it still show next to hours of uptime."
     },
     {
       "id": 9,

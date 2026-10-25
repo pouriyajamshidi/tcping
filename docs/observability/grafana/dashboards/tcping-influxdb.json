@@ -359,7 +359,15 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|max|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"rtt_max_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -368,12 +376,30 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 0,
-            "showPoints": "never"
+            "showPoints": "never",
+            "axisLabel": "min / average / stddev"
           },
           "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
           "unit": "ms"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "max"
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -387,7 +413,7 @@
           "sort": "desc"
         }
       },
-      "description": "The running summary tcping writes every --stats-interval."
+      "description": "The running summary tcping writes every --stats-interval. The max covers the whole run, so it has its own scale on the right, and a slow probe long ago does not flatten the other three."
     },
     {
       "id": 7,
@@ -419,7 +445,15 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(up|down)time_seconds$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"uptime_seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"downtime_seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -428,12 +462,30 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 0,
-            "showPoints": "never"
+            "showPoints": "never",
+            "axisLabel": "uptime"
           },
           "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port} ${__field.name}",
           "unit": "s"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "downtime"
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -447,7 +499,7 @@
           "sort": "desc"
         }
       },
-      "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0."
+      "description": "The totals from the statistics block. They only move when the target changes state, so a target that has never flipped reads 0. The downtime has its own scale on the right, so a few seconds of it still show next to hours of uptime."
     },
     {
       "id": 9,
