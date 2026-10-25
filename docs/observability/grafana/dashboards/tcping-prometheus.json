@@ -1305,8 +1305,7 @@
                     "value": 80
                   }
                 ]
-              }
-,
+              },
               {
                 "matcher": {
                   "id": "byName",

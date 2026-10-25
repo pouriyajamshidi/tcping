@@ -1213,8 +1213,7 @@
                     "value": 80
                   }
                 ]
-              }
-,
+              },
               {
                 "matcher": {
                   "id": "byName",
@@ -1224,8 +1223,7 @@
                   {
                     "id": "unit",
                     "value": "time:MMM D HH:mm:ss"
-                  }
-,
+                  },
                   {
                     "id": "custom.align",
                     "value": "right"
