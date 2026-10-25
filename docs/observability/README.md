@@ -245,13 +245,14 @@ Every panel tcping can fill has a place in both, grouped into rows:
 | **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to              |
 | **The run**             | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries and address changes there were |
 | **Name resolution**     | How long each lookup took, and the address every target resolved to with when and how fast it was last looked up                                                                       |
-| **HTTP**                | Connect, TLS handshake and first byte timings, the status code, and the days left on the certificate                                                                                   |
+| **HTTP**                | Connect, TLS handshake, first byte and download timings, the status code, the days left on the certificate, and the page size                                                          |
 | **UDP**                 | Reply size, whether the reply carried our own payload back, and whether the port was unreachable                                                                                       |
 
 The first two rows are open and the rest start collapsed. A row only fills in
 when a run is feeding it: **HTTP** needs an `http://` or `https://` target,
 **UDP** needs a `udp://` one, and **Name resolution** needs a hostname that is
-looked up more than once.
+looked up more than once. The download time and the page size in **HTTP** also
+need `--full-page`.
 
 Every panel keys its series on the source, the protocol, the target and the
 port, so a legend entry reads `brussels TCP github.com:443` and the same host
@@ -259,11 +260,11 @@ probed on two ports stays on two lines.
 
 On a long time range both dashboards fold many probes into each point, so a
 panel never draws more points than it has room for, a run of days or weeks
-still loads, and no probe is skipped over. Timings show the slowest probe in
-a point, so a spike stays visible. Reply sizes show the average of the probes
-in a point, the probe result shows no reply if any of them failed, the status
-code and streak lengths show the highest, and the counts and totals show the
-latest.
+still loads, and no probe is skipped over. Timings show the slowest probe in a
+point, so a spike stays visible. Reply and page sizes show the average of the
+probes in a point, the probe result shows no reply if any of them failed, the
+status code and streak lengths show the highest, and the counts and totals
+show the latest.
 
 `allowUiUpdates` is on, so once signed in as `admin` you can edit panels in
 Grafana and try things. The edits live in Grafana's volume, not in the JSON

@@ -1386,6 +1386,15 @@
               },
               "expr": "max_over_time(tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}[$__interval])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} first byte"
+            },
+            {
+              "refId": "D",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max_over_time(tcping_http_download_milliseconds{source=~\"$source\"}[$__interval])",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} download"
             }
           ],
           "fieldConfig": {
@@ -1416,7 +1425,7 @@
               "sort": "desc"
             }
           },
-          "description": "Connect, TLS handshake and time to first byte. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
+          "description": "Connect, TLS handshake, time to first byte and, with --full-page, how long the rest of the page took to download. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
         },
         {
           "id": 18,
@@ -1525,6 +1534,54 @@
             "textMode": "auto"
           },
           "description": "How long the certificate of each HTTPS target is still good for."
+        },
+        {
+          "id": 24,
+          "type": "timeseries",
+          "title": "HTTP page size",
+          "gridPos": {
+            "x": 0,
+            "y": 83,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "avg_over_time(tcping_http_page_bytes{source=~\"$source\"}[$__interval])",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": 300000
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "How big the page was. Only fills in with --full-page, which downloads the whole page instead of stopping at the first byte."
         }
       ]
     },
@@ -1534,7 +1591,7 @@
       "title": "UDP",
       "gridPos": {
         "x": 0,
-        "y": 83,
+        "y": 91,
         "w": 24,
         "h": 1
       },
@@ -1546,7 +1603,7 @@
           "title": "UDP reply size",
           "gridPos": {
             "x": 0,
-            "y": 84,
+            "y": 92,
             "w": 12,
             "h": 8
           },
@@ -1594,7 +1651,7 @@
           "title": "UDP reply echoed and port unreachable",
           "gridPos": {
             "x": 12,
-            "y": 84,
+            "y": 92,
             "w": 12,
             "h": 8
           },
