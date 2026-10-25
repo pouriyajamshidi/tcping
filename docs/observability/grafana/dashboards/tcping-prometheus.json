@@ -1118,7 +1118,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "avg_over_time(tcping_name_resolution_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_name_resolution_milliseconds{source=~\"$source\"}[$__interval])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
             }
           ],
@@ -1141,8 +1141,6 @@
               "displayMode": "table",
               "placement": "bottom",
               "calcs": [
-                "min",
-                "mean",
                 "max",
                 "lastNotNull"
               ]
@@ -1152,7 +1150,7 @@
               "sort": "desc"
             }
           },
-          "description": "One point per hostname lookup."
+          "description": "One point per hostname lookup. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
         },
         {
           "id": 15,
@@ -1284,7 +1282,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "avg_over_time(tcping_http_connect_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_connect_milliseconds{source=~\"$source\"}[$__interval])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} connect"
             },
             {
@@ -1293,7 +1291,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "avg_over_time(tcping_http_tls_handshake_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_tls_handshake_milliseconds{source=~\"$source\"}[$__interval])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} tls handshake"
             },
             {
@@ -1302,7 +1300,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "avg_over_time(tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}[$__interval])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} first byte"
             }
           ],
@@ -1325,8 +1323,6 @@
               "displayMode": "table",
               "placement": "bottom",
               "calcs": [
-                "min",
-                "mean",
                 "max",
                 "lastNotNull"
               ]
@@ -1336,7 +1332,7 @@
               "sort": "desc"
             }
           },
-          "description": "Connect, TLS handshake and time to first byte."
+          "description": "Connect, TLS handshake and time to first byte. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
         },
         {
           "id": 18,

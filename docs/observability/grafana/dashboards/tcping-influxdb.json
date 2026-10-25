@@ -1093,7 +1093,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
             }
           ],
           "fieldConfig": {
@@ -1115,8 +1115,6 @@
               "displayMode": "table",
               "placement": "bottom",
               "calcs": [
-                "min",
-                "mean",
                 "max",
                 "lastNotNull"
               ]
@@ -1126,7 +1124,7 @@
               "sort": "desc"
             }
           },
-          "description": "One point per hostname lookup, so a run that resolves every probe fills in and one that resolved once does not."
+          "description": "One point per hostname lookup, so a run that resolves every probe fills in and one that resolved once does not. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
         },
         {
           "id": 15,
@@ -1250,7 +1248,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
             }
           ],
           "fieldConfig": {
@@ -1272,8 +1270,6 @@
               "displayMode": "table",
               "placement": "bottom",
               "calcs": [
-                "min",
-                "mean",
                 "max",
                 "lastNotNull"
               ]
@@ -1283,7 +1279,7 @@
               "sort": "desc"
             }
           },
-          "description": "Connect, TLS handshake and time to first byte. Only fills in for an http:// or https:// target, and the handshake only over HTTPS."
+          "description": "Connect, TLS handshake and time to first byte. Only fills in for an http:// or https:// target, and the handshake only over HTTPS. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
         },
         {
           "id": 18,

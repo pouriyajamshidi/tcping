@@ -259,11 +259,11 @@ probed on two ports stays on two lines.
 
 On a long time range both dashboards fold many probes into each point, so a
 panel never draws more points than it has room for, a run of days or weeks
-still loads, and no probe is skipped over. The round trip time shows the
-slowest probe in a point, so a spike stays visible. The other timings and the
-reply sizes show the average of the probes in a point, the probe result shows
-no reply if any of them failed, the status code and streak lengths show the
-highest, and the counts and totals show the latest.
+still loads, and no probe is skipped over. Timings show the slowest probe in
+a point, so a spike stays visible. Reply sizes show the average of the probes
+in a point, the probe result shows no reply if any of them failed, the status
+code and streak lengths show the highest, and the counts and totals show the
+latest.
 
 `allowUiUpdates` is on, so once signed in as `admin` you can edit panels in
 Grafana and try things. The edits live in Grafana's volume, not in the JSON
