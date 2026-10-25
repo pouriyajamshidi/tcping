@@ -653,7 +653,7 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 | --------------- | ---------- | --------------------------------------------------------------------------------------------- |
 | `-c <n>`        | unbegrenzt | Nach `<n>` Probes anhalten, unabhängig vom Ergebnis                                           |
 | `-i <seconds>`  | `1`        | Intervall zwischen den Probes. Dezimalzahl erlaubt, z. B. `-i 0.5`                            |
-| `-t <seconds>`  | `1`        | Wartezeit auf eine Antwort in Sekunden. Dezimalzahl erlaubt. `0` bedeutet unendliches Timeout |
+| `-t <seconds>`  | `1`        | Wartezeit auf eine Antwort in Sekunden. Dezimalzahl erlaubt. `0` bedeutet unendliches Timeout. HTTP(S)-Ziele warten `3` Sekunden, wenn `-t` nicht angegeben ist |
 | `-4`            |            | Nur IPv4-Adressen verwenden                                                                   |
 | `-6`            |            | Nur IPv6-Adressen verwenden                                                                   |
 | `-I <name\|IP>` |            | Schnittstellenname oder IP-Adresse, von der die Probes und die DNS-Abfragen gesendet werden   |

@@ -652,7 +652,7 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 | --------------- | ---------- | ----------------------------------------------------------------------------------------------------- |
 | `-c <n>`        | illimité   | S'arrêter après `<n>` sondes, quel que soit le résultat                                               |
 | `-i <seconds>`  | `1`        | Intervalle entre les sondes. Nombre réel autorisé, par ex. `-i 0.5`                                   |
-| `-t <seconds>`  | `1`        | Temps d'attente d'une réponse, en secondes. Nombre réel autorisé. `0` signifie pas de délai d'attente |
+| `-t <seconds>`  | `1`        | Temps d'attente d'une réponse, en secondes. Nombre réel autorisé. `0` signifie pas de délai d'attente. Les cibles HTTP(S) attendent `3` secondes si `-t` n'est pas indiqué |
 | `-4`            |            | N'utiliser que des adresses IPv4                                                                      |
 | `-6`            |            | N'utiliser que des adresses IPv6                                                                      |
 | `-I <name\|IP>` |            | Nom d'interface ou adresse IP depuis laquelle envoyer les sondes et les requêtes DNS                  |

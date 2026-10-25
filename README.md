@@ -651,7 +651,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `-c <n>`        | no limit | Stop after `<n>` probes, regardless of the result                                                                                                                              |
 | `-i <seconds>`  | `1`      | Interval between probes. Real number allowed, e.g. `-i 0.5`                                                                                                                    |
-| `-t <seconds>`  | `1`      | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout                                                                                       |
+| `-t <seconds>`  | `1`      | Time to wait for a response, in seconds. Real number allowed. `0` means infinite timeout. HTTP(S) targets wait `3` seconds unless `-t` is given                                |
 | `-4`            |          | Only use IPv4 addresses                                                                                                                                                        |
 | `-6`            |          | Only use IPv6 addresses                                                                                                                                                        |
 | `-I <name\|IP>` |          | Interface name or IP address to send the probes and the DNS lookups from                                                                                                       |

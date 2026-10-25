@@ -652,7 +652,7 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 | --------------- | ----------- | --------------------------------------------------------------------------------------------- |
 | `-c <n>`        | geen limiet | Stoppen na `<n>` probes, ongeacht het resultaat                                               |
 | `-i <seconds>`  | `1`         | Interval tussen probes. Kommagetal toegestaan, bijv. `-i 0.5`                                 |
-| `-t <seconds>`  | `1`         | Wachttijd op een antwoord, in seconden. Kommagetal toegestaan. `0` betekent oneindige timeout |
+| `-t <seconds>`  | `1`         | Wachttijd op een antwoord, in seconden. Kommagetal toegestaan. `0` betekent oneindige timeout. HTTP(S)-doelen wachten `3` seconden als `-t` niet is opgegeven |
 | `-4`            |             | Alleen IPv4-adressen gebruiken                                                                |
 | `-6`            |             | Alleen IPv6-adressen gebruiken                                                                |
 | `-I <name\|IP>` |             | Interfacenaam of IP-adres om de probes en de DNS-opzoekingen vanaf te sturen                  |

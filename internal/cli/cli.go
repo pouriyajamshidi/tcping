@@ -19,6 +19,9 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/printers"
 )
 
+// defaultHTTPTimeout is how long an HTTP(S) probe waits when -t is not given.
+const defaultHTTPTimeout = 3 * time.Second
+
 // proxyFor parses the -proxy flag the probes go through. It returns nil
 // when the probes connect directly. The proxy environment variables are left
 // alone, so a proxy is only ever used when asked for.
@@ -177,13 +180,22 @@ func ProcessUserInput() (config.Config, printers.Config) {
 		protocol = config.UDP
 	}
 
+	// An HTTP(S) probe has to connect, do the TLS handshake and wait for the
+	// server to answer, so it gets a longer timeout unless -t is given.
+	timeout := secondsToDuration(f.timeout)
+	timeoutGiven := false
+	flag.Visit(func(fl *flag.Flag) { timeoutGiven = timeoutGiven || fl.Name == "t" })
+	if (protocol == config.HTTP || protocol == config.HTTPS) && !timeoutGiven {
+		timeout = defaultHTTPTimeout
+	}
+
 	cfg := config.Config{
 		Hostname:                   target.hostname,
 		URL:                        target.url,
 		IP:                         resolvedIP,
 		Port:                       validatedPort,
 		Protocol:                   protocol,
-		Timeout:                    secondsToDuration(f.timeout),
+		Timeout:                    timeout,
 		ProbesBeforeQuit:           f.probesBeforeQuit,
 		TargetIsIP:                 targetIsAlreadyIP,
 		NameResolutionDuration:     nameResolutionDuration,

@@ -160,7 +160,8 @@ func registerFlags() *flags {
 		1,
 		`Time to wait for a response in seconds.
 		Real number allowed.
-		0 means infinite timeout.`)
+		0 means infinite timeout.
+		The default is 1 second, or 3 seconds for an http(s):// target.`)
 
 	flag.BoolVar(&f.showTimestamp,
 		"D",

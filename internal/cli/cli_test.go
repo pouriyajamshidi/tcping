@@ -49,6 +49,41 @@ func TestProcessUserInputSpotsIPLiterals(t *testing.T) {
 	}
 }
 
+func TestProcessUserInputTimeout(t *testing.T) {
+	tests := []struct {
+		args string
+		want time.Duration
+	}{
+		{args: "127.0.0.1 443", want: time.Second},
+		{args: "127.0.0.1 443 -t 5", want: 5 * time.Second},
+		{args: "http://127.0.0.1/", want: 3 * time.Second},
+		{args: "https://127.0.0.1/", want: 3 * time.Second},
+		{args: "https://127.0.0.1/ -t 1", want: time.Second},
+		{args: "https://127.0.0.1/ -t 0", want: 0},
+	}
+
+	if args := os.Getenv(subprocessCase); args != "" {
+		os.Args = append([]string{"tcping"}, strings.Fields(args)...)
+		cfg, _ := ProcessUserInput()
+		fmt.Printf("Timeout=%v\n", cfg.Timeout)
+		os.Exit(0)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			out, errOut, code := runCase(t, "TestProcessUserInputTimeout", tt.args)
+			if code != 0 {
+				t.Fatalf("exited with %d. Output:\n%s%s", code, out, errOut)
+			}
+
+			want := fmt.Sprintf("Timeout=%v", tt.want)
+			if !strings.Contains(out, want) {
+				t.Errorf("%s: want %s. Output:\n%s", tt.args, want, out)
+			}
+		})
+	}
+}
+
 func TestProxyForFlag(t *testing.T) {
 	tests := []struct {
 		name      string
