@@ -12,7 +12,10 @@ import (
 // another program.
 type JSONPrinter struct {
 	encoder *json.Encoder
-	cfg     Config
+	// Where the events go when an address was given. Nil when they are
+	// printed.
+	stream *jsonStreamWriter
+	cfg    Config
 }
 
 // NewJSONPrinter creates a JSON printer writing to the destination in cfg:
@@ -20,8 +23,11 @@ type JSONPrinter struct {
 func NewJSONPrinter(cfg Config) (*JSONPrinter, error) {
 	writer := writerOrStdout(cfg)
 
+	var stream *jsonStreamWriter
 	if cfg.JSONURL != "" {
-		stream, err := newJSONStreamWriter(cfg.JSONURL)
+		var err error
+
+		stream, err = newJSONStreamWriter(cfg.JSONURL)
 		if err != nil {
 			return nil, err
 		}
@@ -35,7 +41,7 @@ func NewJSONPrinter(cfg Config) (*JSONPrinter, error) {
 		encoder.SetIndent("", "\t")
 	}
 
-	return &JSONPrinter{encoder: encoder, cfg: cfg}, nil
+	return &JSONPrinter{encoder: encoder, stream: stream, cfg: cfg}, nil
 }
 
 // jsonEvent is the envelope every event comes in. The source names the
@@ -355,11 +361,16 @@ func (p *JSONPrinter) PrintError(format string, args ...any) {
 	})
 }
 
-// Shutdown prints statistics. Statistics are already finalized by
+// Shutdown prints statistics, and when the events are streamed, POSTs every
+// event still waiting. Statistics are already finalized by
 // finalizeStatistics by the time this runs. It does not exit the program -
 // that decision belongs to the caller, not the printer.
 func (p *JSONPrinter) Shutdown(s *stats.Statistics) {
 	if !p.cfg.OmitStatistics {
 		p.PrintStatistics(s)
+	}
+
+	if p.stream != nil {
+		p.stream.close()
 	}
 }
