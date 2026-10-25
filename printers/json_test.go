@@ -306,6 +306,31 @@ func TestJSONProbeHTTPDetails(t *testing.T) {
 			"tlsHandshakeMs":    "5.000",
 			"timeToFirstByteMs": "20.000",
 		})
+
+		wantNoFields(t, httpData, "downloadMs", "pageBytes")
+	})
+
+	t.Run("full page adds the download time and page size", func(t *testing.T) {
+		for _, size := range []int64{48213, 0} {
+			s := https()
+			s.HTTP.BodyRead = true
+			s.HTTP.DownloadDuration = 30 * time.Millisecond
+			s.HTTP.BodySize = size
+
+			_, data := printOneJSONEvent(t, Config{}, func(p *JSONPrinter) {
+				p.PrintProbeSuccess(s)
+			})
+
+			httpData, ok := data["http"].(map[string]any)
+			if !ok {
+				t.Fatalf("field \"http\" is missing from %v", data)
+			}
+
+			wantFields(t, httpData, map[string]any{
+				"downloadMs": "30.000",
+				"pageBytes":  float64(size),
+			})
+		}
 	})
 
 	t.Run("plain http has no TLS details", func(t *testing.T) {

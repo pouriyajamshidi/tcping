@@ -114,6 +114,11 @@ type jsonHTTP struct {
 	ConnectMs      string `json:"connectMs"`
 	TLSMs          string `json:"tlsHandshakeMs,omitempty"`
 	TTFBMs         string `json:"timeToFirstByteMs"`
+
+	// Only with --full-page. The size is a pointer so an empty page still
+	// says 0 instead of leaving the field out.
+	DownloadMs string `json:"downloadMs,omitempty"`
+	PageBytes  *int64 `json:"pageBytes,omitempty"`
 }
 
 func newJSONHTTP(s *stats.Statistics) *jsonHTTP {
@@ -134,6 +139,12 @@ func newJSONHTTP(s *stats.Statistics) *jsonHTTP {
 		h.TLSCipherSuite = s.HTTP.TLSCipherSuite
 		h.CertExpiry = s.CertExpiryStr()
 		h.TLSMs = s.TLSDurationStr()
+	}
+
+	if s.HTTP.BodyRead {
+		h.DownloadMs = s.DownloadDurationStr()
+		pageBytes := s.HTTP.BodySize
+		h.PageBytes = &pageBytes
 	}
 
 	return h
