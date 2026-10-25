@@ -275,6 +275,74 @@ func TestOTLPUDPProbeSendsWhatItLearned(t *testing.T) {
 	}
 }
 
+// The download time and the page size are only sent with --full-page, and
+// an empty page is still a page, so it is sent as 0.
+func TestOTLPHTTPFullPageSendsTheDownload(t *testing.T) {
+	tests := []struct {
+		name     string
+		bodyRead bool
+		size     int64
+	}{
+		{"without --full-page", false, 0},
+		{"with --full-page", true, 48213},
+		{"with --full-page and an empty page", true, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got otlpPayload
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				if err := json.Unmarshal(body, &got); err != nil {
+					t.Errorf("the OTLP endpoint received invalid JSON: %v", err)
+				}
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			printer, err := NewOTLPPrinter(Config{OTLPURL: server.URL})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			s := otlpTestStats()
+			s.Protocol = config.HTTP
+			s.HTTP.StatusCode = 200
+			s.HTTP.BodyRead = tt.bodyRead
+			s.HTTP.DownloadDuration = 30 * time.Millisecond
+			s.HTTP.BodySize = tt.size
+
+			printer.PrintProbeSuccess(s)
+			printer.queue.flush()
+
+			found := map[string]float64{}
+			for _, m := range got.ResourceMetrics[0].ScopeMetrics[0].Metrics {
+				if m.Gauge != nil {
+					found[m.Name] = m.Gauge.DataPoints[0].Value
+				}
+			}
+
+			download, hasDownload := found["tcping_http_download_milliseconds"]
+			pageBytes, hasPageBytes := found["tcping_http_page_bytes"]
+
+			if !tt.bodyRead {
+				if hasDownload || hasPageBytes {
+					t.Errorf("sent the download time or page size without --full-page: %v", found)
+				}
+				return
+			}
+
+			if !hasDownload || download != 30 {
+				t.Errorf("tcping_http_download_milliseconds = %v (sent: %v), want 30", download, hasDownload)
+			}
+			if !hasPageBytes || pageBytes != float64(tt.size) {
+				t.Errorf("tcping_http_page_bytes = %v (sent: %v), want %d", pageBytes, hasPageBytes, tt.size)
+			}
+		})
+	}
+}
+
 // An OTLP endpoint that is not there must not stop the probing, and every
 // failed send has to be reported, so an outage that lasts is never hidden.
 func TestOTLPKeepsGoingWhenUnreachable(t *testing.T) {

@@ -319,6 +319,15 @@ func (p *OTLPPrinter) httpMetrics(s *stats.Statistics) []otlpMetric {
 		p.gauge("tcping_http_time_to_first_byte_milliseconds", "ms", msOf(s.HTTP.TimeToFirstByte), labels),
 	}
 
+	// Only --full-page downloads the page, so there is nothing to report
+	// without it.
+	if s.HTTP.BodyRead {
+		metrics = append(metrics,
+			p.gauge("tcping_http_download_milliseconds", "ms", msOf(s.HTTP.DownloadDuration), labels),
+			p.gauge("tcping_http_page_bytes", "By", float64(s.HTTP.BodySize), labels),
+		)
+	}
+
 	if s.HTTP.TLSVersion == "" {
 		return metrics
 	}
