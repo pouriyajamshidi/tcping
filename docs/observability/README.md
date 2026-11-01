@@ -268,6 +268,12 @@ probes in a point, the probe result shows no reply if any of them failed, the
 status code and streak lengths show the highest, and the counts and totals
 show the latest.
 
+On the InfluxDB dashboard, the probe result also shows no reply where no
+probes came in at all, as when the machine tcping runs on lost power. That is
+any hole more than 3 seconds longer than the run's usual time between probes,
+a run that went quiet and has not come back, and any point in which tcping
+started, so a short power cut still shows on a long time range.
+
 `allowUiUpdates` is on, so once signed in as `admin` you can edit panels in
 Grafana and try things. The edits live in Grafana's volume, not in the JSON
 files here, and `docker compose down -v` throws them away. To keep one, export

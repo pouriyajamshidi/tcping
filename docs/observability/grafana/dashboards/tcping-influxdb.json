@@ -173,7 +173,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: min, createEmpty: false)"
+          "query": "keys = [\"source\", \"target\", \"port\", \"protocol\"]\n\nprobes = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: min, createEmpty: false)\n  |> drop(columns: [\"_measurement\", \"_field\"])\n\nspaced = probes |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nholes = join(tables: {s: spaced, u: usual}, on: keys)\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000), _value: 0}))\n  |> drop(columns: [\"elapsed\", \"usual\"])\n\nlast = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"success\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> last()\n  |> drop(columns: [\"_measurement\", \"_field\"])\n\nquiet = join(tables: {s: last, u: usual}, on: keys)\n  |> filter(fn: (r) => int(v: v.timeRangeStop) - int(v: r._time) > (r.usual + 10000) * 1000000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) + r.usual * 1000000), _value: 0}))\n  |> drop(columns: [\"usual\"])\n\nstarts = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"start_time_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> filter(fn: (r) => r._value * 1000000 >= int(v: r._time) - int(v: v.windowPeriod))\n  |> map(fn: (r) => ({r with _value: 0}))\n  |> drop(columns: [\"_measurement\", \"_field\"])\n\nunion(tables: [probes, holes, quiet, starts])\n  |> group(columns: keys)\n  |> sort(columns: [\"_time\", \"_value\"])\n  |> unique(column: \"_time\")\n  |> drop(columns: [\"_start\", \"_stop\"])"
         }
       ],
       "fieldConfig": {
@@ -235,7 +235,7 @@
           "sort": "none"
         }
       },
-      "description": "1 while the target answers, 0 for every probe that failed."
+      "description": "1 while the target answers, 0 for every probe that failed. A stretch with no probes at all, as when tcping or the machine it runs on was off, counts as failed too: any hole more than 3 seconds longer than the run's usual time between probes, and any point in which tcping started."
     },
     {
       "id": 4,
