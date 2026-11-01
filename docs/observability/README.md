@@ -273,6 +273,10 @@ probes came in at all, as when the machine tcping runs on lost power. That is
 any hole more than 3 seconds longer than the run's usual time between probes,
 a run that went quiet and has not come back, and any point in which tcping
 started, so a short power cut still shows on a long time range.
+The line graphs break over the same holes instead of drawing across them. The
+ones fed by the run summary allow twice the usual time between points first,
+because the summary only goes out with a probe and so does not come at an
+even pace.
 
 `allowUiUpdates` is on, so once signed in as `admin` you can edit panels in
 Grafana and try things. The edits live in Grafana's volume, not in the JSON

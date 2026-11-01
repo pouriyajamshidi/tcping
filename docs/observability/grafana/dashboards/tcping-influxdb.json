@@ -123,7 +123,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
+          "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field == \"rtt_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
         }
       ],
       "fieldConfig": {
@@ -301,7 +301,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement =~ /^tcping_(tcp|udp|http)$/ and r._field =~ /^(successful|unsuccessful)_probes$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
         }
       ],
       "fieldConfig": {
@@ -347,7 +347,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^rtt_(min|avg|stddev)_ms$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual * 2 + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
         },
         {
           "refId": "B",
@@ -355,7 +355,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"rtt_max_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"rtt_max_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual * 2 + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
         }
       ],
       "fieldConfig": {
@@ -433,7 +433,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"uptime_seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"uptime_seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual * 2 + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
         },
         {
           "refId": "B",
@@ -441,7 +441,7 @@
             "type": "influxdb",
             "uid": "${datasource}"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"downtime_seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"downtime_seconds\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual * 2 + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
         }
       ],
       "fieldConfig": {
@@ -1081,7 +1081,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
+              "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_name_resolution\" and r._field == \"duration_ms\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
             }
           ],
           "fieldConfig": {
@@ -1266,7 +1266,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms|download_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
+              "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field =~ /^(connect_ms|tls_handshake_ms|ttfb_ms|download_ms)$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
             }
           ],
           "fieldConfig": {
@@ -1316,7 +1316,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)"
+              "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"status_code\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
             }
           ],
           "fieldConfig": {
@@ -1423,7 +1423,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"page_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_http\" and r._field == \"page_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
             }
           ],
           "fieldConfig": {
@@ -1484,7 +1484,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_udp\" and r._field == \"reply_bytes\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
             }
           ],
           "fieldConfig": {
