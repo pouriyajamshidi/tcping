@@ -74,7 +74,10 @@ cmd_block() {
 	local ip
 	ip=$(resolve "$dst")
 
+	# OUTPUT catches what this machine sends, FORWARD what a container on a
+	# Docker bridge sends, which never passes through OUTPUT.
 	iptables -I OUTPUT 1 -d "$ip" -m comment --comment "$TAG" -j DROP
+	iptables -I FORWARD 1 -d "$ip" -m comment --comment "$TAG" -j DROP
 	echo "blocking $ip"
 
 	if [[ -n $seconds ]]; then
@@ -138,7 +141,7 @@ apply_netem() {
 
 cmd_status() {
 	echo "iptables rules:"
-	iptables -S OUTPUT | grep -- "--comment \"$TAG\"" || echo "  none"
+	{ iptables -S OUTPUT; iptables -S FORWARD; } | grep -- "--comment \"$TAG\"" || echo "  none"
 
 	echo
 	echo "netem qdiscs:"
@@ -149,9 +152,11 @@ clear_all() {
 	trap - EXIT INT TERM
 
 	# Drop our tagged rules one at a time, newest first.
-	local line
-	while line=$(iptables -L OUTPUT --line-numbers -n | awk -v tag="$TAG" '$0 ~ tag {print $1; exit}'); [[ -n $line ]]; do
-		iptables -D OUTPUT "$line"
+	local chain line
+	for chain in OUTPUT FORWARD; do
+		while line=$(iptables -L "$chain" --line-numbers -n | awk -v tag="$TAG" '$0 ~ tag {print $1; exit}'); [[ -n $line ]]; do
+			iptables -D "$chain" "$line"
+		done
 	done
 
 	# Remove the root qdisc on every interface that ended up with netem.
