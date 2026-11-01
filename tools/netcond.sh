@@ -141,7 +141,7 @@ apply_netem() {
 
 cmd_status() {
 	echo "iptables rules:"
-	{ iptables -S OUTPUT; iptables -S FORWARD; } | grep -- "--comment \"$TAG\"" || echo "  none"
+	{ iptables -S OUTPUT; iptables -S FORWARD; } | grep -- "--comment $TAG" || echo "  none"
 
 	echo
 	echo "netem qdiscs:"
