@@ -202,20 +202,8 @@
             }
           ],
           "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
+            "mode": "fixed",
+            "fixedColor": "text"
           }
         },
         "overrides": []
@@ -1582,20 +1570,8 @@
                 }
               ],
               "color": {
-                "mode": "thresholds"
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 1
-                  }
-                ]
+                "mode": "fixed",
+                "fixedColor": "text"
               }
             },
             "overrides": []
