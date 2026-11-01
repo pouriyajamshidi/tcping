@@ -67,6 +67,40 @@
             "$__all"
           ]
         }
+      },
+      {
+        "name": "gap",
+        "label": "Max gap",
+        "description": "How long the probes of a run can stop before the panels show a hole. Set it above the -i of your runs.",
+        "type": "custom",
+        "query": "5s,15s,1m,5m",
+        "current": {
+          "text": "5s",
+          "value": "5s"
+        },
+        "options": [
+          {
+            "text": "5s",
+            "value": "5s",
+            "selected": true
+          },
+          {
+            "text": "15s",
+            "value": "15s",
+            "selected": false
+          },
+          {
+            "text": "1m",
+            "value": "1m",
+            "selected": false
+          },
+          {
+            "text": "5m",
+            "value": "5m",
+            "selected": false
+          }
+        ],
+        "hide": 0
       }
     ]
   },
@@ -116,7 +150,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max_over_time(tcping_probe_rtt_milliseconds{source=~\"$source\"}[$__interval])",
+          "expr": "max_over_time(tcping_probe_rtt_milliseconds{source=~\"$source\"}[$__interval]) or max_over_time(tcping_probe_rtt_milliseconds{source=~\"$source\"}[$gap])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
         }
       ],
@@ -127,7 +161,7 @@
             "lineWidth": 2,
             "fillOpacity": 10,
             "showPoints": "never",
-            "spanNulls": 300000
+            "spanNulls": false
           },
           "unit": "ms"
         },
@@ -167,7 +201,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "min_over_time(tcping_probe_success{source=~\"$source\"}[$__interval])",
+          "expr": "(max_over_time(tcping_start_time_milliseconds{source=~\"$source\"}[$__interval]) > (time() - $__interval_ms / 1000) * 1000) * 0\nor min_over_time(tcping_probe_success{source=~\"$source\"}[$__interval])\nor (last_over_time(tcping_probe_success{source=~\"$source\"}[1h]) * 0 unless count_over_time(tcping_probe_success{source=~\"$source\"}[$gap]))",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
         }
       ],
@@ -176,7 +210,7 @@
           "custom": {
             "lineWidth": 0,
             "fillOpacity": 90,
-            "spanNulls": 300000
+            "spanNulls": true
           },
           "mappings": [
             {
@@ -295,7 +329,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "tcping_probes_total{source=~\"$source\"}",
+          "expr": "last_over_time(tcping_probes_total{source=~\"$source\"}[$__interval]) or last_over_time(tcping_probes_total{source=~\"$source\"}[$gap])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{result}}"
         }
       ],
@@ -305,7 +339,8 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 0,
-            "showPoints": "never"
+            "showPoints": "never",
+            "spanNulls": false
           }
         },
         "overrides": []
@@ -341,7 +376,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "tcping_rtt_milliseconds{source=~\"$source\", stat!=\"max\"}",
+          "expr": "last_over_time(tcping_rtt_milliseconds{source=~\"$source\", stat!=\"max\"}[$__interval]) or last_over_time(tcping_rtt_milliseconds{source=~\"$source\", stat!=\"max\"}[$gap]) or last_over_time(tcping_rtt_milliseconds{source=~\"$source\", stat!=\"max\"}[30s])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
         },
         {
@@ -350,7 +385,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "tcping_rtt_milliseconds{source=~\"$source\", stat=\"max\"}",
+          "expr": "last_over_time(tcping_rtt_milliseconds{source=~\"$source\", stat=\"max\"}[$__interval]) or last_over_time(tcping_rtt_milliseconds{source=~\"$source\", stat=\"max\"}[$gap]) or last_over_time(tcping_rtt_milliseconds{source=~\"$source\", stat=\"max\"}[30s])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} {{stat}}"
         }
       ],
@@ -361,7 +396,8 @@
             "lineWidth": 2,
             "fillOpacity": 0,
             "showPoints": "never",
-            "axisLabel": "min / average / stddev"
+            "axisLabel": "min / average / stddev",
+            "spanNulls": false
           },
           "unit": "ms"
         },
@@ -428,7 +464,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "tcping_uptime_seconds_total{source=~\"$source\"}",
+          "expr": "last_over_time(tcping_uptime_seconds_total{source=~\"$source\"}[$__interval]) or last_over_time(tcping_uptime_seconds_total{source=~\"$source\"}[$gap]) or last_over_time(tcping_uptime_seconds_total{source=~\"$source\"}[30s])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} uptime"
         },
         {
@@ -437,7 +473,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "tcping_downtime_seconds_total{source=~\"$source\"}",
+          "expr": "last_over_time(tcping_downtime_seconds_total{source=~\"$source\"}[$__interval]) or last_over_time(tcping_downtime_seconds_total{source=~\"$source\"}[$gap]) or last_over_time(tcping_downtime_seconds_total{source=~\"$source\"}[30s])",
           "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} downtime"
         }
       ],
@@ -448,7 +484,8 @@
             "lineWidth": 2,
             "fillOpacity": 0,
             "showPoints": "never",
-            "axisLabel": "uptime"
+            "axisLabel": "uptime",
+            "spanNulls": false
           },
           "unit": "s"
         },
@@ -1106,7 +1143,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_name_resolution_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_name_resolution_milliseconds{source=~\"$source\"}[$__interval]) or max_over_time(tcping_name_resolution_milliseconds{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
             }
           ],
@@ -1117,7 +1154,7 @@
                 "lineWidth": 2,
                 "fillOpacity": 10,
                 "showPoints": "never",
-                "spanNulls": 300000
+                "spanNulls": false
               },
               "unit": "ms"
             },
@@ -1354,7 +1391,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_http_connect_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_connect_milliseconds{source=~\"$source\"}[$__interval]) or max_over_time(tcping_http_connect_milliseconds{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} connect"
             },
             {
@@ -1363,7 +1400,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_http_tls_handshake_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_tls_handshake_milliseconds{source=~\"$source\"}[$__interval]) or max_over_time(tcping_http_tls_handshake_milliseconds{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} tls handshake"
             },
             {
@@ -1372,7 +1409,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}[$__interval]) or max_over_time(tcping_http_time_to_first_byte_milliseconds{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} first byte"
             },
             {
@@ -1381,7 +1418,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_http_download_milliseconds{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_download_milliseconds{source=~\"$source\"}[$__interval]) or max_over_time(tcping_http_download_milliseconds{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} download"
             }
           ],
@@ -1392,7 +1429,7 @@
                 "lineWidth": 2,
                 "fillOpacity": 10,
                 "showPoints": "never",
-                "spanNulls": 300000
+                "spanNulls": false
               },
               "unit": "ms"
             },
@@ -1432,7 +1469,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_http_status_code{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_http_status_code{source=~\"$source\"}[$__interval]) or max_over_time(tcping_http_status_code{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
             }
           ],
@@ -1444,7 +1481,7 @@
                 "fillOpacity": 0,
                 "showPoints": "never",
                 "lineInterpolation": "stepAfter",
-                "spanNulls": 300000
+                "spanNulls": false
               }
             },
             "overrides": []
@@ -1540,7 +1577,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "avg_over_time(tcping_http_page_bytes{source=~\"$source\"}[$__interval])",
+              "expr": "avg_over_time(tcping_http_page_bytes{source=~\"$source\"}[$__interval]) or avg_over_time(tcping_http_page_bytes{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
             }
           ],
@@ -1551,7 +1588,7 @@
                 "lineWidth": 2,
                 "fillOpacity": 10,
                 "showPoints": "never",
-                "spanNulls": 300000
+                "spanNulls": false
               },
               "unit": "bytes"
             },
@@ -1602,7 +1639,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "avg_over_time(tcping_udp_reply_bytes{source=~\"$source\"}[$__interval])",
+              "expr": "avg_over_time(tcping_udp_reply_bytes{source=~\"$source\"}[$__interval]) or avg_over_time(tcping_udp_reply_bytes{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
             }
           ],
@@ -1613,7 +1650,7 @@
                 "lineWidth": 2,
                 "fillOpacity": 10,
                 "showPoints": "never",
-                "spanNulls": 300000
+                "spanNulls": false
               },
               "unit": "bytes"
             },
@@ -1650,7 +1687,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_udp_reply_echoed{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_udp_reply_echoed{source=~\"$source\"}[$__interval]) or max_over_time(tcping_udp_reply_echoed{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} echoed"
             },
             {
@@ -1659,7 +1696,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max_over_time(tcping_udp_port_unreachable{source=~\"$source\"}[$__interval])",
+              "expr": "max_over_time(tcping_udp_port_unreachable{source=~\"$source\"}[$__interval]) or max_over_time(tcping_udp_port_unreachable{source=~\"$source\"}[$gap])",
               "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}} unreachable"
             }
           ],
@@ -1668,7 +1705,7 @@
               "custom": {
                 "lineWidth": 0,
                 "fillOpacity": 90,
-                "spanNulls": 300000
+                "spanNulls": false
               },
               "mappings": [
                 {

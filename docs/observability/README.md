@@ -278,6 +278,13 @@ ones fed by the run summary allow twice the usual time between points first,
 because the summary only goes out with a probe and so does not come at an
 even pace.
 
+The Prometheus dashboard cannot learn a run's usual time between probes, so it
+has a **Max gap** dropdown instead, 5 seconds unless you change it. The probe
+result shows no reply once a run has sent nothing for longer than that, and in
+any point in which tcping started, and the graphs break there. The ones fed by
+the run summary wait at least 30 seconds. Set it above the `-i` of your runs,
+or a run that probes every 10 seconds shows no reply between its probes.
+
 `allowUiUpdates` is on, so once signed in as `admin` you can edit panels in
 Grafana and try things. The edits live in Grafana's volume, not in the JSON
 files here, and `docker compose down -v` throws them away. To keep one, export
