@@ -38,7 +38,7 @@ NFPM_VERSION := v2.48.0
 # installed, "make nix CONTAINER=1" and "make nix-update CONTAINER=1" run the
 # very same commands inside the image below. The named volume keeps the Nix
 # store between runs, so only the first build pays for the downloads.
-NIX_IMAGE := nixos/nix:2.35.2
+NIX_IMAGE := nixos/nix:2.35.6
 NIX_STORE_VOLUME := tcping-nix-store
 
 ifdef CONTAINER
