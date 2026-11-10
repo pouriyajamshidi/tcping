@@ -41,7 +41,7 @@ _arguments -s \
 	'--influxdb-token=[InfluxDB API token]:token:' \
 	'--stats-interval=[How often to send the statistics to OTLP or InfluxDB, in seconds]:seconds:' \
 	'--source-label=[Name this machine in the metrics sent to OTLP or InfluxDB]:name:' \
-	'--insecure[Do not verify the server certificate of an https:// target]' \
+	'--insecure[Do not verify the certificate of an https:// target or proxy]' \
 	'--full-page[Download the whole page of an http(s):// target, so the time covers it]' \
 	'--proxy=[Send TCP and HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128]:URL:_urls' \
 	'--udp-server[Do not probe. Echo every received UDP datagram back to its sender]' \

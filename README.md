@@ -491,7 +491,8 @@ and the connect time of an HTTP(S) probe, are those of the connection to the
 proxy, and the first line of the run names it. tcping does not look the
 hostname up itself, so the output shows no address for it, and `-r` and
 `--resolve-every-probe` do not work with a proxy. `-4`, `-6` and
-`--dns-server` apply to the proxy's own hostname instead. UDP probes do not go
+`--dns-server` apply to the proxy's own hostname instead, and `--insecure`
+skips the check of an `https://` proxy's certificate too. UDP probes do not go
 through a proxy. A proxy set in a PAC file has to be given by hand, as tcping
 does not read PAC files.
 
@@ -718,7 +719,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 | Flag           | Default | Description                                                                                                                                         |
 | -------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |         | Do not verify the server certificate when probing an `https://` target. Useful for self-signed or expired certificates                              |
+| `--insecure`   |         | Do not verify the server certificate when probing an `https://` target, nor the certificate of an `https://` proxy. Useful for self-signed or expired certificates |
 | `--full-page`  |         | Download the whole page of an `http(s)://` target, so the time covers the full download. The files the page links to are not fetched                |
 | `--udp-server` |         | Do not probe. Listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at this machine gets a reply |
 

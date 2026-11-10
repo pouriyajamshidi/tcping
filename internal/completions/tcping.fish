@@ -48,7 +48,7 @@ complete -c tcping -l influxdb-token -x -d 'InfluxDB API token'
 complete -c tcping -l stats-interval -x -d 'How often to send the statistics to OTLP or InfluxDB, in seconds'
 complete -c tcping -l source-label -x -d 'Name this machine in the metrics sent to OTLP or InfluxDB'
 
-complete -c tcping -l insecure -d 'Do not verify the server certificate of an https:// target'
+complete -c tcping -l insecure -d 'Do not verify the certificate of an https:// target or proxy'
 complete -c tcping -l full-page -d 'Download the whole page of an http(s):// target, so the time covers it'
 complete -c tcping -l proxy -x -d 'Send TCP and HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128'
 complete -c tcping -l udp-server -d 'Do not probe. Echo every received UDP datagram back to its sender'

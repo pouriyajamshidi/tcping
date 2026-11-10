@@ -28,7 +28,7 @@ type Config struct {
 	ShouldRetryResolve         bool
 	ResolveEveryProbe          bool           // Resolve the hostname before every probe, superseding ShouldRetryResolve.
 	ShowFailuresOnly           bool           // Only print probe failures.
-	SkipTLSVerify              bool           // Do not check the server certificate. HTTPS targets only.
+	SkipTLSVerify              bool           // Do not check the certificate of an https:// target or proxy.
 	FullPage                   bool           // Read the whole response body, so the probe times the full download. HTTP(S) targets only.
 	Proxy                      *url.URL       // Proxy the TCP and HTTP(S) probes go through. Nil when they connect directly.
 	ProxyAddr                  netip.AddrPort // Where the proxy is, looked up once at startup. Zero when Proxy is nil.

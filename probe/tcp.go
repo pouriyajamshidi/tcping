@@ -21,6 +21,7 @@ type Tcping struct {
 	timeout          time.Duration
 	hostname         string // what the proxy is asked to connect to
 	port             uint16
+	skipTLSVerify    bool           // do not check an https:// proxy's certificate
 	proxy            *url.URL       // nil when the probe connects directly
 	proxyAddr        netip.AddrPort // where the proxy is, zero without one
 }
@@ -32,6 +33,7 @@ func NewTcping(cfg config.Config) Tcping {
 		timeout:          cfg.Timeout,
 		hostname:         cfg.Hostname,
 		port:             cfg.Port,
+		skipTLSVerify:    cfg.SkipTLSVerify,
 		proxy:            cfg.Proxy,
 		proxyAddr:        cfg.ProxyAddr,
 	}
@@ -72,7 +74,10 @@ func (t Tcping) pingThroughProxy(ctx context.Context) (Result, error) {
 	}
 
 	if t.proxy.Scheme == "https" {
-		conn = tls.Client(conn, &tls.Config{ServerName: t.proxy.Hostname()})
+		conn = tls.Client(conn, &tls.Config{
+			ServerName:         t.proxy.Hostname(),
+			InsecureSkipVerify: t.skipTLSVerify,
+		})
 	}
 
 	target := net.JoinHostPort(t.hostname, strconv.Itoa(int(t.port)))

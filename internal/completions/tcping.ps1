@@ -80,7 +80,7 @@ Register-ArgumentCompleter -Native -CommandName tcping, tcping.exe -ScriptBlock 
 	$flags['--stats-interval'] = 'How often to send the statistics to OTLP or InfluxDB, in seconds'
 	$flags['--source-label'] = 'Name this machine in the metrics sent to OTLP or InfluxDB'
 
-	$flags['--insecure'] = 'Do not verify the server certificate of an https:// target'
+	$flags['--insecure'] = 'Do not verify the certificate of an https:// target or proxy'
 	$flags['--full-page'] = 'Download the whole page of an http(s):// target, so the time covers it'
 	$flags['--proxy'] = 'Send TCP and HTTP(S) probes through a proxy, e.g. http://proxy.example.com:3128'
 	$flags['--udp-server'] = 'Do not probe. Echo every received UDP datagram back to its sender'

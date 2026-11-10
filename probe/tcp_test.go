@@ -383,6 +383,28 @@ func TestPing_ThroughHTTPSProxyChecksItsCertificate(t *testing.T) {
 	}
 }
 
+// -insecure covers the proxy too, so the same self-signed proxy lets the
+// probe through.
+func TestPing_ThroughHTTPSProxyWithInsecure(t *testing.T) {
+	proxy := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	t.Cleanup(proxy.Close)
+
+	proxyAddr := netip.MustParseAddrPort(proxy.Listener.Addr().String())
+
+	tp := Tcping{
+		timeout:       2 * time.Second,
+		hostname:      "example.com",
+		port:          22,
+		skipTLSVerify: true,
+		proxy:         &url.URL{Scheme: "https", Host: proxyAddr.String()},
+		proxyAddr:     proxyAddr,
+	}
+
+	if _, err := tp.Ping(context.Background(), netip.Addr{}); err != nil {
+		t.Errorf("Ping() with -insecure error = %v, want no error", err)
+	}
+}
+
 // The timeout covers the whole talk with the proxy, not only reaching it, so
 // a proxy that never answers cannot hold a probe up for longer.
 func TestPing_ThroughProxyThatNeverAnswersTimesOut(t *testing.T) {

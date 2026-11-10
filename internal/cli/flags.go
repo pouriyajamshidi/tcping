@@ -229,8 +229,9 @@ func registerFlags() *flags {
 	flag.BoolVar(&f.skipTLSVerify,
 		"insecure",
 		false,
-		`Do not check the server certificate when probing an https:// target.
-		Useful for self-signed or expired certificates.`)
+		`Do not check the server certificate when probing an https:// target,
+		nor the certificate of an https:// proxy. Useful for self-signed or
+		expired certificates.`)
 
 	flag.BoolVar(&f.fullPage,
 		"full-page",
