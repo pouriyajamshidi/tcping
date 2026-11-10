@@ -124,7 +124,7 @@ var (
 	rttPattern       = regexp.MustCompile(`[\d.]+/[\d.]+/[\d.]+/[\d.]+ ms`)
 	// Every shape durationToString can produce, plus the millisecond form
 	// the probe lines use.
-	durationPattern = regexp.MustCompile(`\d+ hours? \d+ minutes? \d+ seconds?|\d+ minutes? \d+ seconds?|\d+ (hour|minute)|[\d.]+ (seconds?|ms)`)
+	durationPattern = regexp.MustCompile(`\d+ (hours?|minutes?)( \d+ (minutes?|seconds?))*|[\d.]+ (seconds?|ms)`)
 )
 
 // mask replaces everything that depends on the clock, so the rest of a

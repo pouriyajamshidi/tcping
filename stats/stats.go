@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
@@ -426,39 +427,32 @@ func durationToString(d time.Duration) string {
 	// print as "1 minute 60 seconds".
 	d = d.Round(time.Second)
 
-	hours := d / time.Hour
-	d %= time.Hour
+	hours := int(d / time.Hour)
+	minutes := int(d % time.Hour / time.Minute)
+	seconds := int(d % time.Minute / time.Second)
 
-	minutes := d / time.Minute
-	d %= time.Minute
-
-	seconds := d.Seconds()
-
-	switch {
-	case hours >= 2:
-		return fmt.Sprintf("%d hours %d minutes %.0f seconds", hours, minutes, seconds)
-
-	case hours == 1:
-		if minutes == 0 && seconds == 0 {
-			return "1 hour"
-		}
-		return fmt.Sprintf("1 hour %d minutes %.0f seconds", minutes, seconds)
-
-	case minutes >= 2:
-		return fmt.Sprintf("%d minutes %.0f seconds", minutes, seconds)
-
-	case minutes == 1:
-		if seconds == 0 {
-			return "1 minute"
-		}
-		return fmt.Sprintf("1 minute %.0f seconds", seconds)
-
-	case seconds == 1:
-		return "1 second"
-
-	default:
-		return fmt.Sprintf("%.0f seconds", seconds)
+	// Each part picks its own unit name, and the zero parts are left out, so
+	// 2m1s prints as "2 minutes 1 second" and 2h as "2 hours".
+	var parts []string
+	if hours > 0 {
+		parts = append(parts, countStr(hours, "hour"))
 	}
+	if minutes > 0 {
+		parts = append(parts, countStr(minutes, "minute"))
+	}
+	if seconds > 0 {
+		parts = append(parts, countStr(seconds, "second"))
+	}
+
+	return strings.Join(parts, " ")
+}
+
+// countStr puts n in front of unit, adding an "s" unless n is 1.
+func countStr(n int, unit string) string {
+	if n == 1 {
+		return "1 " + unit
+	}
+	return fmt.Sprintf("%d %ss", n, unit)
 }
 
 // EndedDowntimeDuration is the downtime this probe ended, if it ended one.

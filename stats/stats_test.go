@@ -170,11 +170,35 @@ func TestDurationToString_NoSixtySeconds(t *testing.T) {
 		d    time.Duration
 		want string
 	}{
-		{119700 * time.Millisecond, "2 minutes 0 seconds"},
+		{119700 * time.Millisecond, "2 minutes"},
 		{59600 * time.Millisecond, "1 minute"},
 		{3599700 * time.Millisecond, "1 hour"},
 		{0, "0 seconds"},
 		{1500 * time.Millisecond, "2 seconds"},
+	}
+
+	for _, tt := range tests {
+		if got := durationToString(tt.d); got != tt.want {
+			t.Errorf("durationToString(%v) = %q, want %q", tt.d, got, tt.want)
+		}
+	}
+}
+
+// TestDurationToString_UnitPerPart makes sure every part gets its own
+// singular or plural and the zero parts are left out. It used to print
+// "2 minutes 1 seconds" and "2 hours 0 minutes 0 seconds".
+func TestDurationToString_UnitPerPart(t *testing.T) {
+	tests := []struct {
+		d    time.Duration
+		want string
+	}{
+		{2*time.Minute + time.Second, "2 minutes 1 second"},
+		{time.Hour + time.Minute + 5*time.Second, "1 hour 1 minute 5 seconds"},
+		{2 * time.Hour, "2 hours"},
+		{time.Hour + 5*time.Second, "1 hour 5 seconds"},
+		{2*time.Hour + 3*time.Minute, "2 hours 3 minutes"},
+		{2*time.Hour + time.Minute + time.Second, "2 hours 1 minute 1 second"},
+		{45 * time.Second, "45 seconds"},
 	}
 
 	for _, tt := range tests {
