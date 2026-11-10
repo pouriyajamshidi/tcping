@@ -7,9 +7,10 @@ import (
 
 // Config holds all configuration options for Printer creation
 type Config struct {
-	// Where the output goes. Nil means os.Stdout, which is what a real run
-	// uses. Setting it lets a test read what a printer wrote, and leaves
-	// room for a destination that is not the terminal, e.g. a socket.
+	// Where the JSON printer writes. Nil means os.Stdout, which is what a
+	// real run uses. Setting it lets a test read what the printer wrote, and
+	// leaves room for a destination that is not the terminal, e.g. a socket.
+	// The other printers do not use it.
 	Writer io.Writer
 
 	OutputJSON        bool

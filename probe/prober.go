@@ -65,7 +65,7 @@ type Prober struct {
 
 // NewProber wires up a prober. summaryRequests may be nil; when it is not,
 // the statistics are printed every time it yields a value (see
-// app.SummaryRequests).
+// summaryRequests in internal/app).
 func NewProber(pinger Pinger, printer Printer, cfg config.Config, statistics *stats.Statistics, summaryRequests <-chan struct{}) *Prober {
 	pr := Prober{
 		pinger:          pinger,

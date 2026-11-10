@@ -9,10 +9,10 @@ type Printer interface {
 	// This message is printed only once, at the very beginning.
 	PrintStart(s *stats.Statistics)
 
-	// PrintNameResolutionDuration should print how long the initial
-	// hostname resolution took. Called once, right after PrintStart -
-	// skipped entirely when the target was already a literal IP, since no
-	// resolution happened.
+	// PrintNameResolutionDuration should report how long the hostname
+	// lookup that just finished took. It is called after every lookup made
+	// during the run, by -r or by -resolve-every-probe. The lookup made at
+	// startup is reported by PrintStart.
 	PrintNameResolutionDuration(s *stats.Statistics)
 
 	// PrintProbeSuccess should print a message after each successful probe.

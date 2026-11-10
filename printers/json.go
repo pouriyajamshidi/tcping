@@ -217,7 +217,8 @@ func (p *JSONPrinter) PrintStart(s *stats.Statistics) {
 	p.encode("start", start)
 }
 
-// PrintNameResolutionDuration prints how long the initial hostname resolution took.
+// PrintNameResolutionDuration emits how long a hostname lookup made during
+// the run took.
 func (p *JSONPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 	p.encode("nameResolution", jsonNameResolution{
 		DurationMs: s.NameResolutionDurationStr(),

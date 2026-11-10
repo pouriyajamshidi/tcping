@@ -205,7 +205,8 @@ func newLongestTime(startTime time.Time, duration time.Duration) LongestTime {
 	}
 }
 
-// SetLongestDuration updates the longest uptime or downtime based on the given type.
+// SetLongestDuration records the period that began at start and lasted
+// duration as the longest one, unless the one already held is longer.
 func SetLongestDuration(start time.Time, duration time.Duration, longest *LongestTime) {
 	if start.IsZero() || duration == 0 {
 		return
