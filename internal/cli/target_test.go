@@ -12,6 +12,7 @@ func TestParseHostPortArgs(t *testing.T) {
 		args     []string
 		wantHost string
 		wantPort string
+		wantErr  bool
 	}{
 		{
 			name:     "traditional format: host port",
@@ -68,10 +69,26 @@ func TestParseHostPortArgs(t *testing.T) {
 			wantPort: "",
 		},
 		{
-			name:     "three arguments: only first two are used",
-			args:     []string{"example.com", "8080", "extra"},
-			wantHost: "example.com",
-			wantPort: "8080",
+			name:    "host:port and a port argument",
+			args:    []string{"example.com:443", "80"},
+			wantErr: true,
+		},
+		{
+			name:    "bracketed IPv6 with a port and a port argument",
+			args:    []string{"[::1]:443", "80"},
+			wantErr: true,
+		},
+		{
+			name:     "bracketed IPv6 and a port argument",
+			args:     []string{"[::1]", "80"},
+			wantHost: "::1",
+			wantPort: "80",
+		},
+		{
+			name:     "bare IPv6 and a port argument",
+			args:     []string{"2001:db8::1", "80"},
+			wantHost: "2001:db8::1",
+			wantPort: "80",
 		},
 		{
 			name:     "empty string argument",
@@ -95,7 +112,10 @@ func TestParseHostPortArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotHost, gotPort := parseHostPortArgs(tt.args)
+			gotHost, gotPort, err := parseHostPortArgs(tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseHostPortArgs(%v) error = %v, wantErr %v", tt.args, err, tt.wantErr)
+			}
 			if gotHost != tt.wantHost || gotPort != tt.wantPort {
 				t.Errorf("parseHostPortArgs(%v) = (%q, %q), want (%q, %q)",
 					tt.args, gotHost, gotPort, tt.wantHost, tt.wantPort)
@@ -236,6 +256,16 @@ func TestParseTarget(t *testing.T) {
 		{
 			name:    "a URL without a host is rejected",
 			args:    []string{"https://"},
+			wantErr: true,
+		},
+		{
+			name:    "a third argument is rejected",
+			args:    []string{"example.com", "443", "444"},
+			wantErr: true,
+		},
+		{
+			name:    "a third argument after a URL is rejected",
+			args:    []string{"https://example.com", "443", "444"},
 			wantErr: true,
 		},
 		{

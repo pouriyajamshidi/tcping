@@ -22,6 +22,7 @@ func TestProcessUserInputSpotsIPLiterals(t *testing.T) {
 		{target: "::1", want: true},
 		{target: "0:0:0:0:0:0:0:1", want: true},
 		{target: "2001:0db8::1", want: true},
+		{target: "[::1]", want: true},
 		{target: "localhost", want: false},
 	}
 
@@ -106,6 +107,44 @@ func TestProcessUserInputTimeout(t *testing.T) {
 			want := fmt.Sprintf("Timeout=%v", tt.want)
 			if !strings.Contains(out, want) {
 				t.Errorf("%s: want %s. Output:\n%s", tt.args, want, out)
+			}
+		})
+	}
+}
+
+// A target tcping cannot make sense of is refused up front with what is
+// wrong, not probed in part or left to fail as a lookup.
+func TestProcessUserInputRejectsBadTargets(t *testing.T) {
+	tests := []struct {
+		args string
+		want string
+	}{
+		{args: "example.com 443 444", want: `unexpected argument "444", give only the host and the port`},
+		{args: "example.com 443 444 -c 1", want: `unexpected argument "444", give only the host and the port`},
+		{args: "https://example.com 443 444", want: `unexpected argument "444", give only the host and the port`},
+		{args: "example.com:443 80", want: `"example.com:443" already has a port, give either host:port or host port`},
+		{args: "[::1]:443 80", want: `"[::1]:443" already has a port, give either host:port or host port`},
+	}
+
+	if args := os.Getenv(subprocessCase); args != "" {
+		os.Args = append([]string{"tcping"}, strings.Fields(args)...)
+		ProcessUserInput()
+		t.Fatalf("ProcessUserInput returned instead of exiting for %q", args)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			out, errOut, code := runCase(t, "TestProcessUserInputRejectsBadTargets", tt.args)
+			if code != 1 {
+				t.Errorf("exited with %d, want 1. Output:\n%s%s", code, out, errOut)
+			}
+
+			if errOut != tt.want+"\n" {
+				t.Errorf("stderr = %q, want %q", errOut, tt.want+"\n")
+			}
+
+			if out != "" {
+				t.Errorf("wrote to stdout, want nothing there:\n%s", out)
 			}
 		})
 	}

@@ -26,17 +26,28 @@ func convertAndValidatePort(port string) (uint16, error) {
 }
 
 // parseHostPortArgs handles both "host port" and "host:port" formats
-func parseHostPortArgs(args []string) (host string, port string) {
+func parseHostPortArgs(args []string) (host string, port string, err error) {
 	if len(args) == 1 {
 		// We have `host:port`
 		if h, p, err := net.SplitHostPort(args[0]); err == nil {
-			return h, p
+			return h, p, nil
 		}
-		return args[0], ""
+		return args[0], "", nil
 	}
 
-	// We were given `host port`
-	return args[0], args[1]
+	// We were given `host port`, so the host should not carry a port too.
+	if _, _, err := net.SplitHostPort(args[0]); err == nil {
+		return "", "", fmt.Errorf("%q already has a port, give either host:port or host port", args[0])
+	}
+
+	// Brackets are only needed when the port follows the IPv6 address, but
+	// they are harmless here.
+	host = args[0]
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		host = host[1 : len(host)-1]
+	}
+
+	return host, args[1], nil
 }
 
 // probeTarget is what the user asked us to probe, extracted from the
@@ -83,9 +94,16 @@ func parseTarget(args []string) (probeTarget, error) {
 		return probeTarget{}, nil
 	}
 
+	if len(args) > 2 {
+		return probeTarget{}, fmt.Errorf("unexpected argument %q, give only the host and the port", args[2])
+	}
+
 	protocol, isURL := schemeProtocol(args[0])
 	if !isURL {
-		host, port := parseHostPortArgs(args)
+		host, port, err := parseHostPortArgs(args)
+		if err != nil {
+			return probeTarget{}, err
+		}
 		return probeTarget{hostname: host, port: port, protocol: config.TCP}, nil
 	}
 
