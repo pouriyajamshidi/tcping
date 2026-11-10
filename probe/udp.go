@@ -97,7 +97,7 @@ func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 		// The target sent back an ICMP port unreachable, which the kernel
 		// hands us here because the socket is connected. Something is there
 		// and it refused us. Any other error means nothing came back.
-		if errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ECONNRESET) {
+		if errors.Is(err, syscall.ECONNREFUSED) {
 			result.Rejected = true
 		}
 
