@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -332,6 +333,89 @@ func TestNewResolver_ZeroTimeoutMeansNoDeadline(t *testing.T) {
 	case <-time.After(300 * time.Millisecond):
 		// Still running after 300ms with nothing responding - correctly
 		// has no deadline instead of failing instantly.
+	}
+}
+
+// recordingListener returns the address of a UDP socket that never replies,
+// and a function that returns the record types (1 for A, 28 for AAAA) of the
+// questions it has received so far.
+func recordingListener(t *testing.T) (net.Addr, func() []uint16) {
+	t.Helper()
+
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	if err != nil {
+		t.Fatalf("failed to start UDP listener: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+
+	var mu sync.Mutex
+	var types []uint16
+
+	go func() {
+		buf := make([]byte, 512)
+		for {
+			n, _, err := conn.ReadFrom(buf)
+			if err != nil {
+				return
+			}
+
+			// The question name starts after the 12 byte header and is a
+			// list of length-prefixed labels ending with a zero byte. The
+			// record type comes right after it.
+			i := 12
+			for i < n && buf[i] != 0 {
+				i += int(buf[i]) + 1
+			}
+			if i+2 < n {
+				mu.Lock()
+				types = append(types, uint16(buf[i+1])<<8|uint16(buf[i+2]))
+				mu.Unlock()
+			}
+		}
+	}()
+
+	return conn.LocalAddr(), func() []uint16 {
+		mu.Lock()
+		defer mu.Unlock()
+		return slices.Clone(types)
+	}
+}
+
+// -4 and -6 used to ask for both A and AAAA records and filter afterwards,
+// so a slow answer for the family not in use could fail the lookup.
+func TestResolveHostname_AsksOnlyForTheFamilyInUse(t *testing.T) {
+	const typeA, typeAAAA = 1, 28
+
+	tests := []struct {
+		name             string
+		useIPv4, useIPv6 bool
+		want             []uint16
+	}{
+		{"-4 asks for A only", true, false, []uint16{typeA}},
+		{"-6 asks for AAAA only", false, true, []uint16{typeAAAA}},
+		{"neither asks for both", false, false, []uint16{typeA, typeAAAA}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addr, received := recordingListener(t)
+
+			r, err := NewResolver(addr.String(), 200*time.Millisecond, tt.useIPv4, tt.useIPv6, nic.NetworkInterface{})
+			if err != nil {
+				t.Fatalf("NewResolver() error = %v", err)
+			}
+
+			if _, err := r.ResolveHostname("example.com"); err == nil {
+				t.Fatal("ResolveHostname() error = nil, want a timeout error")
+			}
+
+			got := received()
+			slices.Sort(got)
+			got = slices.Compact(got)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("record types asked for = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

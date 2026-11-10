@@ -22,9 +22,6 @@ const (
 	DefaultPort    = "53"
 )
 
-// IPv4OrIPv6 allows LookupNetIP to use both IPv4 and IPv6 addresses
-const IPv4OrIPv6 = "ip"
-
 // Lookup errors, returned when the hostname resolved but not to an address
 // of the family that was asked for.
 var (
@@ -207,7 +204,19 @@ func (r *Resolver) ResolveHostname(hostname string) (netip.Addr, error) {
 		defer cancel()
 	}
 
-	ipAddrs, err := r.resolver.LookupNetIP(ctx, IPv4OrIPv6, hostname)
+	// Ask only for the family we will use, so a slow or failing answer for
+	// the other one cannot fail the lookup.
+	var network string
+	switch {
+	case r.useIPv4:
+		network = "ip4"
+	case r.useIPv6:
+		network = "ip6"
+	default:
+		network = "ip"
+	}
+
+	ipAddrs, err := r.resolver.LookupNetIP(ctx, network, hostname)
 	if err != nil {
 		return ip, err
 	}
