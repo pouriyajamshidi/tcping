@@ -447,6 +447,18 @@ func (f *flags) validate() {
 		fmt.Fprintln(os.Stderr, "Statistics interval should be more than 0 seconds")
 		os.Exit(1)
 	}
+
+	// A negative timeout is a deadline that has already passed, so every
+	// probe or lookup would fail before it was even sent.
+	if f.timeout < 0 {
+		fmt.Fprintln(os.Stderr, "Timeout should be 0 or more seconds")
+		os.Exit(1)
+	}
+
+	if f.dnsTimeout < 0 {
+		fmt.Fprintln(os.Stderr, "DNS timeout should be 0 or more seconds")
+		os.Exit(1)
+	}
 }
 
 // newPrinterConfig collects everything the printers need out of the flags.

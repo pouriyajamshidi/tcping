@@ -381,6 +381,16 @@ func TestValidateRejectsFlagsThatDoNotGoTogether(t *testing.T) {
 			flags: flags{influxDBURL: "http://localhost:8086", statsInterval: 0, intervalBetweenProbes: 1},
 			want:  "Statistics interval should be more than 0 seconds",
 		},
+		{
+			name:  "a negative timeout",
+			flags: flags{timeout: -1, intervalBetweenProbes: 1},
+			want:  "Timeout should be 0 or more seconds",
+		},
+		{
+			name:  "a negative DNS timeout",
+			flags: flags{dnsTimeout: -1, intervalBetweenProbes: 1},
+			want:  "DNS timeout should be 0 or more seconds",
+		},
 	}
 
 	// The child process runs the one case it was asked for and lets
