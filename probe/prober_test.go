@@ -486,7 +486,7 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
-		ProbesBeforeQuit:           1,
+		ProbesBeforeQuit:           2,
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 1,
 		// A literal IP resolves without touching the network.
@@ -528,7 +528,7 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
-		ProbesBeforeQuit:           1,
+		ProbesBeforeQuit:           2,
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 1,
 		Resolver:                   newTestResolver(t, blackhole.LocalAddr().String(), 200*time.Millisecond),
@@ -622,7 +622,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
-		ProbesBeforeQuit:           2,
+		ProbesBeforeQuit:           3,
 		ShouldRetryResolve:         true,
 		RetryResolveAfterNFailures: 2,
 		// A literal IP resolves without touching the network.

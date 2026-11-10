@@ -597,6 +597,19 @@ func TestRunTranscript_RetryResolveAfterEveryNFailures(t *testing.T) {
 	}
 }
 
+// The lookup that -r makes is for the probes after it, so the last probe of a
+// -c run makes none, even when it is the nth failure.
+func TestRunTranscript_NoRetryResolveAfterTheLastProbe(t *testing.T) {
+	out := scriptedRun{
+		printer:           NewPlainPrinter(Config{}),
+		outcomes:          []bool{false, false, false},
+		resolver:          failingResolver(t),
+		retryResolveAfter: 3,
+	}.run(t)
+
+	wantNoLines(t, out, "Retrying to resolve", "lookup example.com")
+}
+
 // With --full-page, the time on the probe line has to cover the whole
 // download, and -v has to say how long the download took and how big it was.
 // Without it, the time stops at the server's answer. This runs the real HTTP

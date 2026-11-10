@@ -307,6 +307,14 @@ func (p *Prober) Probe(ctx context.Context) {
 			}
 		}
 
+		if p.config.ProbesBeforeQuit > 0 {
+			probeCount++
+
+			if probeCount >= p.config.ProbesBeforeQuit {
+				return true
+			}
+		}
+
 		failures := p.statistics.OngoingUnsuccessfulProbes
 		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&
 			failures > 0 && failures%p.config.RetryResolveAfterNFailures == 0 {
@@ -315,14 +323,6 @@ func (p *Prober) Probe(ctx context.Context) {
 			p.printer.PrintRetryingToResolve(p.statistics.Hostname)
 
 			p.resolveHostname(false)
-		}
-
-		if p.config.ProbesBeforeQuit > 0 {
-			probeCount++
-
-			if probeCount >= p.config.ProbesBeforeQuit {
-				return true
-			}
 		}
 
 		return false
