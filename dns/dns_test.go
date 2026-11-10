@@ -425,7 +425,7 @@ func TestSelectResolvedIPv4(t *testing.T) {
 	)
 
 	t.Run("IPv4 Selection", func(t *testing.T) {
-		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2})
+		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2}, nic.NetworkInterface{})
 
 		if !actual.IsValid() {
 			t.Error("Expected an IP but got invalid address")
@@ -443,7 +443,7 @@ func TestSelectResolvedIPv6(t *testing.T) {
 	)
 
 	t.Run("IPv6 Selection", func(t *testing.T) {
-		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2})
+		actual, _ := selectRandomIP([]netip.Addr{ip1, ip2}, nic.NetworkInterface{})
 		if !actual.IsValid() {
 			t.Error("Expected an IP but got invalid address")
 		}
@@ -513,7 +513,7 @@ func TestSelectRandomIP(t *testing.T) {
 	t.Run("a single address is the one that comes back", func(t *testing.T) {
 		want := addrs(t, "1.2.3.4")
 
-		got, err := selectRandomIP(want)
+		got, err := selectRandomIP(want, nic.NetworkInterface{})
 		if err != nil {
 			t.Fatalf("selectRandomIP returned an unexpected error: %v", err)
 		}
@@ -527,7 +527,7 @@ func TestSelectRandomIP(t *testing.T) {
 		in := addrs(t, "1.2.3.4", "5.6.7.8", "2001:db8::1")
 
 		for range 50 {
-			got, err := selectRandomIP(in)
+			got, err := selectRandomIP(in, nic.NetworkInterface{})
 			if err != nil {
 				t.Fatalf("selectRandomIP returned an unexpected error: %v", err)
 			}
@@ -539,8 +539,84 @@ func TestSelectRandomIP(t *testing.T) {
 	})
 
 	t.Run("an empty list is an error, not a zero address", func(t *testing.T) {
-		if _, err := selectRandomIP(nil); err == nil {
+		if _, err := selectRandomIP(nil, nic.NetworkInterface{}); err == nil {
 			t.Error("selectRandomIP(nil) error = nil, want an error")
 		}
 	})
+}
+
+// Go puts the addresses this machine can reach first, so only the first
+// one's family is picked from. A machine without IPv6 then never probes an
+// IPv6 address, while a hostname with several addresses in that family is
+// still spread over all of them.
+func TestSelectRandomIP_StaysInOneFamily(t *testing.T) {
+	ipv4Only := nic.NetworkInterface{Use: true, SourceIPv4: net.ParseIP("192.0.2.10")}
+	ipv6Only := nic.NetworkInterface{Use: true, SourceIPv6: net.ParseIP("2001:db8::10")}
+	bothFamilies := nic.NetworkInterface{Use: true, SourceIPv4: net.ParseIP("192.0.2.10"), SourceIPv6: net.ParseIP("2001:db8::10")}
+
+	tests := []struct {
+		name             string
+		in               []string
+		networkInterface nic.NetworkInterface
+		want             []string
+	}{
+		{
+			name: "IPv4 first",
+			in:   []string{"1.2.3.4", "5.6.7.8", "2001:db8::1", "2001:db8::2"},
+			want: []string{"1.2.3.4", "5.6.7.8"},
+		},
+		{
+			name: "IPv6 first",
+			in:   []string{"2001:db8::1", "2001:db8::2", "1.2.3.4", "5.6.7.8"},
+			want: []string{"2001:db8::1", "2001:db8::2"},
+		},
+		{
+			name:             "an IPv4-only interface picks IPv4 even when IPv6 comes first",
+			in:               []string{"2001:db8::1", "1.2.3.4", "5.6.7.8"},
+			networkInterface: ipv4Only,
+			want:             []string{"1.2.3.4", "5.6.7.8"},
+		},
+		{
+			name:             "an IPv6-only interface picks IPv6 even when IPv4 comes first",
+			in:               []string{"1.2.3.4", "2001:db8::1", "2001:db8::2"},
+			networkInterface: ipv6Only,
+			want:             []string{"2001:db8::1", "2001:db8::2"},
+		},
+		{
+			name:             "an interface with both families goes by the first address",
+			in:               []string{"2001:db8::1", "1.2.3.4"},
+			networkInterface: bothFamilies,
+			want:             []string{"2001:db8::1"},
+		},
+		{
+			name:             "an interface whose family is not in the answers picks from all of them",
+			in:               []string{"2001:db8::1", "2001:db8::2"},
+			networkInterface: ipv4Only,
+			want:             []string{"2001:db8::1", "2001:db8::2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := addrs(t, tt.in...)
+			want := addrs(t, tt.want...)
+
+			seen := map[netip.Addr]bool{}
+			for range 200 {
+				got, err := selectRandomIP(in, tt.networkInterface)
+				if err != nil {
+					t.Fatalf("selectRandomIP returned an unexpected error: %v", err)
+				}
+
+				if !slices.Contains(want, got) {
+					t.Fatalf("selectRandomIP(%v) = %v, want one of %v", in, got, want)
+				}
+				seen[got] = true
+			}
+
+			if len(seen) != len(want) {
+				t.Errorf("selectRandomIP(%v) only ever picked %v, want all of %v", in, seen, want)
+			}
+		})
+	}
 }

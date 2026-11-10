@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"net/netip"
 	"strings"
@@ -26,10 +26,11 @@ const (
 // given DNS server, limited to an address family, and out of a given network
 // interface.
 type Resolver struct {
-	resolver *net.Resolver
-	timeout  time.Duration
-	useIPv4  bool
-	useIPv6  bool
+	resolver         *net.Resolver
+	timeout          time.Duration
+	useIPv4          bool
+	useIPv6          bool
+	networkInterface nic.NetworkInterface
 }
 
 // getDialAddress computes the override address for the resolver's Dial func.
@@ -132,19 +133,50 @@ func NewResolver(dnsServer string, timeout time.Duration, useIPv4, useIPv6 bool,
 	}
 
 	return &Resolver{
-		resolver: createDNSResolver(dialAddress, timeout, networkInterface),
-		timeout:  timeout,
-		useIPv4:  useIPv4,
-		useIPv6:  useIPv6,
+		resolver:         createDNSResolver(dialAddress, timeout, networkInterface),
+		timeout:          timeout,
+		useIPv4:          useIPv4,
+		useIPv6:          useIPv6,
+		networkInterface: networkInterface,
 	}, nil
 }
 
-// selectRandomIP returns one of ipAddrs at random.
-func selectRandomIP(ipAddrs []netip.Addr) (netip.Addr, error) {
+// selectRandomIP returns one of ipAddrs at random, out of the ones in the
+// same family as the first. Go sorts the answers so the ones this machine
+// can reach come first, so a machine without IPv6 never gets an IPv6
+// address. When the interface from -I has an address of only one family,
+// that family is picked instead.
+func selectRandomIP(ipAddrs []netip.Addr, networkInterface nic.NetworkInterface) (netip.Addr, error) {
 	if len(ipAddrs) == 0 {
 		return netip.Addr{}, errors.New("no ip addresses")
 	}
-	return ipAddrs[rand.Intn(len(ipAddrs))], nil
+
+	wantIPv4 := ipAddrs[0].Is4()
+	if networkInterface.Use {
+		switch {
+		case networkInterface.SourceIPv4 != nil && networkInterface.SourceIPv6 == nil:
+			wantIPv4 = true
+		case networkInterface.SourceIPv6 != nil && networkInterface.SourceIPv4 == nil:
+			wantIPv4 = false
+		default:
+			// It has both, so the first address decides.
+		}
+	}
+
+	var sameFamily []netip.Addr
+	for _, ip := range ipAddrs {
+		if ip.Is4() == wantIPv4 {
+			sameFamily = append(sameFamily, ip)
+		}
+	}
+
+	// None of the answers is of the interface's family, so the probe fails
+	// whichever one is picked. Pick from all of them.
+	if len(sameFamily) == 0 {
+		sameFamily = ipAddrs
+	}
+
+	return sameFamily[rand.IntN(len(sameFamily))], nil
 }
 
 func unmapAddresses(ipAddrs []netip.Addr) []netip.Addr {
@@ -189,5 +221,5 @@ func (r *Resolver) ResolveHostname(hostname string) (netip.Addr, error) {
 		return ip, err
 	}
 
-	return selectRandomIP(unmapAddresses(ipAddrs))
+	return selectRandomIP(unmapAddresses(ipAddrs), r.networkInterface)
 }

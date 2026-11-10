@@ -670,7 +670,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `--proxy <URL>` |          | Send TCP and `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128`. The `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are not used |
 
 > [!TIP]
-> Without specifying the `-4` and `-6` flags, tcping will randomly select an IP address based on DNS lookups.
+> Without the `-4` and `-6` flags, tcping picks an address at random from the family this machine can reach first, so a machine without IPv6 never probes an IPv6 address. With `-I`, the family of the interface's address wins.
 
 ### Name resolution
 
