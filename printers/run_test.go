@@ -580,6 +580,8 @@ func TestRunTranscript_RetryResolveAfterEveryNFailures(t *testing.T) {
 			got = append(got, "retry")
 		case strings.HasPrefix(line, "lookup example.com"):
 			got = append(got, "lookup failed")
+		default:
+			// The "Probing" line at the top.
 		}
 	}
 
