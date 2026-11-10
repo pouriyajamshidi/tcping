@@ -137,13 +137,15 @@ func addDateAndCSVExtension(filename string, withStatsExt, noTimestamp bool) str
 		return base + ".csv"
 	}
 
-	timestamp := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
+	// Only the timestamp is ours to shape. A space in the path the user gave
+	// has to stay, or the file lands in a folder that does not exist.
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
 
 	if withStatsExt {
-		return strings.ReplaceAll(base+"_"+timestamp+"_stats.csv", " ", "_")
+		return base + "_" + timestamp + "_stats.csv"
 	}
 
-	return strings.ReplaceAll(base+"_"+timestamp+".csv", " ", "_")
+	return base + "_" + timestamp + ".csv"
 }
 
 // NewCSVPrinter initializes a CSVPrinter instance from the printer config.

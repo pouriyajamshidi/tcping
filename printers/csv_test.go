@@ -34,6 +34,8 @@ func TestAddCSVExtension(t *testing.T) {
 		{"Standard extension, stats file", "results.csv", true, "results" + timestampWithExtensionStats},
 		{"Multiple dots, probe file", "results.backup.2026", false, "results.backup.2026" + timestampWithExtension},
 		{"Multiple dots, stats file", "results.backup.2026.csv", true, "results.backup.2026" + timestampWithExtensionStats},
+		{"A space in the path, probe file", "my runs/results", false, "my runs/results" + timestampWithExtension},
+		{"A space in the path, stats file", "my runs/results", true, "my runs/results" + timestampWithExtensionStats},
 	}
 
 	for _, tt := range tests {
