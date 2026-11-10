@@ -30,6 +30,7 @@
 - improvement: the OTLP, InfluxDB and `--json-url` outputs send from the background, so a slow endpoint no longer slows the probing down. OTLP and InfluxDB send in batches every 5 seconds, while `--json-url` still sends each event as it happens, one per request. A send that could not reach the endpoint, or got a 5xx or 429 back, is tried again with the next one. Up to 10,000 results are kept meanwhile, the oldest are dropped past that and the drop is reported, and whatever is still waiting is sent on exit
 - improvement (breaking): exit with `1` when no probe succeeded, like `ping` does, so `tcping -c 1 example.com 443 && echo up` only says up when the target answered. It used to exit with `0` whatever happened
 - improvement: refuse a third positional argument instead of ignoring it, so `tcping example.com 443 444` no longer quietly probes port 443. A port given twice, as in `tcping example.com:443 80`, is refused too instead of ending in "Could not resolve", and `tcping [::1] 80` now works
+- fix: `-r` looks the hostname up again after every `<n>` failures in a row, as its help says. With `-r 3`, a long outage used to retry after failure 3, 4, 5 and every one after that, printing `Retrying to resolve` each time
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
