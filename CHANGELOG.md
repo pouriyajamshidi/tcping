@@ -113,6 +113,10 @@
 - fix: the update check no longer tells someone on a release candidate, such as `3.0.0-rc1`, that they have the latest version once `3.0.0` is out
 - fix: pressing **Enter** during a `--csv` run no longer adds another statistics block to the `_stats.csv` file. The file is written over each time, so it only ever holds the newest statistics
 - fix: the usage text, the "option requires a value" message, printer setup failures and update check errors now go to stderr instead of stdout
+- fix: `-h` now prints the flags on stdout and exits with status 0, so `tcping -h | less` works. A wrong command line still gets the usage on stderr and a failing status
+- fix: `--csv` no longer turns the spaces in the path it is given into underscores, which pointed it at a folder that does not exist. Only the date and time it adds to the name get underscores
+- fix: a negative `-t` or `--dns-timeout`, such as `-t=-1`, is refused instead of failing every probe or lookup right away
+- fix: the error printed when the OTLP endpoint, InfluxDB or the `--json-url` server cannot be reached names the address once instead of twice
 - feat: add `--no-stats` flag to skip printing the statistics when the program exits. Pressing the **Enter** key still shows them
 - refactor: simplify RTT min/avg/max tracking into a running calculation instead of storing every sample
 - refactor: consolidate uptime/downtime tracking and remove duplicated/unused `Statistics` fields
