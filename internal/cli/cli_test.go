@@ -49,6 +49,33 @@ func TestProcessUserInputSpotsIPLiterals(t *testing.T) {
 	}
 }
 
+// Asking for help is not a mistake, so it is answered on stdout and with a
+// zero exit status, which is what makes "tcping --help | less" work.
+func TestProcessUserInputHelp(t *testing.T) {
+	if arg := os.Getenv(subprocessCase); arg != "" {
+		os.Args = []string{"tcping", "example.com", "443", arg}
+		ProcessUserInput()
+		t.Fatalf("ProcessUserInput returned instead of exiting for %q", arg)
+	}
+
+	for _, arg := range []string{"-h", "--h", "-help", "--help"} {
+		t.Run(arg, func(t *testing.T) {
+			out, errOut, code := runCase(t, "TestProcessUserInputHelp", arg)
+			if code != 0 {
+				t.Errorf("exited with %d, want 0. Output:\n%s%s", code, out, errOut)
+			}
+
+			if !strings.Contains(out, "[optional flags]") || !strings.Contains(out, "-resolve-every-probe") {
+				t.Errorf("the flags were not printed on stdout. Output:\n%s", out)
+			}
+
+			if errOut != "" {
+				t.Errorf("wrote to stderr, want it all on stdout:\n%s", errOut)
+			}
+		})
+	}
+}
+
 func TestProcessUserInputTimeout(t *testing.T) {
 	tests := []struct {
 		args string

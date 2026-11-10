@@ -78,6 +78,14 @@ func ProcessUserInput() (config.Config, printers.Config) {
 
 	flag.CommandLine.Usage = usage
 
+	// The flag package would answer these through usage as well, and so
+	// treat asking for help as a mistake.
+	for _, arg := range os.Args[1:] {
+		if arg == "-h" || arg == "--h" || arg == "-help" || arg == "--help" {
+			help()
+		}
+	}
+
 	permuteArgs(os.Args[1:])
 
 	flag.Parse()
