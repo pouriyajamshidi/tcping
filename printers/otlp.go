@@ -272,7 +272,7 @@ func (p *OTLPPrinter) send(metrics []otlpMetric) (retry bool) {
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.printOTLPError("could not reach %s: %v", p.endpoint, err)
+		p.printOTLPError("could not reach the endpoint: %v", err)
 		return true
 	}
 	defer resp.Body.Close()

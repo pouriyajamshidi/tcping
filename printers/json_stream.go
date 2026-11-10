@@ -85,7 +85,7 @@ func (w *jsonStreamWriter) send(events [][]byte) (retry bool) {
 
 	resp, err := w.client.Do(req)
 	if err != nil {
-		w.printError("could not reach %s: %v", w.url, err)
+		w.printError("could not reach the server: %v", err)
 		return true
 	}
 	defer resp.Body.Close()

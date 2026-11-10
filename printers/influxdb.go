@@ -160,7 +160,7 @@ func (p *InfluxDBPrinter) send(lines []string) (retry bool) {
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		p.printInfluxDBError("could not reach InfluxDB at %s: %v", p.endpoint, err)
+		p.printInfluxDBError("could not reach InfluxDB: %v", err)
 		return true
 	}
 	defer resp.Body.Close()
