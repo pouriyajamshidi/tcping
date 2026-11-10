@@ -180,10 +180,8 @@ func sanitizeTableName(hostname, port string) string {
 	sanitizedTime := strings.NewReplacer("-", "_", ":", "_", " ", "_").Replace(time.Now().Format(time.DateTime))
 
 	tableName := fmt.Sprintf("%s_%s__%s", sanitizedHost, port, sanitizedTime)
-	if tableName != "" {
-		if r, _ := utf8.DecodeRuneInString(tableName); unicode.IsNumber(r) {
-			tableName = "_" + tableName
-		}
+	if r, _ := utf8.DecodeRuneInString(tableName); unicode.IsNumber(r) {
+		tableName = "_" + tableName
 	}
 	return tableName
 }
@@ -370,13 +368,8 @@ func hostnameChanges(s *stats.Statistics) string {
 
 	var changes strings.Builder
 	for i := 0; i < len(s.HostnameChanges)-1; i++ {
-		from := s.HostnameChanges[i].Addr.String()
-		if from == "" {
-			continue
-		}
-
 		fmt.Fprintf(&changes, "from %s to %s at %s took %s ms\n",
-			from,
+			s.HostnameChanges[i].Addr.String(),
 			s.HostnameChanges[i+1].Addr.String(),
 			s.HostnameChanges[i+1].WhenFormatted(),
 			s.HostnameChanges[i+1].DurationStr(),

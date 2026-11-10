@@ -409,16 +409,9 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		var hostnameChanges strings.Builder
 
 		for i := 0; i < len(s.HostnameChanges)-1; i++ {
-			from := s.HostnameChanges[i].Addr.String()
-			if from == "" {
-				continue
-			}
-
-			to := s.HostnameChanges[i+1].Addr.String()
-
 			fmt.Fprintf(&hostnameChanges, "from %s to %s at %s took %s ms - ",
-				from,
-				to,
+				s.HostnameChanges[i].Addr.String(),
+				s.HostnameChanges[i+1].Addr.String(),
 				s.HostnameChanges[i+1].WhenFormatted(),
 				s.HostnameChanges[i+1].DurationStr(),
 			)

@@ -47,5 +47,4 @@ const (
 	UDP   Protocol = "UDP"
 	HTTP  Protocol = "HTTP"
 	HTTPS Protocol = "HTTPS"
-	ICMP  Protocol = "ICMP"
 )
