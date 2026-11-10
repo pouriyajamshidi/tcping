@@ -32,6 +32,7 @@
 - improvement: refuse a third positional argument instead of ignoring it, so `tcping example.com 443 444` no longer quietly probes port 443. A port given twice, as in `tcping example.com:443 80`, is refused too instead of ending in "Could not resolve", and `tcping [::1] 80` now works
 - fix: `-r` looks the hostname up again after every `<n>` failures in a row, as its help says. With `-r 3`, a long outage used to retry after failure 3, 4, 5 and every one after that, printing `Retrying to resolve` each time
 - fix: the last probe of a `-c` run no longer looks the hostname up again under `-r`, since no probe is left to use the answer
+- fix: on a hostname with both IPv4 and IPv6 addresses, tcping picks one at random from the family this machine can reach first, instead of from all of them. On a machine without IPv6, `tcping google.com 443` used to fail about one run in three, and `-r` or `--resolve-every-probe` could switch a working run to IPv6. With `-I`, the family of the interface's address wins
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
