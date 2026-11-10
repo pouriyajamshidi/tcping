@@ -113,10 +113,7 @@ func (r scriptedRun) run(t *testing.T) string {
 	prober := probe.NewProber(pinger, r.printer, cfg, s, requests)
 
 	return captureStdout(t, func() {
-		if err := prober.Probe(context.Background()); err != nil {
-			t.Errorf("Probe() failed: %v", err)
-			return
-		}
+		prober.Probe(context.Background())
 
 		r.printer.Shutdown(s)
 	})
@@ -594,9 +591,7 @@ func TestRunTranscript_FullPage(t *testing.T) {
 		prober := probe.NewProber(probe.NewHTTPing(cfg), printer, cfg, s, nil)
 
 		return captureStdout(t, func() {
-			if err := prober.Probe(context.Background()); err != nil {
-				t.Errorf("Probe() failed: %v", err)
-			}
+			prober.Probe(context.Background())
 		})
 	}
 

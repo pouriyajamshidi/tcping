@@ -245,12 +245,16 @@ func (p *Prober) finalizeStatistics() {
 
 // Probe runs the probe loop until ctx is cancelled or the configured
 // number of probes is reached.
-func (p *Prober) Probe(ctx context.Context) error {
+func (p *Prober) Probe(ctx context.Context) {
 	ticker := time.NewTicker(p.config.IntervalBetweenProbes)
 	defer ticker.Stop()
 
 	p.statistics.StartTime = time.Now()
 	p.printer.PrintStart(p.statistics)
+
+	// Whichever way the loop ends, the statistics are closed off for the
+	// final summary.
+	defer p.finalizeStatistics()
 
 	var probeCount uint
 
@@ -325,15 +329,13 @@ func (p *Prober) Probe(ctx context.Context) error {
 
 	// Probe immediately instead of waiting for the ticker's first tick.
 	if runProbe() {
-		p.finalizeStatistics()
-		return nil
+		return
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			p.finalizeStatistics()
-			return nil
+			return
 
 		case _, ok := <-p.summaryRequests:
 			if !ok {
@@ -349,8 +351,7 @@ func (p *Prober) Probe(ctx context.Context) error {
 
 		case <-ticker.C:
 			if runProbe() {
-				p.finalizeStatistics()
-				return nil
+				return
 			}
 		}
 	}

@@ -458,9 +458,7 @@ func TestProbe_StopsAfterProbesBeforeQuit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if got := pinger.calls(); got != 3 {
 		t.Errorf("Ping called %d times, want 3", got)
@@ -497,9 +495,7 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 	p, printer := newTestProber(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
-	if err := p.Probe(context.Background()); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(context.Background())
 
 	if got := printer.snapshot().nameResolutionCalls; got != 1 {
 		t.Errorf("PrintNameResolutionDuration called %d times, want 1", got)
@@ -542,9 +538,7 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	snap := printer.snapshot()
 	if snap.nameResolutionCalls != 0 {
@@ -568,7 +562,7 @@ func TestProbe_StopsOnContextCancellation(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		_ = p.Probe(ctx)
+		p.Probe(ctx)
 		close(done)
 	}()
 
@@ -601,9 +595,7 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	s := p.statistics
 	if s.TotalUnsuccessfulProbes != 2 || s.TotalSuccessfulProbes != 1 {
@@ -641,9 +633,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 1 {
 		t.Errorf("RetriedHostnameLookups = %d, want 1", p.statistics.RetriedHostnameLookups)
@@ -680,9 +670,7 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 3 {
 		t.Errorf("RetriedHostnameLookups = %d, want 3 (one resolve per probe)", p.statistics.RetriedHostnameLookups)
@@ -715,9 +703,7 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 0 {
 		t.Errorf("RetriedHostnameLookups = %d, want 0 (target is a literal IP)", p.statistics.RetriedHostnameLookups)
@@ -744,9 +730,7 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 2 {
 		t.Errorf("RetriedHostnameLookups = %d, want 2 (once per probe, not double-counted)", p.statistics.RetriedHostnameLookups)
@@ -776,9 +760,7 @@ func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	ips := pinger.ips()
 	if len(ips) != 3 {
@@ -811,9 +793,7 @@ func TestProbe_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if got := pinger.calls(); got != 1 {
 		t.Errorf("Ping called %d times, want exactly 1 (the immediate, pre-tick probe)", got)
@@ -833,9 +813,7 @@ func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(ctx)
 
 	if got := pinger.calls(); got != 1 {
 		t.Errorf("Ping called %d times, want exactly 1", got)
@@ -865,9 +843,7 @@ func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
 		IntervalBetweenProbes: time.Millisecond,
 	})
 
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v, want no error", err)
-	}
+	p.Probe(ctx)
 
 	s := p.statistics
 
@@ -902,9 +878,7 @@ func TestProbe_RealFailureStillCounts(t *testing.T) {
 		ProbesBeforeQuit:      2,
 	})
 
-	if err := p.Probe(ctx); err != nil {
-		t.Fatalf("Probe() error = %v, want no error", err)
-	}
+	p.Probe(ctx)
 
 	s := p.statistics
 
@@ -928,9 +902,7 @@ func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 	}
 	p, printer := newTestProber(pinger, cfg)
 
-	if err := p.Probe(context.Background()); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(context.Background())
 
 	if got := printer.snapshot().successCalls; got != 0 {
 		t.Errorf("PrintProbeSuccess called %d times, want 0", got)
@@ -950,9 +922,7 @@ func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
 	}
 	p, printer := newTestProber(pinger, cfg)
 
-	if err := p.Probe(context.Background()); err != nil {
-		t.Fatalf("Probe() error = %v", err)
-	}
+	p.Probe(context.Background())
 
 	if got := printer.snapshot().failureCalls; got != 2 {
 		t.Errorf("PrintProbeFailure called %d times, want 2", got)
