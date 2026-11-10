@@ -58,13 +58,14 @@ func (p *scriptedPinger) Ping(context.Context, netip.Addr) (probe.Result, error)
 // go, and after how many probes the user presses "Enter" for a mid-run
 // summary. Zero means they never do.
 type scriptedRun struct {
-	printer          probe.Printer
-	outcomes         []bool
-	showFailuresOnly bool
-	enterAfter       int
-	protocol         config.Protocol // TCP when not given.
-	proxy            *url.URL
-	resolver         *dns.Resolver // When given, looks the hostname up before every probe.
+	printer           probe.Printer
+	outcomes          []bool
+	showFailuresOnly  bool
+	enterAfter        int
+	protocol          config.Protocol // TCP when not given.
+	proxy             *url.URL
+	resolver          *dns.Resolver // When given, looks the hostname up before every probe, unless retryResolveAfter is set.
+	retryResolveAfter uint          // -r: looks the hostname up again after every that many failures in a row.
 }
 
 // run probes once per entry in outcomes and returns everything that reached
@@ -78,17 +79,19 @@ func (r scriptedRun) run(t *testing.T) string {
 	}
 
 	cfg := config.Config{
-		Hostname:               "example.com",
-		IP:                     netip.MustParseAddr("93.184.216.34"),
-		Port:                   443,
-		Protocol:               protocol,
-		Proxy:                  r.proxy,
-		NameResolutionDuration: 12 * time.Millisecond,
-		IntervalBetweenProbes:  20 * time.Millisecond,
-		ProbesBeforeQuit:       uint(len(r.outcomes)),
-		ShowFailuresOnly:       r.showFailuresOnly,
-		Resolver:               r.resolver,
-		ResolveEveryProbe:      r.resolver != nil,
+		Hostname:                   "example.com",
+		IP:                         netip.MustParseAddr("93.184.216.34"),
+		Port:                       443,
+		Protocol:                   protocol,
+		Proxy:                      r.proxy,
+		NameResolutionDuration:     12 * time.Millisecond,
+		IntervalBetweenProbes:      20 * time.Millisecond,
+		ProbesBeforeQuit:           uint(len(r.outcomes)),
+		ShowFailuresOnly:           r.showFailuresOnly,
+		Resolver:                   r.resolver,
+		ResolveEveryProbe:          r.resolver != nil && r.retryResolveAfter == 0,
+		ShouldRetryResolve:         r.retryResolveAfter > 0,
+		RetryResolveAfterNFailures: r.retryResolveAfter,
 	}
 
 	// Through a proxy, the proxy looks the hostname up, so there is no
@@ -552,6 +555,45 @@ func TestRunTranscript_LookupErrorIsNotBlamedOnTheOutput(t *testing.T) {
 				t.Errorf("printed %d failed lookups, want 1:\n%s", lookups, stderr)
 			}
 		})
+	}
+}
+
+// -r 3 looks the hostname up again after every 3 failures in a row, as its
+// help says, not after every failure once there have been 3. A reply starts
+// the count over.
+func TestRunTranscript_RetryResolveAfterEveryNFailures(t *testing.T) {
+	out := scriptedRun{
+		printer:           NewPlainPrinter(Config{}),
+		outcomes:          []bool{false, false, false, false, false, false, false, true, false, false, false, true},
+		resolver:          failingResolver(t),
+		retryResolveAfter: 3,
+	}.run(t)
+
+	var got []string
+	for line := range strings.Lines(probeLines(out)) {
+		switch {
+		case strings.HasPrefix(line, "No reply"):
+			got = append(got, "no reply")
+		case strings.HasPrefix(line, "Reply"):
+			got = append(got, "reply")
+		case strings.HasPrefix(line, "Retrying to resolve example.com"):
+			got = append(got, "retry")
+		case strings.HasPrefix(line, "lookup example.com"):
+			got = append(got, "lookup failed")
+		}
+	}
+
+	want := []string{
+		"no reply", "no reply", "no reply", "retry", "lookup failed",
+		"no reply", "no reply", "no reply", "retry", "lookup failed",
+		"no reply",
+		"reply",
+		"no reply", "no reply", "no reply", "retry", "lookup failed",
+		"reply",
+	}
+
+	if !slices.Equal(got, want) {
+		t.Errorf("transcript =\n%s\nwant the lines to go %v", probeLines(out), want)
 	}
 }
 

@@ -307,8 +307,9 @@ func (p *Prober) Probe(ctx context.Context) {
 			}
 		}
 
+		failures := p.statistics.OngoingUnsuccessfulProbes
 		if !p.config.ResolveEveryProbe && p.config.ShouldRetryResolve &&
-			p.statistics.OngoingUnsuccessfulProbes >= p.config.RetryResolveAfterNFailures {
+			failures > 0 && failures%p.config.RetryResolveAfterNFailures == 0 {
 			p.statistics.RetriedHostnameLookups++
 
 			p.printer.PrintRetryingToResolve(p.statistics.Hostname)
