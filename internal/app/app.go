@@ -75,7 +75,8 @@ func summaryRequests() <-chan struct{} {
 }
 
 // Run is the whole program: it reads the command line, sets up the target
-// and the printer, and probes until it is asked to stop.
+// and the printer, and probes until it is asked to stop. Like ping, it exits
+// with 1 when no probe succeeded, so scripts can tell a dead target apart.
 func Run() {
 	cfg, printerCfg := cli.ProcessUserInput()
 
@@ -135,4 +136,8 @@ func Run() {
 	prober.Probe(probeCtx)
 
 	printer.Shutdown(statistics)
+
+	if statistics.TotalSuccessfulProbes == 0 {
+		os.Exit(1)
+	}
 }

@@ -425,6 +425,8 @@ docker run -it ghcr.io/pouriyajamshidi/tcping:latest example.com:443
 > [!TIP]
 > Press the `Enter` key while the program is running to see the summary of all probes without stopping the program, as shown in the [demos](#demos) section.
 
+Like `ping`, **tcping** exits with `1` when no probe succeeded and with `0` when at least one did, so a script can check a target with `tcping -c 1 www.example.com 443 && echo up`.
+
 > [!NOTE]
 > Check the **available flags** [here](#flags) for a more advanced usage.
 
