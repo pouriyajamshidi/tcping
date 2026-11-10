@@ -310,7 +310,7 @@ func endedPeriodArgs(s *stats.Statistics) []any {
 func (p *SQLitePrinter) insertProbe(
 	reachable bool,
 	s *stats.Statistics,
-	latency string,
+	latency any, // nil when the probe failed, as there is none to store
 	successfulProbes uint,
 	unsuccessfulProbes uint,
 ) {
@@ -324,16 +324,6 @@ func (p *SQLitePrinter) insertProbe(
 		sourceAddr = s.SourceAddr()
 	}
 
-	latencyValue := any(nil)
-	if latency != "" {
-		value, err := strconv.ParseFloat(latency, 64)
-		if err == nil {
-			latencyValue = math.Round(value*1000) / 1000
-		} else {
-			p.printSQLiteError("Failed parsing latency value %q: %v", latency, err)
-		}
-	}
-
 	args := []any{
 		boolToInt(reachable),
 		timestamp,
@@ -342,7 +332,7 @@ func (p *SQLitePrinter) insertProbe(
 		s.Port,
 		sourceAddr,
 		boolToInt(s.DestIsIP),
-		latencyValue,
+		latency,
 		successfulProbes,
 		unsuccessfulProbes,
 		s.ProtocolStr(),
@@ -401,12 +391,12 @@ func (p *SQLitePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
 
 // PrintProbeSuccess writes successful probe details to the database.
 func (p *SQLitePrinter) PrintProbeSuccess(s *stats.Statistics) {
-	p.insertProbe(true, s, s.RTTStr(), s.OngoingSuccessfulProbes, 0)
+	p.insertProbe(true, s, rttOf(s.LatestRTT), s.OngoingSuccessfulProbes, 0)
 }
 
 // PrintProbeFailure writes failed probe details to the database.
 func (p *SQLitePrinter) PrintProbeFailure(s *stats.Statistics) {
-	p.insertProbe(false, s, "", 0, s.OngoingUnsuccessfulProbes)
+	p.insertProbe(false, s, nil, 0, s.OngoingUnsuccessfulProbes)
 }
 
 // PrintStatistics stores the same summary data that PlainPrinter presents.
@@ -440,10 +430,10 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 	latencyMax := any(nil)
 	latencyStdDev := any(nil)
 	if s.TotalSuccessfulProbes > 0 {
-		latencyMin = math.Round(float64(s.RTTResults.Min)*1000) / 1000
-		latencyAvg = math.Round(float64(s.RTTResults.Average)*1000) / 1000
-		latencyMax = math.Round(float64(s.RTTResults.Max)*1000) / 1000
-		latencyStdDev = math.Round(float64(s.RTTResults.StdDev)*1000) / 1000
+		latencyMin = rttOf(s.RTTResults.Min)
+		latencyAvg = rttOf(s.RTTResults.Average)
+		latencyMax = rttOf(s.RTTResults.Max)
+		latencyStdDev = rttOf(s.RTTResults.StdDev)
 	}
 
 	endTime := ""

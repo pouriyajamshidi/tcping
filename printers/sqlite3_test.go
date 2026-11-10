@@ -157,7 +157,7 @@ func TestInsertProbeStoresSQLiteTypes(t *testing.T) {
 		DestIsIP:                true,
 		OngoingSuccessfulProbes: 7,
 	}
-	printer.insertProbe(true, probeStats, "12.345", 7, 0)
+	printer.insertProbe(true, probeStats, 12.345, 7, 0)
 
 	var (
 		reachable        string

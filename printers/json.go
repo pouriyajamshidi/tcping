@@ -3,7 +3,6 @@ package printers
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
@@ -232,14 +231,12 @@ func (p *JSONPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		hostname = ""
 	}
 
-	latency, _ := strconv.ParseFloat(s.RTTStr(), 32)
-
 	data := jsonProbe{
 		Hostname:    hostname,
 		IP:          s.IPStr(),
 		Port:        s.Port,
 		Success:     true,
-		Latency:     float32(latency),
+		Latency:     float32(rttOf(s.LatestRTT)),
 		Connections: s.OngoingSuccessfulProbes,
 		HTTP:        newJSONHTTP(s),
 		UDP:         newJSONUDP(s),
