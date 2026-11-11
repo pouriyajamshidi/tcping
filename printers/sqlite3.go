@@ -490,12 +490,7 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		endTime,
 	}
 
-	err := sqlitex.Execute(
-		p.conn,
-		fmt.Sprintf(statsInsert, p.statsTableName),
-		&sqlitex.ExecOptions{Args: args},
-	)
-	if err != nil {
+	if err := p.replaceStatistics(args); err != nil {
 		p.printSQLiteError("Failed writing statistics to database: %v", err)
 		return
 	}
@@ -504,6 +499,24 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		s.Hostname,
 		p.probeTableName,
 		p.statsTableName,
+	)
+}
+
+// replaceStatistics keeps a single row in the statistics table, since it is
+// written on every Enter press as well as at the end. The delete and the
+// insert share a transaction, so a failed insert keeps the previous row.
+func (p *SQLitePrinter) replaceStatistics(args []any) (err error) {
+	endTransaction := sqlitex.Transaction(p.conn)
+	defer endTransaction(&err)
+
+	if err := sqlitex.Execute(p.conn, fmt.Sprintf("DELETE FROM %s;", p.statsTableName), nil); err != nil {
+		return err
+	}
+
+	return sqlitex.Execute(
+		p.conn,
+		fmt.Sprintf(statsInsert, p.statsTableName),
+		&sqlitex.ExecOptions{Args: args},
 	)
 }
 

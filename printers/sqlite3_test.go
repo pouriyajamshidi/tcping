@@ -577,6 +577,27 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 	}
 }
 
+func TestSQLiteStatisticsKeepOneRowAcrossEnterPresses(t *testing.T) {
+	printer := sqliteTestPrinter(t, Config{})
+
+	// Pressing Enter prints the statistics mid-run, and the exit prints
+	// them again. Only the latest numbers should be in the table.
+	probeStats := dbTestStats()
+	probeStats.TotalSuccessfulProbes = 3
+	captureStdout(t, func() { printer.PrintStatistics(probeStats) })
+
+	probeStats.TotalSuccessfulProbes = 5
+	captureStdout(t, func() { printer.PrintStatistics(probeStats) })
+
+	// queryRow fails if there is more than one row.
+	got := queryRow(t, printer, fmt.Sprintf(
+		`SELECT total_successful_packets FROM %s`, printer.statsTableName))
+
+	if got[0] != "5" {
+		t.Errorf("total_successful_packets = %q, want 5 from the latest call", got[0])
+	}
+}
+
 func TestSQLiteStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 	printer := sqliteTestPrinter(t, Config{})
 
