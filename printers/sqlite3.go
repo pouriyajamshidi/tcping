@@ -28,6 +28,7 @@ const (
 		source_address TEXT,
 		destination_is_ip INTEGER NOT NULL CHECK (destination_is_ip IN (0, 1)),
 		latency REAL,
+		failure_reason TEXT,
 		resolved_in_ms REAL,
 		ongoing_successful_probes INTEGER NOT NULL DEFAULT 0,
 		ongoing_unsuccessful_probes INTEGER NOT NULL DEFAULT 0,
@@ -90,6 +91,7 @@ const (
 		source_address,
 		destination_is_ip,
 		latency,
+		failure_reason,
 		resolved_in_ms,
 		ongoing_successful_probes,
 		ongoing_unsuccessful_probes,
@@ -108,7 +110,7 @@ const (
 		page_bytes,
 		udp_probe_number,
 		udp_result
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	statsInsert = `INSERT INTO %s (
 		hostname,
@@ -341,6 +343,7 @@ func (p *SQLitePrinter) insertProbe(
 		sourceAddr,
 		boolToInt(s.DestIsIP),
 		latency,
+		nullIfEmpty(s.FailureReason), // NULL on a successful probe
 		resolvedIn,
 		successfulProbes,
 		unsuccessfulProbes,

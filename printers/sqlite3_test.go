@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -130,6 +131,7 @@ func TestNewSQLitePrinterSchema(t *testing.T) {
 		"reachable":                   "INTEGER",
 		"destination_is_ip":           "INTEGER",
 		"latency":                     "REAL",
+		"failure_reason":              "TEXT",
 		"resolved_in_ms":              "REAL",
 		"ongoing_successful_probes":   "INTEGER",
 		"ongoing_unsuccessful_probes": "INTEGER",
@@ -773,5 +775,44 @@ func TestRunTranscript_SQLiteResolvedInColumn(t *testing.T) {
 
 	if rows != len(upDownUp) {
 		t.Errorf("wrote %d rows, want %d", rows, len(upDownUp))
+	}
+}
+
+// Only a failed probe's row says why it failed. A successful one leaves the
+// column NULL rather than empty.
+func TestRunTranscript_SQLiteFailureReason(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "run.db")
+
+	printer, err := NewSQLitePrinter(Config{Target: "example.com", Port: 443, OutputSQLitePath: path})
+	if err != nil {
+		t.Fatalf("NewSQLitePrinter() failed: %v", err)
+	}
+
+	scriptedRun{printer: printer, outcomes: upDownUp}.run(t)
+
+	conn, err := sqlite.OpenConn(path, sqlite.OpenReadOnly)
+	if err != nil {
+		t.Fatalf("failed to open the database: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	var got []string
+	err = sqlitex.Execute(conn, fmt.Sprintf("SELECT failure_reason FROM %s ORDER BY rowid", printer.probeTableName), &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if stmt.ColumnType(0) == sqlite.TypeNull {
+				got = append(got, "NULL")
+			} else {
+				got = append(got, stmt.ColumnText(0))
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+
+	want := []string{"NULL", "NULL", "connection refused", "connection refused", "NULL", "NULL"}
+	if !slices.Equal(got, want) {
+		t.Errorf("failure_reason = %q, want %q", got, want)
 	}
 }
