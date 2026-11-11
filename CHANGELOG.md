@@ -73,7 +73,7 @@
 - feat: add UDP probing by giving a `udp://` target, e.g. `tcping udp://example.com 53`. UDP has no handshake, so a probe only counts as successful when the other end answers it. Every probe carries its own number as the payload and `-v` shows whether the reply carried it back, which tells a lost probe apart from a silent port
 - feat: accept a `tcp://` target too, e.g. `tcping tcp://example.com 443`, so every protocol can be named the same way. It is the same TCP probe you get with no scheme at all
 - feat: add `--udp-server` flag to listen on the given host and port and echo every UDP datagram back to its sender, so a UDP probe pointed at that machine has something to answer it
-- feat: CSV output filenames now get a date/time suffix by default; add `--csv-fixed-name` to reuse the same file across runs instead
+- feat: CSV output filenames now get a date/time suffix by default; add `--csv-no-timestamp` to reuse the same file across runs instead
 - feat: add `--resolve-every-probe` flag to resolve the target's hostname before every probe instead of only at startup or on retry (`-r`)
 - feat: add `--dns-timeout` flag to configure the DNS resolution timeout; also fixes a bug where it was silently ignored and the 2-second default was always used regardless of what was configured
 - feat: show how long hostname resolution took - at startup, on every retry-resolve, and per-entry in the "IP address changes" summary
