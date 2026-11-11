@@ -189,7 +189,9 @@ tcping_probe_rtt_milliseconds * on (source, target, port) group_left (ip) tcping
 Every probe writes one point, named after what was probed: `tcping_tcp`,
 `tcping_udp` or `tcping_http`, tagged with the source, target, port and
 protocol. All three hold `success`, `rtt_ms`, the address the target resolved
-to in the `ip` field, and the successful and unsuccessful probe counts. The
+to in the `ip` field, and the successful and unsuccessful probe counts. A
+failed probe also holds a `reason` field saying why it failed, such as
+`timed out` or `certificate expired`. The
 address is a field rather than a tag for the same reason it is its own metric
 on the OTLP side: tags identify a series, and a hostname that resolves
 somewhere else mid-run would otherwise leave the old series behind.

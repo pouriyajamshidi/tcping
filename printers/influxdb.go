@@ -40,9 +40,12 @@ const (
 
 // A comma, a space and an equals sign are what separate the parts of a line,
 // so a tag value holding one has to escape it. Only the hostname is likely
-// to, and it comes straight from the command line. Field values need no
-// escaping of their own because every field we write is a number.
+// to, and it comes straight from the command line.
 var influxDBEscaper = strings.NewReplacer(",", `\,`, " ", `\ `, "=", `\=`)
+
+// A string field sits between double quotes, so a quote or a backslash
+// inside it has to be escaped. That is all line protocol wants there.
+var influxDBStringEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
 // InfluxDBPrinter sends probe results to InfluxDB as line protocol instead
 // of printing them, so a run shows up as a graph rather than as lines of
@@ -269,9 +272,12 @@ func (p *InfluxDBPrinter) probeLine(s *stats.Statistics, succeeded bool) string 
 	fields := fmt.Sprintf("success=%di,successful_probes=%di,unsuccessful_probes=%di,ip=%q",
 		up, s.TotalSuccessfulProbes, s.TotalUnsuccessfulProbes, s.IPStr())
 
-	// A failed probe has no round trip time to report.
+	// A failed probe has no round trip time to report, but it says why. As
+	// a field and not a tag, so every new reason does not start a series.
 	if succeeded {
 		fields += fmt.Sprintf(",rtt_ms=%g", s.LatestRTT)
+	} else if s.FailureReason != "" {
+		fields += fmt.Sprintf(`,reason="%s"`, influxDBStringEscaper.Replace(s.FailureReason))
 	}
 
 	fields += p.httpFields(s) + p.udpFields(s)

@@ -200,6 +200,31 @@ func TestInfluxDBPrintProbeFailureHasNoRTT(t *testing.T) {
 	}
 }
 
+// A failed probe says why, as a quoted string field. A quote inside the
+// reason would otherwise end the string early and break the line.
+func TestInfluxDBPrintProbeFailureSaysWhy(t *testing.T) {
+	var writes [][]string
+
+	server := influxDBServer(t, &writes)
+	defer server.Close()
+
+	printer, err := NewInfluxDBPrinter(influxDBTestConfig(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s := influxDBTestStats()
+	s.FailureReason = `proxy said "no" \ go away`
+
+	printer.PrintProbeFailure(s)
+	printer.queue.flush()
+
+	want := `,reason="proxy said \"no\" \\ go away" `
+	if !strings.Contains(writes[0][0], want) {
+		t.Errorf("probe line = %q, want it to contain %q", writes[0][0], want)
+	}
+}
+
 // An HTTP probe writes its own measurement, holding everything the probe
 // learned, so a query for HTTP timings does not have to sift TCP probes out.
 func TestInfluxDBHTTPProbeWritesItsOwnMeasurement(t *testing.T) {
