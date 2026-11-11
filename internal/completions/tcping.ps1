@@ -69,7 +69,7 @@ Register-ArgumentCompleter -Native -CommandName tcping, tcping.exe -ScriptBlock 
 	$flags['--json-url'] = 'Send the JSON output to an HTTP server instead of printing it'
 	$flags['--json-server'] = 'Do not probe. Print the JSON events posted to the given host and port'
 	$flags['--csv'] = 'Store the output in a CSV file'
-	$flags['--csv-fixed-name'] = 'Use the --csv filename as it is, without a date/time suffix'
+	$flags['--csv-no-timestamp'] = 'Use the --csv filename as it is, without a date/time suffix'
 
 	$flags['--otlp'] = 'Send the results to an OTLP HTTP endpoint'
 	$flags['--otlp-header'] = 'Extra HTTP header for the OTLP endpoint, as "Name: value"'

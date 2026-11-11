@@ -290,7 +290,7 @@ func registerFlags() *flags {
 		The stats will be automatically saved with the same name and '_stats' suffix.`)
 
 	flag.BoolVar(&f.csvNoTimestamp,
-		"csv-fixed-name",
+		"csv-no-timestamp",
 		false,
 		`Use the CSV filename given via -csv as it is, without a date/time
 		suffix. Repeated runs will then overwrite the same file instead of

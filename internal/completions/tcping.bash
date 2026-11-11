@@ -45,7 +45,7 @@ _tcping() {
 		-c -i -t -4 -6 -I
 		-r --resolve-every-probe --dns-server --dns-timeout
 		-D --no-color --show-source-address --failures-only --no-stats -v
-		-j --pretty --json-url --csv --csv-fixed-name --sqlite
+		-j --pretty --json-url --csv --csv-no-timestamp --sqlite
 		--otlp --otlp-header --influxdb --influxdb-org --influxdb-bucket --influxdb-token
 		--stats-interval --source-label
 		--insecure --full-page --proxy --udp-server --json-server"

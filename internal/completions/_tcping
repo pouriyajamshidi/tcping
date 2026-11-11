@@ -31,7 +31,7 @@ _arguments -s \
 	'--json-url=[Send the JSON output to an HTTP server instead of printing it]:URL:_urls' \
 	'--json-server[Do not probe. Print the JSON events posted to the given host and port]' \
 	'--csv=[Store the output in a CSV file]:file:_files' \
-	'--csv-fixed-name[Use the --csv filename as it is, without a date/time suffix]' \
+	'--csv-no-timestamp[Use the --csv filename as it is, without a date/time suffix]' \
 	'--sqlite=[Store the output in a sqlite3 database]:file:_files' \
 	'--otlp=[Send the results to an OTLP HTTP endpoint]:URL:_urls' \
 	'--otlp-header=[Extra HTTP header for the OTLP endpoint]:header:' \

@@ -36,7 +36,7 @@ complete -c tcping -l pretty -d 'Prettify the JSON output. No effect without -j'
 complete -c tcping -l json-url -x -d 'Send the JSON output to an HTTP server instead of printing it'
 complete -c tcping -l json-server -d 'Do not probe. Print the JSON events posted to the given host and port'
 complete -c tcping -l csv -r -F -d 'Store the output in a CSV file'
-complete -c tcping -l csv-fixed-name -d 'Use the --csv filename as it is, without a date/time suffix'
+complete -c tcping -l csv-no-timestamp -d 'Use the --csv filename as it is, without a date/time suffix'
 complete -c tcping -l sqlite -r -F -d 'Store the output in a sqlite3 database'
 
 complete -c tcping -l otlp -x -d 'Send the results to an OTLP HTTP endpoint'

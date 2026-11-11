@@ -694,15 +694,15 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 
 ### Datei- und maschinenlesbare Ausgabe
 
-| Flag               | Standard | Beschreibung                                                                                                                                                                                                                      |
-| ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-j`               |          | Im `JSON`-Format ausgeben                                                                                                                                                                                                         |
-| `--pretty`         |          | Die `JSON`-Ausgabe lesbarer formatieren. Wirkt nicht ohne `-j`                                                                                                                                                                    |
-| `--json-url <URL>` |          | Die `JSON`-Ausgabe an einen HTTP-Server senden statt auszugeben, ein `POST` pro Ereignis, z. B. `--json-url http://localhost:8000/tcping`. Schaltet die `JSON`-Ausgabe von selbst ein, `-j` ist also nicht nötig                  |
-| `--json-server`    |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes dorthin gesendete `JSON`-Ereignis ausgeben, damit ein tcping mit `--json-url` anderswo ein Ziel für seinen Lauf hat, z. B. `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>`     |          | Die Ausgabe in einer `CSV`-Datei speichern. Die Statistik geht in denselben Namen mit der Endung `_stats`                                                                                                                         |
-| `--csv-fixed-name` |          | Den `--csv`-Dateinamen unverändert ohne Datums-/Zeitsuffix verwenden, sodass wiederholte Läufe dieselbe Datei überschreiben                                                                                                       |
-| `--sqlite <file>`  |          | Die Ausgabe in einer sqlite3-Datenbank speichern, z. B. `--sqlite /tmp/tcping.db`. Unter Windows nicht verfügbar                                                                                                                  |
+| Flag                 | Standard | Beschreibung                                                                                                                                                                                                                      |
+| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-j`                 |          | Im `JSON`-Format ausgeben                                                                                                                                                                                                         |
+| `--pretty`           |          | Die `JSON`-Ausgabe lesbarer formatieren. Wirkt nicht ohne `-j`                                                                                                                                                                    |
+| `--json-url <URL>`   |          | Die `JSON`-Ausgabe an einen HTTP-Server senden statt auszugeben, ein `POST` pro Ereignis, z. B. `--json-url http://localhost:8000/tcping`. Schaltet die `JSON`-Ausgabe von selbst ein, `-j` ist also nicht nötig                  |
+| `--json-server`      |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes dorthin gesendete `JSON`-Ereignis ausgeben, damit ein tcping mit `--json-url` anderswo ein Ziel für seinen Lauf hat, z. B. `tcping --json-server 0.0.0.0 8000` |
+| `--csv <file>`       |          | Die Ausgabe in einer `CSV`-Datei speichern. Die Statistik geht in denselben Namen mit der Endung `_stats`                                                                                                                         |
+| `--csv-no-timestamp` |          | Den `--csv`-Dateinamen unverändert ohne Datums-/Zeitsuffix verwenden, sodass wiederholte Läufe dieselbe Datei überschreiben                                                                                                       |
+| `--sqlite <file>`    |          | Die Ausgabe in einer sqlite3-Datenbank speichern, z. B. `--sqlite /tmp/tcping.db`. Unter Windows nicht verfügbar                                                                                                                  |
 
 ### Metriken
 

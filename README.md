@@ -694,15 +694,15 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 
 ### File and machine-readable output
 
-| Flag               | Default | Description                                                                                                                                                                                                 |
-| ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-j`               |         | Output in `JSON` format                                                                                                                                                                                     |
-| `--pretty`         |         | Prettify the `JSON` output. No effect without `-j`                                                                                                                                                          |
-| `--json-url <URL>` |         | Send the `JSON` output to an HTTP server instead of printing it, one `POST` per event, e.g. `--json-url http://localhost:8000/tcping`. Turns on `JSON` output on its own, so `-j` is not needed             |
-| `--json-server`    |         | Do not probe. Listen on the given host and port and print every `JSON` event posted to it, so a tcping using `--json-url` elsewhere has somewhere to send its run, e.g. `tcping --json-server 0.0.0.0 8000` |
-| `--csv <file>`     |         | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix                                                                                                                 |
-| `--csv-fixed-name` |         | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file                                                                                                     |
-| `--sqlite <file>`  |         | Store the output in a sqlite3 database, e.g. `--sqlite /tmp/tcping.db`. Not available on Windows                                                                                                            |
+| Flag                 | Default | Description                                                                                                                                                                                                 |
+| -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-j`                 |         | Output in `JSON` format                                                                                                                                                                                     |
+| `--pretty`           |         | Prettify the `JSON` output. No effect without `-j`                                                                                                                                                          |
+| `--json-url <URL>`   |         | Send the `JSON` output to an HTTP server instead of printing it, one `POST` per event, e.g. `--json-url http://localhost:8000/tcping`. Turns on `JSON` output on its own, so `-j` is not needed             |
+| `--json-server`      |         | Do not probe. Listen on the given host and port and print every `JSON` event posted to it, so a tcping using `--json-url` elsewhere has somewhere to send its run, e.g. `tcping --json-server 0.0.0.0 8000` |
+| `--csv <file>`       |         | Store the output in a `CSV` file. The statistics go to the same name with a `_stats` suffix                                                                                                                 |
+| `--csv-no-timestamp` |         | Use the `--csv` filename as it is, without a date/time suffix, so repeated runs overwrite the same file                                                                                                     |
+| `--sqlite <file>`    |         | Store the output in a sqlite3 database, e.g. `--sqlite /tmp/tcping.db`. Not available on Windows                                                                                                            |
 
 ### Metrics
 
