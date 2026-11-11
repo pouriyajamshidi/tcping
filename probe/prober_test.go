@@ -616,6 +616,53 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 	if snap.errorCalls != 1 {
 		t.Errorf("PrintError called %d times, want 1", snap.errorCalls)
 	}
+	if p.statistics.FailedHostnameLookups != 1 {
+		t.Errorf("FailedHostnameLookups = %d, want 1", p.statistics.FailedHostnameLookups)
+	}
+}
+
+// A failed lookup before a probe is counted, so it can reach the outputs
+// and not only the terminal. The probe still runs against the old address.
+func TestProbe_ResolveEveryProbe_CountsFailedLookups(t *testing.T) {
+	// A UDP socket that reads and discards every packet without ever
+	// replying, so every lookup against it times out.
+	blackhole, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	if err != nil {
+		t.Fatalf("failed to start UDP listener: %v", err)
+	}
+	defer blackhole.Close()
+	go func() {
+		buf := make([]byte, 512)
+		for {
+			if _, _, err := blackhole.ReadFrom(buf); err != nil {
+				return
+			}
+		}
+	}()
+
+	pinger := alwaysSucceeds()
+	cfg := config.Config{
+		IntervalBetweenProbes: 5 * time.Millisecond,
+		ProbesBeforeQuit:      2,
+		ResolveEveryProbe:     true,
+		Resolver:              newTestResolver(t, blackhole.LocalAddr().String(), 200*time.Millisecond),
+	}
+	p, printer := newTestProber(pinger, cfg)
+	p.statistics.Hostname = "example.com"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	p.Probe(ctx)
+
+	if p.statistics.FailedHostnameLookups != 2 {
+		t.Errorf("FailedHostnameLookups = %d, want 2 (one per probe)", p.statistics.FailedHostnameLookups)
+	}
+	if got := pinger.calls(); got != 2 {
+		t.Errorf("Ping called %d times, want 2 (a failed lookup does not skip the probe)", got)
+	}
+	if got := printer.snapshot().errorCalls; got != 2 {
+		t.Errorf("PrintError called %d times, want 2", got)
+	}
 }
 
 func TestProbe_StopsOnContextCancellation(t *testing.T) {

@@ -77,6 +77,7 @@ type Statistics struct {
 	LongestDowntime           LongestTime   // Longest downtime streak observed during the entire run.
 	HostnameChanges           []HostnameChange
 	RetriedHostnameLookups    uint
+	FailedHostnameLookups     uint          // How many lookups after startup failed, under -r or --resolve-every-probe.
 	LatestRTT                 float32       // RTT of the most recent successful probe.
 	RTTResults                RTTResult     // Running min/average/max/stddev RTT across the entire run.
 	NameResolutionDuration    time.Duration // How long the most recent hostname resolution (initial or a retry) took. Meaningless (and zero) when DestIsIP.

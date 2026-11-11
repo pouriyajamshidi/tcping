@@ -115,6 +115,7 @@ func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
 	newIP, err := p.config.Resolver.ResolveHostname(s.Hostname)
 	duration := time.Since(start)
 	if err != nil {
+		s.FailedHostnameLookups++
 		p.printer.PrintError("%s", err.Error())
 		return false
 	}
