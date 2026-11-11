@@ -22,6 +22,7 @@ const (
 	colSourceAddress string = "Source Address"
 	colConnection    string = "Connection"
 	colLatency       string = "Latency(ms)"
+	colFailureReason string = "Failure Reason" // Empty on a successful probe.
 	colEndedUptime   string = "Ended Uptime"
 	colEndedDowntime string = "Ended Downtime"
 	colResolvedIn    string = "Resolved In(ms)" // Only with --resolve-every-probe.
@@ -232,7 +233,7 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 		headers = append(headers, colSourceAddress)
 	}
 
-	headers = append(headers, colConnection, colLatency, colEndedUptime, colEndedDowntime)
+	headers = append(headers, colConnection, colLatency, colFailureReason, colEndedUptime, colEndedDowntime)
 
 	if p.cfg.ResolveEveryProbe {
 		headers = append(headers, colResolvedIn)
@@ -311,7 +312,7 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 		record = append(record, s.SourceAddr())
 	}
 
-	record = append(record, strconv.Itoa(int(s.OngoingSuccessfulProbes)), s.RTTStr())
+	record = append(record, strconv.Itoa(int(s.OngoingSuccessfulProbes)), s.RTTStr(), "")
 	record = append(record, endedPeriods(s)...)
 
 	if p.cfg.ResolveEveryProbe {
@@ -355,7 +356,7 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 		record = append(record, s.SourceAddr())
 	}
 
-	record = append(record, strconv.Itoa(int(s.OngoingUnsuccessfulProbes)), "")
+	record = append(record, strconv.Itoa(int(s.OngoingUnsuccessfulProbes)), "", s.FailureReason)
 	record = append(record, endedPeriods(s)...)
 
 	if p.cfg.ResolveEveryProbe {

@@ -463,6 +463,12 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 		}
 	}
 
+	// Only the failed probes say why they failed.
+	wantReasons := []string{"Failure Reason", "", "", "connection refused", "connection refused", "", ""}
+	if got := columnOf(t, rows, "Failure Reason"); !slices.Equal(got, wantReasons) {
+		t.Errorf("Failure Reason column = %q, want %q", got, wantReasons)
+	}
+
 	statistics := map[string]string{}
 	for _, row := range readCSV(t, printer, strings.TrimSuffix(path, ".csv")+"_stats.csv") {
 		if len(row) == 2 {
