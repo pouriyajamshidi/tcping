@@ -59,6 +59,7 @@ func (p *scriptedPinger) Ping(context.Context, netip.Addr) (probe.Result, error)
 // summary. Zero means they never do.
 type scriptedRun struct {
 	printer           probe.Printer
+	hostname          string // example.com when not given.
 	outcomes          []bool
 	showFailuresOnly  bool
 	enterAfter        int
@@ -78,8 +79,13 @@ func (r scriptedRun) run(t *testing.T) string {
 		protocol = config.TCP
 	}
 
+	hostname := r.hostname
+	if hostname == "" {
+		hostname = "example.com"
+	}
+
 	cfg := config.Config{
-		Hostname:                   "example.com",
+		Hostname:                   hostname,
 		IP:                         netip.MustParseAddr("93.184.216.34"),
 		Port:                       443,
 		Protocol:                   protocol,
@@ -467,6 +473,35 @@ func TestRunTranscript_CSVRows(t *testing.T) {
 
 	if statistics["Outages"] != "1" {
 		t.Errorf("stats file reports %q outages on a run with one: %v", statistics["Outages"], statistics)
+	}
+}
+
+// With --resolve-every-probe, the time each lookup took goes into the probe's
+// row, the same way the terminal printers put it on the probe line, instead
+// of a "Resolved in" line on the terminal for every probe.
+func TestRunTranscript_CSVResolvedInColumn(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "run.csv")
+
+	printer, err := NewCSVPrinter(Config{OutputCSVPath: path, CSVNoTimestamp: true, ResolveEveryProbe: true})
+	if err != nil {
+		t.Fatalf("NewCSVPrinter() failed: %v", err)
+	}
+
+	// A literal IP is looked up without asking a DNS server.
+	resolver, err := dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("dns.NewResolver() failed: %v", err)
+	}
+
+	out := scriptedRun{printer: printer, hostname: "127.0.0.1", outcomes: upDownUp, resolver: resolver}.run(t)
+
+	wantNoLines(t, out, "Resolved in")
+
+	rows := readCSV(t, printer, path)
+	for i, value := range columnOf(t, rows, "Resolved In(ms)")[1:] {
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			t.Errorf("row %d has %q as its lookup time: %v", i+1, value, rows[i+1])
+		}
 	}
 }
 

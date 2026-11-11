@@ -506,6 +506,7 @@ func (f *flags) newPrinterConfig(target string, port uint16) printers.Config {
 		OutputSQLitePath:  f.SQLitePath,
 		OutputCSVPath:     f.CSVPath,
 		CSVNoTimestamp:    f.csvNoTimestamp,
+		ResolveEveryProbe: f.resolveEveryProbe,
 		OTLPURL:           f.otlpURL,
 		OTLPHeader:        otlpHeader,
 

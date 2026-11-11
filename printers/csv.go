@@ -24,6 +24,7 @@ const (
 	colLatency       string = "Latency(ms)"
 	colEndedUptime   string = "Ended Uptime"
 	colEndedDowntime string = "Ended Downtime"
+	colResolvedIn    string = "Resolved In(ms)" // Only with --resolve-every-probe.
 )
 
 // endedPeriods are the two values saying how long the target had been up, or
@@ -41,6 +42,16 @@ func endedPeriods(s *stats.Statistics) []string {
 	}
 
 	return []string{uptime, downtime}
+}
+
+// resolvedIn is how long the lookup made right before this probe took. It is
+// empty when that lookup failed or the target is an IP address.
+func resolvedIn(s *stats.Statistics) string {
+	if !s.ResolvedThisProbe {
+		return ""
+	}
+
+	return s.NameResolutionDurationStr()
 }
 
 // Extra columns written for HTTP(S) targets only, so a TCP run keeps the
@@ -223,6 +234,10 @@ func (p *CSVPrinter) writeProbeHeader(s *stats.Statistics) error {
 
 	headers = append(headers, colConnection, colLatency, colEndedUptime, colEndedDowntime)
 
+	if p.cfg.ResolveEveryProbe {
+		headers = append(headers, colResolvedIn)
+	}
+
 	if s.IsHTTP() {
 		headers = append(headers, httpColumns...)
 	}
@@ -269,6 +284,10 @@ func (p *CSVPrinter) PrintStart(s *stats.Statistics) {
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
 func (p *CSVPrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	if s.ResolvedThisProbe {
+		// Written to the probe's row instead.
+		return
+	}
 	fmt.Printf("Resolved in %s ms\n", s.NameResolutionDurationStr())
 }
 
@@ -294,6 +313,10 @@ func (p *CSVPrinter) PrintProbeSuccess(s *stats.Statistics) {
 
 	record = append(record, strconv.Itoa(int(s.OngoingSuccessfulProbes)), s.RTTStr())
 	record = append(record, endedPeriods(s)...)
+
+	if p.cfg.ResolveEveryProbe {
+		record = append(record, resolvedIn(s))
+	}
 
 	if s.IsHTTP() {
 		record = append(record, httpRecord(s)...)
@@ -334,6 +357,10 @@ func (p *CSVPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	record = append(record, strconv.Itoa(int(s.OngoingUnsuccessfulProbes)), "")
 	record = append(record, endedPeriods(s)...)
+
+	if p.cfg.ResolveEveryProbe {
+		record = append(record, resolvedIn(s))
+	}
 
 	if s.IsHTTP() {
 		record = append(record, httpRecord(s)...)

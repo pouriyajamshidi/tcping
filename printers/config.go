@@ -24,6 +24,7 @@ type Config struct {
 	OutputSQLitePath  string
 	OutputCSVPath     string
 	CSVNoTimestamp    bool // Omit the date/time suffix from CSV filenames, using OutputCSVPath as-is.
+	ResolveEveryProbe bool // The hostname is looked up before every probe, so the CSV gets a column for how long that took.
 
 	Target string
 	Port   uint16
