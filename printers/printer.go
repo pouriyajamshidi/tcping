@@ -6,6 +6,7 @@ package printers
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
 	"github.com/pouriyajamshidi/tcping/v3/probe"
@@ -95,6 +96,26 @@ func httpProbeDetails(s *stats.Statistics, verbose bool) string {
 	msg += "\n"
 
 	return msg
+}
+
+// probeFailureReason is the part of a failed probe line that says why, e.g.
+// " (network unreachable)". A timeout or a refusal is what "No reply" already
+// means, and an HTTP status is on the line already, so those add nothing here.
+// UDP still says whether something refused us or nothing answered.
+func probeFailureReason(s *stats.Statistics) string {
+	if s.HTTP.StatusCode >= http.StatusBadRequest {
+		return ""
+	}
+
+	switch s.FailureReason {
+	case "", stats.FailureTimedOut, stats.FailureRefused:
+		return udpProbeFailureReason(s)
+
+	case stats.FailureCertificateExpired, stats.FailureCertificateWrongName, stats.FailureCertificateUntrusted:
+		return fmt.Sprintf(" (%s, --insecure skips this check)", s.FailureReason)
+	}
+
+	return fmt.Sprintf(" (%s)", s.FailureReason)
 }
 
 // udpProbeFailureReason says what a failed UDP probe actually told us, e.g.

@@ -211,10 +211,14 @@ func TestPlainProbeUDPFailureReason(t *testing.T) {
 	tests := []struct {
 		name     string
 		rejected bool
+		reason   string
 		want     string
 	}{
-		{"refused", true, "(port unreachable)"},
-		{"silent", false, "(port may still be open)"},
+		{"refused", true, stats.FailureRefused, "(port unreachable)"},
+		{"silent", false, stats.FailureTimedOut, "(port may still be open)"},
+		// The datagram never left, so the port cannot be open as far as we
+		// know, and the reason says why instead.
+		{"never sent", false, stats.FailureNetworkUnreachable, "(network unreachable)\n"},
 	}
 
 	for _, tt := range tests {
@@ -222,6 +226,7 @@ func TestPlainProbeUDPFailureReason(t *testing.T) {
 			s := plainTestStats()
 			s.Protocol = config.UDP
 			s.UDP = stats.UDPInfo{ProbeNumber: 7, Rejected: tt.rejected}
+			s.FailureReason = tt.reason
 
 			out := captureStdout(t, func() {
 				NewPlainPrinter(Config{}).PrintProbeFailure(s)

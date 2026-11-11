@@ -93,7 +93,7 @@ func (p *PlainPrinter) PrintProbeFailure(s *stats.Statistics) {
 
 	msg += fmt.Sprintf("%s_conn=%d", s.ProtocolStr(), s.OngoingUnsuccessfulProbes)
 	msg += httpProbeSummary(s)
-	msg += udpProbeFailureReason(s)
+	msg += probeFailureReason(s)
 
 	if s.ResolvedThisProbe {
 		msg += fmt.Sprintf(" (resolved in %s ms)", s.NameResolutionDurationStr())

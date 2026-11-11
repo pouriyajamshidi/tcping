@@ -730,3 +730,90 @@ func TestRunTranscript_FullPage(t *testing.T) {
 		}
 	})
 }
+
+// A failed probe says why when "No reply" alone would hide it, such as a
+// certificate the probe does not trust. A refusal and an HTTP status say
+// enough on their own, so they add nothing. These run the real probes
+// against local servers.
+func TestRunTranscript_FailureReason(t *testing.T) {
+	run := func(t *testing.T, cfg config.Config, newPinger func(config.Config) probe.Pinger) string {
+		t.Helper()
+
+		cfg.Hostname = cfg.IP.String()
+		cfg.TargetIsIP = true
+		cfg.Timeout = time.Second
+		cfg.IntervalBetweenProbes = 20 * time.Millisecond
+		cfg.ProbesBeforeQuit = 1
+
+		pinger := newPinger(cfg)
+		s := stats.NewStatistics(cfg)
+		prober := probe.NewProber(pinger, NewPlainPrinter(Config{}), cfg, s, nil)
+
+		return probeLines(captureStdout(t, func() {
+			prober.Probe(context.Background())
+		}))
+	}
+
+	newHTTPing := func(cfg config.Config) probe.Pinger { return probe.NewHTTPing(cfg) }
+	newTcping := func(cfg config.Config) probe.Pinger { return probe.NewTcping(cfg) }
+
+	httpConfig := func(t *testing.T, srv *httptest.Server, protocol config.Protocol) config.Config {
+		t.Helper()
+
+		u, _ := url.Parse(srv.URL)
+		addrPort := netip.MustParseAddrPort(u.Host)
+
+		return config.Config{URL: srv.URL, IP: addrPort.Addr(), Port: addrPort.Port(), Protocol: protocol}
+	}
+
+	t.Run("a certificate the probe does not trust", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		t.Cleanup(srv.Close)
+
+		cfg := httpConfig(t, srv, config.HTTPS)
+		out := run(t, cfg, newHTTPing)
+
+		wantLines(t, out, "HTTPS_conn=1 (certificate not trusted, --insecure skips this check)\n")
+	})
+
+	t.Run("a page that takes too long to download", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte("a"))
+			w.(http.Flusher).Flush()
+			<-r.Context().Done()
+		}))
+		t.Cleanup(srv.Close)
+
+		cfg := httpConfig(t, srv, config.HTTP)
+		cfg.FullPage = true
+		out := run(t, cfg, newHTTPing)
+
+		wantLines(t, out, "HTTP_conn=1 status=200 (page download failed: timed out)\n")
+	})
+
+	t.Run("an HTTP status says it already", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		t.Cleanup(srv.Close)
+
+		cfg := httpConfig(t, srv, config.HTTP)
+		out := run(t, cfg, newHTTPing)
+
+		wantLines(t, out, "HTTP_conn=1 status=404\n")
+	})
+
+	t.Run("a refusal is what no reply means", func(t *testing.T) {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		addrPort := netip.MustParseAddrPort(listener.Addr().String())
+		_ = listener.Close()
+
+		cfg := config.Config{IP: addrPort.Addr(), Port: addrPort.Port(), Protocol: config.TCP}
+		out := run(t, cfg, newTcping)
+
+		wantLines(t, out, "TCP_conn=1\n")
+	})
+}
