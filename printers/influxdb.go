@@ -321,10 +321,11 @@ func (p *InfluxDBPrinter) statisticsLines(s *stats.Statistics) []string {
 
 	// When the run started, how long it has been going, and how much
 	// trouble the hostname gave us along the way.
-	fields += fmt.Sprintf(",start_time_ms=%di,run_duration_seconds=%g,hostname_resolution_retries=%di,hostname_changes=%di",
+	fields += fmt.Sprintf(",start_time_ms=%di,run_duration_seconds=%g,hostname_resolution_retries=%di,hostname_resolution_failures=%di,hostname_changes=%di",
 		s.StartTime.UnixMilli(),
 		s.RuntimeSeconds(),
 		s.RetriedHostnameLookups,
+		s.FailedHostnameLookups,
 		s.HostnameChangeCount(),
 	)
 
