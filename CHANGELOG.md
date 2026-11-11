@@ -34,6 +34,7 @@
 - fix: the last probe of a `-c` run no longer looks the hostname up again under `-r`, since no probe is left to use the answer
 - fix: on a hostname with both IPv4 and IPv6 addresses, tcping picks one at random from the family this machine can reach first, instead of from all of them. On a machine without IPv6, `tcping google.com 443` used to fail about one run in three, and `-r` or `--resolve-every-probe` could switch a working run to IPv6. With `-I`, the family of the interface's address wins
 - fix: with `--resolve-every-probe`, the CSV and sqlite3 outputs no longer print a `Resolved in` line on the terminal for every probe. The lookup time goes into the probe's row instead, in a new `Resolved In(ms)` CSV column, written only with that flag, and a new `resolved_in_ms` sqlite3 column, the same way the terminal output puts it on the probe line
+- fix: the sqlite3 statistics table now holds only the latest statistics, the way the CSV statistics file is written over. Each **Enter** press used to add a row to it, and the exit another
 - refactor: drop `TimeFormat` constants in favor of stdlib's `time.DateTime`
 - refactor: drop `HourFormat` constants in favor of stdlib's `time.TimeOnly`
 - templates: improve pull and bug report templates
