@@ -173,6 +173,18 @@ func (p *PlainPrinter) PrintStatistics(s *stats.Statistics) {
 			timeNoun,
 		)
 
+		if s.FailedHostnameLookups > 0 {
+			timeNoun = "time"
+			if s.FailedHostnameLookups != 1 {
+				timeNoun = "times"
+			}
+
+			fmt.Fprintf(&msg, "failed to resolve hostname: %d %s\n",
+				s.FailedHostnameLookups,
+				timeNoun,
+			)
+		}
+
 		if len(s.HostnameChanges) > 1 {
 			msg.WriteString("IP address changes:\n")
 			for i := 0; i < len(s.HostnameChanges)-1; i++ {

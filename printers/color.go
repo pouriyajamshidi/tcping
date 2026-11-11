@@ -195,6 +195,16 @@ func (p *ColorPrinter) PrintStatistics(s *stats.Statistics) {
 			timeNoun,
 		)
 
+		if s.FailedHostnameLookups > 0 {
+			timeNoun = "time"
+			if s.FailedHostnameLookups != 1 {
+				timeNoun = "times"
+			}
+
+			printYellow("failed to resolve hostname: ")
+			printRed("%d %s\n", s.FailedHostnameLookups, timeNoun)
+		}
+
 		if len(s.HostnameChanges) > 1 {
 			printYellow("IP address changes:\n")
 			for i := 0; i < len(s.HostnameChanges)-1; i++ {

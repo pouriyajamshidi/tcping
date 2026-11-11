@@ -302,6 +302,7 @@ func TestPlainPrintStatistics(t *testing.T) {
 	s.LongestUptime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: 3 * time.Second}
 	s.LongestDowntime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: time.Second}
 	s.RetriedHostnameLookups = 2
+	s.FailedHostnameLookups = 3
 	s.RTTResults = stats.RTTResult{Min: 1, Average: 2, Max: 3, StdDev: 0.5}
 	s.EndTime = s.StartTime.Add(4 * time.Second)
 
@@ -318,7 +319,7 @@ func TestPlainPrintStatistics(t *testing.T) {
 		"total downtime: 1 second\n",
 		"longest consecutive uptime:   3 seconds from ",
 		"longest consecutive downtime: 1 second from ",
-		"retried to resolve hostname: 2 times\n",
+		"retried to resolve hostname: 2 times\nfailed to resolve hostname: 3 times\n",
 		"rtt min/avg/max/stddev: 1.000/2.000/3.000/0.500 ms\n",
 		"TCPing started at: ",
 		"TCPing ended at:   ",
@@ -361,6 +362,7 @@ func TestPlainStatisticsLeavesOutWhatDidNotHappen(t *testing.T) {
 	wantNoLines(t, out,
 		"rtt min/avg/max/stddev",
 		"retried to resolve hostname",
+		"failed to resolve hostname",
 		"longest consecutive",
 		"TCPing ended at",
 	)
@@ -376,6 +378,28 @@ func TestPlainStatisticsSingleResolveRetry(t *testing.T) {
 	})
 
 	wantLines(t, out, "retried to resolve hostname: 1 time\n")
+}
+
+// No lookup failed, so the summary does not mention failed lookups at all.
+func TestPlainStatisticsNoFailedLookups(t *testing.T) {
+	out := captureStdout(t, func() {
+		NewPlainPrinter(Config{}).PrintStatistics(plainTestStats())
+	})
+
+	wantLines(t, out, "retried to resolve hostname: 0 times\n")
+	wantNoLines(t, out, "failed to resolve hostname")
+}
+
+// Only one lookup failed, so the line has to read "1 time".
+func TestPlainStatisticsSingleFailedLookup(t *testing.T) {
+	s := plainTestStats()
+	s.FailedHostnameLookups = 1
+
+	out := captureStdout(t, func() {
+		NewPlainPrinter(Config{}).PrintStatistics(s)
+	})
+
+	wantLines(t, out, "failed to resolve hostname: 1 time\n")
 }
 
 func TestPlainStatisticsHostnameChanges(t *testing.T) {

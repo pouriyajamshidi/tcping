@@ -214,6 +214,17 @@ func TestColorProbesThatNeverHappenedKeepTheirMeaning(t *testing.T) {
 	)
 }
 
+func TestColorFailedLookupsAreRed(t *testing.T) {
+	s := plainTestStats()
+	s.FailedHostnameLookups = 3
+
+	out := captureColoredStdout(t, func() {
+		NewColorPrinter(Config{}).PrintStatistics(s)
+	})
+
+	wantLines(t, out, "failed to resolve hostname: "+resetCode+redCode+"3 times\n"+resetCode)
+}
+
 func TestColorErrorAndRetryColors(t *testing.T) {
 	p := NewColorPrinter(Config{})
 
