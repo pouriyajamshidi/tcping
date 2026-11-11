@@ -169,7 +169,9 @@ func (h HTTPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	if h.fullPage {
 		size, err := io.Copy(io.Discard, resp.Body)
 		if err != nil {
-			return result, fmt.Errorf("could not download the page: %w", err)
+			// Not wrapped, so a timeout here keeps saying it was the
+			// download that timed out rather than the request.
+			return result, fmt.Errorf("page download failed: %s", failureReason(err))
 		}
 
 		result.BodyRead = true

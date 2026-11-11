@@ -86,7 +86,23 @@ type Statistics struct {
 	ResolvedThisProbe bool
 	HTTP              HTTPInfo // Details of the most recent HTTP(S) probe. Zero for TCP probes.
 	UDP               UDPInfo  // Details of the most recent UDP probe. Zero for the other probe types.
+	// Why the most recent probe failed, in a few words, e.g. "certificate
+	// expired". One of the Failure constants below for the common cases,
+	// and the error itself for anything else. Empty after a success.
+	FailureReason string
 }
+
+// The words FailureReason holds for the failures seen most often.
+const (
+	FailureTimedOut             = "timed out"
+	FailureRefused              = "connection refused"
+	FailureReset                = "connection reset"
+	FailureNetworkUnreachable   = "network unreachable"
+	FailureHostUnreachable      = "host unreachable"
+	FailureCertificateExpired   = "certificate expired"
+	FailureCertificateWrongName = "certificate not valid for this name"
+	FailureCertificateUntrusted = "certificate not trusted"
+)
 
 // NewStatistics starts the statistics for a run against the target in cfg.
 func NewStatistics(cfg config.Config) *Statistics {

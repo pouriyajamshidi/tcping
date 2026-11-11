@@ -5,10 +5,15 @@ package probe
 
 import (
 	"context"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
+	"net/url"
+	"os"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
@@ -134,11 +139,61 @@ func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
 	return true
 }
 
-// handleProbeFailure records a failed probe. When it is the one that took the
-// target from up to down, it fills in Statistics.EndedUptime so the printers
-// can report the uptime that just ended along with the probe.
-func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result) {
+// failureReason says in a few words why a probe failed. Go's errors repeat
+// what the probe line already says, such as the URL and the addresses, so the
+// common ones become one of the stats.Failure words, and anything else is
+// unwrapped down to the part that is not already on the line.
+func failureReason(err error) string {
+	var invalidCert x509.CertificateInvalidError
+	var wrongName x509.HostnameError
+	var unknownAuthority x509.UnknownAuthorityError
+	var netErr net.Error
+
+	switch {
+	case errors.As(err, &invalidCert) && invalidCert.Reason == x509.Expired:
+		return stats.FailureCertificateExpired
+	case errors.As(err, &wrongName):
+		return stats.FailureCertificateWrongName
+	case errors.As(err, &unknownAuthority):
+		return stats.FailureCertificateUntrusted
+	case errors.Is(err, syscall.ECONNREFUSED):
+		return stats.FailureRefused
+	case errors.Is(err, syscall.ECONNRESET):
+		return stats.FailureReset
+	case errors.Is(err, syscall.ENETUNREACH):
+		return stats.FailureNetworkUnreachable
+	case errors.Is(err, syscall.EHOSTUNREACH):
+		return stats.FailureHostUnreachable
+	case errors.As(err, &netErr) && netErr.Timeout():
+		return stats.FailureTimedOut
+	}
+
+	for {
+		var urlErr *url.Error
+		var opErr *net.OpError
+		var syscallErr *os.SyscallError
+
+		switch {
+		case errors.As(err, &urlErr):
+			err = urlErr.Err
+		case errors.As(err, &opErr):
+			err = opErr.Err
+		case errors.As(err, &syscallErr):
+			err = syscallErr.Err
+		default:
+			return err.Error()
+		}
+	}
+}
+
+// handleProbeFailure records a failed probe and why it failed. When it is the
+// one that took the target from up to down, it fills in
+// Statistics.EndedUptime so the printers can report the uptime that just
+// ended along with the probe.
+func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result, err error) {
 	s := p.statistics
+
+	s.FailureReason = failureReason(err)
 
 	// A 4xx or 5xx is a failed probe that still came with a response, so
 	// keep it around for the printers. It is zero when nothing answered.
@@ -207,6 +262,7 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 	s.LocalAddr = probeResult.LocalAddr
 	s.HTTP = probeResult.HTTPInfo
 	s.UDP = probeResult.UDPInfo
+	s.FailureReason = ""
 
 	s.TotalSuccessfulProbes++
 	s.OngoingSuccessfulProbes++
@@ -296,7 +352,7 @@ func (p *Prober) Probe(ctx context.Context) {
 		}
 
 		if err != nil {
-			p.handleProbeFailure(pingTime, probeResult)
+			p.handleProbeFailure(pingTime, probeResult, err)
 			p.printer.PrintProbeFailure(p.statistics)
 		} else {
 			p.handleProbeSuccess(pingTime, rtt, probeResult)

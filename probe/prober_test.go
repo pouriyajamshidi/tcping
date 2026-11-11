@@ -2,9 +2,15 @@ package probe
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"net"
 	"net/netip"
+	"net/url"
+	"os"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -60,11 +66,7 @@ func alwaysFails() *fakePinger {
 	}}
 }
 
-var errConnRefused = &net.OpError{Op: "dial", Err: errFake("connection refused")}
-
-type errFake string
-
-func (e errFake) Error() string { return string(e) }
+var errConnRefused = &net.OpError{Op: "dial", Err: &os.SyscallError{Syscall: "connect", Err: syscall.ECONNREFUSED}}
 
 // fakePrinter implements printers.Printer and records how many times each
 // method was called, so tests can assert on the printer's involvement
@@ -195,7 +197,7 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 	now := time.Now()
 
-	p.handleProbeFailure(now, Result{})
+	p.handleProbeFailure(now, Result{}, errConnRefused)
 
 	s := p.statistics
 	if s.TotalUnsuccessfulProbes != 1 || s.OngoingUnsuccessfulProbes != 1 {
@@ -220,7 +222,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 	p.statistics.OngoingSuccessfulProbes = 5
 
 	failAt := start.Add(100 * time.Millisecond)
-	p.handleProbeFailure(failAt, Result{})
+	p.handleProbeFailure(failAt, Result{}, errConnRefused)
 
 	s := p.statistics
 	if s.OngoingSuccessfulProbes != 0 {
@@ -240,7 +242,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 	p, _ := newTestProber(nil, config.Config{})
 
-	p.handleProbeFailure(time.Now(), Result{})
+	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
 
 	if p.statistics.EndedUptime != 0 {
 		t.Errorf("EndedUptime = %v, want 0 (no uptime streak ever started)", p.statistics.EndedUptime)
@@ -255,7 +257,7 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) 
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
-	p.handleProbeFailure(start.Add(50*time.Millisecond), Result{})
+	p.handleProbeFailure(start.Add(50*time.Millisecond), Result{}, errConnRefused)
 	if p.statistics.EndedUptime == 0 {
 		t.Error("EndedUptime = 0 on the failure that ended the uptime, want it filled in")
 	}
@@ -264,7 +266,7 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) 
 	// starts from a clean slate the way a real one does.
 	p.statistics.EndedUptime = 0
 
-	p.handleProbeFailure(start.Add(100*time.Millisecond), Result{})
+	p.handleProbeFailure(start.Add(100*time.Millisecond), Result{}, errConnRefused)
 	if p.statistics.EndedUptime != 0 {
 		t.Errorf("EndedUptime = %v on a second consecutive failure, want 0", p.statistics.EndedUptime)
 	}
@@ -275,8 +277,8 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotDoubleCountDowntime(t *testi
 	first := time.Now()
 	second := first.Add(50 * time.Millisecond)
 
-	p.handleProbeFailure(first, Result{})
-	p.handleProbeFailure(second, Result{})
+	p.handleProbeFailure(first, Result{}, errConnRefused)
+	p.handleProbeFailure(second, Result{}, errConnRefused)
 
 	s := p.statistics
 	if s.OngoingUnsuccessfulProbes != 2 {
@@ -299,7 +301,7 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 	p, _ := newTestProber(nil, cfg)
 	p.statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
 
-	p.handleProbeFailure(time.Now(), Result{})
+	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
 
 	wantAddr := &net.TCPAddr{IP: sourceIP}
 	gotAddr, ok := p.statistics.LocalAddr.(*net.TCPAddr)
@@ -314,10 +316,77 @@ func TestHandleProbeFailure_ForgetsTheLastSourceAddress(t *testing.T) {
 		LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321},
 	})
 
-	p.handleProbeFailure(time.Now(), Result{})
+	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
 
 	if got := p.statistics.SourceAddr(); got != "" {
 		t.Errorf("SourceAddr() = %q after a failed probe, want empty", got)
+	}
+}
+
+// Each case is shaped like what Go really hands back for that failure, as
+// seen against badssl.com, a machine without IPv6 and closed ports.
+func TestFailureReason(t *testing.T) {
+	dialErr := func(err error) error {
+		return &net.OpError{Op: "dial", Net: "tcp", Err: &os.SyscallError{Syscall: "connect", Err: err}}
+	}
+	getErr := func(err error) error {
+		return &url.Error{Op: "Get", URL: "https://example.com", Err: err}
+	}
+
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{
+			name: "expired certificate",
+			err:  getErr(&tls.CertificateVerificationError{Err: x509.CertificateInvalidError{Reason: x509.Expired}}),
+			want: "certificate expired",
+		},
+		{
+			name: "certificate for another name",
+			err:  getErr(&tls.CertificateVerificationError{Err: x509.HostnameError{Certificate: &x509.Certificate{}, Host: "example.com"}}),
+			want: "certificate not valid for this name",
+		},
+		{
+			name: "self-signed certificate",
+			err:  getErr(&tls.CertificateVerificationError{Err: x509.UnknownAuthorityError{}}),
+			want: "certificate not trusted",
+		},
+		{name: "refused", err: dialErr(syscall.ECONNREFUSED), want: "connection refused"},
+		{name: "reset", err: getErr(&net.OpError{Op: "read", Err: &os.SyscallError{Syscall: "read", Err: syscall.ECONNRESET}}), want: "connection reset"},
+		{name: "no route to the network", err: dialErr(syscall.ENETUNREACH), want: "network unreachable"},
+		{name: "no route to the host", err: dialErr(syscall.EHOSTUNREACH), want: "host unreachable"},
+		{name: "HTTP client timeout", err: getErr(context.DeadlineExceeded), want: "timed out"},
+		{name: "anything else is unwrapped", err: dialErr(syscall.EINVAL), want: "invalid argument"},
+		{
+			name: "our own errors stay as they are",
+			err:  errors.New("network interface has no source address to reach 192.0.2.1"),
+			want: "network interface has no source address to reach 192.0.2.1",
+		},
+		{name: "an HTTP status", err: errors.New("404 Not Found"), want: "404 Not Found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := failureReason(tt.err); got != tt.want {
+				t.Errorf("failureReason() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandleProbeFailure_KeepsTheReasonUntilASuccess(t *testing.T) {
+	p, _ := newTestProber(nil, config.Config{})
+
+	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
+	if got := p.statistics.FailureReason; got != "connection refused" {
+		t.Errorf("FailureReason = %q after a refused probe, want %q", got, "connection refused")
+	}
+
+	p.handleProbeSuccess(time.Now(), time.Millisecond, Result{})
+	if got := p.statistics.FailureReason; got != "" {
+		t.Errorf("FailureReason = %q after a successful probe, want empty", got)
 	}
 }
 
