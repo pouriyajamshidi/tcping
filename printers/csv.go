@@ -433,6 +433,10 @@ func (p *CSVPrinter) PrintStatistics(s *stats.Statistics) {
 		statistics = append(statistics, []string{"Hostname Resolve Retries", strconv.Itoa(int(s.RetriedHostnameLookups))})
 	}
 
+	if s.FailedHostnameLookups > 0 {
+		statistics = append(statistics, []string{"Hostname Resolve Failures", strconv.Itoa(int(s.FailedHostnameLookups))})
+	}
+
 	if len(s.HostnameChanges) > 1 {
 		var hostnameChanges strings.Builder
 

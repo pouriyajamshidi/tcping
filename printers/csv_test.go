@@ -545,6 +545,7 @@ func TestCSVStatisticsFile(t *testing.T) {
 	probeStats.TotalUnsuccessfulProbes = 2
 	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, StdDev: 0.75}
 	probeStats.RetriedHostnameLookups = 3
+	probeStats.FailedHostnameLookups = 4
 
 	p.PrintStart(probeStats)
 	// PrintStatistics reports to the terminal as well as the file.
@@ -562,6 +563,7 @@ func TestCSVStatisticsFile(t *testing.T) {
 		"Total Unsuccessful Packets":   "2",
 		"Total Packet Loss Percentage": "20.00",
 		"Hostname Resolve Retries":     "3",
+		"Hostname Resolve Failures":    "4",
 		"Latency Min":                  "1.500",
 		"Latency Avg":                  "3.250",
 		"Latency Max":                  "9.000",
@@ -596,6 +598,10 @@ func TestCSVStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 
 	if _, ok := rows["Hostname Resolve Retries"]; ok {
 		t.Error("the statistics report resolve retries with none recorded")
+	}
+
+	if _, ok := rows["Hostname Resolve Failures"]; ok {
+		t.Error("the statistics report resolve failures with none recorded")
 	}
 
 	// Without a successful probe there is no latency to summarize, and a
