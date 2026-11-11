@@ -866,7 +866,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "{__name__=~\"tcping_(start_time|end_time|last_successful_probe|last_unsuccessful_probe)_milliseconds|tcping_run_duration_seconds|tcping_hostname_(resolution_retries|changes)_total\", source=~\"$source\"}",
+              "expr": "{__name__=~\"tcping_(start_time|end_time|last_successful_probe|last_unsuccessful_probe)_milliseconds|tcping_run_duration_seconds|tcping_hostname_(resolution_(retries|failures)|changes)_total\", source=~\"$source\"}",
               "legendFormat": "",
               "instant": true
             }
@@ -899,7 +899,8 @@
                   "tcping_last_successful_probe_milliseconds": 7,
                   "tcping_last_unsuccessful_probe_milliseconds": 8,
                   "tcping_hostname_resolution_retries_total": 9,
-                  "tcping_hostname_changes_total": 10
+                  "tcping_hostname_resolution_failures_total": 10,
+                  "tcping_hostname_changes_total": 11
                 }
               }
             }
@@ -1002,6 +1003,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "tcping_hostname_resolution_failures_total"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "failed lookups"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "tcping_hostname_changes_total"
                 },
                 "properties": [
@@ -1074,6 +1087,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "hostname_resolution_failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "hostname_changes"
                 },
                 "properties": [
@@ -1098,6 +1123,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "tcping_hostname_resolution_failures_total"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "tcping_hostname_changes_total"
                 },
                 "properties": [
@@ -1110,7 +1147,7 @@
             ]
           },
           "options": {},
-          "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us. The end time only fills in once the run has finished."
+          "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us: how often it was looked up again after failures, how many of the lookups after the start failed, and how often its address changed. The end time only fills in once the run has finished."
         }
       ]
     },

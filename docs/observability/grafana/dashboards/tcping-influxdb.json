@@ -818,7 +818,7 @@
                 "type": "influxdb",
                 "uid": "${datasource}"
               },
-              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(start_time_ms|end_time_ms|run_duration_seconds|last_(un)?successful_probe_ms|hostname_(resolution_retries|changes))$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"start_time_ms\", \"run_duration_seconds\", \"end_time_ms\", \"last_successful_probe_ms\", \"last_unsuccessful_probe_ms\", \"hostname_resolution_retries\", \"hostname_changes\"])\n  |> group()"
+              "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field =~ /^(start_time_ms|end_time_ms|run_duration_seconds|last_(un)?successful_probe_ms|hostname_(resolution_(retries|failures)|changes))$/)\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"source\", \"protocol\", \"target\", \"port\"])\n  |> top(n: 1, columns: [\"_time\"])\n  |> keep(columns: [\"source\", \"protocol\", \"target\", \"port\", \"start_time_ms\", \"run_duration_seconds\", \"end_time_ms\", \"last_successful_probe_ms\", \"last_unsuccessful_probe_ms\", \"hostname_resolution_retries\", \"hostname_resolution_failures\", \"hostname_changes\"])\n  |> group()"
             }
           ],
           "transformations": [
@@ -837,7 +837,8 @@
                   "last_successful_probe_ms": 7,
                   "last_unsuccessful_probe_ms": 8,
                   "hostname_resolution_retries": 9,
-                  "hostname_changes": 10
+                  "hostname_resolution_failures": 10,
+                  "hostname_changes": 11
                 }
               }
             }
@@ -940,6 +941,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "hostname_resolution_failures"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "failed lookups"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "hostname_changes"
                 },
                 "properties": [
@@ -1012,6 +1025,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "hostname_resolution_failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "hostname_changes"
                 },
                 "properties": [
@@ -1036,6 +1061,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "tcping_hostname_resolution_failures_total"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "tcping_hostname_changes_total"
                 },
                 "properties": [
@@ -1048,7 +1085,7 @@
             ]
           },
           "options": {},
-          "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us. The end time only fills in once the run has finished."
+          "description": "The tail of the statistics block: when the run started, how long it has been going, when it ended, when the last probe of each kind landed, and how much trouble the hostname gave us: how often it was looked up again after failures, how many of the lookups after the start failed, and how often its address changed. The end time only fills in once the run has finished."
         }
       ]
     },

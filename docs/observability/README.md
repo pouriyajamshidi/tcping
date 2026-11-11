@@ -243,14 +243,14 @@ run can be compared side by side.
 
 Every panel tcping can fill has a place in both, grouped into rows:
 
-| Row                     | What is in it                                                                                                                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Probes**              | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary                                                       |
-| **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to              |
-| **The run**             | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries and address changes there were |
-| **Name resolution**     | How long each lookup took, and the address every target resolved to with when and how fast it was last looked up                                                                       |
-| **HTTP**                | Connect, TLS handshake, first byte and download timings, the status code, the days left on the certificate, and the page size                                                          |
-| **UDP**                 | Reply size, whether the reply carried our own payload back, and whether the port was unreachable                                                                                       |
+| Row                     | What is in it                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Probes**              | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary                                                                       |
+| **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to                              |
+| **The run**             | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries, failed lookups and address changes there were |
+| **Name resolution**     | How long each lookup took, and the address every target resolved to with when and how fast it was last looked up                                                                                       |
+| **HTTP**                | Connect, TLS handshake, first byte and download timings, the status code, the days left on the certificate, and the page size                                                                          |
+| **UDP**                 | Reply size, whether the reply carried our own payload back, and whether the port was unreachable                                                                                                       |
 
 The first two rows are open and the rest start collapsed. A row only fills in
 when a run is feeding it: **HTTP** needs an `http://` or `https://` target,
