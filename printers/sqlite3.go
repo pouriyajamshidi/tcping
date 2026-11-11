@@ -28,6 +28,7 @@ const (
 		source_address TEXT,
 		destination_is_ip INTEGER NOT NULL CHECK (destination_is_ip IN (0, 1)),
 		latency REAL,
+		resolved_in_ms REAL,
 		ongoing_successful_probes INTEGER NOT NULL DEFAULT 0,
 		ongoing_unsuccessful_probes INTEGER NOT NULL DEFAULT 0,
 		protocol TEXT,
@@ -89,6 +90,7 @@ const (
 		source_address,
 		destination_is_ip,
 		latency,
+		resolved_in_ms,
 		ongoing_successful_probes,
 		ongoing_unsuccessful_probes,
 		protocol,
@@ -106,7 +108,7 @@ const (
 		page_bytes,
 		udp_probe_number,
 		udp_result
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	statsInsert = `INSERT INTO %s (
 		hostname,
@@ -324,6 +326,12 @@ func (p *SQLitePrinter) insertProbe(
 		sourceAddr = s.SourceAddr()
 	}
 
+	// Only --resolve-every-probe looks the hostname up right before a probe.
+	var resolvedIn any
+	if s.ResolvedThisProbe {
+		resolvedIn = millisecondsFloat(s.NameResolutionDuration)
+	}
+
 	args := []any{
 		boolToInt(reachable),
 		timestamp,
@@ -333,6 +341,7 @@ func (p *SQLitePrinter) insertProbe(
 		sourceAddr,
 		boolToInt(s.DestIsIP),
 		latency,
+		resolvedIn,
 		successfulProbes,
 		unsuccessfulProbes,
 		s.ProtocolStr(),
@@ -386,6 +395,10 @@ func (p *SQLitePrinter) PrintStart(s *stats.Statistics) {
 
 // PrintNameResolutionDuration prints how long a hostname resolution retry took.
 func (p *SQLitePrinter) PrintNameResolutionDuration(s *stats.Statistics) {
+	if s.ResolvedThisProbe {
+		// Written to the probe's row instead.
+		return
+	}
 	fmt.Printf("Resolved in %s ms\n", s.NameResolutionDurationStr())
 }
 

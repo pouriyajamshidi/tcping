@@ -17,6 +17,8 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
+	"github.com/pouriyajamshidi/tcping/v3/dns"
+	"github.com/pouriyajamshidi/tcping/v3/nic"
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
@@ -128,6 +130,7 @@ func TestNewSQLitePrinterSchema(t *testing.T) {
 		"reachable":                   "INTEGER",
 		"destination_is_ip":           "INTEGER",
 		"latency":                     "REAL",
+		"resolved_in_ms":              "REAL",
 		"ongoing_successful_probes":   "INTEGER",
 		"ongoing_unsuccessful_probes": "INTEGER",
 	})
@@ -704,4 +707,50 @@ func TestHostnameChanges(t *testing.T) {
 			t.Errorf("hostnameChanges = %q, want it to name both addresses", got)
 		}
 	})
+}
+
+// With --resolve-every-probe, the time each lookup took goes into the probe's
+// row, the same way the terminal printers put it on the probe line, instead
+// of a "Resolved in" line on the terminal for every probe.
+func TestRunTranscript_SQLiteResolvedInColumn(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "run.db")
+
+	printer, err := NewSQLitePrinter(Config{Target: "127.0.0.1", Port: 443, OutputSQLitePath: path})
+	if err != nil {
+		t.Fatalf("NewSQLitePrinter() failed: %v", err)
+	}
+
+	// A literal IP is looked up without asking a DNS server.
+	resolver, err := dns.NewResolver("", time.Second, false, false, nic.NetworkInterface{})
+	if err != nil {
+		t.Fatalf("dns.NewResolver() failed: %v", err)
+	}
+
+	out := scriptedRun{printer: printer, hostname: "127.0.0.1", outcomes: upDownUp, resolver: resolver}.run(t)
+
+	wantNoLines(t, out, "Resolved in")
+
+	conn, err := sqlite.OpenConn(path, sqlite.OpenReadOnly)
+	if err != nil {
+		t.Fatalf("failed to open the database: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	rows := 0
+	err = sqlitex.Execute(conn, fmt.Sprintf("SELECT resolved_in_ms FROM %s", printer.probeTableName), &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			rows++
+			if stmt.ColumnType(0) != sqlite.TypeFloat {
+				t.Errorf("row %d has %q as its lookup time, want a number", rows, stmt.ColumnText(0))
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+
+	if rows != len(upDownUp) {
+		t.Errorf("wrote %d rows, want %d", rows, len(upDownUp))
+	}
 }
