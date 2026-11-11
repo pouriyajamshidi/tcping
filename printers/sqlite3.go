@@ -65,6 +65,7 @@ const (
 		longest_uptime TEXT,
 		longest_downtime TEXT,
 		hostname_resolve_retries INTEGER NOT NULL DEFAULT 0,
+		hostname_resolve_failures INTEGER NOT NULL DEFAULT 0,
 		hostname_changes TEXT,
 		last_successful_probe TEXT,
 		last_unsuccessful_probe TEXT,
@@ -128,6 +129,7 @@ const (
 		longest_uptime,
 		longest_downtime,
 		hostname_resolve_retries,
+		hostname_resolve_failures,
 		hostname_changes,
 		last_successful_probe,
 		last_unsuccessful_probe,
@@ -141,7 +143,7 @@ const (
 		latency_stddev,
 		start_time,
 		end_time
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // SQLitePrinter stores one probe stream and its final statistics in SQLite.
@@ -458,8 +460,10 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 	}
 
 	retries := uint(0)
+	failures := uint(0)
 	if s.HostnameResolved() {
 		retries = s.RetriedHostnameLookups
+		failures = s.FailedHostnameLookups
 	}
 
 	args := []any{
@@ -478,6 +482,7 @@ func (p *SQLitePrinter) PrintStatistics(s *stats.Statistics) {
 		s.LongestUptimeDuration(),
 		s.LongestDowntimeDuration(),
 		retries,
+		failures,
 		hostnameChanges(s),
 		lastSuccessful,
 		lastUnsuccessful,

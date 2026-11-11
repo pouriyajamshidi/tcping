@@ -555,6 +555,7 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 	probeStats.TotalOutages = 2
 	probeStats.RTTResults = stats.RTTResult{Min: 1.5, Average: 3.25, Max: 9, StdDev: 0.75}
 	probeStats.RetriedHostnameLookups = 3
+	probeStats.FailedHostnameLookups = 4
 
 	// PrintStatistics reports to the terminal as well as the database.
 	captureStdout(t, func() { printer.PrintStatistics(probeStats) })
@@ -563,6 +564,7 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 		`SELECT hostname, ip_address, port, protocol, total_packets,
 		        total_successful_packets, total_unsuccessful_packets,
 		        total_packet_loss_percent, outages, hostname_resolve_retries,
+		        hostname_resolve_failures,
 		        latency_min, latency_avg, latency_max, latency_stddev
 		 FROM %s`, printer.statsTableName))
 
@@ -570,6 +572,7 @@ func TestSQLitePrintStatisticsRow(t *testing.T) {
 		"example.com", "93.184.216.34", "443", "TCP", "10",
 		"8", "2",
 		"20.0", "2", "3",
+		"4",
 		"1.5", "3.25", "9.0", "0.75",
 	}
 	for i := range want {
@@ -638,22 +641,26 @@ func TestSQLiteStatisticsLeaveOutWhatDidNotHappen(t *testing.T) {
 	}
 }
 
-func TestSQLiteStatisticsRetriesAreLeftOutForAnIPTarget(t *testing.T) {
+func TestSQLiteStatisticsLookupCountsAreLeftOutForAnIPTarget(t *testing.T) {
 	printer := sqliteTestPrinter(t, Config{})
 
-	// A literal IP is never resolved, so a retry count would be meaningless
-	// even if the field happened to hold one.
+	// A literal IP is never resolved, so lookup counts would be meaningless
+	// even if the fields happened to hold them.
 	probeStats := dbTestStats()
 	probeStats.DestIsIP = true
 	probeStats.RetriedHostnameLookups = 7
+	probeStats.FailedHostnameLookups = 5
 
 	captureStdout(t, func() { printer.PrintStatistics(probeStats) })
 
 	got := queryRow(t, printer, fmt.Sprintf(
-		`SELECT hostname_resolve_retries FROM %s`, printer.statsTableName))
+		`SELECT hostname_resolve_retries, hostname_resolve_failures FROM %s`, printer.statsTableName))
 
 	if got[0] != "0" {
 		t.Errorf("hostname_resolve_retries = %q, want 0 for an IP target", got[0])
+	}
+	if got[1] != "0" {
+		t.Errorf("hostname_resolve_failures = %q, want 0 for an IP target", got[1])
 	}
 }
 
