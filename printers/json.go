@@ -71,11 +71,14 @@ type jsonProbe struct {
 	Connections uint    `json:"connections"`
 	// How long the target had been up, or down, when this probe ended it.
 	// Left out of every probe that ended neither, which is most of them.
-	EndedUptime   string    `json:"endedUptime,omitempty"`
-	EndedDowntime string    `json:"endedDowntime,omitempty"`
-	Timestamp     string    `json:"timestamp,omitempty"`
-	HTTP          *jsonHTTP `json:"http,omitempty"`
-	UDP           *jsonUDP  `json:"udp,omitempty"`
+	EndedUptime   string `json:"endedUptime,omitempty"`
+	EndedDowntime string `json:"endedDowntime,omitempty"`
+	// Why the probe failed, e.g. "certificate expired". Left out of every
+	// successful probe.
+	Reason    string    `json:"reason,omitempty"`
+	Timestamp string    `json:"timestamp,omitempty"`
+	HTTP      *jsonHTTP `json:"http,omitempty"`
+	UDP       *jsonUDP  `json:"udp,omitempty"`
 }
 
 // jsonUDP is attached to a probe only when the target is UDP, so the output
@@ -270,6 +273,7 @@ func (p *JSONPrinter) PrintProbeFailure(s *stats.Statistics) {
 		Port:        s.Port,
 		Success:     false,
 		Connections: s.OngoingUnsuccessfulProbes,
+		Reason:      s.FailureReason,
 		HTTP:        newJSONHTTP(s),
 		UDP:         newJSONUDP(s),
 	}

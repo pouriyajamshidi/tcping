@@ -368,6 +368,13 @@ func TestRunTranscript_JSONEvents(t *testing.T) {
 		`"connections":1,"endedDowntime":`,
 	)
 
+	// Every failed probe says why, and no successful one does. A timeout
+	// and a refusal are left off the terminal line, but a program reading
+	// the JSON gets them too.
+	if got := strings.Count(out, `"reason":"connection refused"`); got != 2 {
+		t.Errorf("found %d probes with a reason, want the 2 failed ones:\n%s", got, out)
+	}
+
 	// The mid-run summary has the same gap to fall into as the terminal one.
 	if strings.Contains(out, `"totalUptime":"0 seconds"`) {
 		t.Errorf("a summary reports no uptime on a run that was up:\n%s", out)
