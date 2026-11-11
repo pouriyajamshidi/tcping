@@ -376,6 +376,7 @@ func TestJSONPrintStatistics(t *testing.T) {
 	s.LongestUptime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: 3 * time.Second}
 	s.LongestDowntime = stats.LongestTime{Start: time.Now(), End: time.Now(), Duration: time.Second}
 	s.RetriedHostnameLookups = 2
+	s.FailedHostnameLookups = 3
 	s.RTTResults = stats.RTTResult{Min: 1, Average: 2, Max: 3, StdDev: 0.5}
 	s.EndTime = s.StartTime.Add(4 * time.Second)
 
@@ -388,25 +389,26 @@ func TestJSONPrintStatistics(t *testing.T) {
 	}
 
 	wantFields(t, data, map[string]any{
-		"hostname":               "example.com",
-		"ipAddress":              "93.184.216.34",
-		"port":                   float64(443),
-		"protocol":               "TCP",
-		"totalProbes":            float64(4),
-		"successfulProbes":       float64(3),
-		"unsuccessfulProbes":     float64(1),
-		"outages":                float64(1),
-		"packetLossPercent":      float64(25),
-		"totalUptime":            "3 seconds",
-		"totalDowntime":          "1 second",
-		"longestUptime":          "3 seconds",
-		"longestDowntime":        "1 second",
-		"hostnameResolveRetries": float64(2),
-		"latencyMin":             float64(1),
-		"latencyAvg":             float64(2),
-		"latencyMax":             float64(3),
-		"latencyStdDev":          float64(0.5),
-		"duration":               "00:00:04",
+		"hostname":                "example.com",
+		"ipAddress":               "93.184.216.34",
+		"port":                    float64(443),
+		"protocol":                "TCP",
+		"totalProbes":             float64(4),
+		"successfulProbes":        float64(3),
+		"unsuccessfulProbes":      float64(1),
+		"outages":                 float64(1),
+		"packetLossPercent":       float64(25),
+		"totalUptime":             "3 seconds",
+		"totalDowntime":           "1 second",
+		"longestUptime":           "3 seconds",
+		"longestDowntime":         "1 second",
+		"hostnameResolveRetries":  float64(2),
+		"hostnameResolveFailures": float64(3),
+		"latencyMin":              float64(1),
+		"latencyAvg":              float64(2),
+		"latencyMax":              float64(3),
+		"latencyStdDev":           float64(0.5),
+		"duration":                "00:00:04",
 	})
 }
 
@@ -431,6 +433,7 @@ func TestJSONStatisticsLeavesOutWhatDidNotHappen(t *testing.T) {
 		"longestUptime",
 		"longestDowntime",
 		"hostnameResolveRetries",
+		"hostnameResolveFailures",
 		"hostnameChanges",
 		"endTime",
 	)
