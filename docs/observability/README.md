@@ -248,7 +248,7 @@ Every panel tcping can fill has a place in both, grouped into rows:
 | **Probes**              | Round trip time, probe result, packet loss, the successful and unsuccessful counts, and the min / average / max / stddev summary                                                                       |
 | **Uptime and downtime** | The running totals, the length of each uptime and downtime streak as it ends, how many outages each target had, and the longest of each with the times it ran from and to                              |
 | **The run**             | When the run started, how long it has been going, when it ended, when the last successful and unsuccessful probes landed, and how many hostname retries, failed lookups and address changes there were |
-| **Name resolution**     | How long each lookup took, and the address every target resolved to with when and how fast it was last looked up                                                                                       |
+| **Name resolution**     | How long each lookup took, how many lookups failed, and the address every target resolved to with when and how fast it was last looked up                                                              |
 | **HTTP**                | Connect, TLS handshake, first byte and download timings, the status code, the days left on the certificate, and the page size                                                                          |
 | **UDP**                 | Reply size, whether the reply carried our own payload back, and whether the port was unreachable                                                                                                       |
 
@@ -327,7 +327,10 @@ and address changes to report:
 ![The run row of the InfluxDB dashboard](../Images/observability/dashboard-influxdb-the-run.png)
 
 **Name resolution** needs `--resolve-every-probe` to have anything in the
-graph, which is why the stack passes it to the `tokyo` runs. The table below
+lookup time graph, which is why the stack passes it to the `tokyo` runs. Next
+to it, the failed lookups graph counts the lookups after the start that
+failed, under `--resolve-every-probe` or `-r`, so a line that climbs means DNS
+trouble while tcping keeps probing the last address it had. The table below
 it lists the address each target is currently on, which is how you catch a
 target moving between addresses, along with when and how fast its hostname was
 last looked up:

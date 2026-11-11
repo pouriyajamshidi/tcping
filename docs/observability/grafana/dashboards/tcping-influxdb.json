@@ -1108,7 +1108,7 @@
           "gridPos": {
             "x": 0,
             "y": 56,
-            "w": 24,
+            "w": 12,
             "h": 9
           },
           "targets": [
@@ -1150,6 +1150,54 @@
             }
           },
           "description": "One point per hostname lookup, so a run that resolves every probe fills in and one that resolved once does not. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
+        },
+        {
+          "id": 25,
+          "type": "timeseries",
+          "title": "Failed lookups",
+          "gridPos": {
+            "x": 12,
+            "y": 56,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "influxdb",
+                "uid": "${datasource}"
+              },
+              "query": "data = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"tcping_statistics\" and r._field == \"hostname_resolution_failures\")\n  |> filter(fn: (r) => r.source =~ /^${source:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n\nspaced = data |> elapsed(unit: 1ms)\nusual = spaced\n  |> median(column: \"elapsed\", method: \"exact_selector\")\n  |> keep(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\", \"elapsed\"])\n  |> rename(columns: {elapsed: \"usual\"})\n\nbreaks = join(tables: {s: spaced, u: usual}, on: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> filter(fn: (r) => r.elapsed > r.usual * 2 + int(v: v.windowPeriod) / 1000000 + 3000)\n  |> map(fn: (r) => ({r with _time: time(v: int(v: r._time) - (r.elapsed - r.usual) * 1000000)}))\n  |> drop(columns: [\"elapsed\", \"usual\", \"_value\"])\n\nunion(tables: [data, breaks])\n  |> group(columns: [\"_measurement\", \"_field\", \"source\", \"target\", \"port\", \"protocol\"])\n  |> sort(columns: [\"_time\"])\n  |> drop(columns: [\"_start\", \"_stop\"])"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never"
+              },
+              "displayName": "${__field.labels.source} ${__field.labels.protocol} ${__field.labels.target}:${__field.labels.port}",
+              "decimals": 0,
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "How many hostname lookups after the start of the run have failed, as the count grows. A line that climbs means DNS trouble, while tcping keeps probing the last address it had. Only --resolve-every-probe and -r look the hostname up again after the start, so any other run stays at 0. The count comes with the statistics, which are sent every 10 seconds by default."
         },
         {
           "id": 15,

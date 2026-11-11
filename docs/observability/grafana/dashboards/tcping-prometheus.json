@@ -1170,7 +1170,7 @@
           "gridPos": {
             "x": 0,
             "y": 56,
-            "w": 24,
+            "w": 12,
             "h": 9
           },
           "targets": [
@@ -1213,6 +1213,55 @@
             }
           },
           "description": "One point per hostname lookup. When a point on the graph covers several probes, it shows the slowest of them, so a spike never gets averaged away."
+        },
+        {
+          "id": 25,
+          "type": "timeseries",
+          "title": "Failed lookups",
+          "gridPos": {
+            "x": 12,
+            "y": 56,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "last_over_time(tcping_hostname_resolution_failures_total{source=~\"$source\"}[$__interval]) or last_over_time(tcping_hostname_resolution_failures_total{source=~\"$source\"}[$gap]) or last_over_time(tcping_hostname_resolution_failures_total{source=~\"$source\"}[30s])",
+              "legendFormat": "{{source}} {{protocol}} {{target}}:{{port}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "decimals": 0,
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "description": "How many hostname lookups after the start of the run have failed, as the count grows. A line that climbs means DNS trouble, while tcping keeps probing the last address it had. Only --resolve-every-probe and -r look the hostname up again after the start, so any other run stays at 0. The count comes with the statistics, which are sent every 10 seconds by default."
         },
         {
           "id": 15,
