@@ -330,7 +330,6 @@ func (p *Prober) Probe(ctx context.Context) {
 		// (e.g. DNS round-robin or a frequently-changing record) rather
 		// than waiting for a failure streak to trigger a retry.
 		if p.config.ResolveEveryProbe && !p.statistics.DestIsIP {
-			p.statistics.RetriedHostnameLookups++
 			p.resolveHostname(true)
 		}
 

@@ -741,8 +741,8 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 	defer cancel()
 	p.Probe(ctx)
 
-	if p.statistics.RetriedHostnameLookups != 3 {
-		t.Errorf("RetriedHostnameLookups = %d, want 3 (one resolve per probe)", p.statistics.RetriedHostnameLookups)
+	if p.statistics.RetriedHostnameLookups != 0 {
+		t.Errorf("RetriedHostnameLookups = %d, want 0 (a lookup before every probe is not a retry)", p.statistics.RetriedHostnameLookups)
 	}
 	if !p.statistics.ResolvedThisProbe {
 		t.Error("ResolvedThisProbe = false, want true (so color/plain fold the duration into their own probe line)")
@@ -801,8 +801,8 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 	defer cancel()
 	p.Probe(ctx)
 
-	if p.statistics.RetriedHostnameLookups != 2 {
-		t.Errorf("RetriedHostnameLookups = %d, want 2 (once per probe, not double-counted)", p.statistics.RetriedHostnameLookups)
+	if p.statistics.RetriedHostnameLookups != 0 {
+		t.Errorf("RetriedHostnameLookups = %d, want 0 (the -r retry must not run)", p.statistics.RetriedHostnameLookups)
 	}
 	if got := printer.snapshot().retryCalls; got != 0 {
 		t.Errorf("PrintRetryingToResolve called %d times, want 0 (ResolveEveryProbe takes precedence)", got)
