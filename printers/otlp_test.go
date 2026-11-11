@@ -802,6 +802,7 @@ func TestOTLPStatisticsCarryTheWholeSummary(t *testing.T) {
 		"tcping_run_duration_seconds":                 60,
 		"tcping_outages_total":                        1,
 		"tcping_hostname_resolution_retries_total":    3,
+		"tcping_hostname_resolution_failures_total":   4,
 		"tcping_hostname_changes_total":               1,
 		"tcping_last_successful_probe_milliseconds":   statisticsTestEpoch + 40_000,
 		"tcping_last_unsuccessful_probe_milliseconds": statisticsTestEpoch + 20_000,
