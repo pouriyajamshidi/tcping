@@ -1209,6 +1209,20 @@
                 },
                 "properties": [
                   {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "special",
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "text": "-"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
                     "id": "unit",
                     "value": "time:MMM D HH:mm:ss"
                   },
@@ -1225,6 +1239,20 @@
                 },
                 "properties": [
                   {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "special",
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "text": "-"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
                     "id": "unit",
                     "value": "ms"
                   }
@@ -1233,7 +1261,7 @@
             ]
           },
           "options": {},
-          "description": "The address each target resolved to, and when and how fast its hostname was last looked up. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one."
+          "description": "The address each target resolved to, and when and how fast its hostname was last looked up. It is written as a field rather than a tag on purpose: as a tag it would identify the series, so a hostname resolving somewhere else mid-run would start a new one. The lookup at the start of a run is not sent, only the ones after it, so the last two columns show a dash until the hostname is looked up again within the time range, which takes --resolve-every-probe or a target that goes away."
         }
       ]
     },

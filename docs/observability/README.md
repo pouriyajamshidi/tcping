@@ -450,9 +450,10 @@ the whole thing, import it first, then use a panel's menu, **Copy**, and
   `--otlp` leaves **tcping (InfluxDB)** empty, and the other way round.
 - The statistics panels only fill in after the first statistics push, which is
   every 10 seconds by default. `--stats-interval` changes that.
-- **Name resolution time**, and the `last resolved` and `resolved in` columns
-  of **Resolved address**, stay empty unless the hostname is looked up more
-  than once, so they need `--resolve-every-probe` or a target that goes away.
+- **Name resolution time** stays empty, and the `last resolved` and
+  `resolved in` columns of **Resolved address** show a dash, unless the
+  hostname is looked up again after startup within the time range. That takes
+  `--resolve-every-probe` or a target that goes away.
 - **Length of each uptime and downtime streak** only gets a point when a
   streak ends, so a target that never flips leaves it empty.
 - **Total uptime and downtime** are only added up when the target changes
