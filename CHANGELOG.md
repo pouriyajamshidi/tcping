@@ -135,6 +135,7 @@
 - test: add run-level tests that replay a whole run through the real prober and printer and check the terminal transcript it produced, so a line that is correct on its own but wrong for the run it appeared in is caught
 - fix: `--no-color` now says the same as the colored output in the summary. It printed `total uptime:` unaligned with `total downtime:` below it, and left the colon off `retried to resolve hostname`
 - feat: add shell completions for `bash`, `zsh`, `fish` and `PowerShell`, which tcping prints with `--completions <shell>`, e.g. `tcping --completions fish > ~/.config/fish/completions/tcping.fish`. They complete the flags, the interface names for `-I` and the file names for `--csv` and `--sqlite`. Windows PowerShell 5.1 only completes the `--` flags, so single-dash flags like `-i` need PowerShell 7. The Linux packages, Homebrew, the AUR package and the Nix flake install them for you
+- feat: `--help` and `--version` now show the author and the repository
 
 ## v2.8.0 - 2026-05-11
 
