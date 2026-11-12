@@ -211,6 +211,32 @@ func TestUDPPing_NumbersEveryProbe(t *testing.T) {
 	}
 }
 
+// A lost probe must not restart the count. Otherwise the server sees 1, 2, 1
+// instead of 1, 3 and nobody can tell that probe 2 never arrived.
+func TestUDPPing_KeepsCountingAfterALostProbe(t *testing.T) {
+	ip := netip.MustParseAddr("127.0.0.1")
+	echoPort := udpEchoServer(t, nil)
+	up := UDPing{timeout: 200 * time.Millisecond, port: echoPort}
+
+	if _, err := up.Ping(context.Background(), ip); err != nil {
+		t.Fatalf("first Ping() error = %v, want nil", err)
+	}
+
+	up.port = udpBlackholePort(t)
+	if _, err := up.Ping(context.Background(), ip); err == nil {
+		t.Fatal("second Ping() error = nil, want a timeout error since nothing answered")
+	}
+
+	up.port = echoPort
+	result, err := up.Ping(context.Background(), ip)
+	if err != nil {
+		t.Fatalf("third Ping() error = %v, want nil", err)
+	}
+	if result.ProbeNumber != 3 {
+		t.Errorf("result.ProbeNumber = %d, want 3 since the lost probe still counts", result.ProbeNumber)
+	}
+}
+
 // A network interface with only an IPv4 address must not silently probe out
 // of an unrelated interface when asked to reach an IPv6 target.
 func TestUDPPing_FailsCleanlyWhenInterfaceHasNoMatchingFamily(t *testing.T) {
