@@ -10,6 +10,7 @@ import (
 
 	"github.com/pouriyajamshidi/tcping/v3/config"
 	"github.com/pouriyajamshidi/tcping/v3/dns"
+	"github.com/pouriyajamshidi/tcping/v3/internal/version"
 	"github.com/pouriyajamshidi/tcping/v3/nic"
 )
 
@@ -70,10 +71,40 @@ func TestProcessUserInputHelp(t *testing.T) {
 				t.Errorf("the flags were not printed on stdout. Output:\n%s", out)
 			}
 
+			if !strings.Contains(out, about) {
+				t.Errorf("the author and repository were not printed. Output:\n%s", out)
+			}
+
 			if errOut != "" {
 				t.Errorf("wrote to stderr, want it all on stdout:\n%s", errOut)
 			}
 		})
+	}
+}
+
+// about is what both --help and --version print about tcping itself.
+var about = "TCPING version " + version.Current + "\n" +
+	"By Pouriya Jamshidi\n" +
+	"https://github.com/pouriyajamshidi/tcping\n"
+
+func TestProcessUserInputVersion(t *testing.T) {
+	if os.Getenv(subprocessCase) != "" {
+		os.Args = []string{"tcping", "--version"}
+		ProcessUserInput()
+		t.Fatal("ProcessUserInput returned instead of exiting")
+	}
+
+	out, errOut, code := runCase(t, "TestProcessUserInputVersion", "version")
+	if code != 0 {
+		t.Errorf("exited with %d, want 0. Output:\n%s%s", code, out, errOut)
+	}
+
+	if out != about {
+		t.Errorf("got:\n%s\nwant:\n%s", out, about)
+	}
+
+	if errOut != "" {
+		t.Errorf("wrote to stderr:\n%s", errOut)
 	}
 }
 
