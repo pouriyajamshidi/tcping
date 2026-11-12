@@ -87,7 +87,6 @@ func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 	}
 
 	if _, err := conn.Write(payload); err != nil {
-		u.probeNumber = 0
 		return result, err
 	}
 
@@ -95,7 +94,6 @@ func (u *UDPing) Ping(ctx context.Context, ip netip.Addr) (Result, error) {
 
 	n, err := conn.Read(reply)
 	if err != nil {
-		u.probeNumber = 0
 		// The target sent back an ICMP port unreachable, which the kernel
 		// hands us here because the socket is connected. Something is there
 		// and it refused us. Any other error means nothing came back.
