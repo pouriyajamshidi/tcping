@@ -24,7 +24,7 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/stats"
 )
 
-// These tests replay a whole run through the real Prober and a real printer
+// These tests replay a whole run through the real Runner and a real printer
 // and check what it produced. The per-method tests elsewhere in this package
 // cannot see a line that is right on its own but wrong for the run it appeared
 // in, which is how the totals and the uptime and downtime reports drifted
@@ -119,10 +119,10 @@ func (r scriptedRun) run(t *testing.T) string {
 	}
 
 	s := stats.NewStatistics(cfg)
-	prober := probe.NewProber(pinger, r.printer, cfg, s, requests)
+	runner := probe.NewRunner(pinger, r.printer, cfg, s, requests)
 
 	return captureStdout(t, func() {
-		prober.Probe(context.Background())
+		runner.Run(context.Background())
 
 		r.printer.Shutdown(s)
 	})
@@ -693,10 +693,10 @@ func TestRunTranscript_FullPage(t *testing.T) {
 
 		printer := NewPlainPrinter(Config{Verbose: true})
 		s := stats.NewStatistics(cfg)
-		prober := probe.NewProber(probe.NewHTTPing(cfg), printer, cfg, s, nil)
+		runner := probe.NewRunner(probe.NewHTTPing(cfg), printer, cfg, s, nil)
 
 		return captureStdout(t, func() {
-			prober.Probe(context.Background())
+			runner.Run(context.Background())
 		})
 	}
 
@@ -760,10 +760,10 @@ func TestRunTranscript_FailureReason(t *testing.T) {
 
 		pinger := newPinger(cfg)
 		s := stats.NewStatistics(cfg)
-		prober := probe.NewProber(pinger, NewPlainPrinter(Config{}), cfg, s, nil)
+		runner := probe.NewRunner(pinger, NewPlainPrinter(Config{}), cfg, s, nil)
 
 		return probeLines(captureStdout(t, func() {
-			prober.Probe(context.Background())
+			runner.Run(context.Background())
 		}))
 	}
 

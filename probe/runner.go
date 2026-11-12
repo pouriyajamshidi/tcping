@@ -1,5 +1,5 @@
 // Package probe runs the probe loop. It holds the TCP, HTTP and UDP probes
-// and the Prober that repeats one of them, records what came back in the
+// and the Runner that repeats one of them, records what came back in the
 // statistics and hands each result to a Printer.
 package probe
 
@@ -54,9 +54,9 @@ func dialer(network string, networkInterface nic.NetworkInterface, timeout time.
 	return d, nil
 }
 
-// Prober runs the probe loop: it probes on an interval, keeps the
+// Runner runs the probe loop: it probes on an interval, keeps the
 // statistics up to date and hands each result to a printer.
-type Prober struct {
+type Runner struct {
 	pinger     Pinger
 	printer    Printer
 	config     config.Config
@@ -68,11 +68,11 @@ type Prober struct {
 	summaryRequests <-chan struct{}
 }
 
-// NewProber wires up a prober. summaryRequests may be nil; when it is not,
+// NewRunner wires up a runner. summaryRequests may be nil; when it is not,
 // the statistics are printed every time it yields a value (see
 // summaryRequests in internal/app).
-func NewProber(pinger Pinger, printer Printer, cfg config.Config, statistics *stats.Statistics, summaryRequests <-chan struct{}) *Prober {
-	pr := Prober{
+func NewRunner(pinger Pinger, printer Printer, cfg config.Config, statistics *stats.Statistics, summaryRequests <-chan struct{}) *Runner {
+	pr := Runner{
 		pinger:          pinger,
 		printer:         printer,
 		config:          cfg,
@@ -108,7 +108,7 @@ type Pinger interface {
 // Statistics.ResolvedThisProbe before printing, so PrintProbeSuccess/
 // PrintProbeFailure fold the duration into their own line instead of a
 // separate one. It reports whether the resolution succeeded.
-func (p *Prober) resolveHostname(markResolvedThisProbe bool) bool {
+func (p *Runner) resolveHostname(markResolvedThisProbe bool) bool {
 	s := p.statistics
 
 	start := time.Now()
@@ -191,7 +191,7 @@ func failureReason(err error) string {
 // one that took the target from up to down, it fills in
 // Statistics.EndedUptime so the printers can report the uptime that just
 // ended along with the probe.
-func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result, err error) {
+func (p *Runner) handleProbeFailure(pingTime time.Time, probeResult Result, err error) {
 	s := p.statistics
 
 	s.FailureReason = failureReason(err)
@@ -254,7 +254,7 @@ func (p *Prober) handleProbeFailure(pingTime time.Time, probeResult Result, err 
 // handleProbeSuccess records a successful probe. When it is the one that
 // brought the target back up, it fills in Statistics.EndedDowntime so the
 // printers can report the outage that just ended along with the probe.
-func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult Result) {
+func (p *Runner) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probeResult Result) {
 	s := p.statistics
 
 	rttMs := stats.DurationToMilliseconds(rtt)
@@ -295,14 +295,14 @@ func (p *Prober) handleProbeSuccess(pingTime time.Time, rtt time.Duration, probe
 	}
 }
 
-func (p *Prober) finalizeStatistics() {
+func (p *Runner) finalizeStatistics() {
 	p.statistics.EndTime = time.Now()
 	p.statistics.CloseOpenPeriod(p.statistics.EndTime)
 }
 
-// Probe runs the probe loop until ctx is cancelled or the configured
+// Run runs the probe loop until ctx is cancelled or the configured
 // number of probes is reached.
-func (p *Prober) Probe(ctx context.Context) {
+func (p *Runner) Run(ctx context.Context) {
 	ticker := time.NewTicker(p.config.IntervalBetweenProbes)
 	defer ticker.Stop()
 

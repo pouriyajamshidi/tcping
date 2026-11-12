@@ -164,12 +164,12 @@ func (f *fakePrinter) snapshot() fakePrinter {
 	}
 }
 
-// newTestProber builds a Prober wired up with the given pinger and a fresh
+// newTestRunner builds a Runner wired up with the given pinger and a fresh
 // fakePrinter/Statistics pair, ready for either the unit-level handle*
 // tests or a full Probe run.
-func newTestProber(pinger Pinger, cfg config.Config) (*Prober, *fakePrinter) {
+func newTestRunner(pinger Pinger, cfg config.Config) (*Runner, *fakePrinter) {
 	printer := &fakePrinter{}
-	p := &Prober{
+	p := &Runner{
 		pinger:     pinger,
 		printer:    printer,
 		config:     cfg,
@@ -194,7 +194,7 @@ func newTestResolver(t *testing.T, dnsServer string, timeout time.Duration) *dns
 // --- handleProbeFailure -------------------------------------------------
 
 func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	now := time.Now()
 
 	p.handleProbeFailure(now, Result{}, errConnRefused)
@@ -216,7 +216,7 @@ func TestHandleProbeFailure_FirstFailureRecordsCounters(t *testing.T) {
 }
 
 func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 	p.statistics.OngoingSuccessfulProbes = 5
@@ -240,7 +240,7 @@ func TestHandleProbeFailure_EndsOngoingUptimeStreak(t *testing.T) {
 // target's status before this point was simply unknown), so failing on it
 // must not report a bogus "after 0s of uptime" (or worse, garbage) period.
 func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 
 	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
 
@@ -253,7 +253,7 @@ func TestHandleProbeFailure_FirstEverFailureDoesNotPrintUptime(t *testing.T) {
 // "after X of uptime" period should only ever be reported once, at the moment
 // uptime ends, not repeated on every subsequent failed probe.
 func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
@@ -273,7 +273,7 @@ func TestHandleProbeFailure_ConsecutiveFailuresDoNotReprintUptime(t *testing.T) 
 }
 
 func TestHandleProbeFailure_ConsecutiveFailuresDoNotDoubleCountDowntime(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	first := time.Now()
 	second := first.Add(50 * time.Millisecond)
 
@@ -298,7 +298,7 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 			SourceIPv4: sourceIP,
 		},
 	}
-	p, _ := newTestProber(nil, cfg)
+	p, _ := newTestRunner(nil, cfg)
 	p.statistics.IP = netip.MustParseAddr("93.184.216.34") // an IPv4 target
 
 	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
@@ -311,7 +311,7 @@ func TestHandleProbeFailure_UsesConfiguredInterfaceAddress(t *testing.T) {
 }
 
 func TestHandleProbeFailure_ForgetsTheLastSourceAddress(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	p.handleProbeSuccess(time.Now(), time.Millisecond, Result{
 		LocalAddr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321},
 	})
@@ -377,7 +377,7 @@ func TestFailureReason(t *testing.T) {
 }
 
 func TestHandleProbeFailure_KeepsTheReasonUntilASuccess(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 
 	p.handleProbeFailure(time.Now(), Result{}, errConnRefused)
 	if got := p.statistics.FailureReason; got != "connection refused" {
@@ -393,7 +393,7 @@ func TestHandleProbeFailure_KeepsTheReasonUntilASuccess(t *testing.T) {
 // --- handleProbeSuccess --------------------------------------------------
 
 func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	now := time.Now()
 	localAddr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321}
 
@@ -422,7 +422,7 @@ func TestHandleProbeSuccess_RecordsRTTAndCounters(t *testing.T) {
 }
 
 func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	start := time.Now()
 	p.statistics.LastProbeHadFailed = true
 	p.statistics.StartOfDowntime = start
@@ -447,7 +447,7 @@ func TestHandleProbeSuccess_EndsOngoingDowntimeStreak(t *testing.T) {
 }
 
 func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	start := time.Now()
 	p.statistics.StartOfUptime = start
 
@@ -466,7 +466,7 @@ func TestHandleProbeSuccess_OngoingUptimeDoesNotReprintDowntime(t *testing.T) {
 // --- finalizeStatistics ---------------------------------------------------
 
 func TestFinalizeStatistics_WhileDownAccruesRemainingDowntime(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	p.statistics.LastProbeHadFailed = true
 	p.statistics.StartOfDowntime = time.Now().Add(-50 * time.Millisecond)
 
@@ -485,7 +485,7 @@ func TestFinalizeStatistics_WhileDownAccruesRemainingDowntime(t *testing.T) {
 }
 
 func TestFinalizeStatistics_WhileUpAccruesRemainingUptime(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	p.statistics.StartOfUptime = time.Now().Add(-50 * time.Millisecond)
 
 	p.finalizeStatistics()
@@ -500,7 +500,7 @@ func TestFinalizeStatistics_WhileUpAccruesRemainingUptime(t *testing.T) {
 }
 
 func TestFinalizeStatistics_NoProbesYetIsANoop(t *testing.T) {
-	p, _ := newTestProber(nil, config.Config{})
+	p, _ := newTestRunner(nil, config.Config{})
 	p.statistics.StartTime = time.Now()
 
 	p.finalizeStatistics()
@@ -516,18 +516,18 @@ func TestFinalizeStatistics_NoProbesYetIsANoop(t *testing.T) {
 
 // --- Probe (v1) -----------------------------------------------------------
 
-func TestProbe_StopsAfterProbesBeforeQuit(t *testing.T) {
+func TestRun_StopsAfterProbesBeforeQuit(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		ProbesBeforeQuit:      3,
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if got := pinger.calls(); got != 3 {
 		t.Errorf("Ping called %d times, want 3", got)
@@ -551,7 +551,7 @@ func TestProbe_StopsAfterProbesBeforeQuit(t *testing.T) {
 // PrintNameResolutionDuration is now only about retry-resolve (the initial
 // resolution time is folded into PrintStart's own line instead), so a
 // successful retry must print it and update Statistics.NameResolutionDuration.
-func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T) {
+func TestRun_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
@@ -561,10 +561,10 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 		// A literal IP resolves without touching the network.
 		Resolver: newTestResolver(t, "", time.Second),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
-	p.Probe(context.Background())
+	p.Run(context.Background())
 
 	if got := printer.snapshot().nameResolutionCalls; got != 1 {
 		t.Errorf("PrintNameResolutionDuration called %d times, want 1", got)
@@ -576,7 +576,7 @@ func TestProbe_PrintsNameResolutionDurationOnSuccessfulRetryResolve(t *testing.T
 
 // A failed retry-resolve has no successful resolution to report a duration
 // for - PrintError already covers it.
-func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing.T) {
+func TestRun_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing.T) {
 	// A UDP socket that reads and discards every packet without ever
 	// replying, so a lookup against it reliably times out instead of
 	// racily depending on real network/DNS behavior.
@@ -602,12 +602,12 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 		RetryResolveAfterNFailures: 1,
 		Resolver:                   newTestResolver(t, blackhole.LocalAddr().String(), 200*time.Millisecond),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.Hostname = "example.com"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	snap := printer.snapshot()
 	if snap.nameResolutionCalls != 0 {
@@ -623,7 +623,7 @@ func TestProbe_DoesNotPrintNameResolutionDurationOnFailedRetryResolve(t *testing
 
 // A failed lookup before a probe is counted, so it can reach the outputs
 // and not only the terminal. The probe still runs against the old address.
-func TestProbe_ResolveEveryProbe_CountsFailedLookups(t *testing.T) {
+func TestRun_ResolveEveryProbe_CountsFailedLookups(t *testing.T) {
 	// A UDP socket that reads and discards every packet without ever
 	// replying, so every lookup against it times out.
 	blackhole, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
@@ -647,12 +647,12 @@ func TestProbe_ResolveEveryProbe_CountsFailedLookups(t *testing.T) {
 		ResolveEveryProbe:     true,
 		Resolver:              newTestResolver(t, blackhole.LocalAddr().String(), 200*time.Millisecond),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.Hostname = "example.com"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if p.statistics.FailedHostnameLookups != 2 {
 		t.Errorf("FailedHostnameLookups = %d, want 2 (one per probe)", p.statistics.FailedHostnameLookups)
@@ -665,27 +665,27 @@ func TestProbe_ResolveEveryProbe_CountsFailedLookups(t *testing.T) {
 	}
 }
 
-func TestProbe_StopsOnContextCancellation(t *testing.T) {
+func TestRun_StopsOnContextCancellation(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		// ProbesBeforeQuit left at 0: run until ctx is done.
 	}
-	p, _ := newTestProber(pinger, cfg)
+	p, _ := newTestRunner(pinger, cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
 	defer cancel()
 
 	done := make(chan struct{})
 	go func() {
-		p.Probe(ctx)
+		p.Run(ctx)
 		close(done)
 	}()
 
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("Probe() did not return after its context was cancelled")
+		t.Fatal("Run() did not return after its context was cancelled")
 	}
 
 	if pinger.calls() == 0 {
@@ -696,7 +696,7 @@ func TestProbe_StopsOnContextCancellation(t *testing.T) {
 	}
 }
 
-func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
+func TestRun_TracksDowntimeThenRecovery(t *testing.T) {
 	pinger := &fakePinger{outcomeFn: func(call int) (Result, error) {
 		if call < 2 {
 			return Result{}, errConnRefused
@@ -707,11 +707,11 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		ProbesBeforeQuit:      3,
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	s := p.statistics
 	if s.TotalUnsuccessfulProbes != 2 || s.TotalSuccessfulProbes != 1 {
@@ -734,7 +734,7 @@ func TestProbe_TracksDowntimeThenRecovery(t *testing.T) {
 	}
 }
 
-func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
+func TestRun_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
@@ -744,12 +744,12 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 		// A literal IP resolves without touching the network.
 		Resolver: newTestResolver(t, "", time.Second),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 1 {
 		t.Errorf("RetriedHostnameLookups = %d, want 1", p.statistics.RetriedHostnameLookups)
@@ -772,7 +772,7 @@ func TestProbe_RetriesHostnameResolutionAfterNFailures(t *testing.T) {
 
 // --- ResolveEveryProbe ------------------------------------------------
 
-func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
+func TestRun_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
@@ -781,12 +781,12 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 		// A literal IP resolves without touching the network.
 		Resolver: newTestResolver(t, "", time.Second),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 0 {
 		t.Errorf("RetriedHostnameLookups = %d, want 0 (a lookup before every probe is not a retry)", p.statistics.RetriedHostnameLookups)
@@ -806,7 +806,7 @@ func TestProbe_ResolveEveryProbe_ResolvesBeforeEachProbe(t *testing.T) {
 
 // Resolving a literal IP target is a meaningless no-op, so it must be
 // skipped entirely rather than printing a stream of "resolved in 0.000 ms".
-func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
+func TestRun_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
@@ -814,12 +814,12 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 		ResolveEveryProbe:     true,
 		Resolver:              newTestResolver(t, "", time.Second),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.DestIsIP = true
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 0 {
 		t.Errorf("RetriedHostnameLookups = %d, want 0 (target is a literal IP)", p.statistics.RetriedHostnameLookups)
@@ -831,7 +831,7 @@ func TestProbe_ResolveEveryProbe_SkippedForLiteralIPTarget(t *testing.T) {
 
 // ResolveEveryProbe supersedes the failure-threshold retry entirely - it
 // must not also trigger the old ShouldRetryResolve path.
-func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testing.T) {
+func TestRun_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
@@ -841,12 +841,12 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 		RetryResolveAfterNFailures: 1,
 		Resolver:                   newTestResolver(t, "", time.Second),
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if p.statistics.RetriedHostnameLookups != 0 {
 		t.Errorf("RetriedHostnameLookups = %d, want 0 (the -r retry must not run)", p.statistics.RetriedHostnameLookups)
@@ -860,7 +860,7 @@ func TestProbe_ResolveEveryProbe_TakesPrecedenceOverShouldRetryResolve(t *testin
 // address family) must actually change what gets dialed on the next probe,
 // not just what gets displayed - otherwise every probe after the first
 // keeps hitting the original, possibly now-stale, address forever.
-func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
+func TestRun_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes:      5 * time.Millisecond,
@@ -870,13 +870,13 @@ func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 		// Literal IPs resolve without touching the network.
 		Resolver: newTestResolver(t, "", time.Second),
 	}
-	p, _ := newTestProber(pinger, cfg)
+	p, _ := newTestRunner(pinger, cfg)
 	p.statistics.IP = netip.MustParseAddr("192.0.2.1")
 	p.statistics.Hostname = "192.0.2.2" // what retry-resolve will "resolve" to
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	ips := pinger.ips()
 	if len(ips) != 3 {
@@ -898,18 +898,18 @@ func TestProbe_RetryResolveChangesTheActualDialTarget(t *testing.T) {
 
 // --- Probe: immediate first probe --------------------------------------
 
-func TestProbe_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
+func TestRun_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		// Deliberately much longer than the context timeout below, so a
 		// probe can only have happened via the initial, un-ticked call.
 		IntervalBetweenProbes: 500 * time.Millisecond,
 	}
-	p, _ := newTestProber(pinger, cfg)
+	p, _ := newTestRunner(pinger, cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if got := pinger.calls(); got != 1 {
 		t.Errorf("Ping called %d times, want exactly 1 (the immediate, pre-tick probe)", got)
@@ -919,17 +919,17 @@ func TestProbe_ProbesImmediatelyWithoutWaitingForFirstTick(t *testing.T) {
 // The immediate initial probe reuses the exact same runProbe body as every
 // ticked probe, so it counts toward ProbesBeforeQuit like any other: a
 // threshold of 1 now runs exactly one probe.
-func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
+func TestRun_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		ProbesBeforeQuit:      1,
 	}
-	p, _ := newTestProber(pinger, cfg)
+	p, _ := newTestRunner(pinger, cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	if got := pinger.calls(); got != 1 {
 		t.Errorf("Ping called %d times, want exactly 1", got)
@@ -942,7 +942,7 @@ func TestProbe_ProbesBeforeQuitOfOneRunsOneProbe(t *testing.T) {
 // is in flight. The probe returns an error because we cancelled it, but it
 // must not be counted as a failure, or the run reports packet loss and a
 // downtime that never happened.
-func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
+func TestRun_CancelledProbeIsNotAFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	pinger := &fakePinger{outcomeFn: func(call int) (Result, error) {
@@ -955,11 +955,11 @@ func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
 		return Result{}, ctx.Err()
 	}}
 
-	p, printer := newTestProber(pinger, config.Config{
+	p, printer := newTestRunner(pinger, config.Config{
 		IntervalBetweenProbes: time.Millisecond,
 	})
 
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	s := p.statistics
 
@@ -986,15 +986,15 @@ func TestProbe_CancelledProbeIsNotAFailure(t *testing.T) {
 
 // TestProbe_RealFailureStillCounts makes sure the cancellation check above
 // only skips probes we cancelled, not genuine failures.
-func TestProbe_RealFailureStillCounts(t *testing.T) {
+func TestRun_RealFailureStillCounts(t *testing.T) {
 	ctx := t.Context()
 
-	p, printer := newTestProber(alwaysFails(), config.Config{
+	p, printer := newTestRunner(alwaysFails(), config.Config{
 		IntervalBetweenProbes: time.Millisecond,
 		ProbesBeforeQuit:      2,
 	})
 
-	p.Probe(ctx)
+	p.Run(ctx)
 
 	s := p.statistics
 
@@ -1009,16 +1009,16 @@ func TestProbe_RealFailureStillCounts(t *testing.T) {
 
 // -failures-only hides successful probes from the printer, but the
 // probe itself must still be counted, otherwise the summary would be wrong.
-func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
+func TestRun_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 	pinger := alwaysSucceeds()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		ProbesBeforeQuit:      3,
 		ShowFailuresOnly:      true,
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 
-	p.Probe(context.Background())
+	p.Run(context.Background())
 
 	if got := printer.snapshot().successCalls; got != 0 {
 		t.Errorf("PrintProbeSuccess called %d times, want 0", got)
@@ -1029,16 +1029,16 @@ func TestProbe_ShowFailuresOnlyHidesSuccessesButStillCountsThem(t *testing.T) {
 }
 
 // Failures are the whole point of -failures-only, so they keep printing.
-func TestProbe_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
+func TestRun_ShowFailuresOnlyStillPrintsFailures(t *testing.T) {
 	pinger := alwaysFails()
 	cfg := config.Config{
 		IntervalBetweenProbes: 5 * time.Millisecond,
 		ProbesBeforeQuit:      2,
 		ShowFailuresOnly:      true,
 	}
-	p, printer := newTestProber(pinger, cfg)
+	p, printer := newTestRunner(pinger, cfg)
 
-	p.Probe(context.Background())
+	p.Run(context.Background())
 
 	if got := printer.snapshot().failureCalls; got != 2 {
 		t.Errorf("PrintProbeFailure called %d times, want 2", got)
@@ -1052,7 +1052,7 @@ func TestResolveHostname_RecordsDuration(t *testing.T) {
 		// A literal IP resolves without touching the network.
 		Resolver: newTestResolver(t, "", time.Second),
 	}
-	p, _ := newTestProber(nil, cfg)
+	p, _ := newTestRunner(nil, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 
 	if !p.resolveHostname(false) {
@@ -1078,7 +1078,7 @@ func TestResolveHostname_SameAddressUpdatesDurationOnly(t *testing.T) {
 	cfg := config.Config{
 		Resolver: newTestResolver(t, "", time.Second),
 	}
-	p, _ := newTestProber(nil, cfg)
+	p, _ := newTestRunner(nil, cfg)
 	p.statistics.Hostname = "127.0.0.1"
 	p.statistics.HostnameChanges = []stats.HostnameChange{
 		{Addr: netip.MustParseAddr("127.0.0.1")},

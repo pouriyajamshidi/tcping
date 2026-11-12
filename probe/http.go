@@ -32,7 +32,7 @@ type HTTPing struct {
 	proxyAddr        netip.AddrPort // where the proxy is, zero without one
 }
 
-// NewHTTPing creates an HTTP(S) prober for the target in cfg.
+// NewHTTPing creates an HTTP(S) probe for the target in cfg.
 func NewHTTPing(cfg config.Config) HTTPing {
 	return HTTPing{
 		networkInterface: cfg.NetworkInterface,
@@ -47,7 +47,7 @@ func NewHTTPing(cfg config.Config) HTTPing {
 }
 
 // transport dials ip:port instead of letting the HTTP client resolve the
-// URL's hostname again, so the prober decides which address we probe and -r
+// URL's hostname again, so the runner decides which address we probe and -r
 // and -resolve-every-probe keep working. Through a proxy it dials the
 // proxy's address instead, and the proxy connects to the hostname on its own.
 // Keep-alives are off so every probe opens a real connection, which is what

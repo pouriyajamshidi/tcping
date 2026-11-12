@@ -1,6 +1,6 @@
 // Package stats holds what a run has learned about its target so far, and
-// formats those numbers for the printers. It is the one place the probers
-// write to and the printers read from.
+// formats those numbers for the printers. It is the one place the runner
+// writes to and the printers read from.
 package stats
 
 import (
@@ -45,7 +45,7 @@ type UDPInfo struct {
 }
 
 // Statistics is everything a run has learned so far about one target. The
-// probers update it as they go and the printers read it.
+// runner updates it as it goes and the printers read it.
 type Statistics struct {
 	Hostname           string
 	IP                 netip.Addr
@@ -301,7 +301,7 @@ func (s *Statistics) RTTStr() string {
 
 // DurationToMilliseconds converts d to milliseconds as a float32, preserving
 // sub-millisecond precision that Duration.Milliseconds() (which returns an
-// int64) would drop. Exported because probers fill in LatestRTT with it.
+// int64) would drop. Exported because the runner fills in LatestRTT with it.
 func DurationToMilliseconds(d time.Duration) float32 {
 	return float32(d.Nanoseconds()) / float32(time.Millisecond)
 }

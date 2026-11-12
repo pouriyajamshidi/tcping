@@ -33,7 +33,7 @@ type UDPing struct {
 	probeNumber      uint64 // Sent as the payload, so a reply can be matched to its probe.
 }
 
-// NewUDPing creates a UDP prober for the target in cfg.
+// NewUDPing creates a UDP probe for the target in cfg.
 func NewUDPing(cfg config.Config) *UDPing {
 	return &UDPing{
 		networkInterface: cfg.NetworkInterface,

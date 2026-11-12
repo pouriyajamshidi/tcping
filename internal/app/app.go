@@ -47,7 +47,7 @@ func setupSignalHandler(ctx context.Context) context.Context {
 // than from this goroutine. The channel is closed when stdin runs out.
 func summaryRequests() <-chan struct{} {
 	// One buffered slot: if a probe is in flight when 'Enter' is pressed we
-	// keep the request and hand it over as soon as the prober asks, and
+	// keep the request and hand it over as soon as the runner asks, and
 	// holding on to more than one is pointless since they all print the
 	// same thing.
 	requests := make(chan struct{}, 1)
@@ -132,8 +132,8 @@ func Run() {
 		summaryReqs = summaryRequests()
 	}
 
-	prober := probe.NewProber(pinger, printer, cfg, statistics, summaryReqs)
-	prober.Probe(probeCtx)
+	runner := probe.NewRunner(pinger, printer, cfg, statistics, summaryReqs)
+	runner.Run(probeCtx)
 
 	printer.Shutdown(statistics)
 

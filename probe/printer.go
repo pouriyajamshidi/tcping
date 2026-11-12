@@ -40,7 +40,7 @@ type Printer interface {
 
 	// Shutdown prints statistics and releases any resources the printer
 	// holds (e.g. closing files). Statistics must already be finalized
-	// (see Prober.finalizeStatistics) by the time this is called. It does
+	// (see Runner.finalizeStatistics) by the time this is called. It does
 	// not exit the program - callers decide that for themselves.
 	Shutdown(s *stats.Statistics)
 }

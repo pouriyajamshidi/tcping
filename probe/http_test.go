@@ -246,7 +246,7 @@ func TestHTTPing_ErrorStatusFails(t *testing.T) {
 }
 
 // TestHTTPing_DoesNotFollowRedirects makes sure a redirect is reported as it
-// is. Following it would dial a host the prober never resolved.
+// is. Following it would dial a host the runner never resolved.
 func TestHTTPing_DoesNotFollowRedirects(t *testing.T) {
 	var hits int
 
@@ -324,7 +324,7 @@ func TestHTTPing_SkipTLSVerify(t *testing.T) {
 }
 
 // TestHTTPing_DialsTheGivenIP is the whole point of the custom transport:
-// the address comes from the prober, not from resolving the URL's hostname.
+// the address comes from the runner, not from resolving the URL's hostname.
 // The URL below points at a name that cannot resolve, so the probe can only
 // work if the given IP is what gets dialed.
 func TestHTTPing_DialsTheGivenIP(t *testing.T) {
@@ -534,7 +534,7 @@ func TestHTTPing_CancelledContext(t *testing.T) {
 	}
 }
 
-// TestHTTPing_InterfaceWithoutMatchingFamily mirrors the TCP prober: when
+// TestHTTPing_InterfaceWithoutMatchingFamily mirrors the TCP probe: when
 // -I names an interface that has no address of the target's family, the
 // probe fails instead of going out of some other interface.
 func TestHTTPing_InterfaceWithoutMatchingFamily(t *testing.T) {

@@ -26,7 +26,7 @@ type Tcping struct {
 	proxyAddr        netip.AddrPort // where the proxy is, zero without one
 }
 
-// NewTcping creates a TCP prober for the target in cfg.
+// NewTcping creates a TCP probe for the target in cfg.
 func NewTcping(cfg config.Config) Tcping {
 	return Tcping{
 		networkInterface: cfg.NetworkInterface,
