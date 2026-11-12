@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # netcond.sh - apply temporary network conditions toward one destination so
-# tcping can be tested against them.
+# tcping can be tested against them. The destination can carry a TCP port, so
+# a test on loopback only hits the one server and leaves the rest of lo alone.
 #
 # Everything it adds is tagged, so "clear" only removes what this script made
 # and leaves the rest of your firewall alone.
@@ -23,6 +24,8 @@ Commands:
   status                                show what is currently applied
   clear                                 remove everything this script added
 
+dst is a host or IP, or host:port to touch only TCP traffic to that port.
+
 If seconds is left out the condition stays until you run "clear".
 If seconds is given the script waits, then cleans up, and Ctrl-C cleans up too.
 
@@ -30,6 +33,7 @@ Examples:
   sudo ./netcond.sh block 1.1.1.1 10
   sudo ./netcond.sh delay example.com 800ms 200ms 30
   sudo ./netcond.sh loss 9.9.9.9 25
+  sudo ./netcond.sh delay 127.0.0.1:8080 300ms
   sudo ./netcond.sh clear
 EOF
 }
@@ -41,6 +45,19 @@ die() {
 
 require_root() {
 	[[ $EUID -eq 0 ]] || die "needs root, run it with sudo"
+}
+
+# Split "host:port" into the caller's host and port variables. The port is
+# optional and left empty when dst has none.
+split_dst() {
+	local dst=$1
+	host=$dst
+	port=""
+	if [[ $dst == *:* ]]; then
+		host=${dst%:*}
+		port=${dst##*:}
+		[[ $port =~ ^[0-9]+$ ]] || die "bad port in $dst"
+	fi
 }
 
 # Turn a hostname or IP into a single IPv4 address.
@@ -71,14 +88,20 @@ cmd_block() {
 	local dst=${1:-} seconds=${2:-}
 	[[ -n $dst ]] || die "block needs a destination"
 
-	local ip
-	ip=$(resolve "$dst")
+	local host port ip
+	split_dst "$dst"
+	ip=$(resolve "$host")
+
+	local match=(-d "$ip")
+	if [[ -n $port ]]; then
+		match+=(-p tcp --dport "$port")
+	fi
 
 	# OUTPUT catches what this machine sends, FORWARD what a container on a
 	# Docker bridge sends, which never passes through OUTPUT.
-	iptables -I OUTPUT 1 -d "$ip" -m comment --comment "$TAG" -j DROP
-	iptables -I FORWARD 1 -d "$ip" -m comment --comment "$TAG" -j DROP
-	echo "blocking $ip"
+	iptables -I OUTPUT 1 "${match[@]}" -m comment --comment "$TAG" -j DROP
+	iptables -I FORWARD 1 "${match[@]}" -m comment --comment "$TAG" -j DROP
+	echo "blocking $ip${port:+:$port}"
 
 	if [[ -n $seconds ]]; then
 		wait_then_clear "$seconds"
@@ -123,9 +146,17 @@ apply_netem() {
 	local dst=$1
 	shift
 
-	local ip iface
-	ip=$(resolve "$dst")
+	local host port ip iface
+	split_dst "$dst"
+	ip=$(resolve "$host")
 	iface=$(iface_for "$ip")
+
+	# Matching the port leaves the replies alone, which matters on loopback
+	# where both directions leave through lo.
+	local match=(match ip dst "$ip"/32)
+	if [[ -n $port ]]; then
+		match+=(match ip protocol 6 0xff match ip dport "$port" 0xffff)
+	fi
 
 	tc qdisc show dev "$iface" | grep -q "qdisc prio 1:" ||
 		tc qdisc add dev "$iface" root handle 1: prio
@@ -133,10 +164,10 @@ apply_netem() {
 	tc qdisc replace dev "$iface" parent 1:3 handle 30: netem "$@"
 
 	tc filter replace dev "$iface" protocol ip parent 1:0 prio 1 u32 \
-		match ip dst "$ip"/32 \
+		"${match[@]}" \
 		flowid 1:3
 
-	echo "applied netem $* to $ip on $iface"
+	echo "applied netem $* to $ip${port:+:$port} on $iface"
 }
 
 cmd_status() {
