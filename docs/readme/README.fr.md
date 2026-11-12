@@ -528,7 +528,7 @@ Avec `-v`, ce numéro apparaît sur chaque ligne, ce qui permet de nommer une so
 
 ```text
 Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
-    reply echoed back probe 4
+    server echoed back probe 4
 ```
 
 ### Diffuser la sortie JSON vers un serveur

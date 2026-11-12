@@ -518,7 +518,7 @@ UDP プローブはそれぞれ、自分の番号をペイロードとして送�
 
 ```text
 Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
-    reply echoed back probe 4
+    server echoed back probe 4
 ```
 
 ### JSON 出力をサーバーへストリーミングする

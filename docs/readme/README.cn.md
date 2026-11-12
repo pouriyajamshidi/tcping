@@ -508,7 +508,7 @@ tcping udp://127.0.0.1 9999
 
 ```text
 Reply from 127.0.0.1 on port 9999 UDP_conn=4 time=1.276 ms
-    reply echoed back probe 4
+    server echoed back probe 4
 ```
 
 ### 将 JSON 输出流式发送到服务器
