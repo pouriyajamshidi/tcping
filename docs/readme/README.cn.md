@@ -303,7 +303,7 @@ nix profile install github:pouriyajamshidi/tcping
 
 - 使用 `go install`：
 
-  > 这要求 go 版本至少为 `1.27.3`
+  > 这要求 go 版本至少为 `1.27.4`
 
   ```bash
   go install github.com/pouriyajamshidi/tcping/v3@latest

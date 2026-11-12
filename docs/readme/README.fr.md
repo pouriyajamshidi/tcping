@@ -308,7 +308,7 @@ que vous obtenez avec `nix develop`.
 
 - Avec `go install` :
 
-  > Cela demande au moins la version `1.27.3` de go
+  > Cela demande au moins la version `1.27.4` de go
 
   ```bash
   go install github.com/pouriyajamshidi/tcping/v3@latest
