@@ -248,7 +248,7 @@ func TestPlainProbeVerboseUDPDetails(t *testing.T) {
 		NewPlainPrinter(Config{Verbose: true}).PrintProbeSuccess(s)
 	})
 
-	wantLines(t, out, "    reply echoed back probe 7\n")
+	wantLines(t, out, "    server echoed back probe 7\n")
 }
 
 func TestPlainProbeHTTPStatus(t *testing.T) {

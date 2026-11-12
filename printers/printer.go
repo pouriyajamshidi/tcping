@@ -145,7 +145,7 @@ func udpProbeDetails(s *stats.Statistics, verbose bool) string {
 
 	switch {
 	case s.UDP.Echoed:
-		return fmt.Sprintf("    reply echoed back probe %s\n", s.ProbeNumberStr())
+		return fmt.Sprintf("    server echoed back probe %s\n", s.ProbeNumberStr())
 
 	case s.UDP.ReplySize > 0:
 		return fmt.Sprintf("    reply of %d bytes did not match probe %s\n", s.UDP.ReplySize, s.ProbeNumberStr())

@@ -46,6 +46,6 @@ func ListenUDP(ctx context.Context, address string) error {
 			continue
 		}
 
-		fmt.Printf("Echoed %d bytes back to %s\n", n, peer)
+		fmt.Printf("Received %s (%d bytes) from %s and echoed it back\n", string(buf[:n]), n, peer)
 	}
 }
