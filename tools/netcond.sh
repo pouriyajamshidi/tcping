@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # netcond.sh - apply temporary network conditions toward one destination so
-# tcping can be tested against them. The destination can carry a TCP port, so
-# a test on loopback only hits the one server and leaves the rest of lo alone.
+# tcping can be tested against them. The destination can carry a port, so a
+# test on loopback only hits the one server and leaves the rest of lo alone.
 #
 # Everything it adds is tagged, so "clear" only removes what this script made
 # and leaves the rest of your firewall alone.
@@ -24,7 +24,7 @@ Commands:
   status                                show what is currently applied
   clear                                 remove everything this script added
 
-dst is a host or IP, or host:port to touch only TCP traffic to that port.
+dst is a host or IP, or host:port to touch only TCP and UDP traffic to that port.
 
 If seconds is left out the condition stays until you run "clear".
 If seconds is given the script waits, then cleans up, and Ctrl-C cleans up too.
@@ -84,6 +84,14 @@ wait_then_clear() {
 	sleep "$seconds"
 }
 
+# Drop what matches the given iptables args. OUTPUT catches what this machine
+# sends, FORWARD what a container on a Docker bridge sends, which never passes
+# through OUTPUT.
+add_drop() {
+	iptables -I OUTPUT 1 "$@" -m comment --comment "$TAG" -j DROP
+	iptables -I FORWARD 1 "$@" -m comment --comment "$TAG" -j DROP
+}
+
 cmd_block() {
 	local dst=${1:-} seconds=${2:-}
 	[[ -n $dst ]] || die "block needs a destination"
@@ -92,15 +100,12 @@ cmd_block() {
 	split_dst "$dst"
 	ip=$(resolve "$host")
 
-	local match=(-d "$ip")
 	if [[ -n $port ]]; then
-		match+=(-p tcp --dport "$port")
+		add_drop -d "$ip" -p tcp --dport "$port"
+		add_drop -d "$ip" -p udp --dport "$port"
+	else
+		add_drop -d "$ip"
 	fi
-
-	# OUTPUT catches what this machine sends, FORWARD what a container on a
-	# Docker bridge sends, which never passes through OUTPUT.
-	iptables -I OUTPUT 1 "${match[@]}" -m comment --comment "$TAG" -j DROP
-	iptables -I FORWARD 1 "${match[@]}" -m comment --comment "$TAG" -j DROP
 	echo "blocking $ip${port:+:$port}"
 
 	if [[ -n $seconds ]]; then
@@ -151,23 +156,30 @@ apply_netem() {
 	ip=$(resolve "$host")
 	iface=$(iface_for "$ip")
 
-	# Matching the port leaves the replies alone, which matters on loopback
-	# where both directions leave through lo.
-	local match=(match ip dst "$ip"/32)
-	if [[ -n $port ]]; then
-		match+=(match ip protocol 6 0xff match ip dport "$port" 0xffff)
-	fi
-
 	tc qdisc show dev "$iface" | grep -q "qdisc prio 1:" ||
 		tc qdisc add dev "$iface" root handle 1: prio
 
 	tc qdisc replace dev "$iface" parent 1:3 handle 30: netem "$@"
 
-	tc filter replace dev "$iface" protocol ip parent 1:0 prio 1 u32 \
-		"${match[@]}" \
-		flowid 1:3
+	# Matching the port leaves the replies alone, which matters on loopback
+	# where both directions leave through lo.
+	if [[ -n $port ]]; then
+		add_filter "$iface" "$ip" match ip protocol 6 0xff match ip dport "$port" 0xffff
+		add_filter "$iface" "$ip" match ip protocol 17 0xff match ip dport "$port" 0xffff
+	else
+		add_filter "$iface" "$ip"
+	fi
 
 	echo "applied netem $* to $ip${port:+:$port} on $iface"
+}
+
+# Send packets to ip that also match the extra u32 args into the netem band.
+add_filter() {
+	local iface=$1 ip=$2
+	shift 2
+	tc filter replace dev "$iface" protocol ip parent 1:0 prio 1 u32 \
+		match ip dst "$ip"/32 "$@" \
+		flowid 1:3
 }
 
 cmd_status() {
