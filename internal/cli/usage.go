@@ -9,9 +9,18 @@ import (
 	"github.com/pouriyajamshidi/tcping/v3/internal/version"
 )
 
+// printAbout writes the version, the author and the repository to w.
+func printAbout(w io.Writer) {
+	fmt.Fprintf(w, "TCPING version %s\n", version.Current)
+	fmt.Fprintln(w, "By Pouriya Jamshidi")
+	fmt.Fprintln(w, "https://github.com/pouriyajamshidi/tcping")
+}
+
 // printUsage writes how tcping should be run to w.
 func printUsage(w io.Writer) {
-	fmt.Fprintf(w, "\nTCPING version %s\n\n", version.Current)
+	fmt.Fprintln(w)
+	printAbout(w)
+	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Try running tcping like:")
 	fmt.Fprintln(w, "tcping www.example.com 443")
 	fmt.Fprintln(w, "Or use the <hostname/ip:port> format:")
@@ -48,6 +57,6 @@ func help() {
 
 // showVersion displays the version and exits
 func showVersion() {
-	fmt.Printf("TCPING version %s\n", version.Current)
+	printAbout(os.Stdout)
 	os.Exit(0)
 }
