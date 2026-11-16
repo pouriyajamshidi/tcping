@@ -471,15 +471,33 @@ tcping https://www.example.com --full-page -v
 ### Probes über einen Proxy
 
 `--proxy` schickt TCP- und HTTP(S)-Probes über einen Proxy. `http://`-,
-`https://`- und `socks5://`-Proxys funktionieren, und eine Anmeldung gehört in
-die URL, z. B. `socks5://user:password@127.0.0.1:1080`. tcping liest die
-Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` nicht, eine Probe
-läuft also nur über einen Proxy, wenn Sie es verlangen:
+`https://`-, `socks5://`- und `socks5h://`-Proxys funktionieren, mit oder ohne
+Anmeldung in der URL. tcping liest die Umgebungsvariablen `HTTPS_PROXY`,
+`HTTP_PROXY` und `NO_PROXY` nicht, eine Probe läuft also nur über einen Proxy,
+wenn Sie es verlangen:
 
 ```bash
+# Ein HTTP-Proxy
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# Ein HTTP-Proxy, mit dem tcping über TLS spricht
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# Ein SOCKS5-Proxy
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// funktioniert genauso wie socks5://
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+Eine Proxy-URL ohne Port bekommt `80` für `http://`, `443` für `https://` und
+`1080` für `socks5://` und `socks5h://`. Ein Proxy, der keine Anmeldung braucht,
+funktioniert auch, wenn die URL eine enthält. Zeichen wie `/`, `?`, `#` und `%`
+in der Anmeldung müssen prozentkodiert werden, z. B. wird `pa/ss` zu `pa%2Fss`.
 
 Eine TCP-Probe bittet den Proxy, sich mit dem Ziel zu verbinden, und ist
 erfolgreich, wenn der Proxy meldet, dass es geklappt hat. Ihre Zeit umfasst den
@@ -667,7 +685,7 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 | `-4`            |            | Nur IPv4-Adressen verwenden                                                                   |
 | `-6`            |            | Nur IPv6-Adressen verwenden                                                                   |
 | `-I <name\|IP>` |            | Schnittstellenname oder IP-Adresse, von der die Probes und die DNS-Abfragen gesendet werden   |
-| `--proxy <URL>` |          | TCP- und `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128`. Die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` werden nicht verwendet |
+| `--proxy <URL>` |          | TCP- und `HTTP(S)`-Probes über einen Proxy senden, z. B. `--proxy http://proxy.example.com:3128` oder `--proxy socks5://user:password@127.0.0.1:1080`. Die Umgebungsvariablen `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY` werden nicht verwendet |
 
 > [!TIP]
 > Ohne die Flags `-4` und `-6` wählt tcping anhand der DNS-Abfragen zufällig eine IP-Adresse aus.

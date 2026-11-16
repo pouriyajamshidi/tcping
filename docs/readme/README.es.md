@@ -471,15 +471,34 @@ tcping https://www.example.com --full-page -v
 ### Sondear a través de un proxy
 
 `--proxy` envía los sondeos TCP y HTTP(S) a través de un proxy. Funcionan los
-proxies `http://`, `https://` y `socks5://`, y el usuario y la contraseña van en la
-URL, por ejemplo `socks5://user:password@127.0.0.1:1080`. tcping no lee las
-variables de entorno `HTTPS_PROXY`, `HTTP_PROXY` y `NO_PROXY`, así que un sondeo
-solo pasa por un proxy cuando se lo pides:
+proxies `http://`, `https://`, `socks5://` y `socks5h://`, con o sin usuario y
+contraseña en la URL. tcping no lee las variables de entorno `HTTPS_PROXY`,
+`HTTP_PROXY` y `NO_PROXY`, así que un sondeo solo pasa por un proxy cuando se lo
+pides:
 
 ```bash
+# Un proxy HTTP
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# Un proxy HTTP con el que tcping habla por TLS
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# Un proxy SOCKS5
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// funciona igual que socks5://
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+Una URL de proxy sin puerto usa `80` para `http://`, `443` para `https://` y
+`1080` para `socks5://` y `socks5h://`. Un proxy que no pide usuario y contraseña
+funciona igual aunque la URL los lleve. Los caracteres como `/`, `?`, `#` y `%`
+en el usuario o la contraseña deben ir codificados con porcentaje, por ejemplo
+`pa/ss` pasa a ser `pa%2Fss`.
 
 Un sondeo TCP pide al proxy que se conecte al destino, y tiene éxito cuando el
 proxy dice que lo hizo. Su tiempo incluye el camino hasta el proxy y el camino
@@ -670,7 +689,7 @@ que `-c 5` y `--c 5` son la misma opción.
 | `-4`            |             | Usar solo direcciones IPv4                                                                                                                                                                 |
 | `-6`            |             | Usar solo direcciones IPv6                                                                                                                                                                 |
 | `-I <name\|IP>` |             | Nombre de interfaz o dirección IP desde la que enviar los sondeos y las consultas DNS                                                                                                      |
-| `--proxy <URL>` |             | Enviar los sondeos TCP y `HTTP(S)` a través de un proxy, por ejemplo `--proxy http://proxy.example.com:3128`. No se usan las variables de entorno `HTTPS_PROXY`, `HTTP_PROXY` y `NO_PROXY` |
+| `--proxy <URL>` |             | Enviar los sondeos TCP y `HTTP(S)` a través de un proxy, por ejemplo `--proxy http://proxy.example.com:3128` o `--proxy socks5://user:password@127.0.0.1:1080`. No se usan las variables de entorno `HTTPS_PROXY`, `HTTP_PROXY` y `NO_PROXY` |
 
 > [!TIP]
 > Sin las opciones `-4` y `-6`, tcping elige al azar una dirección IP de entre las que devuelve la consulta DNS.

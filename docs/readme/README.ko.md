@@ -466,14 +466,32 @@ tcping https://www.example.com --full-page -v
 ### 프록시를 통해 프로브하기
 
 `--proxy`는 TCP와 HTTP(S) 프로브를 프록시를 통해 보냅니다. `http://`, `https://`,
-`socks5://` 프록시를 쓸 수 있고, 로그인 정보는 URL에 넣습니다. 예:
-`socks5://user:password@127.0.0.1:1080`. tcping은 `HTTPS_PROXY`, `HTTP_PROXY`,
-`NO_PROXY` 환경 변수를 읽지 않으므로, 프로브는 직접 지정했을 때만 프록시를 거칩니다.
+`socks5://`, `socks5h://` 프록시를 쓸 수 있고, URL에 로그인 정보를 넣어도 되고
+빼도 됩니다. tcping은 `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수를 읽지
+않으므로, 프로브는 직접 지정했을 때만 프록시를 거칩니다.
 
 ```bash
+# HTTP 프록시
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# tcping이 TLS로 통신하는 HTTP 프록시
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# SOCKS5 프록시
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h://는 socks5://와 똑같이 동작합니다
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+포트가 없는 프록시 URL은 `http://`이면 `80`, `https://`이면 `443`, `socks5://`와
+`socks5h://`이면 `1080` 포트를 씁니다. 로그인이 필요 없는 프록시는 URL에 로그인
+정보가 있어도 그대로 동작합니다. 로그인 정보에 들어간 `/`, `?`, `#`, `%` 같은 문자는
+퍼센트 인코딩해야 합니다. 예: `pa/ss`는 `pa%2Fss`가 됩니다.
 
 TCP 프로브는 프록시에게 대상에 연결해 달라고 요청하고, 프록시가 연결했다고 답하면
 성공합니다. 그래서 시간에는 프록시까지 가는 길과 프록시에서 대상까지 가는 길이 모두
@@ -652,7 +670,7 @@ OpenTelemetry Collector, InfluxDB 환경은
 | `-4`            |           | IPv4 주소만 사용                                         |
 | `-6`            |           | IPv6 주소만 사용                                         |
 | `-I <name\|IP>` |           | 프로브와 DNS 조회를 보낼 인터페이스 이름 또는 IP 주소    |
-| `--proxy <URL>` |        | TCP와 `HTTP(S)` 프로브를 프록시를 통해 보냄, 예: `--proxy http://proxy.example.com:3128`. `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수는 사용하지 않음 |
+| `--proxy <URL>` |        | TCP와 `HTTP(S)` 프로브를 프록시를 통해 보냄, 예: `--proxy http://proxy.example.com:3128` 또는 `--proxy socks5://user:password@127.0.0.1:1080`. `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` 환경 변수는 사용하지 않음 |
 
 > [!TIP]
 > `-4`와 `-6` 플래그를 지정하지 않으면 tcping은 DNS 조회 결과에서 IP 주소를 무작위로 고릅니다.

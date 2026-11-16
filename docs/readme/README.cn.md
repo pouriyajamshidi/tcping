@@ -458,15 +458,33 @@ tcping https://www.example.com --full-page -v
 
 ### 通过代理探测
 
-`--proxy` 让 TCP 和 HTTP(S) 探测经过代理。支持 `http://`、`https://` 和
-`socks5://` 代理，登录信息写在 URL 里，例如
-`socks5://user:password@127.0.0.1:1080`。tcping 不读取 `HTTPS_PROXY`、
-`HTTP_PROXY` 和 `NO_PROXY` 环境变量，所以只有在你要求时，探测才会经过代理：
+`--proxy` 让 TCP 和 HTTP(S) 探测经过代理。支持 `http://`、`https://`、
+`socks5://` 和 `socks5h://` 代理，URL 里可以带登录信息，也可以不带。tcping 不读取
+`HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量，所以只有在你要求时，探测才会
+经过代理：
 
 ```bash
+# HTTP 代理
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# tcping 通过 TLS 与之通信的 HTTP 代理
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# SOCKS5 代理
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// 与 socks5:// 的效果相同
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+代理 URL 不写端口时，`http://` 用 `80`，`https://` 用 `443`，`socks5://` 和
+`socks5h://` 用 `1080`。不需要登录的代理，即使 URL 里带了登录信息也照样能用。登录
+信息中的 `/`、`?`、`#` 和 `%` 等字符必须做百分号编码，例如 `pa/ss` 要写成
+`pa%2Fss`。
 
 TCP 探测会请求代理连接目标，代理回复已连接时探测即成功。它的耗时包括到代理的
 那段路和代理自己到目标的那段路。很多 HTTP 代理只允许连接 `443` 端口，所以即使
@@ -638,7 +656,7 @@ OpenTelemetry Collector 和 InfluxDB 环境（包含 Grafana 和 tcping，一条
 | `-4`            |        | 仅使用 IPv4 地址                                             |
 | `-6`            |        | 仅使用 IPv6 地址                                             |
 | `-I <name\|IP>` |        | 用于发送探测和 DNS 查询的接口名称或 IP 地址                  |
-| `--proxy <URL>` |        | 通过代理发送 TCP 和 `HTTP(S)` 探测，例如 `--proxy http://proxy.example.com:3128`。不使用 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量 |
+| `--proxy <URL>` |        | 通过代理发送 TCP 和 `HTTP(S)` 探测，例如 `--proxy http://proxy.example.com:3128` 或 `--proxy socks5://user:password@127.0.0.1:1080`。不使用 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY` 环境变量 |
 
 > [!TIP]
 > 如果未指定 `-4` 和 `-6` 标志，tcping 将根据 DNS 查找随机选择一个 IP 地址。

@@ -470,15 +470,34 @@ tcping https://www.example.com --full-page -v
 ### بررسی از طریق proxy
 
 `--proxy` probeهای TCP و HTTP(S) را از طریق یک proxy می‌فرستد. proxyهای
-`http://`، `https://` و `socks5://` کار می‌کنند، و نام کاربری و رمز در خود URL
-می‌آیند، مثلاً `socks5://user:password@127.0.0.1:1080`. tcping متغیرهای محیطی
-`HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` را نمی‌خواند، پس یک probe فقط وقتی از
-proxy عبور می‌کند که خودتان بخواهید:
+`http://`، `https://`، `socks5://` و `socks5h://` کار می‌کنند، با یا بدون نام
+کاربری و رمز در URL. tcping متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و
+`NO_PROXY` را نمی‌خواند، پس یک probe فقط وقتی از proxy عبور می‌کند که خودتان
+بخواهید:
 
 ```bash
+# یک proxy از نوع HTTP
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# یک proxy از نوع HTTP که tcping از طریق TLS با آن حرف می‌زند
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# یک proxy از نوع SOCKS5
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// همان کار socks5:// را می‌کند
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+یک URL برای proxy بدون پورت، برای `http://` پورت `80`، برای `https://` پورت
+`443` و برای `socks5://` و `socks5h://` پورت `1080` را می‌گیرد. proxyای که نام
+کاربری و رمز نمی‌خواهد، حتی اگر URL آن‌ها را داشته باشد باز هم کار می‌کند.
+نویسه‌هایی مثل `/`، `?`، `#` و `%` در نام کاربری و رمز باید به شکل درصدی
+(percent-encoded) نوشته شوند، مثلاً `pa/ss` به `pa%2Fss` تبدیل می‌شود.
 
 یک probe از نوع TCP از proxy می‌خواهد که به هدف وصل شود، و وقتی موفق است که
 proxy بگوید وصل شده. پس زمان آن هم مسیر تا proxy را در بر می‌گیرد و هم مسیر خود
@@ -664,7 +683,7 @@ OpenTelemetry Collector و InfluxDB با Grafana و tcping که می‌توان�
 | `-4`            |         | فقط از آدرس‌های IPv4 استفاده کن                                                 |
 | `-6`            |         | فقط از آدرس‌های IPv6 استفاده کن                                                 |
 | `-I <name\|IP>` |         | نام رابط یا آدرس IP برای فرستادن probeها و جستجوهای DNS                         |
-| `--proxy <URL>` |         | probeهای TCP و `HTTP(S)` را از طریق یک proxy بفرست، مثلاً `--proxy http://proxy.example.com:3128`. متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` به کار نمی‌روند |
+| `--proxy <URL>` |         | probeهای TCP و `HTTP(S)` را از طریق یک proxy بفرست، مثلاً `--proxy http://proxy.example.com:3128` یا `--proxy socks5://user:password@127.0.0.1:1080`. متغیرهای محیطی `HTTPS_PROXY`، `HTTP_PROXY` و `NO_PROXY` به کار نمی‌روند |
 
 > [!TIP]
 > بدون پارامترهای `-4` و `-6`، tcping بر پایه‌ی جستجوهای DNS یک آدرس IP را تصادفی انتخاب می‌کند.

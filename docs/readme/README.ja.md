@@ -465,14 +465,32 @@ tcping https://www.example.com --full-page -v
 ### プロキシ経由でプローブする
 
 `--proxy` は TCP と HTTP(S) のプローブをプロキシ経由で送ります。`http://`、
-`https://`、`socks5://` のプロキシが使え、ログイン情報は URL に入れます。例:
-`socks5://user:password@127.0.0.1:1080`。tcping は `HTTPS_PROXY`、`HTTP_PROXY`、
-`NO_PROXY` 環境変数を読まないので、プローブがプロキシを通るのは指定したときだけです。
+`https://`、`socks5://`、`socks5h://` のプロキシが使え、URL にログイン情報を入れても
+入れなくても構いません。tcping は `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 環境変数を
+読まないので、プローブがプロキシを通るのは指定したときだけです。
 
 ```bash
+# HTTP プロキシ
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# tcping が TLS で話す HTTP プロキシ
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# SOCKS5 プロキシ
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// は socks5:// と同じように動きます
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+ポートのないプロキシ URL は、`http://` なら `80`、`https://` なら `443`、`socks5://` と
+`socks5h://` なら `1080` を使います。ログインのいらないプロキシは、URL にログイン情報が
+あってもそのまま使えます。ログイン情報の中の `/`、`?`、`#`、`%` などの文字は
+パーセントエンコードする必要があります。例: `pa/ss` は `pa%2Fss` になります。
 
 TCP のプローブはプロキシにターゲットへの接続を頼み、プロキシが接続できたと答えれば
 成功です。そのため時間には、プロキシまでの道のりと、プロキシからターゲットまでの
@@ -650,7 +668,7 @@ tcping www.example.com 443 --otlp http://localhost:4318 --source-label brussels
 | `-4`            |            | IPv4 アドレスだけを使う                                               |
 | `-6`            |            | IPv6 アドレスだけを使う                                               |
 | `-I <name\|IP>` |            | プローブと DNS クエリの送信に使うインターフェース名または IP アドレス |
-| `--proxy <URL>` |            | TCP と `HTTP(S)` のプローブをプロキシ経由で送る。例: `--proxy http://proxy.example.com:3128`。`HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 環境変数は使わない |
+| `--proxy <URL>` |            | TCP と `HTTP(S)` のプローブをプロキシ経由で送る。例: `--proxy http://proxy.example.com:3128` または `--proxy socks5://user:password@127.0.0.1:1080`。`HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 環境変数は使わない |
 
 > [!TIP]
 > `-4` も `-6` も指定しない場合、tcping は DNS の検索結果からランダムに 1 つの IP アドレスを選びます。

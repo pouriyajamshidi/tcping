@@ -470,16 +470,33 @@ tcping https://www.example.com --full-page -v
 
 ### Testen via een proxy
 
-`--proxy` stuurt TCP- en HTTP(S)-probes via een proxy. `http://`-, `https://`-
-en `socks5://`-proxy's werken, en een login hoort in de URL, bijv.
-`socks5://user:password@127.0.0.1:1080`. tcping leest de omgevingsvariabelen
-`HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` niet, dus een probe gaat alleen via een
-proxy als u daarom vraagt:
+`--proxy` stuurt TCP- en HTTP(S)-probes via een proxy. `http://`-, `https://`-,
+`socks5://`- en `socks5h://`-proxy's werken, met of zonder login in de URL.
+tcping leest de omgevingsvariabelen `HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY`
+niet, dus een probe gaat alleen via een proxy als u daarom vraagt:
 
 ```bash
+# Een HTTP-proxy
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# Een HTTP-proxy waarmee tcping via TLS praat
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# Een SOCKS5-proxy
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// werkt hetzelfde als socks5://
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+Een proxy-URL zonder poort krijgt `80` voor `http://`, `443` voor `https://` en
+`1080` voor `socks5://` en `socks5h://`. Een proxy die geen login nodig heeft,
+werkt ook als de URL er een bevat. Tekens zoals `/`, `?`, `#` en `%` in de login
+moeten met procentcodering worden geschreven, bijv. `pa/ss` wordt `pa%2Fss`.
 
 Een TCP-probe vraagt de proxy om verbinding te maken met het doel, en slaagt als
 de proxy zegt dat dat gelukt is. De tijd omvat de weg naar de proxy en de weg van
@@ -666,7 +683,7 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 | `-4`            |             | Alleen IPv4-adressen gebruiken                                                                |
 | `-6`            |             | Alleen IPv6-adressen gebruiken                                                                |
 | `-I <name\|IP>` |             | Interfacenaam of IP-adres om de probes en de DNS-opzoekingen vanaf te sturen                  |
-| `--proxy <URL>` |           | TCP- en `HTTP(S)`-probes via een proxy sturen, bijv. `--proxy http://proxy.example.com:3128`. De omgevingsvariabelen `HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` worden niet gebruikt |
+| `--proxy <URL>` |           | TCP- en `HTTP(S)`-probes via een proxy sturen, bijv. `--proxy http://proxy.example.com:3128` of `--proxy socks5://user:password@127.0.0.1:1080`. De omgevingsvariabelen `HTTPS_PROXY`, `HTTP_PROXY` en `NO_PROXY` worden niet gebruikt |
 
 > [!TIP]
 > Zonder de flags `-4` en `-6` kiest tcping willekeurig een IP-adres op basis van de DNS-opzoekingen.
