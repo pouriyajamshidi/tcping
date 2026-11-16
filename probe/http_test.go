@@ -501,6 +501,75 @@ func TestHTTPing_ThroughHTTPSProxyAsksForTheProxyByName(t *testing.T) {
 	}
 }
 
+// TestHTTPing_ThroughSOCKS5Proxy covers an http:// target behind a SOCKS5
+// proxy. The proxy gets the hostname as it is, and the request runs with
+// the target through the tunnel it opens. Neither the target nor the
+// proxy's hostname resolves here, so the probe can only succeed by dialing
+// the proxy address looked up at startup.
+func TestHTTPing_ThroughSOCKS5Proxy(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	t.Cleanup(target.Close)
+
+	for _, scheme := range []string{"socks5", "socks5h"} {
+		t.Run(scheme, func(t *testing.T) {
+			l, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatalf("fake SOCKS5 proxy: %v", err)
+			}
+			t.Cleanup(func() { _ = l.Close() })
+
+			requests := make(chan socks5Request, 1)
+
+			go func() {
+				conn, err := l.Accept()
+				if err != nil {
+					return
+				}
+				defer conn.Close()
+
+				requests <- serveSOCKS5(conn, 0)
+
+				// The hostname does not resolve, so the tunnel goes to the
+				// test server whatever it was asked for.
+				upstream, err := net.Dial("tcp", target.Listener.Addr().String())
+				if err != nil {
+					return
+				}
+				defer upstream.Close()
+
+				go func() { _, _ = io.Copy(upstream, conn) }()
+				_, _ = io.Copy(conn, upstream)
+			}()
+
+			h := HTTPing{
+				timeout:   5 * time.Second,
+				port:      reservedButClosedPort(t),
+				url:       "http://does-not-resolve.invalid/health",
+				proxy:     &url.URL{Scheme: scheme, Host: "proxy.does-not-resolve.invalid:1080"},
+				proxyAddr: netip.MustParseAddrPort(l.Addr().String()),
+			}
+
+			result, err := h.Ping(context.Background(), netip.MustParseAddr("127.0.0.1"))
+			if err != nil {
+				t.Fatalf("Ping() error = %v, want the probe to go through the proxy", err)
+			}
+
+			want := socks5Request{addressType: 3, host: "does-not-resolve.invalid", port: 80}
+			if got := <-requests; got != want {
+				t.Errorf("the proxy was asked for %+v, want %+v", got, want)
+			}
+
+			if result.StatusCode != http.StatusOK {
+				t.Errorf("StatusCode = %d, want %d", result.StatusCode, http.StatusOK)
+			}
+
+			if result.LocalAddr == nil {
+				t.Error("LocalAddr is nil, want the address the connection to the proxy came from")
+			}
+		})
+	}
+}
+
 func TestHTTPing_ConnectionRefused(t *testing.T) {
 	port := reservedButClosedPort(t)
 
