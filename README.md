@@ -470,16 +470,33 @@ tcping https://www.example.com --full-page -v
 
 ### Probing through a proxy
 
-`--proxy` sends TCP and HTTP(S) probes through a proxy. `http://`, `https://`
-and `socks5://` proxies work, and a login goes in the URL, e.g.
-`socks5://user:password@127.0.0.1:1080`. tcping does not read the
-`HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables, so a probe
-only goes through a proxy when you ask for one:
+`--proxy` sends TCP and HTTP(S) probes through a proxy. `http://`, `https://`,
+`socks5://` and `socks5h://` proxies work, with or without a login in the URL.
+tcping does not read the `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment
+variables, so a probe only goes through a proxy when you ask for one:
 
 ```bash
+# An HTTP proxy
 tcping https://www.example.com --proxy http://proxy.example.com:3128
+tcping https://www.example.com --proxy http://user:password@proxy.example.com:3128
+
+# An HTTP proxy that tcping talks to over TLS
+tcping https://www.example.com --proxy https://proxy.example.com
+tcping https://www.example.com --proxy https://user:password@proxy.example.com
+
+# A SOCKS5 proxy
 tcping db.example.com 5432 --proxy socks5://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5://user:password@127.0.0.1:1080
+
+# socks5h:// works the same as socks5://
+tcping db.example.com 5432 --proxy socks5h://127.0.0.1:1080
+tcping db.example.com 5432 --proxy socks5h://user:password@127.0.0.1:1080
 ```
+
+A proxy URL without a port gets `80` for `http://`, `443` for `https://` and
+`1080` for `socks5://` and `socks5h://`. A proxy that needs no login still
+works when the URL has one. Characters such as `/`, `?`, `#` and `%` in the
+login must be percent-encoded, e.g. `pa/ss` becomes `pa%2Fss`.
 
 A TCP probe asks the proxy to connect to the target, and succeeds when the
 proxy says it did. Its time covers the way to the proxy and the proxy's own way
@@ -667,7 +684,7 @@ dashes, so `-c 5` and `--c 5` are the same flag.
 | `-4`            |          | Only use IPv4 addresses                                                                                                                                                        |
 | `-6`            |          | Only use IPv6 addresses                                                                                                                                                        |
 | `-I <name\|IP>` |          | Interface name or IP address to send the probes and the DNS lookups from                                                                                                       |
-| `--proxy <URL>` |          | Send TCP and `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128`. The `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are not used |
+| `--proxy <URL>` |          | Send TCP and `HTTP(S)` probes through a proxy, e.g. `--proxy http://proxy.example.com:3128` or `--proxy socks5://user:password@127.0.0.1:1080`. The `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment variables are not used |
 
 > [!TIP]
 > Without the `-4` and `-6` flags, tcping picks an address at random from the family this machine can reach first, so a machine without IPv6 never probes an IPv6 address. With `-I`, the family of the interface's address wins.
