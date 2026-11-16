@@ -527,7 +527,7 @@ func TestHTTPing_ThroughSOCKS5Proxy(t *testing.T) {
 				}
 				defer conn.Close()
 
-				requests <- serveSOCKS5(conn, 0)
+				requests <- serveSOCKS5(conn, false, 0)
 
 				// The hostname does not resolve, so the tunnel goes to the
 				// test server whatever it was asked for.

@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/netip"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -463,9 +464,11 @@ type socks5Request struct {
 	port           uint16
 }
 
-// serveSOCKS5 reads one SOCKS5 handshake off conn. A short read leaves the
-// rest of the request empty, which the test then reports.
-func serveSOCKS5(conn net.Conn, replyCode byte) socks5Request {
+// serveSOCKS5 reads one SOCKS5 handshake off conn. A proxy that needs a
+// login turns the probe away when it does not offer one, and a proxy that
+// does not lets the probe in without one. A short read leaves the rest of
+// the request empty, which the test then reports.
+func serveSOCKS5(conn net.Conn, needsLogin bool, replyCode byte) socks5Request {
 	read := func(n int) []byte {
 		b := make([]byte, n)
 		_, _ = io.ReadFull(conn, b)
@@ -474,8 +477,18 @@ func serveSOCKS5(conn net.Conn, replyCode byte) socks5Request {
 
 	var req socks5Request
 
-	// The version, the number of login methods, and the one the probe offers.
-	method := read(3)[2]
+	// The version, then the login methods the probe offers, with their
+	// count in front.
+	methods := read(int(read(2)[1]))
+
+	method := byte(0) // no login
+	if needsLogin {
+		method = 2 // a username and a password
+	}
+	if !slices.Contains(methods, method) {
+		_, _ = conn.Write([]byte{5, 0xff}) // none of the offered methods will do
+		return req
+	}
 	_, _ = conn.Write([]byte{5, method})
 
 	if method == 2 {
@@ -506,7 +519,7 @@ func serveSOCKS5(conn net.Conn, replyCode byte) socks5Request {
 // fakeSOCKS5Proxy plays the proxy's side of every SOCKS5 handshake, answers
 // the request with replyCode, and hands the request over, so a test can see
 // what the probe asked for. A reply code of 0 means the proxy connected.
-func fakeSOCKS5Proxy(t *testing.T, replyCode byte) (netip.AddrPort, <-chan socks5Request) {
+func fakeSOCKS5Proxy(t *testing.T, needsLogin bool, replyCode byte) (netip.AddrPort, <-chan socks5Request) {
 	t.Helper()
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -524,7 +537,7 @@ func fakeSOCKS5Proxy(t *testing.T, replyCode byte) (netip.AddrPort, <-chan socks
 				return
 			}
 
-			requests <- serveSOCKS5(conn, replyCode)
+			requests <- serveSOCKS5(conn, needsLogin, replyCode)
 			_ = conn.Close()
 		}
 	}()
@@ -538,7 +551,7 @@ func fakeSOCKS5Proxy(t *testing.T, replyCode byte) (netip.AddrPort, <-chan socks
 func TestPing_ThroughSOCKS5Proxy(t *testing.T) {
 	for _, scheme := range []string{"socks5", "socks5h"} {
 		t.Run(scheme, func(t *testing.T) {
-			proxyAddr, requests := fakeSOCKS5Proxy(t, 0)
+			proxyAddr, requests := fakeSOCKS5Proxy(t, false, 0)
 
 			tp := Tcping{
 				timeout:   2 * time.Second,
@@ -566,7 +579,7 @@ func TestPing_ThroughSOCKS5Proxy(t *testing.T) {
 }
 
 func TestPing_ThroughSOCKS5ProxyWithALogin(t *testing.T) {
-	proxyAddr, requests := fakeSOCKS5Proxy(t, 0)
+	proxyAddr, requests := fakeSOCKS5Proxy(t, true, 0)
 
 	tp := Tcping{
 		timeout:   2 * time.Second,
@@ -585,6 +598,46 @@ func TestPing_ThroughSOCKS5ProxyWithALogin(t *testing.T) {
 	}
 }
 
+// A login in the URL is offered, not forced: a proxy that needs none lets
+// the probe in without it.
+func TestPing_ThroughSOCKS5ProxyThatNeedsNoLoginSkipsTheOneGiven(t *testing.T) {
+	proxyAddr, requests := fakeSOCKS5Proxy(t, false, 0)
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "socks5", User: url.UserPassword("user", "secret"), Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	if _, err := tp.Ping(context.Background(), netip.Addr{}); err != nil {
+		t.Fatalf("Ping() error = %v, want the probe to go through without a login", err)
+	}
+
+	want := socks5Request{addressType: 3, host: "example.com", port: 22}
+	if got := <-requests; got != want {
+		t.Errorf("the proxy was asked for %+v, want %+v", got, want)
+	}
+}
+
+// Without a login in the URL, a proxy that needs one turns the probe away.
+func TestPing_ThroughSOCKS5ProxyThatNeedsALoginWeDoNotHave(t *testing.T) {
+	proxyAddr, _ := fakeSOCKS5Proxy(t, true, 0)
+
+	tp := Tcping{
+		timeout:   2 * time.Second,
+		hostname:  "example.com",
+		port:      22,
+		proxy:     &url.URL{Scheme: "socks5", Host: proxyAddr.String()},
+		proxyAddr: proxyAddr,
+	}
+
+	if _, err := tp.Ping(context.Background(), netip.Addr{}); err == nil {
+		t.Error("Ping() error = nil, want the missing login to fail the probe")
+	}
+}
+
 // An IP target goes to the proxy as an IP, not as a name the proxy would
 // have to look up.
 func TestPing_ThroughSOCKS5ProxyGivesAnIPAsAnIP(t *testing.T) {
@@ -598,7 +651,7 @@ func TestPing_ThroughSOCKS5ProxyGivesAnIPAsAnIP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.target, func(t *testing.T) {
-			proxyAddr, requests := fakeSOCKS5Proxy(t, 0)
+			proxyAddr, requests := fakeSOCKS5Proxy(t, false, 0)
 
 			tp := Tcping{
 				timeout:   2 * time.Second,
@@ -623,7 +676,7 @@ func TestPing_ThroughSOCKS5ProxyGivesAnIPAsAnIP(t *testing.T) {
 // A proxy that could not connect is a failed probe, whatever the reason it
 // gives. Reply code 5 is "connection refused".
 func TestPing_ThroughSOCKS5ProxyThatRefuses(t *testing.T) {
-	proxyAddr, _ := fakeSOCKS5Proxy(t, 5)
+	proxyAddr, _ := fakeSOCKS5Proxy(t, false, 5)
 
 	tp := Tcping{
 		timeout:   2 * time.Second,

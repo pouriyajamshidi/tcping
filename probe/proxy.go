@@ -49,29 +49,33 @@ func httpConnect(conn net.Conn, target string, user *url.Userinfo) error {
 }
 
 // socks5Connect asks a SOCKS5 proxy to open a connection to host:port, the
-// way RFC 1928 describes it, logging in first when the proxy URL has a user
-// (RFC 1929). A hostname is handed to the proxy as it is, so the proxy looks
-// it up on its own.
+// way RFC 1928 describes it. When the proxy URL has a user, the proxy may
+// ask for that login (RFC 1929) or let us in without one. A hostname is
+// handed to the proxy as it is, so the proxy looks it up on its own.
 func socks5Connect(conn net.Conn, host string, port uint16, user *url.Userinfo) error {
-	// The greeting is the version and the one login method we offer.
-	method := byte(0x00) // no login
+	// The greeting is the version and the login methods we offer, with
+	// their count in front. 0x00 is no login, 0x02 a username and a
+	// password.
+	greeting := []byte{5, 1, 0x00}
 	if user != nil {
-		method = 0x02 // a username and a password
+		greeting = []byte{5, 2, 0x00, 0x02}
 	}
 
-	if _, err := conn.Write([]byte{5, 1, method}); err != nil {
+	if _, err := conn.Write(greeting); err != nil {
 		return err
 	}
 
+	// The proxy answers with the method it picked.
 	reply := make([]byte, 2)
 	if _, err := io.ReadFull(conn, reply); err != nil {
 		return err
 	}
-	if reply[0] != 5 || reply[1] != method {
-		return errors.New("the SOCKS5 proxy does not accept our login method")
+	accepted := reply[1] == 0x00 || (reply[1] == 0x02 && user != nil)
+	if reply[0] != 5 || !accepted {
+		return errors.New("the SOCKS5 proxy does not accept our login methods")
 	}
 
-	if user != nil {
+	if reply[1] == 0x02 {
 		password, _ := user.Password()
 		if len(user.Username()) > 255 || len(password) > 255 {
 			return errors.New("the SOCKS5 username and password can be 255 bytes at most")
