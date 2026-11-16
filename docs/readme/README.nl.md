@@ -510,9 +510,10 @@ verbindingstijd van een HTTP(S)-probe, zijn dus die van de verbinding met de
 proxy, en de eerste regel van de run noemt hem. tcping zoekt de hostnaam niet
 zelf op: de uitvoer toont er dus geen adres voor, en `-r` en
 `--resolve-every-probe` werken niet met een proxy. `-4`, `-6` en `--dns-server`
-gelden in plaats daarvan voor de hostnaam van de proxy zelf. UDP-probes gaan niet
-via een proxy. Een proxy uit een PAC-bestand moet u zelf opgeven, want tcping
-leest geen PAC-bestanden.
+gelden in plaats daarvan voor de hostnaam van de proxy zelf, en `--insecure`
+slaat ook de controle van het certificaat van een `https://`-proxy over.
+UDP-probes gaan niet via een proxy. Een proxy uit een PAC-bestand moet u zelf
+opgeven, want tcping leest geen PAC-bestanden.
 
 ### Testen via UDP
 
@@ -737,7 +738,7 @@ streepjes, dus `-c 5` en `--c 5` zijn dezelfde flag.
 
 | Flag            | Standaard | Beschrijving                                                                                                                                                                            |
 | --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`    |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel. Handig voor zelfondertekende of verlopen certificaten                                                     |
+| `--insecure`    |           | Het servercertificaat niet verifiëren bij het testen van een `https://`-doel, en ook niet dat van een `https://`-proxy. Handig voor zelfondertekende of verlopen certificaten           |
 | `--full-page`   |           | De hele pagina van een `http(s)://`-doel downloaden, zodat de tijd de volledige download omvat. Bestanden waarnaar de pagina verwijst worden niet opgehaald                             |
 | `--udp-server`  |           | Niet testen. Luisteren op de opgegeven host en poort en elk UDP-datagram terugsturen naar de afzender, zodat een UDP-probe naar deze computer een antwoord krijgt                       |
 

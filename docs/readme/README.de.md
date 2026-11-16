@@ -512,9 +512,10 @@ die Verbindungszeit einer HTTP(S)-Probe sind daher die der Verbindung zum Proxy,
 und die erste Zeile des Laufs nennt ihn. tcping löst den Hostnamen nicht selbst
 auf, die Ausgabe zeigt also keine Adresse dafür, und `-r` und
 `--resolve-every-probe` funktionieren nicht mit einem Proxy. `-4`, `-6` und
-`--dns-server` gelten stattdessen für den Hostnamen des Proxys selbst.
-UDP-Probes laufen nicht über einen Proxy. Ein Proxy aus einer PAC-Datei muss von
-Hand angegeben werden, da tcping keine PAC-Dateien liest.
+`--dns-server` gelten stattdessen für den Hostnamen des Proxys selbst, und
+`--insecure` überspringt auch die Prüfung des Zertifikats eines
+`https://`-Proxys. UDP-Probes laufen nicht über einen Proxy. Ein Proxy aus einer
+PAC-Datei muss von Hand angegeben werden, da tcping keine PAC-Dateien liest.
 
 ### Probes über UDP
 
@@ -739,7 +740,7 @@ Bindestrichen, `-c 5` und `--c 5` sind also dasselbe Flag.
 
 | Flag            | Standard | Beschreibung                                                                                                                                                                                 |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`    |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten                                                     |
+| `--insecure`    |          | Das Serverzertifikat beim Prüfen eines `https://`-Ziels nicht verifizieren, und auch nicht das eines `https://`-Proxys. Nützlich bei selbstsignierten oder abgelaufenen Zertifikaten         |
 | `--full-page`   |          | Die ganze Seite eines `http(s)://`-Ziels herunterladen, sodass die Zeit den vollständigen Download umfasst. Dateien, auf die die Seite verweist, werden nicht geladen                        |
 | `--udp-server`  |          | Nicht prüfen. Auf dem angegebenen Host und Port lauschen und jedes UDP-Datagramm an den Absender zurückschicken, sodass eine auf diesen Rechner gerichtete UDP-Probe eine Antwort bekommt    |
 

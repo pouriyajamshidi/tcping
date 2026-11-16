@@ -512,9 +512,10 @@ temps de connexion d'une sonde HTTP(S), sont donc ceux de la connexion au proxy,
 et la première ligne de l'exécution le nomme. tcping ne résout pas le nom d'hôte
 lui-même : la sortie n'affiche donc aucune adresse pour lui, et `-r` et
 `--resolve-every-probe` ne fonctionnent pas avec un proxy. `-4`, `-6` et
-`--dns-server` s'appliquent à la place au nom d'hôte du proxy lui-même. Les
-sondes UDP ne passent pas par un proxy. Un proxy défini dans un fichier PAC doit
-être donné à la main, car tcping ne lit pas les fichiers PAC.
+`--dns-server` s'appliquent à la place au nom d'hôte du proxy lui-même, et
+`--insecure` désactive aussi la vérification du certificat d'un proxy
+`https://`. Les sondes UDP ne passent pas par un proxy. Un proxy défini dans un
+fichier PAC doit être donné à la main, car tcping ne lit pas les fichiers PAC.
 
 ### Sonder en UDP
 
@@ -739,7 +740,7 @@ tirets, donc `-c 5` et `--c 5` sont la même option.
 
 | Option          | Par défaut | Description                                                                                                                                                                                                 |
 | --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`    |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`. Utile pour les certificats autosignés ou expirés                                                                                  |
+| `--insecure`    |            | Ne pas vérifier le certificat du serveur en sondant une cible `https://`, ni celui d'un proxy `https://`. Utile pour les certificats autosignés ou expirés                                                  |
 | `--full-page`   |            | Télécharger la page entière d'une cible `http(s)://`, pour que le temps couvre tout le téléchargement. Les fichiers vers lesquels la page pointe ne sont pas récupérés                                      |
 | `--udp-server`  |            | Ne pas sonder. Écouter sur l'hôte et le port donnés et renvoyer chaque datagramme UDP à son expéditeur, pour qu'une sonde UDP dirigée vers cette machine reçoive une réponse                                |
 

@@ -513,8 +513,9 @@ conexión al proxy, y la primera línea de la ejecución lo indica. tcping no
 resuelve el nombre de host él mismo, así que la salida no muestra ninguna
 dirección para él, y `-r` y `--resolve-every-probe` no funcionan con un proxy.
 `-4`, `-6` y `--dns-server` se aplican en cambio al nombre de host del propio
-proxy. Los sondeos UDP no pasan por un proxy. Un proxy definido en un archivo PAC
-hay que indicarlo a mano, ya que tcping no lee archivos PAC.
+proxy, y `--insecure` también omite la comprobación del certificado de un proxy
+`https://`. Los sondeos UDP no pasan por un proxy. Un proxy definido en un
+archivo PAC hay que indicarlo a mano, ya que tcping no lee archivos PAC.
 
 ### Sondear por UDP
 
@@ -743,7 +744,7 @@ que `-c 5` y `--c 5` son la misma opción.
 
 | Opción         | Por defecto | Descripción                                                                                                                                                           |
 | -------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--insecure`   |             | No verificar el certificado del servidor al sondear un destino `https://`. Útil con certificados autofirmados o caducados                                             |
+| `--insecure`   |             | No verificar el certificado del servidor al sondear un destino `https://`, ni el de un proxy `https://`. Útil con certificados autofirmados o caducados               |
 | `--full-page`  |             | Descargar la página entera de un destino `http(s)://`, para que el tiempo cubra toda la descarga. Los archivos a los que enlaza la página no se descargan             |
 | `--udp-server` |             | No sondear. Escuchar en el host y el puerto indicados y devolver cada datagrama UDP a quien lo envió, para que un sondeo UDP dirigido a esta máquina reciba respuesta |
 
